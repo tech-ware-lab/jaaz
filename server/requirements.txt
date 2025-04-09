@@ -1,4 +1,3 @@
-flask
-gunicorn
-flask-socketio
+fastapi
+uvicorn
 toml

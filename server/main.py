@@ -29,7 +29,8 @@ app.include_router(agent.router)
 app.include_router(websocket.router)
 
 # Mount the React build directory
-react_build_dir = os.path.join(os.path.dirname(root_dir), "react", "dist")
+react_build_dir = os.environ.get('UI_DIST_DIR', os.path.join(os.path.dirname(root_dir), "react", "dist"))
+
 app.mount("/assets", StaticFiles(directory=os.path.join(react_build_dir, "assets")), name="assets")
 
 @app.get("/")
