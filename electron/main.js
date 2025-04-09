@@ -1,24 +1,109 @@
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+// electron/main.js
+// npx electron electron/main.js
+const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
+const { spawn } = require("child_process");
 
-const port =
-  process.argv.find((arg) => arg.startsWith("--port="))?.split("=")[1] ||
-  "8000";
+const net = require("net");
 
-function createWindow() {
-  const win = new BrowserWindow({
-    width: 1000,
-    height: 600,
+function findAvailablePort(startPort = 5000) {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+
+    server.on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        // Port is in use, try the next one
+        findAvailablePort(startPort + 1)
+          .then(resolve)
+          .catch(reject);
+      } else {
+        reject(err);
+      }
+    });
+
+    server.listen(startPort, () => {
+      server.close(() => {
+        resolve(startPort);
+      });
+    });
+  });
+}
+
+let mainWindow;
+let pyProc = null;
+let pyPort = null;
+
+const createWindow = (pyPort) => {
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
     webPreferences: {
-      preload: path.join(__dirname, "../preload.js"),
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
   });
 
-  win.loadURL(`http://localhost:${port}`); // Use dynamic port
-}
+  // In development, use Vite dev server
+  if (process.env.NODE_ENV === "development") {
+    mainWindow.loadURL("http://127.0.0.1:5173");
+    mainWindow.webContents.openDevTools();
+  } else {
+    // In production, load built files
+    mainWindow.loadURL(`http://127.0.0.1:${pyPort}`);
+  }
+};
 
-ipcMain.on("show-in-folder", (event, filePath) => {
-  shell.showItemInFolder(filePath);
+const startPythonApi = async () => {
+  // Find an available port
+  pyPort = await findAvailablePort(5100);
+
+  // Determine the Python executable path (considering packaged app)
+  const pythonExecutable = app.isPackaged
+    ? path.join(process.resourcesPath, "server", "dist", "main", "main")
+    : "python";
+
+  // Determine script path
+  const scriptPath = path.join(__dirname, "../server/main.py");
+
+  // Start the FastAPI process
+  pyProc = spawn(
+    pythonExecutable,
+    app.isPackaged ? [`--port`, pyPort] : [scriptPath, `--port`, pyPort],
+    {
+      env: { ...process.env },
+    }
+  );
+
+  // Log output
+  pyProc.stdout.on("data", (data) => {
+    console.log(`Python stdout: ${data}`);
+  });
+
+  pyProc.stderr.on("data", (data) => {
+    console.error(`Python stderr: ${data}`);
+  });
+
+  return pyPort;
+};
+
+app.whenReady().then(async () => {
+  const pyPort = await startPythonApi();
+  while (true) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // wait for the server to start
+    let status = await fetch(`http://127.0.0.1:${pyPort}`);
+    if (status.ok) {
+      break;
+    }
+  }
+  createWindow(pyPort);
 });
 
-app.whenReady().then(createWindow);
+// Quit the app and clean up the Python process
+app.on("will-quit", () => {
+  if (pyProc) {
+    pyProc.kill();
+    pyProc = null;
+  }
+});

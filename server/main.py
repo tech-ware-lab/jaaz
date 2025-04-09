@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 
 if getattr(sys, 'frozen', False):
     # If running in a PyInstaller bundle, __file__ will point inside the bundle,
@@ -39,5 +40,9 @@ async def serve_react_app():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port', type=int, default=8000, help='Port to run the server on')
+    args = parser.parse_args()
+    
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=args.port)

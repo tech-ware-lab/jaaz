@@ -1,4 +1,18 @@
 {
+  "name": "electron-fastapi-react-app",
+  "version": "1.0.0",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "concurrently \"npm run start:frontend\" \"npm run start:electron\"",
+    "start:frontend": "cd frontend && npm run dev",
+    "start:electron": "cross-env NODE_ENV=development electron .",
+    "build": "npm run build:frontend && npm run build:electron",
+    "build:frontend": "cd frontend && npm run build",
+    "build:electron": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
   "devDependencies": {
     "electron": "^35.1.0"
   }
