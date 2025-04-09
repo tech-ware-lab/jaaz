@@ -54,15 +54,27 @@ const createWindow = (pyPort) => {
   }
 };
 
+// 获取 app.asar 内部的根路径
+const appRoot = app.getAppPath();
+
 const startPythonApi = async () => {
   // Find an available port
   pyPort = await findAvailablePort(5100);
 
+  // 确定UI dist目录
+  const env = { ...process.env };
+  if (app.isPackaged) {
+    env.UI_DIST_DIR = path.join(appRoot, "react", "dist");
+  }
+
   // Determine the Python executable path (considering packaged app)
   const pythonExecutable = app.isPackaged
-    ? path.join(process.resourcesPath, "server", "dist", "main", "main")
+    ? path.join(appRoot, "server", "dist", "main", "main")
     : "python";
+  const fs = require("fs");
 
+  console.log("Python executable path:", pythonExecutable);
+  console.log("Python executable exists?", fs.existsSync(pythonExecutable));
   // Determine script path
   const scriptPath = path.join(__dirname, "../server/main.py");
 
@@ -71,7 +83,7 @@ const startPythonApi = async () => {
     pythonExecutable,
     app.isPackaged ? [`--port`, pyPort] : [scriptPath, `--port`, pyPort],
     {
-      env: { ...process.env },
+      env: env,
     }
   );
 

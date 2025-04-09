@@ -13,7 +13,40 @@
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux"
   },
+  "build": {
+    "appId": "com.bunnyrun.app",
+    "productName": "bunnyrun",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "react/dist/**/*",
+      "server/dist/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    }
+  },
   "devDependencies": {
-    "electron": "^35.1.0"
+    "electron": "^35.1.0",
+    "electron-builder": "^24.0.0"
   }
 }

@@ -37,8 +37,6 @@ jobs:
           npm install
           cd react
           npm install
-          cd ../electron
-          npm install
 
       - name: Build React app
         run: |
@@ -50,10 +48,10 @@ jobs:
           cd electron
           npm run build
 
-      - name: Package Electron app
+      - name: Build and Package Electron app
         run: |
           cd electron
-          npm run package
+          npm run build:electron  # or electron-builder directly
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
