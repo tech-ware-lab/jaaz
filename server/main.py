@@ -1,6 +1,8 @@
+import asyncio
 import os
 import sys
 import argparse
+from contextlib import asynccontextmanager
 
 if getattr(sys, 'frozen', False):
     # If running in a PyInstaller bundle, __file__ will point inside the bundle,
@@ -21,8 +23,15 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from localmanus.routers import config, agent
 
-# Initialize FastAPI app
-app = FastAPI()
+    
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # onstartup
+    await agent.initialize_mcp()
+    yield
+    # onshutdown
+
+app = FastAPI(lifespan=lifespan)
 
 # Include routers
 app.include_router(config.router)
@@ -37,6 +46,7 @@ app.mount("/assets", StaticFiles(directory=os.path.join(react_build_dir, "assets
 @app.get("/")
 async def serve_react_app():
     return FileResponse(os.path.join(react_build_dir, "index.html"))
+
 
 
 if __name__ == "__main__":

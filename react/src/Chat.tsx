@@ -5,6 +5,7 @@ import { SendIcon, SquareIcon, StopCircleIcon } from "lucide-react";
 import { Badge } from "./components/ui/badge";
 import { Textarea } from "./components/ui/textarea";
 import { nanoid } from "nanoid";
+import Markdown from "react-markdown";
 
 const FOOTER_HEIGHT = 170; // Adjust this value as needed
 
@@ -151,7 +152,7 @@ const ChatInterface = ({
                           : "text-gray-800 dark:text-gray-200 text-left"
                       }`}
                     >
-                      {message.content}
+                      <Markdown>{message.content}</Markdown>
                     </div>
                   )}
 
@@ -170,9 +171,9 @@ const ChatInterface = ({
           {stream && (
             <div
               className="text-gray-800 dark:text-gray-200 text-left"
-              style={{ whiteSpace: "pre-wrap" }}
+              // style={{ whiteSpace: "pre-wrap" }}
             >
-              {stream}
+              <Markdown>{stream}</Markdown>
             </div>
           )}
         </div>

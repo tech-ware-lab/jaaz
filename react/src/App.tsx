@@ -97,11 +97,11 @@ function Home() {
           </Button>
         </div> */}
       </div>
-      {isRightSidebarOpen && (
+      {/* {isRightSidebarOpen && (
         <div className="w-[400px] bg-sidebar h-screen">
           <WorkspaceSidebar />
         </div>
-      )}
+      )} */}
     </div>
   );
 }

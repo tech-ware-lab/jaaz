@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 from pathlib import Path
 import traceback
@@ -6,6 +7,7 @@ from fastapi import APIRouter, Request, WebSocket, Query, HTTPException
 from fastapi.responses import FileResponse
 import asyncio
 from localmanus.services.agent_service import llm
+from localmanus.services.mcp import MCPClient
 
 wsrouter = APIRouter()
 active_websockets = {}  # Changed to dictionary to store session_id -> websocket mapping
@@ -82,3 +84,50 @@ async def workspace_download(path: str):
     if file_path.exists() and file_path.is_file():
         return FileResponse(file_path)
     return {"error": "File not found"}
+
+USER_DATA_DIR = os.getenv("USER_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "user_data"))
+
+mcp_clients = {}
+async def initialize_mcp():
+    print('👇initializing mcp')
+    mcp_config_path = os.path.join(USER_DATA_DIR, "mcpServers.json")
+    if not os.path.exists(mcp_config_path):
+        return {}
+    with open(mcp_config_path, "r") as f:
+        json_data = json.load(f)
+    global mcp_clients
+    mcp_clients = json_data.get('mcpServers', {})
+    
+    for server_name, server in list(mcp_clients.items()):
+        if server.get('command') is None:
+            continue
+        if server.get('args') is None:
+            server['args'] = []
+        
+        mcp_client = MCPClient()
+        mcp_client.status = 'initializing'
+        try:
+            await mcp_client.connect_to_server(server["command"], server["args"], server.get('env'))
+            mcp_client.status = 'connected'
+            print('👇mcp_client connected', server_name, 'tools', len(mcp_client.tools))
+        except Exception as e:
+            print(f"Error connecting to MCP server {server_name}: {e}")
+            traceback.print_exc()
+            mcp_client.status = 'error'
+            mcp_client.error = str(e)
+        mcp_clients[server_name] = mcp_client
+
+@router.get("/list_mcp_servers")
+async def list_mcp_servers():
+    if mcp_clients is None:
+        return {}
+    mcp_config_path = os.path.join(USER_DATA_DIR, "mcpServers.json")
+    if not os.path.exists(mcp_config_path):
+        return {}
+    with open(mcp_config_path, "r") as f:
+        json_data = json.load(f)
+    mcp_servers = json_data.get('mcpServers', {})
+    for server_name, server in mcp_servers.items():
+        mcp_servers[server_name]['tools'] = mcp_clients[server_name].tools if server_name in mcp_clients and mcp_clients[server_name] else []
+        mcp_servers[server_name]['status'] = mcp_clients[server_name].status if server_name in mcp_clients and mcp_clients[server_name] else 'error'
+    return mcp_servers
