@@ -2,18 +2,18 @@ import asyncio
 import os
 from pathlib import Path
 import traceback
-from fastapi import APIRouter, Request, WebSocket
+from fastapi import APIRouter, Request, WebSocket, Query, HTTPException
 from fastapi.responses import FileResponse
 import asyncio
 from localmanus.services.agent_service import llm
 
 wsrouter = APIRouter()
-active_websockets = []
+active_websockets = {}  # Changed to dictionary to store session_id -> websocket mapping
 
 @wsrouter.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...)):
     await websocket.accept()
-    active_websockets.append(websocket)
+    active_websockets[session_id] = websocket
     try:
         # Keep the connection alive
         while True:
@@ -24,8 +24,8 @@ async def websocket_endpoint(websocket: WebSocket):
         print(f"WebSocket error: {e}")
         traceback.print_exc()
     finally:
-        if websocket in active_websockets:
-            active_websockets.remove(websocket)
+        if session_id in active_websockets:
+            del active_websockets[session_id]
 
 
 router = APIRouter(prefix="/api")
@@ -33,6 +33,12 @@ router = APIRouter(prefix="/api")
 async def chat(request: Request):
     data = await request.json()
     messages = data.get('messages')
+    session_id = data.get('session_id')
+    if session_id is None:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail="session_id is required"
+        )
     
     # Create a copy of the list to avoid modification during iteration
     websockets_to_remove = []
@@ -46,19 +52,15 @@ async def chat(request: Request):
             print(text, end="", flush=True)
             
             # Send text to all active WebSocket connections
-            for ws in list(active_websockets):  # Use a copy of the list
+            ws = active_websockets.get(session_id)
+            if ws:
                 try:
                     await ws.send_text(text)
                 except Exception as e:
                     print(f"Error sending to websocket: {e}")
                     websockets_to_remove.append(ws)
-            
-            # Remove any failed websockets
-            for ws in websockets_to_remove:
-                if ws in active_websockets:
-                    active_websockets.remove(ws)
-            websockets_to_remove = []
-                    
+        for ws in websockets_to_remove:
+            del active_websockets[ws]
         print()
 
     message = await stream.get_final_message()

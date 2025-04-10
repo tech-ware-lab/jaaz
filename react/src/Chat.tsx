@@ -4,6 +4,7 @@ import { Button } from "./components/ui/button";
 import { SendIcon, SquareIcon, StopCircleIcon } from "lucide-react";
 import { Badge } from "./components/ui/badge";
 import { Textarea } from "./components/ui/textarea";
+import { nanoid } from "nanoid";
 
 const FOOTER_HEIGHT = 170; // Adjust this value as needed
 
@@ -25,8 +26,10 @@ const ChatInterface = ({
   const [disableStop, setDisableStop] = useState(false);
   const [stream, setStream] = useState<string>("");
   const webSocketRef = useRef<WebSocket | null>(null);
+  const sessionIdRef = useRef<string>(nanoid());
+
   useEffect(() => {
-    const socket = new WebSocket("/ws");
+    const socket = new WebSocket(`/ws?session_id=${sessionIdRef.current}`);
     webSocketRef.current = socket;
 
     socket.addEventListener("open", (event) => {
@@ -75,6 +78,7 @@ const ChatInterface = ({
       },
       body: JSON.stringify({
         messages: newMessages,
+        session_id: sessionIdRef.current,
       }),
     }).then((resp) => resp.json());
   };
@@ -180,7 +184,7 @@ const ChatInterface = ({
         style={{ height: FOOTER_HEIGHT }}
       >
         {/* Agent Status */}
-        <div className="flex w-full max-w-3xl mx-auto gap-2">
+        {/* <div className="flex w-full max-w-3xl mx-auto gap-2">
           <Badge variant={"secondary"} style={{ fontSize: "0.9rem" }}>
             {agentState == EAgentState.RUNNING && (
               <div className="flex justify-center items-center">
@@ -195,7 +199,7 @@ const ChatInterface = ({
               </p>
             )}
           </Badge>
-        </div>
+        </div> */}
 
         {/* Input area */}
         <div className="flex flex-grow w-full items-center space-x-2 max-w-3xl mx-auto">
