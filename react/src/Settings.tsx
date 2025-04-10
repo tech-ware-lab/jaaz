@@ -29,7 +29,7 @@ type LLMConfig = {
 };
 
 export default function Settings() {
-  const [provider, setProvider] = useState("openai");
+  const [provider, setProvider] = useState("anthropic");
   const [apiKey, setApiKey] = useState("");
   const [isApiKeyDirty, setIsApiKeyDirty] = useState(false);
   const [maxTokens, setMaxTokens] = useState(8192);
@@ -105,10 +105,10 @@ export default function Settings() {
       } else if (provider === "anthropic") {
         baseUrl = anthropicProvider.baseUrl;
       }
-      if (!getModelOptions().some((option) => option.value === model)) {
-        setErrorMessage("Please select a supported model");
-        return;
-      }
+      // if (!getModelOptions().some((option) => option.value === model)) {
+      //   setErrorMessage("Please select a supported model");
+      //   return;
+      // }
       if (!apiKey.length) {
         setErrorMessage("API key is required");
         return;
@@ -140,9 +140,7 @@ export default function Settings() {
 
       const result = await response.json();
       if (result.status === "success") {
-        setSuccessMessage(
-          "Settings saved! Please **restart** the app. Otherwise, the changes will not take effect."
-        );
+        navigate("/");
       } else {
         throw new Error(result.message || "Failed to save configuration");
       }
@@ -178,7 +176,7 @@ export default function Settings() {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            API Settings
+            Settings
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -195,9 +193,7 @@ export default function Settings() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="openai">OpenAI</SelectItem>
                     <SelectItem value="anthropic">Claude</SelectItem>
-                    <SelectItem value="url">URL</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -212,7 +208,7 @@ export default function Settings() {
             </div>
           )}
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label htmlFor="model">Model</Label>
             <Select value={model} onValueChange={setModel}>
               <SelectTrigger id="model" className="w-full">
@@ -228,7 +224,7 @@ export default function Settings() {
                 </SelectGroup>
               </SelectContent>
             </Select>
-          </div>
+          </div> */}
 
           <div className="space-y-2">
             <Label htmlFor="apiKey">API Key</Label>

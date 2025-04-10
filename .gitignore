@@ -8,3 +8,6 @@ __pycache__/
 dist
 build
 .DS_Store
+
+# User data
+user_data/

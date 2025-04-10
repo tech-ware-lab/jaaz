@@ -11,11 +11,11 @@ export default function WorkspaceSidebar() {
   const [data, setData] = useState<WorkspaceList>([]);
   useEffect(() => {
     const intervalId = setInterval(() => {
-      fetch("/api/workspace_list")
-        .then((res) => res.json())
-        .then((data) => {
-          setData(data);
-        });
+      // fetch("/api/workspace_list")
+      //   .then((res) => res.json())
+      //   .then((data) => {
+      //     setData(data);
+      //   });
     }, 1000); // Refresh every 1 second
 
     return () => clearInterval(intervalId); // Cleanup on component unmount

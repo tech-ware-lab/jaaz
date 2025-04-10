@@ -65,6 +65,8 @@ const startPythonApi = async () => {
   const env = { ...process.env };
   if (app.isPackaged) {
     env.UI_DIST_DIR = path.join(process.resourcesPath, "react", "dist");
+    env.USER_DATA_DIR = app.getPath("userData");
+    env.IS_PACKAGED = "1";
   }
 
   // Determine the Python executable path (considering packaged app)
@@ -76,7 +78,7 @@ const startPythonApi = async () => {
 
   console.log("Python executable path:", pythonExecutable);
   console.log("Python executable exists?", fs.existsSync(pythonExecutable));
-  // Determine script path
+  console.log("env:", env);
   const scriptPath = path.join(__dirname, "../server/main.py");
 
   // Start the FastAPI process

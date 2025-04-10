@@ -2,10 +2,19 @@ import os
 import traceback
 import toml
 
+DEFAULT_CONFGI =  {
+                    "llm": {
+                        "base_url": "https://api.anthropic.com/v1/", 
+                        "api_key": "",                               
+                        "max_tokens": 8192, # Maximum number of tokens in the response
+                        "temperature": 0.0  # Controls randomness
+                    }
+                }
+USER_DATA_DIR = os.getenv("USER_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "user_data"))
 class ConfigService:
     def __init__(self):
         self.root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        self.config_file = os.path.join(self.root_dir, "openmanus", "config", "config.toml")
+        self.config_file = os.getenv("CONFIG_PATH", os.path.join(USER_DATA_DIR, "config.toml"))
 
     async def exists_config(self):
         return os.path.exists(self.config_file)
@@ -18,25 +27,15 @@ class ConfigService:
             # Mask API keys
             if 'llm' in config and 'api_key' in config['llm']:
                 config['llm']['api_key'] = '********'
-            if 'llm.vision' in config and 'api_key' in config['llm.vision']:
-                config['llm.vision']['api_key'] = '********'
-            
+
             return {"status": "success", "config": config}
         except Exception as e:
-            return {"status": "error", "message": str(e)}
+            return {"config": DEFAULT_CONFGI}
 
     async def update_config(self, data):
         try:
             if not os.path.exists(self.config_file):
-                config = {
-                    "llm": {
-                        "model": "claude-3-7-sonnet-20250219",        # The LLM model to use
-                        "base_url": "https://api.anthropic.com/v1/",  # API endpoint URL
-                        "api_key": "",                                # Your API key (leave empty for user to fill)
-                        "max_tokens": 8192,                           # Maximum number of tokens in the response
-                        "temperature": 0.0                            # Controls randomness
-                    }
-                }
+                config = DEFAULT_CONFGI
             else:
                 with open(self.config_file, 'r') as f:
                     config = toml.load(f)
@@ -45,10 +44,7 @@ class ConfigService:
                 for key in ['model', 'base_url', 'api_key', 'max_tokens', 'temperature']:
                     if key in llm_config:
                         config['llm'][key] = llm_config[key]
-                        if 'llm.vision' not in config:
-                            config['llm.vision'] = {}
-                        config['llm.vision'][key] = llm_config[key]
-            
+            os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
             with open(self.config_file, 'w') as f:
                 toml.dump(config, f)
             

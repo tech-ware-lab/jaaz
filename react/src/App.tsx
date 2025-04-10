@@ -36,7 +36,7 @@ function Home() {
 
   const webSocketRef = useRef<WebSocket | null>(null);
   const { setTheme, theme } = useTheme();
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -117,7 +117,7 @@ function Home() {
             {theme === "dark" ? <SunIcon size={30} /> : <MoonIcon size={30} />}
           </Button>
         </div>
-        <div className="absolute top-5 right-8 flex gap-1">
+        {/* <div className="absolute top-5 right-8 flex gap-1">
           <Button
             size={"sm"}
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
@@ -131,7 +131,7 @@ function Home() {
               </div>
             )}
           </Button>
-        </div>
+        </div> */}
       </div>
       {isRightSidebarOpen && (
         <div className="w-[400px] bg-sidebar h-screen">
