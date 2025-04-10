@@ -1,6 +1,6 @@
 local manus 桌面版
 
-## environment 
+## environment
 
 `cd react && npm i`
 

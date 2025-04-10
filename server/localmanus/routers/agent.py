@@ -1,6 +1,7 @@
 import asyncio
 import os
 from pathlib import Path
+import traceback
 from fastapi import APIRouter, Request, WebSocket
 from fastapi.responses import FileResponse
 import asyncio
@@ -14,22 +15,28 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     active_websockets.append(websocket)
     try:
+        # Keep the connection alive
         while True:
-            # state_data = await agent_service.get_state_data()
-            # await websocket.send_text(json.dumps(state_data))
-            await asyncio.sleep(1)
+            # Wait for messages (optional, if you need to receive from client)
+            data = await websocket.receive_text()
+            # Process the message if needed
     except Exception as e:
-        active_websockets.remove(websocket)
-        try:
-            await websocket.close()
-        except:
-            pass 
+        print(f"WebSocket error: {e}")
+        traceback.print_exc()
+    finally:
+        if websocket in active_websockets:
+            active_websockets.remove(websocket)
+
 
 router = APIRouter(prefix="/api")
 @router.post("/chat")
 async def chat(request: Request):
     data = await request.json()
     messages = data.get('messages')
+    
+    # Create a copy of the list to avoid modification during iteration
+    websockets_to_remove = []
+    
     async with llm.client.messages.stream(
         max_tokens=1024,
         messages=messages,
@@ -37,13 +44,26 @@ async def chat(request: Request):
     ) as stream:
         async for text in stream.text_stream:
             print(text, end="", flush=True)
+            
             # Send text to all active WebSocket connections
-            for ws in active_websockets:
-                await ws.send_text(text)
+            for ws in list(active_websockets):  # Use a copy of the list
+                try:
+                    await ws.send_text(text)
+                except Exception as e:
+                    print(f"Error sending to websocket: {e}")
+                    websockets_to_remove.append(ws)
+            
+            # Remove any failed websockets
+            for ws in websockets_to_remove:
+                if ws in active_websockets:
+                    active_websockets.remove(ws)
+            websockets_to_remove = []
+                    
         print()
 
     message = await stream.get_final_message()
     print('final message', message.to_json())
+    return {"status": "completed"}
 
 # @router.get("/cancel")
 # async def cancel():

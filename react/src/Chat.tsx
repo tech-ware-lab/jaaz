@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { EAgentState, Message, MessageGroup, ToolCall } from "./types/types";
 import { Button } from "./components/ui/button";
 import { SendIcon, SquareIcon, StopCircleIcon } from "lucide-react";
@@ -8,7 +8,7 @@ import { Textarea } from "./components/ui/textarea";
 const FOOTER_HEIGHT = 170; // Adjust this value as needed
 
 const ChatInterface = ({
-  messages: exampleMessages,
+  messages: initialMessages,
   currentStep,
   maxStep,
   totalTokens,
@@ -23,58 +23,50 @@ const ChatInterface = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
   const [disableStop, setDisableStop] = useState(false);
-  // Process messages to handle consecutive roles appropriately
-  const processMessages = (messages: Message[]) => {
-    const processed: MessageGroup[] = [];
-    let currentGroup: MessageGroup | null = null;
+  const [stream, setStream] = useState<string>("");
+  const webSocketRef = useRef<WebSocket | null>(null);
+  useEffect(() => {
+    const socket = new WebSocket("/ws");
+    webSocketRef.current = socket;
 
-    messages.forEach((message, index) => {
-      // Special handling for assistant and tool messages
-      if (message.role === "assistant" || message.role === "tool") {
-        if (currentGroup && currentGroup.role === "assistant") {
-          // Add to existing assistant group
-          currentGroup.messages.push(message);
-        } else {
-          // Start a new assistant group
-          if (currentGroup) {
-            processed.push(currentGroup);
-          }
-          currentGroup = {
-            id: index,
-            role: "assistant", // Both assistant and tool are grouped under assistant
-            messages: [message],
-          };
-        }
-      } else {
-        // For user messages, create individual groups
-        if (currentGroup) {
-          processed.push(currentGroup);
-        }
-        currentGroup = {
-          id: index,
-          role: message.role,
-          messages: [message],
-        };
-      }
+    socket.addEventListener("open", (event) => {
+      console.log("Connected to WebSocket server");
     });
 
-    // Add the last group
-    if (currentGroup) {
-      processed.push(currentGroup);
-    }
+    socket.addEventListener("message", (event) => {
+      // const data = JSON.parse(event.data);
+      console.log(event.data);
+      setStream((prev) => {
+        // console.log("prev", prev);
+        return prev + event.data;
+      });
+    });
 
-    return processed;
-  };
+    socket.addEventListener("close", (event) => {
+      console.log("Disconnected from WebSocket server");
+    });
 
-  const processedMessages = processMessages(exampleMessages);
+    socket.addEventListener("error", (event) => {
+      console.error("WebSocket error:", event);
+    });
+
+    return () => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    };
+  }, []);
   const onSendPrompt = () => {
     if (agentState == EAgentState.RUNNING) {
       return;
     }
-    messages.push({
-      role: "user",
-      content: prompt,
-    });
+    const newMessages = messages.concat([
+      {
+        role: "user",
+        content: prompt,
+      },
+    ]);
+    setMessages(newMessages);
     setPrompt("");
     fetch("/api/chat", {
       method: "Post",
@@ -82,7 +74,7 @@ const ChatInterface = ({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        messages,
+        messages: newMessages,
       }),
     }).then((resp) => resp.json());
   };
@@ -125,63 +117,60 @@ const ChatInterface = ({
         style={{ paddingBottom: FOOTER_HEIGHT }}
       >
         <div className="space-y-6 max-w-3xl mx-auto">
-          {processedMessages.map((group) => (
+          {/* Messages */}
+          {messages.map((message, idx) => (
             <div
-              key={group.id}
+              key={idx}
               className={`flex flex-col space-y-2 ${
-                group.role === "user" ? "items-end" : "items-start"
+                message.role === "user" ? "items-end" : "items-start"
               }`}
             >
-              {/* Role label */}
-              {/* <div
-                className={`flex items-center space-x-2`}
-              >
-                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  {group.role === "user" ? "You" : "Assistant"}
-                </span>
-              </div> */}
-
-              {/* Messages */}
               <div
                 className={`${
-                  group.role === "user" ? "ml-10 items-end" : "items-start"
+                  message.role === "user" ? "ml-10 items-end" : "items-start"
                 } space-y-3 flex flex-col ${
-                  group.role === "user" ? "items-end" : "items-start"
+                  message.role === "user" ? "items-end" : "items-start"
                 }`}
               >
-                {group.messages.map((message, idx) => (
-                  <div
-                    key={`${group.id}-${idx}`}
-                    className={`${
-                      group.role === "user" ? "items-end" : "items-start"
-                    } flex flex-col`}
-                  >
-                    {/* Regular message content */}
-                    {message.content && (
-                      <div
-                        className={`break-all ${
-                          group.role === "user"
-                            ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left"
-                            : "text-gray-800 dark:text-gray-200 text-left"
-                        }`}
-                      >
-                        {message.content}
-                      </div>
-                    )}
+                <div
+                  key={`${idx}`}
+                  className={`${
+                    message.role === "user" ? "items-end" : "items-start"
+                  } flex flex-col`}
+                >
+                  {/* Regular message content */}
+                  {message.content && (
+                    <div
+                      className={`break-all ${
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left"
+                          : "text-gray-800 dark:text-gray-200 text-left"
+                      }`}
+                    >
+                      {message.content}
+                    </div>
+                  )}
 
-                    {/* Tool calls */}
-                    {message.tool_calls && message.tool_calls.length > 0 && (
-                      <div className="flex flex-col items-start">
-                        {message.tool_calls.map((toolCall, i) => (
-                          <ToolCallTag key={i} toolCall={toolCall} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  {/* Tool calls */}
+                  {message.tool_calls && message.tool_calls.length > 0 && (
+                    <div className="flex flex-col items-start">
+                      {message.tool_calls.map((toolCall, i) => (
+                        <ToolCallTag key={i} toolCall={toolCall} />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
+          {stream && (
+            <div
+              className="text-gray-800 dark:text-gray-200 text-left"
+              style={{ whiteSpace: "pre-wrap" }}
+            >
+              {stream}
+            </div>
+          )}
         </div>
       </div>
 

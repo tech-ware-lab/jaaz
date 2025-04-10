@@ -29,46 +29,17 @@ import WorkspaceSidebar from "./WorkspaceSidebar";
 
 function Home() {
   const [agentState, setAgentState] = useState(EAgentState.IDLE);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(exampleMessages);
   const [currentStep, setCurrentStep] = useState(0);
   const [maxSteps, setMaxSteps] = useState(0);
   const [totalTokens, setTotalTokens] = useState(0);
 
-  const webSocketRef = useRef<WebSocket | null>(null);
   const { setTheme, theme } = useTheme();
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
+  const webSocketRef = useRef<WebSocket | null>(null);
   useEffect(() => {
-    // Create WebSocket connection
-    const socket = new WebSocket("/ws");
-    webSocketRef.current = socket;
-
-    // Connection opened
-    socket.addEventListener("open", (event) => {
-      console.log("Connected to WebSocket server");
-    });
-
-    // Listen for messages
-    socket.addEventListener("message", (event) => {
-      const data = JSON.parse(event.data);
-      setMessages(data.messages);
-      setAgentState(data.agent_state);
-      setCurrentStep(data.current_step);
-      setMaxSteps(data.max_steps);
-      setTotalTokens(data.total_tokens);
-    });
-
-    // Connection closed
-    socket.addEventListener("close", (event) => {
-      console.log("Disconnected from WebSocket server");
-    });
-
-    // Connection error
-    socket.addEventListener("error", (event) => {
-      console.error("WebSocket error:", event);
-    });
-
     fetch("/api/config/exists")
       .then((res) => res.json())
       .then((data) => {
@@ -76,13 +47,6 @@ function Home() {
           navigate("/settings");
         }
       });
-
-    // Clean up on component unmount
-    return () => {
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.close();
-      }
-    };
   }, []);
 
   // Example function to send a message to the server
