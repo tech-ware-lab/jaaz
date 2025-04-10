@@ -1,6 +1,8 @@
 {
   "name": "electron-fastapi-react-app",
   "version": "1.0.0",
+  "description": "Local agent desktop app with MCP tools",
+  "author": "weixuanfu",
   "main": "electron/main.js",
   "scripts": {
     "start": "concurrently \"npm run start:frontend\" \"npm run start:electron\"",
@@ -16,6 +18,10 @@
   "build": {
     "appId": "com.bunnyrun.app",
     "productName": "bunnyrun",
+    "publish": {
+      "provider": "github",
+      "releaseType": "draft"
+    },
     "directories": {
       "output": "dist"
     },
