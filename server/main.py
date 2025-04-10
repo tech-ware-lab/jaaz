@@ -43,6 +43,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=8000, help='Port to run the server on')
     args = parser.parse_args()
-    
     import uvicorn
+    print("🌟Starting server, UI_DIST_DIR:", os.environ.get('UI_DIST_DIR'))
     uvicorn.run(app, host="127.0.0.1", port=args.port)

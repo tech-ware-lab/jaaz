@@ -64,14 +64,15 @@ const startPythonApi = async () => {
   // 确定UI dist目录
   const env = { ...process.env };
   if (app.isPackaged) {
-    env.UI_DIST_DIR = path.join(appRoot, "react", "dist");
+    env.UI_DIST_DIR = path.join(process.resourcesPath, "react", "dist");
   }
 
   // Determine the Python executable path (considering packaged app)
   const pythonExecutable = app.isPackaged
-    ? path.join(appRoot, "server", "dist", "main", "main")
+    ? path.join(process.resourcesPath, "server", "dist", "main", "main")
     : "python";
   const fs = require("fs");
+  // fs.chmodSync(pythonExecutable, "755");
 
   console.log("Python executable path:", pythonExecutable);
   console.log("Python executable exists?", fs.existsSync(pythonExecutable));

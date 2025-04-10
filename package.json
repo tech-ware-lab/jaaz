@@ -21,9 +21,17 @@
     },
     "files": [
       "electron/**/*",
-      "react/dist/**/*",
-      "server/dist/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "server/dist/",
+        "to": "server/dist/"
+      },
+      {
+        "from": "react/dist/",
+        "to": "react/dist/"
+      }
     ],
     "mac": {
       "category": "public.app-category.utilities",
