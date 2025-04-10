@@ -19,7 +19,7 @@ sys.path.append(openmanus_dir)
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from localmanus.routers import config, agent, websocket
+from localmanus.routers import config, agent
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -27,7 +27,7 @@ app = FastAPI()
 # Include routers
 app.include_router(config.router)
 app.include_router(agent.router)
-app.include_router(websocket.router)
+app.include_router(agent.wsrouter)
 
 # Mount the React build directory
 react_build_dir = os.environ.get('UI_DIST_DIR', os.path.join(os.path.dirname(root_dir), "react", "dist"))

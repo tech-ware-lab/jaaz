@@ -1,20 +1,58 @@
 import asyncio
 import os
 from pathlib import Path
-
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, WebSocket
 from fastapi.responses import FileResponse
-# from localmanus.services.agent_service import agent_service
-# from openmanus.app.config import WORKSPACE_ROOT
+import asyncio
+from anthropic import AsyncAnthropic
+
+
+client = AsyncAnthropic(
+    api_key=os.environ.get("ANTHROPIC_API_KEY"), 
+)
+wsrouter = APIRouter()
+active_websockets = []
+
+@wsrouter.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    active_websockets.append(websocket)
+    try:
+        while True:
+            # state_data = await agent_service.get_state_data()
+            # await websocket.send_text(json.dumps(state_data))
+            await asyncio.sleep(1)
+    except Exception as e:
+        active_websockets.remove(websocket)
+        try:
+            await websocket.close()
+        except:
+            pass 
 
 router = APIRouter(prefix="/api")
+@router.post("/chat")
+async def chat(request: Request):
+    data = await request.json()
+    messages = data.get('messages')
+    async with client.messages.stream(
+        max_tokens=1024,
+        messages=[
+            {
+                "role": "user",
+                "content": "Say hello there!",
+            }
+        ],
+        model="claude-3-5-sonnet-latest",
+    ) as stream:
+        async for text in stream.text_stream:
+            print(text, end="", flush=True)
+            # Send text to all active WebSocket connections
+            for ws in active_websockets:
+                await ws.send_text(text)
+        print()
 
-# @router.post("/prompt")
-# async def prompt(request: Request):
-#     data = await request.json()
-#     prompt_text = data.get('prompt')
-#     await agent_service.run_prompt(prompt_text)
-#     return {"success": True}
+    message = await stream.get_final_message()
+    print('final message', message.to_json())
 
 # @router.get("/cancel")
 # async def cancel():
