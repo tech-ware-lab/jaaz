@@ -5,7 +5,7 @@ import { SendIcon, SquareIcon, StopCircleIcon } from "lucide-react";
 import { Badge } from "./components/ui/badge";
 import { Textarea } from "./components/ui/textarea";
 import { nanoid } from "nanoid";
-import Markdown from "react-markdown";
+import { Markdown } from "./components/Markdown";
 
 const FOOTER_HEIGHT = 170; // Adjust this value as needed
 
