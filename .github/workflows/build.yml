@@ -39,27 +39,29 @@ jobs:
           cd react
           npm install
 
+      - name: Build Python app
+        run: |
+          cd server
+          pyinstaller main.py
+
       - name: Build React app
         run: |
           cd react
           npm run build
 
-      - name: Build Electron app
-        run: |
-          cd electron
-          npm run build
+      # - name: Build Electron app
+      #   run: |
+      #     cd electron
+      #     npm run build
 
       - name: Build and Package Electron app
         run: |
-          cd electron
           npm run build:electron  # or electron-builder directly
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: desktop-app-${{ matrix.os }}
-          path: |
-            electron/dist/
-            electron/release/
+          path: electron/dist/
