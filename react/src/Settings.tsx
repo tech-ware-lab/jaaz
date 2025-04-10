@@ -28,13 +28,14 @@ type LLMConfig = {
   api_key?: string;
 };
 
+const PROVIDER_URL_MAPPING: { [key: string]: string } = {
+  anthropic: "https://api.anthropic.com/v1/",
+  openai: "https://api.openai.com/v1/",
+};
 export default function Settings() {
   const [provider, setProvider] = useState("anthropic");
-  const [apiKey, setApiKey] = useState("");
+  const [config, setConfig] = useState<{ [key: string]: LLMConfig }>({});
   const [isApiKeyDirty, setIsApiKeyDirty] = useState(false);
-  const [maxTokens, setMaxTokens] = useState(8192);
-  const [apiUrl, setApiUrl] = useState("");
-  const [model, setModel] = useState("gpt-4o");
   const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -64,28 +65,8 @@ export default function Settings() {
     const loadConfig = async () => {
       try {
         const response = await fetch("/api/config");
-        if (!response.ok) {
-          throw new Error("Failed to load configuration");
-        }
-        const result = await response.json();
-
-        if (result.status === "success" && result.config.llm) {
-          const config = result.config.llm;
-
-          // Determine provider based on base_url
-          if (config.base_url?.includes("openai")) {
-            setProvider("openai");
-          } else if (config.base_url?.includes("anthropic")) {
-            setProvider("anthropic");
-          } else {
-            setProvider("url");
-            setApiUrl(config.base_url || "");
-          }
-
-          setModel(config.model || "gpt-4-turbo-preview");
-          setMaxTokens(config.max_tokens || 8192);
-          setApiKey(config.api_key || "");
-        }
+        const config = await response.json();
+        setConfig(config);
       } catch (error) {
         console.error("Error loading configuration:", error);
       } finally {
@@ -98,40 +79,20 @@ export default function Settings() {
 
   const handleSave = async () => {
     try {
-      // Determine the base URL based on provider
-      let baseUrl = apiUrl;
-      if (provider === "openai") {
-        baseUrl = openaiProvider.baseUrl;
-      } else if (provider === "anthropic") {
-        baseUrl = anthropicProvider.baseUrl;
-      }
-      // if (!getModelOptions().some((option) => option.value === model)) {
-      //   setErrorMessage("Please select a supported model");
-      //   return;
-      // }
-      if (!apiKey.length) {
-        setErrorMessage("API key is required");
-        return;
-      }
       setErrorMessage("");
-      const input: { llm: LLMConfig } = {
-        llm: {
-          model: model,
-          base_url: baseUrl,
-          max_tokens: maxTokens,
-          temperature: 0.0,
-        },
-      };
-      // api_key sending from server is masked, so we only change api_key if user entered a real new value
-      if (isApiKeyDirty) {
-        input.llm.api_key = apiKey;
+
+      for (const key in config) {
+        if (!config[key].api_key?.length) {
+          setErrorMessage("API key is required");
+          return;
+        }
       }
       const response = await fetch("/api/config", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(config),
       });
 
       if (!response.ok) {
@@ -180,84 +141,87 @@ export default function Settings() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {isLoading ? (
+          {isLoading && (
             <div className="flex justify-center items-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-zinc-500"></div>
             </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="provider">Provider</Label>
-              <Select value={provider} onValueChange={setProvider}>
-                <SelectTrigger id="provider" className="w-full">
-                  <SelectValue placeholder="Select a provider" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="anthropic">Claude</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              {provider === "url" && (
+          )}
+          {Object.keys(config).map((key) => (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="provider">Provider</Label>
+                <Select value={provider} onValueChange={setProvider}>
+                  <SelectTrigger id="provider" className="w-full">
+                    <SelectValue placeholder="Select a provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="anthropic">Claude</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {provider === "url" && (
+                  <Input
+                    placeholder="Enter your API URL"
+                    value={config[key]?.base_url ?? PROVIDER_URL_MAPPING[key]}
+                    onChange={(e) => {
+                      setConfig({
+                        ...config,
+                        [key]: {
+                          ...config[key],
+                          base_url: e.target.value,
+                        },
+                      });
+                    }}
+                    className="w-full"
+                  />
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">API Key</Label>
                 <Input
-                  placeholder="Enter your API URL"
-                  value={apiUrl}
-                  onChange={(e) => setApiUrl(e.target.value)}
+                  id="apiKey"
+                  type="password"
+                  placeholder="Enter your API key"
+                  value={config[key]?.api_key ?? ""}
+                  onChange={(e) => {
+                    setConfig({
+                      ...config,
+                      [key]: { ...config[key], api_key: e.target.value },
+                    });
+                    setIsApiKeyDirty(true);
+                  }}
                   className="w-full"
                 />
-              )}
-            </div>
-          )}
+                <p className="text-xs text-gray-500">
+                  Your API key will be stored securely
+                </p>
+              </div>
 
-          {/* <div className="space-y-2">
-            <Label htmlFor="model">Model</Label>
-            <Select value={model} onValueChange={setModel}>
-              <SelectTrigger id="model" className="w-full">
-                <SelectValue placeholder="Select a model" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {getModelOptions().map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div> */}
-
-          <div className="space-y-2">
-            <Label htmlFor="apiKey">API Key</Label>
-            <Input
-              id="apiKey"
-              type="password"
-              placeholder="Enter your API key"
-              value={apiKey}
-              onChange={(e) => {
-                setApiKey(e.target.value);
-                setIsApiKeyDirty(true);
-              }}
-              className="w-full"
-            />
-            <p className="text-xs text-gray-500">
-              Your API key will be stored securely
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="maxTokens">Max Tokens</Label>
-            <Input
-              id="maxTokens"
-              type="number"
-              placeholder="Enter your max tokens"
-              value={maxTokens}
-              onChange={(e) => setMaxTokens(parseInt(e.target.value))}
-              className="w-full"
-            />
-            <p className="text-xs text-gray-500">
-              The maximum number of tokens in the response
-            </p>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="maxTokens">Max Tokens</Label>
+                <Input
+                  id="maxTokens"
+                  type="number"
+                  placeholder="Enter your max tokens"
+                  value={config[key]?.max_tokens ?? 8192}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      [key]: {
+                        ...config[key],
+                        max_tokens: parseInt(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500">
+                  The maximum number of tokens in the response
+                </p>
+              </div>
+            </>
+          ))}
 
           <Button onClick={handleSave} className="w-full">
             <Save className="mr-2 h-4 w-4" /> Save Settings

@@ -20,12 +20,7 @@ const ChatInterface = ({
   totalTokens: number;
   agentState: EAgentState;
 }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "user",
-      content: "Say hello there!",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
   const [disableStop, setDisableStop] = useState(false);
   // Process messages to handle consecutive roles appropriately
@@ -76,6 +71,10 @@ const ChatInterface = ({
     if (agentState == EAgentState.RUNNING) {
       return;
     }
+    messages.push({
+      role: "user",
+      content: prompt,
+    });
     setPrompt("");
     fetch("/api/chat", {
       method: "Post",

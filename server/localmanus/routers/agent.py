@@ -4,12 +4,8 @@ from pathlib import Path
 from fastapi import APIRouter, Request, WebSocket
 from fastapi.responses import FileResponse
 import asyncio
-from anthropic import AsyncAnthropic
+from localmanus.services.agent_service import llm
 
-
-client = AsyncAnthropic(
-    api_key=os.environ.get("ANTHROPIC_API_KEY"), 
-)
 wsrouter = APIRouter()
 active_websockets = []
 
@@ -34,14 +30,9 @@ router = APIRouter(prefix="/api")
 async def chat(request: Request):
     data = await request.json()
     messages = data.get('messages')
-    async with client.messages.stream(
+    async with llm.client.messages.stream(
         max_tokens=1024,
-        messages=[
-            {
-                "role": "user",
-                "content": "Say hello there!",
-            }
-        ],
+        messages=messages,
         model="claude-3-5-sonnet-latest",
     ) as stream:
         async for text in stream.text_stream:
