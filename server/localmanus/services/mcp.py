@@ -1,5 +1,6 @@
 import asyncio
-from typing import Optional
+from typing import List, Optional, Any, Dict
+from pydantic import BaseModel
 from contextlib import AsyncExitStack
 
 from mcp import ClientSession, StdioServerParameters
@@ -9,6 +10,10 @@ from anthropic import Anthropic
 from dotenv import load_dotenv
 
 # load_dotenv()  # load environment variables from .env
+class ToolSchema(BaseModel):
+    name: str
+    description: str
+    input_schema: Dict
 
 class MCPClient:
     def __init__(self):
@@ -16,7 +21,7 @@ class MCPClient:
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
         self.anthropic = Anthropic()
-        self.tools = []
+        self.tools: List[ToolSchema]  = []
 
     async def connect_to_server(self, command: str, args: list[str], env=None):
             
