@@ -48,7 +48,10 @@ const ChatInterface = ({
             return prev + data.text;
           });
         } else if (data.type == "error") {
-          toast.error(data.error);
+          toast.error("Error: " + data.error, {
+            closeButton: true,
+            duration: 3600 * 1000, // set super large duration to make it not auto dismiss
+          });
         }
       } catch (error) {
         console.error("Error parsing JSON:", error);

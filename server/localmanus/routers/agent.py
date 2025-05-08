@@ -126,15 +126,11 @@ async def chat(request: Request):
     except Exception as e:
         traceback.print_exc()
         error_message = f"An unexpected error occurred: {str(e)}"
-        ws = active_websockets.get(session_id)
-        if ws:
-            try:
-                await ws.send_text(json.dumps({
-                    'type': 'error',
-                    'error': error_message
-                }))
-            except Exception as ws_error:
-                print(f"Error sending error message to websocket: {ws_error}")
+        await send_to_websocket(session_id, {
+            'type': 'error',
+            'error': error_message
+        })
+        
         raise HTTPException(
             status_code=500,
             detail=error_message

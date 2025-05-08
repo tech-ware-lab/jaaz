@@ -26,6 +26,7 @@ import { exampleMessages } from "./exampleMessages";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useTheme } from "@/components/theme-provider";
 import WorkspaceSidebar from "./WorkspaceSidebar";
+import { Toaster } from "sonner";
 
 function Home() {
   const [agentState, setAgentState] = useState(EAgentState.IDLE);
@@ -117,6 +118,7 @@ function App() {
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </div>
+        <Toaster />
       </ThemeProvider>
     </BrowserRouter>
   );
