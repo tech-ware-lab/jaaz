@@ -1,4 +1,3 @@
-flask
+fastapi
 gunicorn
-flask-socketio
 toml

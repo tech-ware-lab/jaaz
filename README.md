@@ -1,6 +1,6 @@
 local manus 桌面版
 
-## environment 
+## environment
 
 `cd react && npm i`
 
@@ -17,4 +17,4 @@ playwright install
 ## Development
 
 `cd react && npm run dev`
-`cd server && python localmanus/main.py`
+`cd server && python main.py`
