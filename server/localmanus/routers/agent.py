@@ -46,22 +46,23 @@ async def chat(request: Request):
     # Create a copy of the list to avoid modification during iteration
     websockets_to_remove = []
     try:
+        print('👉llm.max_tokens', llm.max_tokens)
         stream = await llm.client.messages.create(
-            max_tokens=1024,
+            max_tokens=llm.max_tokens,
             messages=messages,
             model="claude-3-7-sonnet-latest",
             tools=list(chain.from_iterable(mcp_client.tools for mcp_client in mcp_clients.values())),
             stream=True,
         )
         final_content = []
-        content_block_dict = {}
+        cur_block = {}
         content_block_text = ''
         # cur_block_dict = None # 'text', 'tool_use'
         async for event in stream:
             print(event)
             if event.type == 'content_block_start' and event.content_block:
-                content_block_dict = event.content_block.dict()
-                print('content_block_dict', content_block_dict)
+                cur_block = event.content_block.dict()
+                print('cur_block', cur_block)
                 content_block_text = ''
             if hasattr(event, 'delta') and hasattr(event.delta, 'text'):
                 text = event.delta.text
@@ -71,8 +72,8 @@ async def chat(request: Request):
                 if ws:
                     try:
                         await ws.send_text(json.dumps({
-                            'type': 'text',
-                            'text': text
+                            'type': 'delta',
+                            'delta': text
                         }))
                     except Exception as e:
                         print(f"Error sending to websocket: {e}")
@@ -80,29 +81,24 @@ async def chat(request: Request):
             if hasattr(event, 'delta') and hasattr(event.delta, 'partial_json'):
                 content_block_text += event.delta.partial_json
             if event.type == 'content_block_stop':
-                print('👇✋content_block_stop', content_block_dict)
-                if content_block_dict.get('type') == 'text':
-                    content_block_dict['text'] = content_block_text
-                    if content_block_dict.get('citations') is None:
-                        del content_block_dict['citations']
+                print('👇✋cur_block', cur_block)
+                if cur_block.get('type') == 'text':
+                    cur_block['text'] = content_block_text
+                    if cur_block.get('citations') is None:
+                        del cur_block['citations']
+                    final_content.append(cur_block)
                 # tool use type
-                if content_block_dict.get('type') == 'tool_use':
+                elif cur_block.get('type') == 'tool_use':
                     print('🔨tool use content_block_text', content_block_text)
-                    content_block_dict['input'] = json.loads(content_block_text)
-                    tool_name = content_block_dict['name']
-                    tool_args = content_block_dict['input']
-                    await send_to_websocket(session_id, {
-                        'type': 'text',
-                        'text': f'🔨calling tool {tool_name} with args {tool_args}'
-                    })
+                    cur_block['input'] = json.loads(content_block_text)
+                    tool_name = cur_block['name']
+                    tool_args = cur_block['input']
+                    final_content.append(cur_block)
+                    await send_to_websocket(session_id, cur_block)
                     try:
                         mcp_client = mcp_tool_to_server_mapping[tool_name]
                         result = await mcp_client.session.call_tool(tool_name, tool_args)
-                        final_content.append({
-                            'type': 'tool_result',
-                            # 'tool_use_id': tool.id,
-                            'content': result.content
-                        })
+                        
                         await send_to_websocket(session_id, {
                             'type': 'text',
                             'text': f'👇tool result {result.content}'
@@ -115,7 +111,7 @@ async def chat(request: Request):
                             'error': str(e)
                         })
                 content_block_text = ''
-                final_content.append(content_block_dict)
+                final_content.append(cur_block)
             for ws in websockets_to_remove:
                 del active_websockets[ws]
         print('final_content', final_content)

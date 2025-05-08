@@ -11,6 +11,7 @@ class LLMClient:
         self.client = AsyncAnthropic(
             api_key=config.get("anthropic", {}).get("api_key"), 
         )
+        self.max_tokens = config.get("anthropic", {}).get("max_tokens", 6140)
 
     def reload_client(self):
         self.init_client()

@@ -43,9 +43,9 @@ const ChatInterface = ({
       console.log(event.data);
       try {
         const data = JSON.parse(event.data);
-        if (data.type == "text") {
+        if (data.type == "delta") {
           setStream((prev) => {
-            return prev + data.text;
+            return prev + data.delta;
           });
         } else if (data.type == "error") {
           toast.error("Error: " + data.error, {
