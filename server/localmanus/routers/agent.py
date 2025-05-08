@@ -45,87 +45,82 @@ async def chat(request: Request):
     
     # Create a copy of the list to avoid modification during iteration
     websockets_to_remove = []
-    
-    stream = await llm.client.messages.create(
-        max_tokens=1024,
-        messages=messages,
-        model="claude-3-7-sonnet-latest",
-        tools=list(chain.from_iterable(mcp_client.tools for mcp_client in mcp_clients.values())),
-        stream=True,
-    )
-    final_content = []
-    content_block_dict = {}
-    content_block_text = ''
-    async for event in stream:
-        print(event)
-        if event.type == 'content_block_start' and event.content_block:
-            content_block_dict = event.content_block.dict()
-            print('content_block_dict', content_block_dict)
-            content_block_text = ''
-        if hasattr(event, 'delta') and hasattr(event.delta, 'text'):
-            text = event.delta.text
-            content_block_text += text
-            # Send text to current ws session
-            ws = active_websockets.get(session_id)
-            if ws:
-                try:
-                    await ws.send_text(text)
-                except Exception as e:
-                    print(f"Error sending to websocket: {e}")
-                    websockets_to_remove.append(ws)
-        if hasattr(event, 'delta') and hasattr(event.delta, 'partial_json'):
-            content_block_text += event.delta.partial_json
-        if event.type == 'content_blockp_stop':
-            if content_block_dict.get('type') == 'text':
-                content_block_dict['text'] = content_block_text
-                if content_block_dict.get('citations') is None:
-                    del content_block_dict['citations']
-            # tool use type
-            if content_block_dict.get('type') == 'tool_use':
-                content_block_dict['input'] = json.loads(content_block_text)
-                tool_name = content_block_dict['name']
-                tool_args = content_block_dict['input']
-                result = await mcp_clients[tool_name].session.call_tool(tool_name, tool_args)
-                final_content.append({
-                    'type': 'tool_result',
-                    # 'tool_use_id': tool.id,
-                    'content': result.content
-                })
-            content_block_text = ''
-            final_content.append(content_block_dict)
-        for ws in websockets_to_remove:
-            del active_websockets[ws]
-    print('final_content', final_content)
-    return {"status": "1", "message": {
-        'role': 'assistant',
-        'content': final_content
-    }}
-
-    
-    # try:
-    #     message = await stream.get_final_message()
-    #     final_message = message.to_json()
-    #     final_content = []
-    #     # handle tool_use content type
-    #     for c in final_message.content:
-    #         if c.type == 'text':
-    #             final_content.append(c)
-    #         elif c.type == 'tool_use':
-    #             tool_name = c.name
-    #             tool_args = c.input
-    #             final_content.append(c)
-    #             result = await mcp_clients[tool_name].session.call_tool(tool_name, tool_args)
-    #             final_content.append({
-    #                 'type': 'tool_result',
-    #                 # 'tool_use_id': tool.id,
-    #                 'content': result.content
-    #             })
-    #     final_message.content = final_content
-    #     return {"status": "completed", "messages": messages.append(message)}
-    # except Exception as e:
-    #     traceback.print_exc()
-    #     print('final message', message)
-    #     return {"status": "completed", "messages": messages}
+    try:
+        stream = await llm.client.messages.create(
+            max_tokens=1024,
+            messages=messages,
+            model="claude-3-7-sonnet-latest",
+            tools=list(chain.from_iterable(mcp_client.tools for mcp_client in mcp_clients.values())),
+            stream=True,
+        )
+        final_content = []
+        content_block_dict = {}
+        content_block_text = ''
+        # cur_block_dict = None # 'text', 'tool_use'
+        async for event in stream:
+            print(event)
+            if event.type == 'content_block_start' and event.content_block:
+                content_block_dict = event.content_block.dict()
+                print('content_block_dict', content_block_dict)
+                content_block_text = ''
+            if hasattr(event, 'delta') and hasattr(event.delta, 'text'):
+                text = event.delta.text
+                content_block_text += text
+                # Send text to current ws session
+                ws = active_websockets.get(session_id)
+                if ws:
+                    try:
+                        await ws.send_text(text)
+                    except Exception as e:
+                        print(f"Error sending to websocket: {e}")
+                        websockets_to_remove.append(ws)
+            if hasattr(event, 'delta') and hasattr(event.delta, 'partial_json'):
+                content_block_text += event.delta.partial_json
+            if event.type == 'content_block_stop':
+                print('👇✋content_block_stop', content_block_dict)
+                if content_block_dict.get('type') == 'text':
+                    content_block_dict['text'] = content_block_text
+                    if content_block_dict.get('citations') is None:
+                        del content_block_dict['citations']
+                # tool use type
+                if content_block_dict.get('type') == 'tool_use':
+                    print('🔨tool use content_block_text', content_block_text)
+                    content_block_dict['input'] = json.loads(content_block_text)
+                    tool_name = content_block_dict['name']
+                    tool_args = content_block_dict['input']
+                    ws = active_websockets.get(session_id)
+                    if ws:
+                        await ws.send_text(f'👇calling tool {tool_name} with args {tool_args}')
+                    result = await mcp_clients[tool_name].session.call_tool(tool_name, tool_args)
+                    final_content.append({
+                        'type': 'tool_result',
+                        # 'tool_use_id': tool.id,
+                        'content': result.content
+                    })
+                    if ws:
+                        await ws.send_text(f'👇tool result {result.content}')
+                content_block_text = ''
+                final_content.append(content_block_dict)
+            for ws in websockets_to_remove:
+                del active_websockets[ws]
+        print('final_content', final_content)
+        return {"status": "1", "message": {
+            'role': 'assistant',
+            'content': final_content
+        }}
+    except Exception as e:
+        traceback.print_exc()
+        error_message = f"An unexpected error occurred: {str(e)}"
+        ws = active_websockets.get(session_id)
+        if ws:
+            try:
+                await ws.send_text(error_message)
+            except Exception as ws_error:
+                print(f"Error sending error message to websocket: {ws_error}")
+        raise HTTPException(
+            status_code=500,
+            detail=error_message
+        )
 
 # @router.get("/cancel")
 # async def cancel():
