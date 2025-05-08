@@ -4,3 +4,4 @@ anthropic
 mcp
 toml
 pyinstaller
+openai

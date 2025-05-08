@@ -6,9 +6,15 @@ import traceback
 from fastapi import APIRouter, Request, WebSocket, Query, HTTPException
 from fastapi.responses import FileResponse
 import asyncio
-from localmanus.services.agent_service import llm
+
+from openai import AsyncOpenAI, OpenAI
+from localmanus.services.agent_service import openai_client, anthropic_client, ollama_client
 from localmanus.services.mcp import MCPClient
 from itertools import chain
+from localmanus.services.config_service import config_service
+from starlette.websockets import WebSocketDisconnect
+
+llm_config = config_service.get_config()
 
 wsrouter = APIRouter()
 active_websockets = {}  # Changed to dictionary to store session_id -> websocket mapping
@@ -23,6 +29,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...))
             # Wait for messages (optional, if you need to receive from client)
             data = await websocket.receive_text()
             # Process the message if needed
+    except WebSocketDisconnect as e:
+        print(f"WebSocket disconnected: {e.code}, {e.reason}")
     except Exception as e:
         print(f"WebSocket error: {e}")
         traceback.print_exc()
@@ -30,25 +38,42 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...))
         if session_id in active_websockets:
             del active_websockets[session_id]
 
-
-router = APIRouter(prefix="/api")
-@router.post("/chat")
-async def chat(request: Request):
-    data = await request.json()
-    messages = data.get('messages')
-    session_id = data.get('session_id')
-    if session_id is None:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail="session_id is required"
+async def chat_openai(messages: list[dict], session_id: str):
+    stream = openai_client.responses.create(
+            model="gpt-4o",
+            input=messages,
+            stream=True,
         )
-    
+
+    for event in stream:
+        print(event)
+
+async def chat_ollama(messages: list[dict], session_id: str):
+    print('👇chat_ollama', messages)
+    client = OpenAI(
+        base_url = 'http://localhost:11434/v1',
+        api_key='ollama', # required, but unused
+    )
+
+    response = client.chat.completions.create(
+        model="qwen3:8b",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Who won the world series in 2020?"},
+            {"role": "assistant", "content": "The LA Dodgers won in 2020."},
+            {"role": "user", "content": "Where was it played?"}
+        ],
+        stream=True
+    )
+    for event in response:
+        print(event)
+
+async def chat_anthropic(messages: list[dict], session_id: str):
     # Create a copy of the list to avoid modification during iteration
     websockets_to_remove = []
     try:
-        print('👉llm.max_tokens', llm.max_tokens)
-        stream = await llm.client.messages.create(
-            max_tokens=llm.max_tokens,
+        stream = await anthropic_client.messages.create(
+            max_tokens=llm_config.get("anthropic", {}).get("max_tokens", 6140),
             messages=messages,
             model="claude-3-7-sonnet-latest",
             tools=list(chain.from_iterable(mcp_client.tools for mcp_client in mcp_clients.values())),
@@ -131,6 +156,26 @@ async def chat(request: Request):
             status_code=500,
             detail=error_message
         )
+router = APIRouter(prefix="/api")
+@router.post("/chat")
+async def chat(request: Request):
+    data = await request.json()
+    messages = data.get('messages')
+    session_id = data.get('session_id')
+    provider = data.get('provider', 'ollama')
+    if session_id is None:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail="session_id is required"
+        )
+    if provider == 'openai':
+        await chat_openai(messages, session_id)
+    elif provider == 'anthropic':
+        await chat_anthropic(messages, session_id)
+    elif provider == 'ollama':
+        await chat_ollama(messages, session_id)
+    
+
 
 async def send_to_websocket(session_id: str, event:dict):
     ws = active_websockets.get(session_id)

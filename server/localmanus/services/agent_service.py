@@ -1,17 +1,30 @@
 import asyncio
-from localmanus.services.config_service import config_service
+from .config_service import config_service
 from anthropic import AsyncAnthropic
+from openai import AsyncOpenAI
+
+llm_config = config_service.get_config()
+print('llm_config', llm_config)
+openai_client = AsyncOpenAI(
+    api_key=llm_config.get("openai", {}).get("api_key", ""),
+)
+anthropic_client = AsyncAnthropic(
+    api_key=llm_config.get("anthropic", {}).get("api_key", ""),
+)
+ollama_client = AsyncOpenAI(
+    base_url = llm_config.get("ollama", {}).get("url", "http://localhost:11434").rstrip('/') + '/v1',
+    api_key='ollama', # required, but unused
+)
 
 class LLMClient:
     def __init__(self):
         self.init_client()
 
     def init_client(self):
-        config = config_service.get_config()
         self.client = AsyncAnthropic(
-            api_key=config.get("anthropic", {}).get("api_key"), 
+            api_key=llm_config.get("anthropic", {}).get("api_key"), 
         )
-        self.max_tokens = config.get("anthropic", {}).get("max_tokens", 6140)
+        self.max_tokens = llm_config.get("anthropic", {}).get("max_tokens", 6140)
 
     def reload_client(self):
         self.init_client()
