@@ -75,7 +75,7 @@ async def chat(request: Request):
                     websockets_to_remove.append(ws)
         if hasattr(event, 'delta') and hasattr(event.delta, 'partial_json'):
             content_block_text += event.delta.partial_json
-        if event.type == 'content_block_stop':
+        if event.type == 'content_blockp_stop':
             if content_block_dict.get('type') == 'text':
                 content_block_dict['text'] = content_block_text
                 if content_block_dict.get('citations') is None:
@@ -147,7 +147,7 @@ USER_DATA_DIR = os.getenv("USER_DATA_DIR", os.path.join(os.path.dirname(os.path.
 
 mcp_clients: dict[str, MCPClient] = {}
 mcp_clients_status = {}
-mcp_tool_to_server_mapping = {}
+mcp_tool_to_server_mapping: dict[str, MCPClient] = {}
 async def initialize_mcp():
     print('👇initializing mcp')
     mcp_config_path = os.path.join(USER_DATA_DIR, "mcp.json")
@@ -158,9 +158,9 @@ async def initialize_mcp():
     global mcp_clients
     global mcp_clients_status
     global mcp_tool_to_server_mapping
-    mcp_clients = json_data.get('mcpServers', {})
+    mcp_clients_json: dict[str, dict] = json_data.get('mcpServers', {})
     
-    for server_name, server in list(mcp_clients.items()):
+    for server_name, server in list(mcp_clients_json.items()):
         if server.get('command') is None:
             continue
         if server.get('args') is None:
@@ -178,7 +178,7 @@ async def initialize_mcp():
             }
             print('👇mcp_client connected', server_name, 'tools', len(mcp_client.tools))
             for tool in mcp_client.tools:
-                mcp_tool_to_server_mapping[tool.name] = server_name
+                mcp_tool_to_server_mapping[tool['name']] = server_name
             mcp_clients[server_name] = mcp_client
         except Exception as e:
             print(f"Error connecting to MCP server {server_name}: {e}")
