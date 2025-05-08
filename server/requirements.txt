@@ -5,3 +5,4 @@ mcp
 toml
 pyinstaller
 openai
+ollama

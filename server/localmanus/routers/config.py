@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from localmanus.services.config_service import config_service
-from localmanus.services.agent_service import llm
+from localmanus.services.agent_service import llm_reload_clients
 
 router = APIRouter(prefix="/api/config")
 
@@ -16,5 +16,5 @@ async def get_config():
 async def update_config(request: Request):
     data = await request.json()
     res = await config_service.update_config(data) 
-    llm.reload_client()
+    llm_reload_clients()
     return res

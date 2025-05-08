@@ -13,6 +13,7 @@ from localmanus.services.mcp import MCPClient
 from itertools import chain
 from localmanus.services.config_service import config_service
 from starlette.websockets import WebSocketDisconnect
+from ollama import ChatResponse
 
 llm_config = config_service.get_config()
 
@@ -38,8 +39,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...))
         if session_id in active_websockets:
             del active_websockets[session_id]
 
-async def chat_openai(messages: list[dict], session_id: str):
-    stream = openai_client.responses.create(
+async def chat_openai(messages: list, session_id: str):
+    stream = openai_client.client.chat.completions.create(
             model="gpt-4o",
             input=messages,
             stream=True,
@@ -48,35 +49,28 @@ async def chat_openai(messages: list[dict], session_id: str):
     for event in stream:
         print(event)
 
-async def chat_ollama(messages: list[dict], session_id: str):
+async def chat_ollama(messages: list, session_id: str):
     print('👇chat_ollama', messages)
-    client = OpenAI(
-        base_url = 'http://localhost:11434/v1',
-        api_key='ollama', # required, but unused
-    )
+    print('tools', ollama_client.tools)
 
-    response = client.chat.completions.create(
+    response = ollama_client.client.chat(
         model="qwen3:8b",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "Who won the world series in 2020?"},
-            {"role": "assistant", "content": "The LA Dodgers won in 2020."},
-            {"role": "user", "content": "Where was it played?"}
-        ],
+        messages=messages,
+        tools=ollama_client.tools,
         stream=True
     )
     for event in response:
         print(event)
 
-async def chat_anthropic(messages: list[dict], session_id: str):
+async def chat_anthropic(messages: list, session_id: str):
     # Create a copy of the list to avoid modification during iteration
     websockets_to_remove = []
     try:
-        stream = await anthropic_client.messages.create(
+        stream = await anthropic_client.client.messages.create(
             max_tokens=llm_config.get("anthropic", {}).get("max_tokens", 6140),
             messages=messages,
             model="claude-3-7-sonnet-latest",
-            tools=list(chain.from_iterable(mcp_client.tools for mcp_client in mcp_clients.values())),
+            tools=anthropic_client.tools,
             stream=True,
         )
         final_content = []
@@ -237,6 +231,18 @@ async def initialize_mcp():
             print('👇mcp_client connected', server_name, 'tools', len(mcp_client.tools))
             for tool in mcp_client.tools:
                 mcp_tool_to_server_mapping[tool['name']] = mcp_client
+                print('tool', tool)
+                openai_client.tools.append(tool)
+                anthropic_client.tools.append(tool)
+                ollama_client.tools.append({
+                    'type': 'function',
+                    'function': {
+                        'name': tool['name'],
+                        'description': tool['description'],
+                        'parameters': tool['input_schema']
+                    }
+                })
+
             mcp_clients[server_name] = mcp_client
         except Exception as e:
             print(f"Error connecting to MCP server {server_name}: {e}")
