@@ -6,8 +6,9 @@ import traceback
 from fastapi import APIRouter, Request, WebSocket, Query, HTTPException
 from fastapi.responses import FileResponse
 import asyncio
-
+import aiohttp
 from openai import AsyncOpenAI, OpenAI
+import requests
 from localmanus.services.agent_service import openai_client, anthropic_client, ollama_client
 from localmanus.services.mcp import MCPClient
 from itertools import chain
@@ -40,27 +41,65 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...))
             del active_websockets[session_id]
 
 async def chat_openai(messages: list, session_id: str):
-    stream = openai_client.client.chat.completions.create(
+    stream = await openai_client.client.chat.completions.create(
             model="gpt-4o",
-            input=messages,
+            messages=messages,
+            tools=openai_client.tools,
             stream=True,
         )
 
-    for event in stream:
-        print(event)
+    async for event in stream:
+        choice = event.choices[0]
+        print(event.choices[0])
+        if hasattr(choice, 'delta') and hasattr(choice.delta, 'content') and choice.delta.content is not None:
+            await send_to_websocket(session_id, {
+                'type': 'delta',
+                'text': choice.delta.content
+            })
+        elif choice.delta.tool_calls is not None:
+            for tool_call in choice.delta.tool_calls:
+                if tool_call.function.name is not None:
+                    await send_to_websocket(session_id, {
+                        'type': 'tool_call',
+                        'text': tool_call.function.name
+                    })
+                if tool_call.function.arguments is not None:
+                    await send_to_websocket(session_id, {
+                        'type': 'tool_call_arguments',
+                        'text': tool_call.function.arguments
+                    })
 
 async def chat_ollama(messages: list, session_id: str):
     print('👇chat_ollama', messages)
-    print('tools', ollama_client.tools)
-
-    response = ollama_client.client.chat(
-        model="qwen3:8b",
-        messages=messages,
-        tools=ollama_client.tools,
-        stream=True
-    )
-    for event in response:
-        print(event)
+    url = ollama_client.url + "/api/chat"
+    
+    # Prepare the request payload
+    payload = {
+        "model": "qwen3:30b-a3b",
+        "messages": messages,
+        "tools": ollama_client.tools,
+        "stream": True
+    }
+    try:
+    
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload) as response:
+                async for line in response.content:
+                    if line:
+                        # Parse the JSON response
+                        chunk = json.loads(line)
+                        print('👇chunk', chunk)
+                        # Send the chunk through websocket
+                        await send_to_websocket(session_id, {
+                            'type': 'delta',
+                            'delta': chunk.get('message', {}).get('content', '')
+                        })
+    except Exception as e:
+        traceback.print_exc()
+        await send_to_websocket(session_id, {
+            'type': 'error',
+            'error': str(e)
+        })
 
 async def chat_anthropic(messages: list, session_id: str):
     # Create a copy of the list to avoid modification during iteration
@@ -156,7 +195,7 @@ async def chat(request: Request):
     data = await request.json()
     messages = data.get('messages')
     session_id = data.get('session_id')
-    provider = data.get('provider', 'ollama')
+    provider = data.get('provider', 'openai')
     if session_id is None:
         raise HTTPException(
             status_code=400,  # Bad Request
@@ -232,7 +271,14 @@ async def initialize_mcp():
             for tool in mcp_client.tools:
                 mcp_tool_to_server_mapping[tool['name']] = mcp_client
                 print('tool', tool)
-                openai_client.tools.append(tool)
+                openai_client.tools.append({
+                    'type': 'function',
+                    'function': {
+                        'name': tool['name'],
+                        'description': tool['description'],
+                        'parameters': tool['input_schema']
+                    }
+                })
                 anthropic_client.tools.append(tool)
                 ollama_client.tools.append({
                     'type': 'function',

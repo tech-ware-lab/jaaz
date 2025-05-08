@@ -6,3 +6,4 @@ toml
 pyinstaller
 openai
 ollama
+aiohttp

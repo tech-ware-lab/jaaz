@@ -24,13 +24,14 @@ class AnthropicLLM:
 class OllamaLLM:
     tools: list[dict] = []
     max_tokens: int = llm_config.get("ollama", {}).get("max_tokens", 6140)
-    # client: AsyncOpenAI = AsyncOpenAI(
-    #     base_url = llm_config.get("ollama", {}).get("url", "http://localhost:11434").rstrip('/') + '/v1',
-    #     api_key='ollama', # required, but unused
-    # )
-    client: Client = Client(
-        host='http://localhost:11434', 
+    client: AsyncOpenAI = AsyncOpenAI(
+        base_url = llm_config.get("ollama", {}).get("url", "http://localhost:11434").rstrip('/') + '/v1',
+        api_key='ollama', # required, but unused
     )
+    url = llm_config.get("ollama", {}).get("url", "http://localhost:11434")
+    # client: Client = Client(
+    #     host='http://localhost:11434', 
+    # )
     
 openai_client = OpenAILLM()
 anthropic_client = AnthropicLLM()

@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { EAgentState, Message, MessageGroup, ToolCall } from "./types/types";
+import {
+  EAgentState,
+  Message,
+  MessageContent,
+  MessageGroup,
+  ToolCall,
+} from "./types/types";
 import { Button } from "./components/ui/button";
 import { SendIcon, SquareIcon, StopCircleIcon } from "lucide-react";
 import { Badge } from "./components/ui/badge";
@@ -43,11 +49,46 @@ const ChatInterface = ({
       console.log(event.data);
       try {
         const data = JSON.parse(event.data);
-        if (data.type == "delta") {
-          setStream((prev) => {
-            return prev + data.delta;
-          });
-        } else if (data.type == "error") {
+
+        setMessages((prev) => {
+          const copy = structuredClone(prev);
+          if (copy.at(-1)?.role == "user") {
+            copy.push({
+              role: "assistant",
+              content: [],
+            });
+          }
+          const lastMessage = copy.at(-1);
+          const lastMessageContent = lastMessage?.content.at(-1);
+          if (data.type == "delta") {
+            if (lastMessageContent?.type == "text") {
+              lastMessageContent.text += data.text;
+            } else {
+              lastMessage?.content.push({
+                type: "text",
+                text: data.text,
+              });
+            }
+          }
+          // } else if (data.type == "tool_call") {
+          //   lastMessage.content.push({
+          //     id: data.id,
+          //     type: "function",
+          //     function: {
+          //       name: data.text,
+          //       arguments: "",
+          //     },
+          //   });
+          // } else if (data.type == "tool_call_arguments") {
+          //   const lastMessageContent = lastMessage.content.at(-1);
+          //   if (lastMessageContent?.type == "function") {
+          //     lastMessageContent.function.arguments += data.text;
+          //   }
+          // }
+
+          return copy;
+        });
+        if (data.type == "error") {
           toast.error("Error: " + data.error, {
             closeButton: true,
             duration: 3600 * 1000, // set super large duration to make it not auto dismiss
@@ -79,7 +120,12 @@ const ChatInterface = ({
     const newMessages = messages.concat([
       {
         role: "user",
-        content: prompt,
+        content: [
+          {
+            type: "text",
+            text: prompt,
+          },
+        ],
       },
     ]);
     setMessages(newMessages);
@@ -156,38 +202,28 @@ const ChatInterface = ({
                   } flex flex-col`}
                 >
                   {/* Regular message content */}
-                  {message.content && (
-                    <div
-                      className={`break-all ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left"
-                          : "text-gray-800 dark:text-gray-200 text-left"
-                      }`}
-                    >
-                      <Markdown>{message.content}</Markdown>
-                    </div>
-                  )}
-
-                  {/* Tool calls */}
-                  {message.tool_calls && message.tool_calls.length > 0 && (
-                    <div className="flex flex-col items-start">
-                      {message.tool_calls.map((toolCall, i) => (
-                        <ToolCallTag key={i} toolCall={toolCall} />
-                      ))}
-                    </div>
-                  )}
+                  {message.content.map((content, i) => {
+                    if (content.type == "text") {
+                      return (
+                        <div
+                          key={i}
+                          className={`break-all ${
+                            message.role === "user"
+                              ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left"
+                              : "text-gray-800 dark:text-gray-200 text-left"
+                          }`}
+                        >
+                          <Markdown>{content.text}</Markdown>
+                        </div>
+                      );
+                    } else if (content.type == "function") {
+                      return <ToolCallTag key={i} toolCall={content} />;
+                    }
+                  })}
                 </div>
               </div>
             </div>
           ))}
-          {stream && (
-            <div
-              className="text-gray-800 dark:text-gray-200 text-left"
-              // style={{ whiteSpace: "pre-wrap" }}
-            >
-              <Markdown>{stream}</Markdown>
-            </div>
-          )}
         </div>
       </div>
 

@@ -1,19 +1,22 @@
 export type ToolCall = {
   id: string;
-  type: string;
+  type: "function";
   function: {
     name: string;
     arguments: string;
   };
 };
-
+export type MessageContent =
+  | { text: string; type: "text" }
+  | { image_url: string; type: "image_url" }
+  | ToolCall;
 export type Message = {
   role: string;
-  content?: string;
-  base64_image?: string;
-  tool_calls?: ToolCall[];
-  name?: string;
-  tool_call_id?: string;
+  content: MessageContent[];
+  // base64_image?: string;
+  // tool_calls?: ToolCall[];
+  // name?: string;
+  // tool_call_id?: string;
 };
 
 export interface MessageGroup {
