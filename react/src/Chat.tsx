@@ -6,6 +6,7 @@ import { Badge } from "./components/ui/badge";
 import { Textarea } from "./components/ui/textarea";
 import { nanoid } from "nanoid";
 import { Markdown } from "./components/Markdown";
+import { toast } from "sonner";
 
 const FOOTER_HEIGHT = 170; // Adjust this value as needed
 
@@ -40,10 +41,18 @@ const ChatInterface = ({
     socket.addEventListener("message", (event) => {
       // const data = JSON.parse(event.data);
       console.log(event.data);
-      setStream((prev) => {
-        // console.log("prev", prev);
-        return prev + event.data;
-      });
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type == "text") {
+          setStream((prev) => {
+            return prev + data.text;
+          });
+        } else if (data.type == "error") {
+          toast.error(data.error);
+        }
+      } catch (error) {
+        console.error("Error parsing JSON:", error);
+      }
     });
 
     socket.addEventListener("close", (event) => {

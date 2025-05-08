@@ -70,7 +70,10 @@ async def chat(request: Request):
                 ws = active_websockets.get(session_id)
                 if ws:
                     try:
-                        await ws.send_text(text)
+                        await ws.send_text(json.dumps({
+                            'type': 'text',
+                            'text': text
+                        }))
                     except Exception as e:
                         print(f"Error sending to websocket: {e}")
                         websockets_to_remove.append(ws)
@@ -88,17 +91,29 @@ async def chat(request: Request):
                     content_block_dict['input'] = json.loads(content_block_text)
                     tool_name = content_block_dict['name']
                     tool_args = content_block_dict['input']
-                    ws = active_websockets.get(session_id)
-                    if ws:
-                        await ws.send_text(f'👇calling tool {tool_name} with args {tool_args}')
-                    result = await mcp_clients[tool_name].session.call_tool(tool_name, tool_args)
-                    final_content.append({
-                        'type': 'tool_result',
-                        # 'tool_use_id': tool.id,
-                        'content': result.content
+                    await send_to_websocket(session_id, {
+                        'type': 'text',
+                        'text': f'🔨calling tool {tool_name} with args {tool_args}'
                     })
-                    if ws:
-                        await ws.send_text(f'👇tool result {result.content}')
+                    try:
+                        mcp_client = mcp_tool_to_server_mapping[tool_name]
+                        result = await mcp_client.session.call_tool(tool_name, tool_args)
+                        final_content.append({
+                            'type': 'tool_result',
+                            # 'tool_use_id': tool.id,
+                            'content': result.content
+                        })
+                        await send_to_websocket(session_id, {
+                            'type': 'text',
+                            'text': f'👇tool result {result.content}'
+                        })
+                    except Exception as e:
+                        print(f"Error calling tool {tool_name}: {e}")
+                        traceback.print_exc()
+                        await send_to_websocket(session_id, {
+                            'type': 'error',
+                            'error': str(e)
+                        })
                 content_block_text = ''
                 final_content.append(content_block_dict)
             for ws in websockets_to_remove:
@@ -114,7 +129,10 @@ async def chat(request: Request):
         ws = active_websockets.get(session_id)
         if ws:
             try:
-                await ws.send_text(error_message)
+                await ws.send_text(json.dumps({
+                    'type': 'error',
+                    'error': error_message
+                }))
             except Exception as ws_error:
                 print(f"Error sending error message to websocket: {ws_error}")
         raise HTTPException(
@@ -122,6 +140,14 @@ async def chat(request: Request):
             detail=error_message
         )
 
+async def send_to_websocket(session_id: str, event:dict):
+    ws = active_websockets.get(session_id)
+    if ws:
+        try:
+            await ws.send_text(json.dumps(event))
+        except Exception as e:
+            print(f"Error sending to websocket: {e}")
+            traceback.print_exc()
 # @router.get("/cancel")
 # async def cancel():
 #     agent_service.cancel_event.set()
@@ -173,7 +199,7 @@ async def initialize_mcp():
             }
             print('👇mcp_client connected', server_name, 'tools', len(mcp_client.tools))
             for tool in mcp_client.tools:
-                mcp_tool_to_server_mapping[tool['name']] = server_name
+                mcp_tool_to_server_mapping[tool['name']] = mcp_client
             mcp_clients[server_name] = mcp_client
         except Exception as e:
             print(f"Error connecting to MCP server {server_name}: {e}")
