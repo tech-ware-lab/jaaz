@@ -57,63 +57,6 @@ const ChatInterface = ({
       try {
         const data = JSON.parse(event.data);
 
-        setMessages((prev) => {
-          const copy = structuredClone(prev);
-          if (copy.at(-1)?.role == "user") {
-            copy.push({
-              role: "assistant",
-              content: [],
-            });
-          }
-          const lastMessage = copy.at(-1);
-          const lastMessageContent = lastMessage?.content?.at(-1);
-          if (data.type == "log") {
-            console.log(data);
-          }
-          if (data.type == "delta") {
-            if (lastMessageContent?.type == "text") {
-              lastMessageContent.text += data.text;
-            } else {
-              lastMessage?.content?.push({
-                type: "text",
-                text: data.text,
-              });
-            }
-          } else if (data.type == "tool_call") {
-            setExpandingToolCalls([...expandingToolCalls, data.id]);
-            lastMessage?.content?.push({
-              id: data.id,
-              type: "function",
-              name: data.name,
-              inputs: "",
-            });
-          } else if (data.type == "tool_call_arguments") {
-            const lastMessageContent = lastMessage?.content.at(-1);
-            if (
-              lastMessageContent?.type == "function" &&
-              lastMessageContent.id == data.id
-            ) {
-              lastMessageContent.inputs += data.text;
-            }
-          } else if (data.type == "tool_call_result") {
-            const res: {
-              id: string;
-              content: {
-                text: string;
-              }[];
-            } = data;
-            copy.push({
-              role: "user",
-              content: res.content.map((content) => ({
-                ...content,
-                type: "tool_result",
-                tool_use_id: res.id,
-              })),
-            });
-          }
-
-          return copy;
-        });
         if (data.type == "error") {
           toast.error("Error: " + data.error, {
             closeButton: true,
@@ -121,6 +64,69 @@ const ChatInterface = ({
             style: {
               color: "red",
             },
+          });
+        } else if (data.type == "info") {
+          toast.info(data.info, {
+            closeButton: true,
+            duration: 10 * 1000,
+          });
+        } else {
+          setMessages((prev) => {
+            const copy = structuredClone(prev);
+            if (copy.at(-1)?.role == "user") {
+              copy.push({
+                role: "assistant",
+                content: [],
+              });
+            }
+            const lastMessage = copy.at(-1);
+            const lastMessageContent = lastMessage?.content?.at(-1);
+            if (data.type == "log") {
+              console.log(data);
+            }
+            if (data.type == "delta") {
+              if (lastMessageContent?.type == "text") {
+                lastMessageContent.text += data.text;
+              } else {
+                lastMessage?.content?.push({
+                  type: "text",
+                  text: data.text,
+                });
+              }
+            } else if (data.type == "tool_call") {
+              setExpandingToolCalls([...expandingToolCalls, data.id]);
+              lastMessage?.content?.push({
+                id: data.id,
+                type: "function",
+                name: data.name,
+                inputs: "",
+              });
+            } else if (data.type == "tool_call_arguments") {
+              const lastMessageContent = lastMessage?.content.at(-1);
+              if (
+                lastMessageContent?.type == "function" &&
+                lastMessageContent.id == data.id
+              ) {
+                lastMessageContent.inputs += data.text;
+              }
+            } else if (data.type == "tool_call_result") {
+              const res: {
+                id: string;
+                content: {
+                  text: string;
+                }[];
+              } = data;
+              copy.push({
+                role: "user",
+                content: res.content.map((content) => ({
+                  ...content,
+                  type: "tool_result",
+                  tool_use_id: res.id,
+                })),
+              });
+            }
+
+            return copy;
           });
         }
       } catch (error) {

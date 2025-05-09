@@ -47,22 +47,28 @@ class ToolCall:
         self.name = name
         self.arguments = arguments
 
-# SYSTEM_TOOLS = [
-#     {
-#         "type": "function",
-#         "function": {
-#             "name": "finish_task",
-#             "description": "Finish the task",
-#             "parameters": {
-#                 "type": "object",
-#                 "properties": {
-#                     "summary": {"type": "string"}
-#                 }
-#             }
-#         }
-#     }
-# ]
-
+SYSTEM_TOOLS_MAPPING = {
+    'finish': ""
+}
+SYSTEM_TOOLS = [
+        {
+            "type": "function",
+            "function": {
+                "name": "finish",
+                "description": "You MUST call this tool when you think the task is finished or you think you can't do anything more. Otherwise, you will be continuously asked to do more about this task indefinitely. Calling this tool will end your turn on this task and hand it over to the user for further instructions.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {
+                            "type": "string",
+                            "description": "A optional summary of the task that you have finished. Or some note to inform the user about the task."
+                        }
+                    },
+                    "required": [],
+                },
+            }
+        }
+    ]
 
 async def chat_openai(messages: list, session_id: str) -> list:
     await send_to_websocket(session_id, {
@@ -72,7 +78,7 @@ async def chat_openai(messages: list, session_id: str) -> list:
     payload = {
         "model": "claude-3-7-sonnet-20250219",
         "messages": messages,
-        "tools": openai_client.tools,
+        "tools": SYSTEM_TOOLS + openai_client.tools,
         "stream": True
     }
     try:
@@ -134,6 +140,8 @@ async def chat_openai(messages: list, session_id: str) -> list:
                                                 'id': cur_tool_calls[-1].id,
                                                 'text': delta # delta
                                             })
+                                elif chunk.get('error'):
+                                    raise Exception(chunk.get('error').get('message'))
 
                             # Handle [DONE] marker in SSE
                             elif line_str == 'data: [DONE]':
@@ -174,31 +182,34 @@ async def chat_openai(messages: list, session_id: str) -> list:
                         # append tool call result to messages of user
                         if result is not None:
                             messages.append(result)
-                # if messages[-1].get('role') == 'assistant':
-                #     messages.append({
-                #         'role': 'user',
-                #         'content': [{
-                #             'type': 'text',
-                #             'text': 'Do you think this task is finished?'
-                #         }]
-                #     })
+                # Has Error
                 if combine != '':
-                    try:
-                        data = json.loads(combine)
-                        if data.get('error') and data.get('error').get('message'):
-                            await send_to_websocket(session_id, {
-                                'type': 'error',
-                                'error': data.get('error').get('message')
-                            })
+                        data = None
+                        try:
+                            data = json.loads(combine)
+                        except Exception as e:
+                            pass
+                        if data and data.get('error') and data.get('error').get('message'):
+                            if data['error'].get('code') == 'rate_limit_error':
+                                print('👇rate_limit_error, sleeping 10 seconds')
+                                await send_to_websocket(session_id, {
+                                    'type': 'info', 
+                                    'info': f'Hit rate limit, waiting 10 seconds before continue. {data.get("error").get("message")} Please wait for 10 seconds...'
+                                })
+                                await asyncio.sleep(10)
+                            else:
+                                raise Exception(data.get('error').get('message'))
                         else:
                             # alert info
                             await send_to_websocket(session_id, {
                                 'type': 'info', 
                                 'info': combine
                             })
-                    except Exception as e:
-                        traceback.print_exc()
-                        print(f"Error parsing JSON: {e}")
+             
+                if messages[-1].get('role') == 'assistant' and messages[-1].get('tool_calls') and messages[-1]['tool_calls'][-1].get('function', {}).get('name') == 'finish':
+                    print('👇finish', messages[-1])
+                else:
+                    await chat_openai(messages, session_id)
     except Exception as e:
         traceback.print_exc()
         await send_to_websocket(session_id, {
@@ -209,6 +220,8 @@ async def chat_openai(messages: list, session_id: str) -> list:
 
 async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session_id: str):
     try:
+        if tool_name in SYSTEM_TOOLS_MAPPING:
+            return None
         args_json = json.loads(args_str)
         print('🦄executing tool', tool_name, args_json)
         mcp_client = mcp_tool_to_server_mapping[tool_name]
@@ -397,9 +410,7 @@ async def chat(request: Request):
             detail="session_id is required"
         )
     if provider == 'openai':
-        for i in range(5):
-            print('⭐️⭐️round', i)
-            messages = await chat_openai(messages, session_id)
+        await chat_openai(messages, session_id)
     elif provider == 'anthropic':
         await chat_anthropic(messages, session_id)
     elif provider == 'ollama':
