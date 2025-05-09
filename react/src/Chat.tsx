@@ -67,6 +67,9 @@ const ChatInterface = ({
           }
           const lastMessage = copy.at(-1);
           const lastMessageContent = lastMessage?.content?.at(-1);
+          if (data.type == "log") {
+            console.log(data);
+          }
           if (data.type == "delta") {
             if (lastMessageContent?.type == "text") {
               lastMessageContent.text += data.text;
