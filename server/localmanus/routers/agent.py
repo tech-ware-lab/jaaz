@@ -47,7 +47,7 @@ class ToolCall:
         self.name = name
         self.arguments = arguments
 
-async def chat_openai(messages: list, session_id: str):
+async def chat_openai(messages: list, session_id: str) -> list:
     payload = {
         "model": "gpt-4o",
         "messages": messages,
@@ -62,7 +62,7 @@ async def chat_openai(messages: list, session_id: str):
             }
             async with session.post(openai_client.url + "/chat/completions", json=payload, headers=headers) as response:
                 combine = ''
-                cur_tool_call:Optional[ToolCall] = None
+                cur_tool_calls:list[ToolCall] = []
                 async for line in response.content:
                     if line:
                         # Parse the JSON response
@@ -72,7 +72,7 @@ async def chat_openai(messages: list, session_id: str):
                             if not line_str:  # Skip empty lines
                                 continue
                             print('👇raw line:', line_str)
-                            # Handle SSE format (remove the "data: " prefix)
+                            # Handle SSE updates
                             if line_str.startswith('data: {'):
                                 line_str = line_str[6:]  # Remove "data: " prefix
                                 chunk = json.loads(line_str) # Parse the JSON
@@ -82,35 +82,33 @@ async def chat_openai(messages: list, session_id: str):
                                     delta = chunk['choices'][0].get('delta', {})
                                     print('👇delta', delta)
                                     content = delta.get('content', '')
+                                    # text delta
                                     if content:
                                         await send_to_websocket(session_id, {
                                             'type': 'delta',
                                             'text': content
                                         })
+                                    # tool calls
                                     tool_calls = delta.get('tool_calls', [])
                                     for tool_call in tool_calls:
                                         tool_call_id = tool_call.get('id')
                                         tool_call_name = tool_call.get('function', {}).get('name')
                                         if tool_call_id and tool_call_name:
-                                            if cur_tool_call is not None:
-                                                # tool call args complete, execute tool call
-                                                await execute_tool(cur_tool_call.id, cur_tool_call.name, cur_tool_call.arguments, session_id)
-                                                # reset tool call id and arguments
-                                                cur_tool_call = None
                                             # tool call start
-                                            cur_tool_call = ToolCall(tool_call_id, tool_call_name, '')
+                                            cur_tool_calls.append(ToolCall(tool_call_id, tool_call_name, ''))
                                             print('🦄tool_call', tool_call_id, tool_call_name)
+
                                             await send_to_websocket(session_id, {
                                                 'type': 'tool_call',
                                                 'id': tool_call_id,
                                                 'name': tool_call_name
                                             })
-                                        elif tool_call.get('function', {}).get('arguments', '') and cur_tool_call is not None:
+                                        elif tool_call.get('function', {}).get('arguments', '') and len(cur_tool_calls) > 0:
                                             delta = tool_call.get('function', {}).get('arguments', '')
-                                            cur_tool_call.arguments += delta
+                                            cur_tool_calls[-1].arguments += delta
                                             await send_to_websocket(session_id, {
                                                 'type': 'tool_call_arguments',
-                                                'id': cur_tool_call.id,
+                                                'id': cur_tool_calls[-1].id,
                                                 'text': delta # delta
                                             })
 
@@ -124,9 +122,9 @@ async def chat_openai(messages: list, session_id: str):
                         except Exception as e:
                             traceback.print_exc()
                 print('👇combine', combine)
-                if cur_tool_call is not None:
+                for tool_call in cur_tool_calls:
                     # tool call args complete, execute tool call
-                    await execute_tool(cur_tool_call.id, cur_tool_call.name, cur_tool_call.arguments, session_id)
+                    await execute_tool(tool_call.id, tool_call.name, tool_call.arguments, session_id)
 
                 if combine != '':
                     try:
@@ -336,7 +334,8 @@ async def chat(request: Request):
             detail="session_id is required"
         )
     if provider == 'openai':
-        await chat_openai(messages, session_id)
+        for i in range(4):
+            messages = await chat_openai(messages, session_id)
     elif provider == 'anthropic':
         await chat_anthropic(messages, session_id)
     elif provider == 'ollama':
