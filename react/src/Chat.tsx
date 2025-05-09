@@ -69,22 +69,21 @@ const ChatInterface = ({
                 text: data.text,
               });
             }
+          } else if (data.type == "tool_call") {
+            lastMessage?.content.push({
+              id: data.id || "remove_later",
+              type: "function",
+              function: {
+                name: data.text,
+                arguments: "",
+              },
+            });
+          } else if (data.type == "tool_call_arguments") {
+            const lastMessageContent = lastMessage?.content.at(-1);
+            if (lastMessageContent?.type == "function") {
+              lastMessageContent.function.arguments += data.text;
+            }
           }
-          // } else if (data.type == "tool_call") {
-          //   lastMessage.content.push({
-          //     id: data.id,
-          //     type: "function",
-          //     function: {
-          //       name: data.text,
-          //       arguments: "",
-          //     },
-          //   });
-          // } else if (data.type == "tool_call_arguments") {
-          //   const lastMessageContent = lastMessage.content.at(-1);
-          //   if (lastMessageContent?.type == "function") {
-          //     lastMessageContent.function.arguments += data.text;
-          //   }
-          // }
 
           return copy;
         });
@@ -144,7 +143,12 @@ const ChatInterface = ({
   // Component to render tool call tag
   const ToolCallTag = ({ toolCall }: { toolCall: ToolCall }) => {
     const { name, arguments: args } = toolCall.function;
-    const parsedArgs = JSON.parse(args);
+    let parsedArgs: Record<string, any> = {};
+    try {
+      parsedArgs = JSON.parse(args);
+    } catch (error) {
+      console.error("Error parsing JSON:", error);
+    }
 
     return (
       <div className="bg-gray-200 dark:bg-gray-800 rounded px-2 py-1 text-xs font-mono mt-2 inline-block">

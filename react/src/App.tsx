@@ -30,7 +30,7 @@ import { Toaster } from "sonner";
 
 function Home() {
   const [agentState, setAgentState] = useState(EAgentState.IDLE);
-  const [messages, setMessages] = useState<Message[]>(exampleMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [maxSteps, setMaxSteps] = useState(0);
   const [totalTokens, setTotalTokens] = useState(0);
@@ -82,7 +82,7 @@ function Home() {
             {theme === "dark" ? <SunIcon size={30} /> : <MoonIcon size={30} />}
           </Button>
         </div>
-        {/* <div className="absolute top-5 right-8 flex gap-1">
+        <div className="absolute top-5 right-8 flex gap-1">
           <Button
             size={"sm"}
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
@@ -96,13 +96,13 @@ function Home() {
               </div>
             )}
           </Button>
-        </div> */}
+        </div>
       </div>
-      {/* {isRightSidebarOpen && (
+      {isRightSidebarOpen && (
         <div className="w-[400px] bg-sidebar h-screen">
           <WorkspaceSidebar />
         </div>
-      )} */}
+      )}
     </div>
   );
 }
