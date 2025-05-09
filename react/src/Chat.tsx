@@ -59,18 +59,18 @@ const ChatInterface = ({
             });
           }
           const lastMessage = copy.at(-1);
-          const lastMessageContent = lastMessage?.content.at(-1);
+          const lastMessageContent = lastMessage?.content?.at(-1);
           if (data.type == "delta") {
             if (lastMessageContent?.type == "text") {
               lastMessageContent.text += data.text;
             } else {
-              lastMessage?.content.push({
+              lastMessage?.content?.push({
                 type: "text",
                 text: data.text,
               });
             }
           } else if (data.type == "tool_call") {
-            lastMessage?.content.push({
+            lastMessage?.content?.push({
               id: data.id || "remove_later",
               type: "function",
               function: {
@@ -91,6 +91,9 @@ const ChatInterface = ({
           toast.error("Error: " + data.error, {
             closeButton: true,
             duration: 3600 * 1000, // set super large duration to make it not auto dismiss
+            style: {
+              color: "red",
+            },
           });
         }
       } catch (error) {

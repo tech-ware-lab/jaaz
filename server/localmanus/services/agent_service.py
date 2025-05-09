@@ -13,6 +13,8 @@ class OpenAILLM:
     client: AsyncOpenAI =  AsyncOpenAI(
         api_key=llm_config.get("openai", {}).get("api_key", ""),
     )
+    api_key = llm_config.get("openai", {}).get("api_key", "")
+    url = llm_config.get("openai", {}).get("url", "https://api.openai.com/v1").rstrip('/')
 
 class AnthropicLLM:
     tools: list[dict] = []
@@ -20,6 +22,8 @@ class AnthropicLLM:
     client: AsyncAnthropic = AsyncAnthropic(
         api_key=llm_config.get("anthropic", {}).get("api_key", ""),
     )
+    api_key = llm_config.get("anthropic", {}).get("api_key", "")
+    url = llm_config.get("anthropic", {}).get("url", "https://api.anthropic.com/v1").rstrip('/')
 
 class OllamaLLM:
     tools: list[dict] = []
@@ -28,7 +32,7 @@ class OllamaLLM:
         base_url = llm_config.get("ollama", {}).get("url", "http://localhost:11434").rstrip('/') + '/v1',
         api_key='ollama', # required, but unused
     )
-    url = llm_config.get("ollama", {}).get("url", "http://localhost:11434")
+    url = llm_config.get("ollama", {}).get("url", "http://localhost:11434").rstrip('/')
     # client: Client = Client(
     #     host='http://localhost:11434', 
     # )
