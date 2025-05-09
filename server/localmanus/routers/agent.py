@@ -44,6 +44,7 @@ async def chat_openai(messages: list, session_id: str):
     payload = {
         "model": "gpt-4o",
         "messages": messages,
+        "tools": openai_client.tools,
         "stream": True
     }
     try:
@@ -54,6 +55,8 @@ async def chat_openai(messages: list, session_id: str):
             }
             async with session.post(openai_client.url + "/chat/completions", json=payload, headers=headers) as response:
                 combine = ''
+                cur_tool_call_id = None
+                cur_tool_call_arguments = ''
                 async for line in response.content:
                     if line:
                         # Parse the JSON response
@@ -70,18 +73,46 @@ async def chat_openai(messages: list, session_id: str):
                             if line_str.startswith('data: '):
                                 line_str = line_str[6:]  # Remove "data: " prefix
                                 chunk = json.loads(line_str) # Parse the JSON
-                                print('👇chunk', chunk)
                                 
                                 # Extract content from the choices array
                                 if 'choices' in chunk and len(chunk['choices']) > 0:
                                     delta = chunk['choices'][0].get('delta', {})
+                                    print('👇delta', delta)
                                     content = delta.get('content', '')
                                     if content:
                                         await send_to_websocket(session_id, {
                                             'type': 'delta',
                                             'text': content
                                         })
-                                
+                                    tool_calls = delta.get('tool_calls', [])
+                                    for tool_call in tool_calls:
+                                        print('🖌️tool_call', tool_call)
+                                        tool_call_id = tool_call.get('id')
+                                        tool_call_name = tool_call.get('function', {}).get('name')
+                                        tool_call_arguments = tool_call.get('function', {}).get('arguments', '')
+                                        if tool_call_id and tool_call_name and tool_call.get('index') == 0:
+                                            # tool call start
+                                            await send_to_websocket(session_id, {
+                                                'type': 'tool_call',
+                                                'id': tool_call_id,
+                                                'name': tool_call_name
+                                            })
+                                            cur_tool_call_id = tool_call_id
+                                            print('🦄tool_call', tool_call_id, tool_call_name)
+                                            # Execute the tool call
+                                            # await execute_tool_call(tool_call_id, tool_call_name)
+                                        elif tool_call_id and tool_call_name and tool_call.get('index') == 1:
+                                            # tool call finished
+                                            print('🦄tool_call_finished', tool_call_id, tool_call_name, )
+                                            cur_tool_call_id = None
+                                        elif tool_call_arguments:
+                                            print('➡️tool_call_arguments', tool_call_arguments)
+                                            await send_to_websocket(session_id, {
+                                                'type': 'tool_call_arguments',
+                                                'id': cur_tool_call_id,
+                                                'text': tool_call_arguments # delta
+                                            })
+
                             # Handle [DONE] marker in SSE
                             elif line_str == '[DONE]':
                                 continue

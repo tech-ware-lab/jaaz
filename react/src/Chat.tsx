@@ -71,17 +71,25 @@ const ChatInterface = ({
             }
           } else if (data.type == "tool_call") {
             lastMessage?.content?.push({
-              id: data.id || "remove_later",
+              id: data.id,
               type: "function",
               function: {
-                name: data.text,
+                name: data.name,
                 arguments: "",
               },
             });
           } else if (data.type == "tool_call_arguments") {
             const lastMessageContent = lastMessage?.content.at(-1);
-            if (lastMessageContent?.type == "function") {
+            if (
+              lastMessageContent?.type == "function" &&
+              lastMessageContent.id == data.id
+            ) {
               lastMessageContent.function.arguments += data.text;
+              console.log(
+                "🦄tool_call_arguments",
+                "added",
+                lastMessageContent?.function.arguments
+              );
             }
           }
 
@@ -160,7 +168,7 @@ const ChatInterface = ({
           <span key={i} className="ml-1">
             <span className="text-purple-600 dark:text-purple-400">{key}</span>=
             <span className="text-green-600 dark:text-green-400">
-              {String(value)}
+              {String(args)}
             </span>
           </span>
         ))}
