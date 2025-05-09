@@ -85,11 +85,6 @@ const ChatInterface = ({
               lastMessageContent.id == data.id
             ) {
               lastMessageContent.function.arguments += data.text;
-              console.log(
-                "🦄tool_call_arguments",
-                "added",
-                lastMessageContent?.function.arguments
-              );
             }
           }
 
@@ -154,24 +149,29 @@ const ChatInterface = ({
   // Component to render tool call tag
   const ToolCallTag = ({ toolCall }: { toolCall: ToolCall }) => {
     const { name, arguments: args } = toolCall.function;
-    let parsedArgs: Record<string, any> = {};
+    let parsedArgs: Record<string, any> | null = null;
     try {
       parsedArgs = JSON.parse(args);
-    } catch (error) {
-      console.error("Error parsing JSON:", error);
-    }
+    } catch (error) {}
 
     return (
       <div className="bg-gray-200 dark:bg-gray-800 rounded px-2 py-1 text-xs font-mono mt-2 inline-block">
         <span className="font-semibold">{name}</span>
-        {Object.entries(parsedArgs).map(([key, value], i) => (
-          <span key={i} className="ml-1">
-            <span className="text-purple-600 dark:text-purple-400">{key}</span>=
-            <span className="text-green-600 dark:text-green-400">
-              {String(args)}
+        {parsedArgs &&
+          Object.entries(parsedArgs).map(([key, value], i) => (
+            <span key={i} className="ml-1">
+              <span className="text-purple-600 dark:text-purple-400">
+                {key}
+              </span>
+              =
+              <span className="text-green-600 dark:text-green-400">
+                {String(value)}
+              </span>
             </span>
-          </span>
-        ))}
+          ))}
+        {!parsedArgs && (
+          <span className="text-red-600 dark:text-red-400">{String(args)}</span>
+        )}
       </div>
     );
   };
