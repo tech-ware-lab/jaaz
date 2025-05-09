@@ -193,28 +193,49 @@ const ChatInterface = ({
     } catch (error) {}
 
     return (
-      <Button variant={"outline"} onClick={onToggleExpand} className={"w-full"}>
-        {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+      <div className="w-full border rounded-md overflow-hidden">
+        <Button
+          variant={"outline"}
+          onClick={onToggleExpand}
+          className={"w-full"}
+        >
+          {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+          <span
+            style={{
+              maxWidth: "80%",
+              display: "inline-block",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span className="font-semibold">{name}</span>
 
-        <span className="font-semibold">{name}</span>
-        {parsedArgs &&
-          Object.entries(parsedArgs).map(([key, value], i) => (
-            <span key={i} className="ml-1">
-              <span className="text-purple-600 dark:text-purple-400">
-                {key}
+            {parsedArgs &&
+              Object.entries(parsedArgs).map(([key, value], i) => (
+                <span key={i} className="ml-1">
+                  <span className="text-purple-600 dark:text-purple-400">
+                    {key}
+                  </span>
+                  =
+                  <span className="text-green-600 dark:text-green-400">
+                    {String(value).slice(0, 100)}
+                  </span>
+                </span>
+              ))}
+            {!parsedArgs && (
+              <span className="text-red-600 dark:text-red-400">
+                {String(inputs).slice(0, 100)}
               </span>
-              =
-              <span className="text-green-600 dark:text-green-400">
-                {String(value)}
-              </span>
-            </span>
-          ))}
-        {!parsedArgs && (
-          <span className="text-red-600 dark:text-red-400">
-            {String(inputs)}
+            )}
           </span>
+        </Button>
+        {isExpanded && (
+          <div className="p-2">
+            <Markdown>{inputs}</Markdown>
+          </div>
         )}
-      </Button>
+      </div>
     );
   };
 
