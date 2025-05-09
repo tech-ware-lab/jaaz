@@ -102,7 +102,7 @@ const ChatInterface = ({
             copy.push({
               role: "user",
               content: res.content.map((content) => ({
-                text: content.text,
+                ...content,
                 type: "tool_result",
                 tool_use_id: res.id,
               })),

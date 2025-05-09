@@ -63,6 +63,7 @@ async def chat_openai(messages: list, session_id: str) -> list:
             async with session.post(openai_client.url + "/chat/completions", json=payload, headers=headers) as response:
                 combine = ''
                 cur_tool_calls:list[ToolCall] = []
+                content_combine = ''
                 async for line in response.content:
                     if line:
                         # Parse the JSON response
@@ -71,7 +72,7 @@ async def chat_openai(messages: list, session_id: str) -> list:
                             line_str = line.decode('utf-8').strip()
                             if not line_str:  # Skip empty lines
                                 continue
-                            print('👇raw line:', line_str)
+                            # print('👇raw line:', line_str)
                             # Handle SSE updates
                             if line_str.startswith('data: {'):
                                 line_str = line_str[6:]  # Remove "data: " prefix
@@ -84,6 +85,7 @@ async def chat_openai(messages: list, session_id: str) -> list:
                                     content = delta.get('content', '')
                                     # text delta
                                     if content:
+                                        content_combine += content
                                         await send_to_websocket(session_id, {
                                             'type': 'delta',
                                             'text': content
@@ -122,10 +124,33 @@ async def chat_openai(messages: list, session_id: str) -> list:
                         except Exception as e:
                             traceback.print_exc()
                 print('👇combine', combine)
-                for tool_call in cur_tool_calls:
-                    # tool call args complete, execute tool call
-                    await execute_tool(tool_call.id, tool_call.name, tool_call.arguments, session_id)
-
+                print('👇content_combine', content_combine)
+                messages.append({
+                    'role': 'assistant',
+                    'content': None
+                })
+                if content_combine != '':
+                    messages[-1]['content'] = [{
+                        'type': 'text',
+                        'text': content_combine
+                    }]
+                if len(cur_tool_calls) > 0:
+                    messages[-1]['tool_calls'] = []
+                    for tool_call in cur_tool_calls:
+                        # append tool call to messages of assistant
+                        messages[-1]['tool_calls'].append({
+                            'type': 'function',
+                            'id': tool_call.id,
+                            'function': {
+                                'name': tool_call.name,
+                                'arguments': tool_call.arguments
+                            }
+                        })
+                        # tool call args complete, execute tool call
+                        result = await execute_tool(tool_call.id, tool_call.name, tool_call.arguments, session_id)
+                        # append tool call result to messages of user
+                        if result is not None:
+                            messages.append(result)
                 if combine != '':
                     try:
                         data = json.loads(combine)
@@ -149,6 +174,7 @@ async def chat_openai(messages: list, session_id: str) -> list:
             'type': 'error',
             'error': str(e)
         })
+    return messages
 
 async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session_id: str):
     try:
@@ -159,12 +185,17 @@ async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session
             raise Exception(f"MCP client not found for tool {tool_name}")
         result = await mcp_client.session.call_tool(tool_name, args_json)
         print('👇tool result', result)
-        
+        content_dict = [content.model_dump() for content in result.content]
         await send_to_websocket(session_id, {
             'type': 'tool_call_result',
             'id': tool_call_id,
-            'content': [content.model_dump() for content in result.content]
+            'content': content_dict
         })
+        return {
+            'role': 'tool',
+            'tool_call_id': tool_call_id,
+            'content': content_dict
+        }
     except Exception as e:
         print(f"Error calling tool {tool_name}: {e}")
         traceback.print_exc()
@@ -172,7 +203,7 @@ async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session
             'type': 'error',
             'error': f'Error calling tool {tool_name} with inputs {args_str} - {e}'
         })
-
+        return None
 
 async def chat_ollama(messages: list, session_id: str):
     print('👇chat_ollama', messages)
@@ -334,7 +365,8 @@ async def chat(request: Request):
             detail="session_id is required"
         )
     if provider == 'openai':
-        for i in range(4):
+        for i in range(5):
+            print('⭐️⭐️round', i)
             messages = await chat_openai(messages, session_id)
     elif provider == 'anthropic':
         await chat_anthropic(messages, session_id)

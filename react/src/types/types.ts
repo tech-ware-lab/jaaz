@@ -20,7 +20,7 @@ export type MessageContent =
     };
 export type Message = {
   role: "user" | "assistant";
-  content: MessageContent[];
+  content: MessageContent[] | string;
   // base64_image?: string;
   // tool_calls?: ToolCall[];
   // name?: string;
