@@ -7,7 +7,13 @@ import {
   ToolCall,
 } from "./types/types";
 import { Button } from "./components/ui/button";
-import { SendIcon, SquareIcon, StopCircleIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  SendIcon,
+  SquareIcon,
+  StopCircleIcon,
+} from "lucide-react";
 import { Badge } from "./components/ui/badge";
 import { Textarea } from "./components/ui/textarea";
 import { nanoid } from "nanoid";
@@ -35,6 +41,7 @@ const ChatInterface = ({
   const [stream, setStream] = useState<string>("");
   const webSocketRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string>(nanoid());
+  const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([]);
 
   useEffect(() => {
     const socket = new WebSocket(`/ws?session_id=${sessionIdRef.current}`);
@@ -70,13 +77,12 @@ const ChatInterface = ({
               });
             }
           } else if (data.type == "tool_call") {
+            setExpandingToolCalls([...expandingToolCalls, data.id]);
             lastMessage?.content?.push({
               id: data.id,
               type: "function",
-              function: {
-                name: data.name,
-                arguments: "",
-              },
+              name: data.name,
+              inputs: "",
             });
           } else if (data.type == "tool_call_arguments") {
             const lastMessageContent = lastMessage?.content.at(-1);
@@ -84,8 +90,23 @@ const ChatInterface = ({
               lastMessageContent?.type == "function" &&
               lastMessageContent.id == data.id
             ) {
-              lastMessageContent.function.arguments += data.text;
+              lastMessageContent.inputs += data.text;
             }
+          } else if (data.type == "tool_call_result") {
+            const res: {
+              id: string;
+              content: {
+                text: string;
+              }[];
+            } = data;
+            copy.push({
+              role: "user",
+              content: res.content.map((content) => ({
+                text: content.text,
+                type: "tool_result",
+                tool_use_id: res.id,
+              })),
+            });
           }
 
           return copy;
@@ -147,15 +168,25 @@ const ChatInterface = ({
     }).then((resp) => resp.json());
   };
   // Component to render tool call tag
-  const ToolCallTag = ({ toolCall }: { toolCall: ToolCall }) => {
-    const { name, arguments: args } = toolCall.function;
+  const ToolCallTag = ({
+    toolCall,
+    isExpanded,
+    onToggleExpand,
+  }: {
+    toolCall: ToolCall;
+    isExpanded: boolean;
+    onToggleExpand: () => void;
+  }) => {
+    const { name, inputs } = toolCall;
     let parsedArgs: Record<string, any> | null = null;
     try {
-      parsedArgs = JSON.parse(args);
+      parsedArgs = JSON.parse(inputs);
     } catch (error) {}
 
     return (
-      <div className="bg-gray-200 dark:bg-gray-800 rounded px-2 py-1 text-xs font-mono mt-2 inline-block">
+      <Button variant={"outline"} onClick={onToggleExpand} className={"w-full"}>
+        {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+
         <span className="font-semibold">{name}</span>
         {parsedArgs &&
           Object.entries(parsedArgs).map(([key, value], i) => (
@@ -170,9 +201,11 @@ const ChatInterface = ({
             </span>
           ))}
         {!parsedArgs && (
-          <span className="text-red-600 dark:text-red-400">{String(args)}</span>
+          <span className="text-red-600 dark:text-red-400">
+            {String(inputs)}
+          </span>
         )}
-      </div>
+      </Button>
     );
   };
 
@@ -191,52 +224,63 @@ const ChatInterface = ({
 
       {/* Chat messages */}
       <div
-        className="flex-1 p-4 overflow-y-auto"
+        className="flex-1 p-4 overflow-y-auto text-left"
         style={{ paddingBottom: FOOTER_HEIGHT }}
       >
         <div className="space-y-6 max-w-3xl mx-auto">
           {/* Messages */}
           {messages.map((message, idx) => (
-            <div
-              key={idx}
-              className={`flex flex-col space-y-2 ${
-                message.role === "user" ? "items-end" : "items-start"
-              }`}
-            >
-              <div
-                className={`${
-                  message.role === "user" ? "ml-10 items-end" : "items-start"
-                } space-y-3 flex flex-col ${
-                  message.role === "user" ? "items-end" : "items-start"
-                }`}
-              >
-                <div
-                  key={`${idx}`}
-                  className={`${
-                    message.role === "user" ? "items-end" : "items-start"
-                  } flex flex-col`}
-                >
-                  {/* Regular message content */}
-                  {message.content.map((content, i) => {
-                    if (content.type == "text") {
-                      return (
-                        <div
-                          key={i}
-                          className={`break-all ${
-                            message.role === "user"
-                              ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left"
-                              : "text-gray-800 dark:text-gray-200 text-left"
-                          }`}
-                        >
-                          <Markdown>{content.text}</Markdown>
-                        </div>
-                      );
-                    } else if (content.type == "function") {
-                      return <ToolCallTag key={i} toolCall={content} />;
-                    }
-                  })}
-                </div>
-              </div>
+            <div key={`${idx}`}>
+              {/* Regular message content */}
+              {message.content.map((content, i) => {
+                if (content.type == "text") {
+                  return (
+                    <div
+                      key={i}
+                      className={`break-all ${
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left"
+                          : "text-gray-800 dark:text-gray-200 text-left"
+                      } ${
+                        message.role === "user" ? "items-end" : "items-start"
+                      } ${
+                        message.role === "user"
+                          ? "ml-10 items-end"
+                          : "items-start"
+                      } space-y-3 flex flex-col ${
+                        message.role === "user" ? "items-end" : "items-start"
+                      }`}
+                    >
+                      <Markdown>{content.text}</Markdown>
+                    </div>
+                  );
+                } else if (content.type == "function") {
+                  return (
+                    <ToolCallTag
+                      key={i}
+                      toolCall={content}
+                      isExpanded={expandingToolCalls.includes(content.id)}
+                      onToggleExpand={() => {
+                        if (expandingToolCalls.includes(content.id)) {
+                          setExpandingToolCalls(
+                            expandingToolCalls.filter((id) => id !== content.id)
+                          );
+                        } else {
+                          setExpandingToolCalls([
+                            ...expandingToolCalls,
+                            content.id,
+                          ]);
+                        }
+                      }}
+                    />
+                  );
+                } else if (
+                  content.type == "tool_result" &&
+                  expandingToolCalls.includes(content.tool_use_id)
+                ) {
+                  return <Markdown>{content.text}</Markdown>;
+                }
+              })}
             </div>
           ))}
         </div>

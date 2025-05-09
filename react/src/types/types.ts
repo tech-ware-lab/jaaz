@@ -1,17 +1,25 @@
 export type ToolCall = {
   id: string;
   type: "function";
-  function: {
-    name: string;
-    arguments: string;
-  };
+  name: string;
+  inputs: string;
 };
 export type MessageContent =
   | { text: string; type: "text" }
   | { image_url: string; type: "image_url" }
-  | ToolCall;
+  | ToolCall
+  | {
+      type: "tool_result";
+      tool_use_id: string;
+      text: string;
+    }
+  | {
+      type: "function_call_output";
+      call_id: string;
+      output: string;
+    };
 export type Message = {
-  role: string;
+  role: "user" | "assistant";
   content: MessageContent[];
   // base64_image?: string;
   // tool_calls?: ToolCall[];

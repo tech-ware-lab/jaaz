@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import traceback
+from typing import Optional
 from fastapi import APIRouter, Request, WebSocket, Query, HTTPException
 from fastapi.responses import FileResponse
 import asyncio
@@ -40,6 +41,12 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...))
         if session_id in active_websockets:
             del active_websockets[session_id]
 
+class ToolCall:
+    def __init__(self, id: str, name: str, arguments: str):
+        self.id = id
+        self.name = name
+        self.arguments = arguments
+
 async def chat_openai(messages: list, session_id: str):
     payload = {
         "model": "gpt-4o",
@@ -55,8 +62,7 @@ async def chat_openai(messages: list, session_id: str):
             }
             async with session.post(openai_client.url + "/chat/completions", json=payload, headers=headers) as response:
                 combine = ''
-                cur_tool_call_id = None
-                cur_tool_call_arguments = ''
+                cur_tool_call:Optional[ToolCall] = None
                 async for line in response.content:
                     if line:
                         # Parse the JSON response
@@ -65,12 +71,9 @@ async def chat_openai(messages: list, session_id: str):
                             line_str = line.decode('utf-8').strip()
                             if not line_str:  # Skip empty lines
                                 continue
-                                
                             print('👇raw line:', line_str)
-                            
-                            
                             # Handle SSE format (remove the "data: " prefix)
-                            if line_str.startswith('data: '):
+                            if line_str.startswith('data: {'):
                                 line_str = line_str[6:]  # Remove "data: " prefix
                                 chunk = json.loads(line_str) # Parse the JSON
                                 
@@ -86,43 +89,45 @@ async def chat_openai(messages: list, session_id: str):
                                         })
                                     tool_calls = delta.get('tool_calls', [])
                                     for tool_call in tool_calls:
-                                        print('🖌️tool_call', tool_call)
                                         tool_call_id = tool_call.get('id')
                                         tool_call_name = tool_call.get('function', {}).get('name')
-                                        tool_call_arguments = tool_call.get('function', {}).get('arguments', '')
-                                        if tool_call_id and tool_call_name and tool_call.get('index') == 0:
+                                        if tool_call_id and tool_call_name:
+                                            if cur_tool_call is not None:
+                                                # tool call args complete, execute tool call
+                                                await execute_tool(cur_tool_call.id, cur_tool_call.name, cur_tool_call.arguments, session_id)
+                                                # reset tool call id and arguments
+                                                cur_tool_call = None
                                             # tool call start
+                                            cur_tool_call = ToolCall(tool_call_id, tool_call_name, '')
+                                            print('🦄tool_call', tool_call_id, tool_call_name)
                                             await send_to_websocket(session_id, {
                                                 'type': 'tool_call',
                                                 'id': tool_call_id,
                                                 'name': tool_call_name
                                             })
-                                            cur_tool_call_id = tool_call_id
-                                            print('🦄tool_call', tool_call_id, tool_call_name)
-                                            # Execute the tool call
-                                            # await execute_tool_call(tool_call_id, tool_call_name)
-                                        elif tool_call_id and tool_call_name and tool_call.get('index') == 1:
-                                            # tool call finished
-                                            print('🦄tool_call_finished', tool_call_id, tool_call_name, )
-                                            cur_tool_call_id = None
-                                        elif tool_call_arguments:
-                                            print('➡️tool_call_arguments', tool_call_arguments)
+                                        elif tool_call.get('function', {}).get('arguments', '') and cur_tool_call is not None:
+                                            delta = tool_call.get('function', {}).get('arguments', '')
+                                            cur_tool_call.arguments += delta
                                             await send_to_websocket(session_id, {
                                                 'type': 'tool_call_arguments',
-                                                'id': cur_tool_call_id,
-                                                'text': tool_call_arguments # delta
+                                                'id': cur_tool_call.id,
+                                                'text': delta # delta
                                             })
 
                             # Handle [DONE] marker in SSE
-                            elif line_str == '[DONE]':
+                            elif line_str == 'data: [DONE]':
                                 continue
                             else:
                                 combine += line_str
                                 
 
                         except Exception as e:
-                            print(f"Error parsing JSON: {e}")
+                            traceback.print_exc()
                 print('👇combine', combine)
+                if cur_tool_call is not None:
+                    # tool call args complete, execute tool call
+                    await execute_tool(cur_tool_call.id, cur_tool_call.name, cur_tool_call.arguments, session_id)
+
                 if combine != '':
                     try:
                         data = json.loads(combine)
@@ -146,6 +151,30 @@ async def chat_openai(messages: list, session_id: str):
             'type': 'error',
             'error': str(e)
         })
+
+async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session_id: str):
+    try:
+        args_json = json.loads(args_str)
+        print('🦄executing tool', tool_name, args_json)
+        mcp_client = mcp_tool_to_server_mapping[tool_name]
+        if mcp_client.session is None:
+            raise Exception(f"MCP client not found for tool {tool_name}")
+        result = await mcp_client.session.call_tool(tool_name, args_json)
+        print('👇tool result', result)
+        
+        await send_to_websocket(session_id, {
+            'type': 'tool_call_result',
+            'id': tool_call_id,
+            'content': [content.model_dump() for content in result.content]
+        })
+    except Exception as e:
+        print(f"Error calling tool {tool_name}: {e}")
+        traceback.print_exc()
+        await send_to_websocket(session_id, {
+            'type': 'error',
+            'error': f'Error calling tool {tool_name} with inputs {args_str} - {e}'
+        })
+
 
 async def chat_ollama(messages: list, session_id: str):
     print('👇chat_ollama', messages)
