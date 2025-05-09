@@ -71,29 +71,56 @@ async def chat_openai(messages: list, session_id: str):
 
 async def chat_ollama(messages: list, session_id: str):
     print('👇chat_ollama', messages)
-    url = ollama_client.url + "/api/chat"
+    url = ollama_client.url.rstrip('/') + "/v1/chat/completions"
     
     # Prepare the request payload
     payload = {
-        "model": "qwen3:30b-a3b",
+        "model": "qwen3:8b",
         "messages": messages,
-        "tools": ollama_client.tools,
+        # "tools": ollama_client.tools,
         "stream": True
     }
     try:
     
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as response:
+            headers = {
+                'Content-Type': 'application/json'
+            }
+            async with session.post(url, json=payload, headers=headers) as response:
                 async for line in response.content:
                     if line:
                         # Parse the JSON response
-                        chunk = json.loads(line)
-                        print('👇chunk', chunk)
-                        # Send the chunk through websocket
-                        await send_to_websocket(session_id, {
-                            'type': 'delta',
-                            'delta': chunk.get('message', {}).get('content', '')
-                        })
+                        try:
+                            # Decode bytes to string and strip whitespace
+                            line_str = line.decode('utf-8').strip()
+                            if not line_str:  # Skip empty lines
+                                continue
+                                
+                            print('👇raw line:', line_str)
+                            
+                            # Handle SSE format (remove the "data: " prefix)
+                            if line_str.startswith('data: '):
+                                line_str = line_str[6:]  # Remove "data: " prefix
+                                
+                            # Handle [DONE] marker in SSE
+                            if line_str == '[DONE]':
+                                continue
+                                
+                            # Parse the JSON
+                            chunk = json.loads(line_str)
+                            print('👇chunk', chunk)
+                            
+                            # Extract content from the choices array
+                            if 'choices' in chunk and len(chunk['choices']) > 0:
+                                delta = chunk['choices'][0].get('delta', {})
+                                content = delta.get('content', '')
+                                if content:
+                                    await send_to_websocket(session_id, {
+                                        'type': 'delta',
+                                        'text': content
+                                    })
+                        except Exception as e:
+                            print(f"Error parsing JSON: {e}")
     except Exception as e:
         traceback.print_exc()
         await send_to_websocket(session_id, {
@@ -195,7 +222,7 @@ async def chat(request: Request):
     data = await request.json()
     messages = data.get('messages')
     session_id = data.get('session_id')
-    provider = data.get('provider', 'openai')
+    provider = data.get('provider', 'ollama')
     if session_id is None:
         raise HTTPException(
             status_code=400,  # Bad Request
