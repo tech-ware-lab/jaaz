@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import subprocess
 import json
 import os
@@ -238,6 +239,25 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
         })
     return messages
 
+def detect_image_type_from_base64(b64_data: str) -> str:
+    # Only take the base64 part, not the "data:image/...," prefix
+    if b64_data.startswith("data:"):
+        b64_data = b64_data.split(",", 1)[1]
+
+    # Decode just the first few bytes
+    prefix_bytes = base64.b64decode(b64_data[:24])  # ~18 bytes is enough
+
+    if prefix_bytes.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    elif prefix_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    elif prefix_bytes.startswith(b"GIF87a") or prefix_bytes.startswith(b"GIF89a"):
+        return "image/gif"
+    elif prefix_bytes.startswith(b"RIFF") and b"WEBP" in prefix_bytes:
+        return "image/webp"
+    else:
+        return "application/octet-stream"
+
 async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session_id: str):
     res = []
     try:
@@ -273,6 +293,7 @@ async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session
         })
         for content in result.content:
             if content.type == 'image':
+                image_type = detect_image_type_from_base64(content.data)
                 res.append({
                     'role': 'user',
                     # 'is_tool': True,
@@ -280,7 +301,7 @@ async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": f"data:image/jpeg;base64,{content.data}",
+                                "url": f"data:{image_type};base64,{content.data}",
                             },
                         },
                     ],

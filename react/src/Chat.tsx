@@ -299,7 +299,6 @@ const ChatInterface = ({
                 )}
               {Array.isArray(message.content) &&
                 message.content.map((content, i) => {
-                  console.log("👇content", content);
                   if (content.type == "text") {
                     return (
                       <div
