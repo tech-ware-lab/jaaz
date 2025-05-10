@@ -169,26 +169,40 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
                         }]
                     })
                 if len(cur_tool_calls) > 0:
-                    messages.append({
-                        'role': 'assistant',
-                        'tool_calls': []
-                    })
                     for tool_call in cur_tool_calls:
                         # append tool call to messages of assistant
-                        messages[-1]['tool_calls'].append({
-                            'type': 'function',
-                            'id': tool_call.id,
-                            'function': {
-                                'name': tool_call.name,
-                                'arguments': tool_call.arguments
-                            }
-                        })
+                        print('messages[-1]', messages[-1])
+                        if messages[-1].get('tool_calls') is not None:
+                            messages[-1]['tool_calls'].append({
+                                'type': 'function',
+                                'id': tool_call.id,
+                                'function': {
+                                    'name': tool_call.name,
+                                    'arguments': tool_call.arguments
+                                }
+                            })
+                        else:
+                            messages.append({
+                                'role': 'assistant',
+                                'tool_calls': [{
+                                'type': 'function',
+                                'id': tool_call.id,
+                                'function': {
+                                    'name': tool_call.name,
+                                    'arguments': tool_call.arguments
+                                    }
+                                }]
+                            })
                         # tool call args complete, execute tool call
                         tool_result = await execute_tool(tool_call.id, tool_call.name, tool_call.arguments, session_id)
                         # append tool call result to messages of user
                         if tool_result is not None:
                             for r in tool_result:
                                 messages.append(r)
+                        await send_to_websocket(session_id, {
+                            'type': 'all_messages',
+                            'messages': messages
+                        })
                 # Has Error
                 if combine != '':
                         data = None
@@ -245,12 +259,17 @@ async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session
             'id': tool_call_id,
             'content': content_dict
         })
+
         text_contents = [c.text if c.type == 'text' else "Image result, view user attached image below for detailed result" if c.type == 'image' else json.dumps(c.model_dump()) for c in result.content ]
-        
+        text_contents = ''.join(text_contents)
+        print('👇tool result text_content length', len(text_contents))
+        if len(text_contents) > 8000:
+            text_contents = text_contents[:8000] + "...Content truncated to 8000 characters due to length limit"
+
         res.append({
             'role': 'tool',
             'tool_call_id': tool_call_id,
-            'content': ''.join(text_contents) # here only accept text string in anthropic, otherwise will throw error
+            'content': text_contents # here only accept text string in anthropic, otherwise will throw error
         })
         for content in result.content:
             if content.type == 'image':

@@ -96,7 +96,9 @@ const ChatInterface = ({
       console.log(event.data);
       try {
         const data = JSON.parse(event.data);
-
+        if (data.type == "log") {
+          console.log(data);
+        }
         if (data.type == "error") {
           toast.error("Error: " + data.error, {
             closeButton: true,
@@ -112,42 +114,56 @@ const ChatInterface = ({
           });
         } else {
           setMessages((prev) => {
-            const copy = structuredClone(prev);
-            if (copy.at(-1)?.role == "user") {
-              copy.push({
-                role: "assistant",
-                content: [],
-              });
-            }
-            const lastMessage = copy.at(-1);
-            const lastMessageContent = lastMessage?.content?.at(-1);
-            if (data.type == "log") {
-              console.log(data);
-            }
             if (data.type == "delta") {
-              if (lastMessageContent?.type == "text") {
-                lastMessageContent.text += data.text;
+              if (prev.at(-1)?.role == "assistant") {
+                const lastMessage = structuredClone(prev.at(-1));
+                if (lastMessage) {
+                  if (typeof lastMessage.content == "string") {
+                    lastMessage.content += data.text;
+                  } else if (
+                    lastMessage.content &&
+                    lastMessage.content.at(-1) &&
+                    lastMessage.content.at(-1)!.type === "text"
+                  ) {
+                    (lastMessage.content.at(-1) as { text: string }).text +=
+                      data.text;
+                  }
+                  // TODO: handle other response type
+                }
+                return [...prev.slice(0, -1), lastMessage];
               } else {
-                lastMessage?.content?.push({
-                  type: "text",
-                  text: data.text,
-                });
+                return [
+                  ...prev,
+                  {
+                    role: "assistant",
+                    content: data.text,
+                  },
+                ];
               }
             } else if (data.type == "tool_call") {
               setExpandingToolCalls([...expandingToolCalls, data.id]);
-              lastMessage?.content?.push({
-                id: data.id,
-                type: "function",
-                name: data.name,
-                inputs: "",
+              return prev.concat({
+                role: "assistant",
+                tool_calls: [
+                  {
+                    type: "function",
+                    function: {
+                      name: data.name,
+                      arguments: "",
+                    },
+                    id: data.id,
+                  },
+                ],
               });
             } else if (data.type == "tool_call_arguments") {
-              const lastMessageContent = lastMessage?.content.at(-1);
+              const lastMessage = structuredClone(prev.at(-1));
               if (
-                lastMessageContent?.type == "function" &&
-                lastMessageContent.id == data.id
+                lastMessage?.tool_calls &&
+                lastMessage.tool_calls.at(-1) &&
+                lastMessage.tool_calls.at(-1)!.id == data.id
               ) {
-                lastMessageContent.inputs += data.text;
+                lastMessage.tool_calls.at(-1)!.function.arguments += data.text;
+                return prev.slice(0, -1).concat(lastMessage);
               }
             } else if (data.type == "tool_call_result") {
               const res: {
@@ -156,17 +172,21 @@ const ChatInterface = ({
                   text: string;
                 }[];
               } = data;
-              copy.push({
-                role: "user",
-                content: res.content.map((content) => ({
-                  ...content,
-                  type: "tool_result",
-                  tool_use_id: res.id,
-                })),
-              });
+              // setMessages(
+              //   prev.concat({
+              //     role: "user",
+              //     content: res.content.map((content) => ({
+              //       ...content,
+              //       type: "tool_result",
+              //       tool_use_id: res.id,
+              //     })),
+              //   })
+              // );
+            } else if (data.type == "all_messages") {
+              console.log("👇all_messages", data.messages);
+              return data.messages;
             }
-
-            return copy;
+            return prev;
           });
         }
       } catch (error) {
@@ -224,74 +244,6 @@ const ChatInterface = ({
       }),
     }).then((resp) => resp.json());
   };
-  // Component to render tool call tag
-  const ToolCallTag = ({
-    toolCall,
-    isExpanded,
-    onToggleExpand,
-  }: {
-    toolCall: ToolCall;
-    isExpanded: boolean;
-    onToggleExpand: () => void;
-  }) => {
-    const { name, inputs } = toolCall;
-    let parsedArgs: Record<string, any> | null = null;
-    try {
-      parsedArgs = JSON.parse(inputs);
-    } catch (error) {}
-
-    return (
-      <div className="w-full border rounded-md overflow-hidden">
-        <Button
-          variant={"outline"}
-          onClick={onToggleExpand}
-          className={"w-full"}
-        >
-          {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
-          <span
-            style={{
-              maxWidth: "80%",
-              display: "inline-block",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span className="font-semibold">{name}</span>
-
-            {parsedArgs &&
-              Object.entries(parsedArgs).map(([key, value], i) => (
-                <span key={i} className="ml-1">
-                  <span className="text-purple-600 dark:text-purple-400">
-                    {key}
-                  </span>
-                  =
-                  <span className="text-green-600 dark:text-green-400">
-                    {String(value).slice(0, 100)}
-                  </span>
-                </span>
-              ))}
-            {!parsedArgs && (
-              <span className="text-red-600 dark:text-red-400">
-                {String(inputs).slice(0, 100)}
-              </span>
-            )}
-          </span>
-        </Button>
-        {isExpanded && (
-          <div className="p-2">
-            <Markdown>{inputs}</Markdown>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Function to truncate long content
-  const truncateContent = (content: string, maxLength = 200) => {
-    if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength) + "...";
-  };
 
   return (
     <div className="flex flex-col h-screen relative">
@@ -330,55 +282,72 @@ const ChatInterface = ({
           {messages.map((message, idx) => (
             <div key={`${idx}`}>
               {/* Regular message content */}
-              {message.content.map((content, i) => {
-                if (content.type == "text") {
-                  return (
-                    <div
-                      key={i}
-                      className={`break-all ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left"
-                          : "text-gray-800 dark:text-gray-200 text-left"
-                      } ${
-                        message.role === "user" ? "items-end" : "items-start"
-                      } ${
-                        message.role === "user"
-                          ? "ml-10 items-end"
-                          : "items-start"
-                      } space-y-3 flex flex-col ${
-                        message.role === "user" ? "items-end" : "items-start"
-                      }`}
-                    >
-                      <Markdown>{content.text}</Markdown>
-                    </div>
-                  );
-                } else if (content.type == "function") {
+              {typeof message.content == "string" && (
+                <div>
+                  <Markdown>{message.content}</Markdown>
+                </div>
+              )}
+              {Array.isArray(message.content) &&
+                message.content.map((content, i) => {
+                  console.log("👇content", content);
+                  if (content.type == "text") {
+                    return (
+                      <div
+                        key={i}
+                        className={`break-all ${
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left"
+                            : "text-gray-800 dark:text-gray-200 text-left"
+                        } ${
+                          message.role === "user" ? "items-end" : "items-start"
+                        } ${
+                          message.role === "user"
+                            ? "ml-10 items-end"
+                            : "items-start"
+                        } space-y-3 flex flex-col ${
+                          message.role === "user" ? "items-end" : "items-start"
+                        }`}
+                      >
+                        <Markdown>{content.text}</Markdown>
+                      </div>
+                    );
+                  } else if (content.type == "image_url") {
+                    return (
+                      <div key={i}>
+                        <img src={content.image_url.url} alt="Image" />
+                      </div>
+                    );
+                  } else if (
+                    content.type == "tool_result" &&
+                    expandingToolCalls.includes(content.tool_use_id)
+                  ) {
+                    return <Markdown>{content.text}</Markdown>;
+                  }
+                })}
+              {message.tool_calls &&
+                message.tool_calls.map((toolCall, i) => {
                   return (
                     <ToolCallTag
                       key={i}
-                      toolCall={content}
-                      isExpanded={expandingToolCalls.includes(content.id)}
+                      toolCall={toolCall}
+                      isExpanded={expandingToolCalls.includes(toolCall.id)}
                       onToggleExpand={() => {
-                        if (expandingToolCalls.includes(content.id)) {
+                        if (expandingToolCalls.includes(toolCall.id)) {
                           setExpandingToolCalls(
-                            expandingToolCalls.filter((id) => id !== content.id)
+                            expandingToolCalls.filter(
+                              (id) => id !== toolCall.id
+                            )
                           );
                         } else {
                           setExpandingToolCalls([
                             ...expandingToolCalls,
-                            content.id,
+                            toolCall.id,
                           ]);
                         }
                       }}
                     />
                   );
-                } else if (
-                  content.type == "tool_result" &&
-                  expandingToolCalls.includes(content.tool_use_id)
-                ) {
-                  return <Markdown>{content.text}</Markdown>;
-                }
-              })}
+                })}
             </div>
           ))}
         </div>
@@ -450,4 +419,62 @@ const ChatInterface = ({
   );
 };
 
+// Component to render tool call tag
+const ToolCallTag = ({
+  toolCall,
+  isExpanded,
+  onToggleExpand,
+}: {
+  toolCall: ToolCall;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+}) => {
+  const { name, arguments: inputs } = toolCall.function;
+  let parsedArgs: Record<string, any> | null = null;
+  try {
+    parsedArgs = JSON.parse(inputs);
+  } catch (error) {}
+
+  return (
+    <div className="w-full border rounded-md overflow-hidden">
+      <Button variant={"outline"} onClick={onToggleExpand} className={"w-full"}>
+        {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+        <span
+          style={{
+            maxWidth: "80%",
+            display: "inline-block",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span className="font-semibold">{name}</span>
+
+          {parsedArgs &&
+            Object.entries(parsedArgs).map(([key, value], i) => (
+              <span key={i} className="ml-1">
+                <span className="text-purple-600 dark:text-purple-400">
+                  {key}
+                </span>
+                =
+                <span className="text-green-600 dark:text-green-400">
+                  {String(value).slice(0, 100)}
+                </span>
+              </span>
+            ))}
+          {!parsedArgs && (
+            <span className="text-red-600 dark:text-red-400">
+              {String(inputs).slice(0, 100)}
+            </span>
+          )}
+        </span>
+      </Button>
+      {isExpanded && (
+        <div className="p-2">
+          <Markdown>{inputs}</Markdown>
+        </div>
+      )}
+    </div>
+  );
+};
 export default ChatInterface;
