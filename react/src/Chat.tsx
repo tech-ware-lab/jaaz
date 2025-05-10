@@ -19,6 +19,13 @@ import { Textarea } from "./components/ui/textarea";
 import { nanoid } from "nanoid";
 import { Markdown } from "./components/Markdown";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./components/ui/select";
 
 const FOOTER_HEIGHT = 170; // Adjust this value as needed
 
@@ -39,11 +46,44 @@ const ChatInterface = ({
   const [prompt, setPrompt] = useState("");
   const [disableStop, setDisableStop] = useState(false);
   const [stream, setStream] = useState<string>("");
+  const [model, setModel] = useState<{
+    provider: string;
+    model: string;
+  }>();
+  const [modelList, setModelList] = useState<
+    {
+      provider: string;
+      model: string;
+    }[]
+  >([]);
   const webSocketRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string>(nanoid());
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([]);
 
   useEffect(() => {
+    fetch("/api/list_models")
+      .then((resp) => resp.json())
+      .then(
+        (
+          data: {
+            provider: string;
+            model: string;
+          }[]
+        ) => {
+          if (data.length > 0) {
+            const model = localStorage.getItem("model");
+            if (
+              model &&
+              data.find((m) => m.provider + ":" + m.model == model)
+            ) {
+              setModel(data.find((m) => m.provider + ":" + m.model == model));
+            } else {
+              setModel(data[0]);
+            }
+            setModelList(data);
+          }
+        }
+      );
     const socket = new WebSocket(`/ws?session_id=${sessionIdRef.current}`);
     webSocketRef.current = socket;
 
@@ -152,6 +192,12 @@ const ChatInterface = ({
     if (agentState == EAgentState.RUNNING) {
       return;
     }
+    if (!model) {
+      toast.error(
+        "Please select a model! Go to Settings to set your API keys if you haven't done so."
+      );
+      return;
+    }
     const newMessages = messages.concat([
       {
         role: "user",
@@ -173,6 +219,8 @@ const ChatInterface = ({
       body: JSON.stringify({
         messages: newMessages,
         session_id: sessionIdRef.current,
+        model: model.model,
+        provider: model.provider,
       }),
     }).then((resp) => resp.json());
   };
@@ -247,17 +295,37 @@ const ChatInterface = ({
 
   return (
     <div className="flex flex-col h-screen relative">
-      {/* Chat header */}
-      {/* <header className="p-4">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100"></h1>
-      </header> */}
-
       {/* Chat messages */}
       <div
         className="flex-1 p-4 overflow-y-auto text-left"
         style={{ paddingBottom: FOOTER_HEIGHT }}
       >
         <div className="space-y-6 max-w-3xl mx-auto">
+          <header className="p-4">
+            <Select
+              value={model?.provider + ":" + model?.model}
+              onValueChange={(value) => {
+                localStorage.setItem("model", value);
+                setModel(
+                  modelList.find((m) => m.provider + ":" + m.model == value)
+                );
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Theme" />
+              </SelectTrigger>
+              <SelectContent>
+                {modelList.map((model) => (
+                  <SelectItem
+                    key={model.provider + ":" + model.model}
+                    value={model.provider + ":" + model.model}
+                  >
+                    {model.model}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </header>
           {/* Messages */}
           {messages.map((message, idx) => (
             <div key={`${idx}`}>

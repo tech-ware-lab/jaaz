@@ -11,6 +11,8 @@ DEFAULT_CONFIG =  {
                     }
                 }
 USER_DATA_DIR = os.getenv("USER_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "user_data"))
+
+app_config = {}
 class ConfigService:
     def __init__(self):
         self.root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -27,7 +29,8 @@ class ConfigService:
             # Mask API keys
             # if 'llm' in config and 'api_key' in config['llm']:
             #     config['llm']['api_key'] = '********'
-
+            global app_config
+            app_config = config
             return config
         except Exception as e:
             return DEFAULT_CONFIG
