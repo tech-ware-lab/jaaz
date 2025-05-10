@@ -8,26 +8,22 @@ export type ToolCall = {
 };
 export type MessageContent =
   | { text: string; type: "text" }
-  | { image_url: { url: string }; type: "image_url" }
-  | {
-      type: "tool_result";
-      tool_use_id: string;
-      text: string;
-    }
-  | {
-      type: "function_call_output";
-      call_id: string;
-      output: string;
-    };
-export type Message = {
-  role: "user" | "assistant";
+  | { image_url: { url: string }; type: "image_url" };
+type ToolResultMessage = {
+  role: "tool";
+  tool_call_id: string;
+  content: string;
+};
+type AssistantMessage = {
+  role: "assistant";
   tool_calls?: ToolCall[];
   content?: MessageContent[] | string;
-  // base64_image?: string;
-  // tool_calls?: ToolCall[];
-  // name?: string;
-  // tool_call_id?: string;
 };
+type UserMessage = {
+  role: "user";
+  content: MessageContent[] | string;
+};
+export type Message = UserMessage | AssistantMessage | ToolResultMessage;
 
 export interface MessageGroup {
   id: number;

@@ -157,8 +157,10 @@ const ChatInterface = ({
               });
             } else if (data.type == "tool_call_arguments") {
               const lastMessage = structuredClone(prev.at(-1));
+
               if (
-                lastMessage?.tool_calls &&
+                lastMessage?.role === "assistant" &&
+                lastMessage.tool_calls &&
                 lastMessage.tool_calls.at(-1) &&
                 lastMessage.tool_calls.at(-1)!.id == data.id
               ) {
@@ -282,11 +284,19 @@ const ChatInterface = ({
           {messages.map((message, idx) => (
             <div key={`${idx}`}>
               {/* Regular message content */}
-              {typeof message.content == "string" && (
-                <div>
-                  <Markdown>{message.content}</Markdown>
-                </div>
-              )}
+              {typeof message.content == "string" &&
+                message.role !== "tool" && (
+                  <div>
+                    <Markdown>{message.content}</Markdown>
+                  </div>
+                )}
+              {typeof message.content == "string" &&
+                message.role == "tool" &&
+                expandingToolCalls.includes(message.tool_call_id) && (
+                  <div>
+                    <Markdown>{message.content}</Markdown>
+                  </div>
+                )}
               {Array.isArray(message.content) &&
                 message.content.map((content, i) => {
                   console.log("👇content", content);
@@ -317,18 +327,14 @@ const ChatInterface = ({
                         <img src={content.image_url.url} alt="Image" />
                       </div>
                     );
-                  } else if (
-                    content.type == "tool_result" &&
-                    expandingToolCalls.includes(content.tool_use_id)
-                  ) {
-                    return <Markdown>{content.text}</Markdown>;
                   }
                 })}
-              {message.tool_calls &&
+              {message.role === "assistant" &&
+                message.tool_calls &&
                 message.tool_calls.map((toolCall, i) => {
                   return (
                     <ToolCallTag
-                      key={i}
+                      key={toolCall.id}
                       toolCall={toolCall}
                       isExpanded={expandingToolCalls.includes(toolCall.id)}
                       onToggleExpand={() => {
