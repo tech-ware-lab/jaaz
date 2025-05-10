@@ -45,7 +45,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
     },
     strong: ({ node, children, ...props }: any) => {
       return (
-        <span className="font-semibold" {...props}>
+        <span className="font-bold" {...props}>
           {children}
         </span>
       );

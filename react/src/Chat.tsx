@@ -26,8 +26,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./components/ui/select";
+import { exampleMessages } from "./exampleMessages";
+import MultiChoicePrompt from "./MultiChoicePrompt";
 
-const FOOTER_HEIGHT = 170; // Adjust this value as needed
+const FOOTER_HEIGHT = 140; // Adjust this value as needed
 
 const ChatInterface = ({
   messages: initialMessages,
@@ -42,7 +44,7 @@ const ChatInterface = ({
   totalTokens: number;
   agentState: EAgentState;
 }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(exampleMessages);
   const [prompt, setPrompt] = useState("");
   const [disableStop, setDisableStop] = useState(false);
   const [stream, setStream] = useState<string>("");
@@ -251,7 +253,7 @@ const ChatInterface = ({
     <div className="flex flex-col h-screen relative">
       {/* Chat messages */}
       <div
-        className="flex-1 p-4 overflow-y-auto text-left"
+        className="flex-1 overflow-y-auto text-left"
         style={{ paddingBottom: FOOTER_HEIGHT }}
       >
         <div className="space-y-6 max-w-3xl mx-auto">
@@ -303,19 +305,13 @@ const ChatInterface = ({
                     return (
                       <div
                         key={i}
-                        className={`break-all ${
+                        className={`${
                           message.role === "user"
                             ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left"
                             : "text-gray-800 dark:text-gray-200 text-left"
                         } ${
-                          message.role === "user" ? "items-end" : "items-start"
-                        } ${
-                          message.role === "user"
-                            ? "ml-10 items-end"
-                            : "items-start"
-                        } space-y-3 flex flex-col ${
-                          message.role === "user" ? "items-end" : "items-start"
-                        }`}
+                          message.role === "user" ? "ml-auto" : "items-start"
+                        } space-y-3 flex flex-col w-fit`}
                       >
                         <Markdown>{content.text}</Markdown>
                       </div>
@@ -440,9 +436,17 @@ const ToolCallTag = ({
     parsedArgs = JSON.parse(inputs);
   } catch (error) {}
 
+  if (name == "prompt_user_multi_choice") {
+    return <MultiChoicePrompt />;
+  }
+
   return (
     <div className="w-full border rounded-md overflow-hidden">
-      <Button variant={"outline"} onClick={onToggleExpand} className={"w-full"}>
+      <Button
+        variant={"secondary"}
+        onClick={onToggleExpand}
+        className={"w-full justify-start text-left"}
+      >
         {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
         <span
           style={{
@@ -453,22 +457,19 @@ const ToolCallTag = ({
             whiteSpace: "nowrap",
           }}
         >
-          <span className="font-semibold">{name}</span>
+          <span className="font-semibold text-muted-foreground">{name}</span>
 
           {parsedArgs &&
             Object.entries(parsedArgs).map(([key, value], i) => (
               <span key={i} className="ml-1">
+                <span className="text-muted-foreground">{key}</span>=
                 <span className="text-purple-600 dark:text-purple-400">
-                  {key}
-                </span>
-                =
-                <span className="text-green-600 dark:text-green-400">
                   {String(value).slice(0, 100)}
                 </span>
               </span>
             ))}
           {!parsedArgs && (
-            <span className="text-red-600 dark:text-red-400">
+            <span className="text-muted-foreground">
               {String(inputs).slice(0, 100)}
             </span>
           )}

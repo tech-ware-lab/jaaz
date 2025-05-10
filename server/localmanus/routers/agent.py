@@ -266,8 +266,8 @@ async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session
         text_contents = [c.text if c.type == 'text' else "Image result, view user attached image below for detailed result" if c.type == 'image' else json.dumps(c.model_dump()) for c in result.content ]
         text_contents = ''.join(text_contents)
         print('👇tool result text_content length', len(text_contents))
-        # if len(text_contents) > 8000:
-        #     text_contents = text_contents[:8000] + "...Content truncated to 8000 characters due to length limit"
+        if len(text_contents) > 10000:
+            text_contents = text_contents[:10000] + "...Content truncated to 10000 characters due to length limit"
 
         res.append({
             'role': 'tool',
