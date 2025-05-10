@@ -172,7 +172,7 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
                             'id': tool_call.id,
                             'function': {
                                 'name': tool_call.name,
-                                'arguments': tool_call.arguments
+                                'arguments': tool_call.arguments if tool_call.arguments else '{}'
                             }
                         })
                     else:
@@ -183,7 +183,7 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
                             'id': tool_call.id,
                             'function': {
                                 'name': tool_call.name,
-                                'arguments': tool_call.arguments
+                                'arguments': tool_call.arguments if tool_call.arguments else '{}'
                                 }
                             }]
                         })
