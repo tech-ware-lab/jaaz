@@ -11,30 +11,32 @@ Meet **Jaaz**, your all-in-one AI-powered marketing assistant. A fully **local**
 
 ## ✨ Key Features
 
-### 🤖 AI Marketing Content Editor
+**🤖 AI Marketing Content Editor**
 
-* Smart auto-complete & edit suggestions
-* Generate entire posts from a **single image or video**
+* Smart auto-complete & edit suggestions, generate entire posts from a **single image or video**
 
-### 🔁 1-Click Cross-Posting
+**🔁 1-Click Cross-Posting**
 
 * Publish to multiple platforms at once (e.g., Twitter, Medium, LinkedIn), supports ***almost any site*** by AI browser automation
+* AI smartly adapts and optimizes your content to match each platform’s tone, format
 * Track performance and view analytics across posts
 
-### 💬 AI “ReplyGuy”
+**💬 AI “ReplyGuy”**
 
-* Automatically find trending posts in your niche
+* Automatically find best places to mention your product, like Reddit posts, etc.
 * Generate & post replies that **naturally mention your product**
-* Always review before submitting – you stay in control
+* Prompting you to review before submitting (optional, can turn off)
 
-### 🖼️ \[Upcoming] Image & Video Enhancements
+**🖼️ \[Upcoming] Image & Video Enhancements**
 
 * Add stylized text overlays (like you see on Tiktok/CapCut)
 * Auto-generate illustrative images for your content
 
-### 👥 \[Upcoming] Multi-Account Support
+**👥 \[Upcoming] Multi-Account Support**
 
 * Easily switch between multiple identities for posting and engagement
+
+<img width="900" alt="Screenshot 2025-05-11 at 11 28 29 PM" src="https://github.com/user-attachments/assets/739cb0ca-d197-40d9-a0f7-2328b26d210c" />
 
 ---
 
@@ -52,18 +54,18 @@ Meet **Jaaz**, your all-in-one AI-powered marketing assistant. A fully **local**
 
 ## Screenshots
 
-**✨1Click Cross Posting marketing content to multiple platforms, image, text, video supported!**
+#### ✨1Click Cross Posting marketing content to multiple platforms, image, text, video supported!
 
 <img width="700" alt="Screenshot 2025-05-11 at 11 45 03 PM" src="https://github.com/user-attachments/assets/50694bfa-38b5-4eca-a017-0cc3ccf81781" />
 
 
 
-**✍️AI powered content editor, auto complete your writing**
+#### ✍️AI powered content editor, auto complete your writing
 
 <img width="700" alt="auto-complete" src="https://github.com/user-attachments/assets/bed9858d-20d5-40c0-b580-9b9236414663" />
 
 
-**🌐AI will prompt you to login to your account, simply by opening the browser and do a regular login to the website you want to post to. You only need to do this once since it will remember you**
+#### 🌐AI will prompt you to login to your account, simply by opening the browser and do a regular login to the website you want to post to. You only need to do this once since it will remember you
 
 <img width="700" alt="Screenshot 2025-05-11 at 10 53 19 PM" src="https://github.com/user-attachments/assets/ca6052e5-9522-4a69-b73e-8806404071cd" />
 
@@ -72,7 +74,7 @@ For exmple, click in "open browser" link in AI's prompt message will open up the
 
 <img width="400" alt="Screenshot 2025-05-11 at 11 59 24 PM" src="https://github.com/user-attachments/assets/b6395a86-3d5c-4432-8435-564f04388aec" />
 
-**AI "replyguy" - automatic find relevant posts about your product area, generate replies to mention your product naturally under the post, like Replyguy.com (but Free!)**
+#### AI "replyguy" - automatic find relevant posts about your product area, generate replies to mention your product naturally under the post, like Replyguy.com (but Free!)
 
 You can choose which post to reply to, simply by clicking AI provided options:
 
