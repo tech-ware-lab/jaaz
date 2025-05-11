@@ -5,7 +5,7 @@ Meet **Jaaz**, your all-in-one AI-powered marketing assistant. A fully **local**
 ****
 
  🚀 **Currently in Early Beta**
- Interested in early access? **[Join the waitlist](#)** and we’ll reach out with a demo invite! Your feedback will help shape Jaaz and accelerate its public launch.
+ Interested in early access? **[Join our waitlist](https://tally.so/r/nPgeKQ)** and we’ll reach out with a demo invite! Your feedback will help shape Jaaz and accelerate its public launch.
 
 ---
 
