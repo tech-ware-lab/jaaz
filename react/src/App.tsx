@@ -27,6 +27,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { useTheme } from "@/components/theme-provider";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import { Toaster } from "sonner";
+import RightSidebar from "./RightSidebar";
 
 function Home() {
   const [agentState, setAgentState] = useState(EAgentState.IDLE);
@@ -60,7 +61,10 @@ function Home() {
 
   return (
     <div className="flex">
-      <div className="flex-1 flex-grow relative">
+      {/* <div className="w-[20%] bg-sidebar h-screen">
+        <RightSidebar />
+      </div> */}
+      <div className="flex-1 flex-grow relative px-4">
         <ChatInterface
           messages={messages}
           totalTokens={totalTokens}
@@ -69,7 +73,7 @@ function Home() {
           agentState={agentState}
         />
         <div className="absolute top-5 left-8 flex gap-1">
-          {/* <Link to="/settings">
+          <Link to="/settings">
             <Button size={"sm"}>
               <SettingsIcon size={30} />
             </Button>
@@ -80,7 +84,7 @@ function Home() {
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
             {theme === "dark" ? <SunIcon size={30} /> : <MoonIcon size={30} />}
-          </Button> */}
+          </Button>
         </div>
         <div className="absolute top-5 right-8 flex gap-1">
           <Button
@@ -99,7 +103,7 @@ function Home() {
         </div>
       </div>
       {isRightSidebarOpen && (
-        <div className="w-[50vw] bg-sidebar h-screen">
+        <div className="w-[80vw] bg-sidebar h-screen">
           <WorkspaceSidebar />
         </div>
       )}

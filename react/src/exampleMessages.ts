@@ -4,10 +4,28 @@ export const exampleMessages = [
     content: [
       {
         type: "text",
-        text: "Can u search in reddit for relevant posts where people are asking about such product like my AI Marketing Agent Copilot and list 10 posts to best mention my product there!\n\n\n",
+        text: "Can u post this marketing article [AI Marketing Agent Copilot 👋](https://www.reddit.com/r/AI_Agents/comments/1kj8nbu/bulk_auto_ai_video_creator/) to Medium.com",
       },
     ],
   },
+  {
+    role: "assistant",
+    content: [
+      {
+        type: "text",
+        text: "Sure! I'm happy to help you post your marketing post to Medium. I'll open the browser to do it.",
+      },
+    ],
+  },
+  // {
+  //   role: "user",
+  //   content: [
+  //     {
+  //       type: "text",
+  //       text: "Can u search in reddit for relevant posts where people are asking about such product like my AI Marketing Agent Copilot and list 10 posts to best mention my product there!\n\n\n",
+  //     },
+  //   ],
+  // },
   {
     role: "assistant",
     tool_calls: [
@@ -16,7 +34,7 @@ export const exampleMessages = [
         id: "call_haZDmILRV90fD40lVNkkYIa6",
         function: {
           name: "browser_navigate",
-          arguments: '{"url":"https://www.reddit.com"}',
+          arguments: '{"url":"https://www.medium.com"}',
         },
       },
     ],
@@ -26,20 +44,6 @@ export const exampleMessages = [
     tool_call_id: "call_haZDmILRV90fD40lVNkkYIa6",
     content:
       '- Ran Playwright code:\n```js\n// Navigate to https://www.reddit.com\nawait page.goto(\'https://www.reddit.com\');\n```\n\n- Page URL: https://www.reddit.com/\n- Page Title: Reddit - The heart of the internet\n- Page Snapshot\n```yaml\n- link "Skip to main content" [ref=s1e8]:\n  - /url: "#main-content"\n  - generic [ref=s1e10]: Skip to main content\n- generic [ref=s1e22]: Reddit - The heart of the internet\n- banner [ref=s1e45]:\n  - navigation [ref=s1e46]:\n    - link "Home" [ref=s1e59]:\n      - /url: /\n      - img [ref=s1e61]\n      - img [ref=s1e85]\n    - search [ref=s1e101]:\n      - textbox [ref=s1e107]\n    - link "Advertise on Reddit" [ref=s1e119]:\n      - /url: https://ads.reddit.com/register?utm_source=web3x_consumer&utm_name=nav_cta\n      - img [ref=s1e122]\n      - generic [ref=s1e124]:\n        - generic: Advertise on Reddit\n    - button "Open chat" [ref=s1e136]:\n      - img [ref=s1e139]\n      - generic [ref=s1e141]:\n        - generic: Open chat\n    - link "Create post" [ref=s1e152]:\n      - /url: /submit\n      - img [ref=s1e155]\n      - generic [ref=s1e157]: Create\n      - generic [ref=s1e158]:\n        - generic: Create post\n    - generic [ref=s1e161]:\n      - link "Open inbox" [ref=s1e167]:\n        - /url: /notifications\n        - img [ref=s1e170]\n        - generic [ref=s1e172]:\n          - generic: Open inbox\n      - generic:\n        - generic:\n          - generic:\n            - generic: "2"\n    - button "Expand user menu" [ref=s1e188]:\n      - img [ref=s1e199]\n      - generic [ref=s1e205]:\n        - generic: Expand user menu\n- link "Skip to Navigation" [ref=s1e255]:\n  - /url: "#left-sidebar-container"\n- link "Skip to Right Sidebar" [ref=s1e256]:\n  - /url: "#right-sidebar-container"\n- main [ref=s1e260]:\n  - \'button "Sort by: Best" [ref=s1e279]\':\n    - generic [ref=s1e281]: Best\n    - img [ref=s1e283]\n  - button "View:" [ref=s1e293]:\n    - img [ref=s1e296]\n    - img [ref=s1e299]\n  - separator [ref=s1e303]\n  - heading "Feed" [level=1] [ref=s1e327]\n  - article "Bulk Auto AI Video Creator" [ref=s1e330]:\n    - link "Bulk Auto AI Video Creator" [ref=s1e333]:\n      - /url: /r/AI_Agents/comments/1kj8nbu/bulk_auto_ai_video_creator/\n      - generic [ref=s1e334]:\n        - generic: Bulk Auto AI Video Creator\n    - link "r/AI_Agents icon r/AI_Agents" [ref=s1e344]:\n      - /url: /r/AI_Agents/\n      - img "r/AI_Agents icon" [ref=s1e348]\n      - generic [ref=s1e349]: r/AI_Agents\n    - generic [ref=s1e352]: •\n    - time [ref=s1e354]: 37 min. ago\n    - button "Open user actions" [ref=s1e362]:\n      - img [ref=s1e365]\n    - generic [ref=s1e373]:\n      - heading "Bulk Auto AI Video Creator" [level=2] [ref=s1e374]:\n        - link "Bulk Auto AI Video Creator" [ref=s1e376]:\n          - /url: /r/AI_Agents/comments/1kj8nbu/bulk_auto_ai_video_creator/\n          - text: Bulk Auto AI Video Creator\n      - generic:\n        - link "So there are obviously tools where you can feed it pictures and videos and they’ll piece something together. I am looking for something where you give it access to your phones gallery and it just goes to town creating reels based on day, location, etc. Yes I know this sounds ultra lazy, but I have like 10k media’s taken from my years of traveling. Only other option is to hire someone to go through my stuff and create, though that in itself would be invasive as personal info and non of rated stuff through my gallery lol. Would hope if there is a tool out there that they wouldn’t store or steal your data but would have to do research once I found one. If no such auto AI tool, then what’s the best (in your opinion) for making videos from 5-10 medias you feed it?":\n          - /url: /r/AI_Agents/comments/1kj8nbu/bulk_auto_ai_video_creator/\n          - generic:\n            - generic:\n              - paragraph: So there are obviously tools where you can feed it pictures and\n                  videos and they’ll piece something together. I am looking for\n                  something where you give it access to your phones gallery and\n                  it just goes to town creating reels based on day, location,\n                  etc.\n              - paragraph: Yes I know this sounds ultra lazy, but I have like 10k media’s taken\n                  from my years of traveling. Only other option is to hire\n                  someone to go through my stuff and create, though that in\n                  itself would be invasive as personal info and non of rated\n                  stuff through my gallery lol. Would hope if there is a tool\n                  out there that they wouldn’t store or steal your data but\n                  would have to do research once I found one.\n              - paragraph: If no such auto AI tool, then what’s the best (in your opinion) for\n                  making videos from 5-10 medias you feed it?\n    - button "Upvote" [ref=s1e403]:\n      - img [ref=s1e405]\n      - generic [ref=s1e407]:\n        - generic: Upvote\n    - generic [ref=s1e410]: "2"\n    - button "Downvote" [ref=s1e411]:\n      - img [ref=s1e413]\n      - generic [ref=s1e415]:\n        - generic: Downvote\n    - link "0 Go to comments" [ref=s1e417]:\n      - /url: /r/AI_Agents/comments/1kj8nbu/bulk_auto_ai_video_creator/\n      - generic [ref=s1e421]: "0"\n      - generic [ref=s1e422]:\n        - generic: Go to comments\n    - button "Give award" [ref=s1e425]\n    - button "Share Share" [ref=s1e432]:\n      - generic [ref=s1e435]: Share\n      - generic [ref=s1e436]:\n        - generic: Share\n  - separator [ref=s1e449]\n  - \'link "Advertisement: Torn City - World\'\'s Largest Text-based RPG" [ref=s1e455]\':\n    - /url: https://alb.reddit.com/cr?za=c44-mTC9pCxhjKpl85zLDzK3VVUydx8p4t56VVKJEpIaTd2uFAvs0yAsFHm6phNU5o1EvBwKBt_f8gG0-HRCo9UrjjXvHNxG_9JlA01Sb00iaxLUAKeJ6rdxbh0H3gmk3yPMzYoltCSTaNE314-VNXbW-OnvHL3brFkVaOwDNCuqtAI8N2nbrGBbGO7xTPUpSwPvddrKxxrsJn3eoH5ycSkxaWAtdSrKVdzLrwxOV6xB9jUOa1ocf3zPktE7iSY_uV-dsSL6F24Yrd0OpmUZ5V9_7AKpc0Waoal1GYsPrH2Wya3Lx84VP5mDfU768chBPfHUOxaxmh4zzsNWvi2quzyi1OsH-PZc-rwU9K4Wx6RvDSGB4dXzzH3kFyCIHluOV95ckebF_c7xtDHipOBxY0f_1C5nJDcws_rputTcYce63tOSP-PFF_J7A9AwNC5ybHfzSdtIKHh9qCUk9AX1xX0aUsENwAMmjCGG_Z8HUwboIvFyRdshDujdf06UZ9jikPPt-bi8CRvC14pv9GktqGjcY5OpXSq6Yy3I8NcDvnCM8gfcfgcMtLTZ&zp=VlLzGiIXlDpO2ysFkNwyI9zxY6znhwXYkWVELnnTBgWak3rFHK99VHj_4IQO7o_GuD2MIiB0G2tZyV_lUIDpWV0GgGw16_gWN841hkSnFNcg-rZ-5A8k756HrVk8H4-t1nVqDsfXIf42xY1ndmoOk-U3mW04qsC2wCnw_H681qy9c8bE0Xn1SgmH5gEmIXukFQboJLBr-CWUcysf72MFK9cWsxhtTf3gJ9xjl_6loSsqqYnqv4IUXHLa6qfaMQvvXKl6WNRnWXzi9TtPtlQlBKyobLeyGNz95QkWsfiTx_2Njjc5GOpeFpC2uZQAo7l5xdWVWknfrRYyYanFGiApWqlmcB-AtOphrl1J7qpT8erVDYkZlueOgAiysACRPBmkN016-TQsDBL_AbUhtD-hgo5HU3CV1XhqlPPVw9tueU8yR2HEq5GtmNdnDAPV0sqNQKKOG33iMF6cfzTDXOwz9vypJDgXDA\n  - link "u/TORNRPG avatar u/TORNRPG" [ref=s1e464]:\n    - /url: /user/TORNRPG/\n    - img "u/TORNRPG avatar" [ref=s1e469]\n    - generic [ref=s1e470]: u/TORNRPG\n  - generic [ref=s1e471]: •\n  - link "Promoted" [ref=s1e473]:\n    - /url: https://alb.reddit.com/cr?za=c44-mTC9pCxhjKpl85zLDzK3VVUydx8p4t56VVKJEpIaTd2uFAvs0yAsFHm6phNU5o1EvBwKBt_f8gG0-HRCo9UrjjXvHNxG_9JlA01Sb00iaxLUAKeJ6rdxbh0H3gmk3yPMzYoltCSTaNE314-VNXbW-OnvHL3brFkVaOwDNCuqtAI8N2nbrGBbGO7xTPUpSwPvddrKxxrsJn3eoH5ycSkxaWAtdSrKVdzLrwxOV6xB9jUOa1ocf3zPktE7iSY_uV-dsSL6F24Yrd0OpmUZ5V9_7AKpc0Waoal1GYsPrH2Wya3Lx84VP5mDfU768chBPfHUOxaxmh4zzsNWvi2quzyi1OsH-PZc-rwU9K4Wx6RvDSGB4dXzzH3kFyCIHluOV95ckebF_c7xtDHipOBxY0f_1C5nJDcws_rputTcYce63tOSP-PFF_J7A9AwNC5ybHfzSdtIKHh9qCUk9AX1xX0aUsENwAMmjCGG_Z8HUwboIvFyRdshDujdf06UZ9jikPPt-bi8CRvC14pv9GktqGjcY5OpXSq6Yy3I8NcDvnCM8gfcfgcMtLTZ&zp=VlLzGiIXlDpO2ysFkNwyI9zxY6znhwXYkWVELnnTBgWak3rFHK99VHj_4IQO7o_GuD2MIiB0G2tZyV_lUIDpWV0GgGw16_gWN841hkSnFNcg-rZ-5A8k756HrVk8H4-t1nVqDsfXIf42xY1ndmoOk-U3mW04qsC2wCnw_H681qy9c8bE0Xn1SgmH5gEmIXukFQboJLBr-CWUcysf72MFK9cWsxhtTf3gJ9xjl_6loSsqqYnqv4IUXHLa6qfaMQvvXKl6WNRnWXzi9TtPtlQlBKyobLeyGNz95QkWsfiTx_2Njjc5GOpeFpC2uZQAo7l5xdWVWknfrRYyYanFGiApWqlmcB-AtOphrl1J7qpT8erVDYkZlueOgAiysACRPBmkN016-TQsDBL_AbUhtD-hgo5HU3CV1XhqlPPVw9tueU8yR2HEq5GtmNdnDAPV0sqNQKKOG33iMF6cfzTDXOwz9vypJDgXDA\n    - generic [ref=s1e475]: Promoted\n  - link [ref=s1e477]:\n    - /url: https://alb.reddit.com/cr?za=c44-mTC9pCxhjKpl85zLDzK3VVUydx8p4t56VVKJEpIaTd2uFAvs0yAsFHm6phNU5o1EvBwKBt_f8gG0-HRCo9UrjjXvHNxG_9JlA01Sb00iaxLUAKeJ6rdxbh0H3gmk3yPMzYoltCSTaNE314-VNXbW-OnvHL3brFkVaOwDNCuqtAI8N2nbrGBbGO7xTPUpSwPvddrKxxrsJn3eoH5ycSkxaWAtdSrKVdzLrwxOV6xB9jUOa1ocf3zPktE7iSY_uV-dsSL6F24Yrd0OpmUZ5V9_7AKpc0Waoal1GYsPrH2Wya3Lx84VP5mDfU768chBPfHUOxaxmh4zzsNWvi2quzyi1OsH-PZc-rwU9K4Wx6RvDSGB4dXzzH3kFyCIHluOV95ckebF_c7xtDHipOBxY0f_1C5nJDcws_rputTcYce63tOSP-PFF_J7A9AwNC5ybHfzSdtIKHh9qCUk9AX1xX0aUsENwAMmjCGG_Z8HUwboIvFyRdshDujdf06UZ9jikPPt-bi8CRvC14pv9GktqGjcY5OpXSq6Yy3I8NcDvnCM8gfcfgcMtLTZ&zp=VlLzGiIXlDpO2ysFkNwyI9zxY6znhwXYkWVELnnTBgWak3rFHK99VHj_4IQO7o_GuD2MIiB0G2tZyV_lUIDpWV0GgGw16_gWN841hkSnFNcg-rZ-5A8k756HrVk8H4-t1nVqDsfXIf42xY1ndmoOk-U3mW04qsC2wCnw_H681qy9c8bE0Xn1SgmH5gEmIXukFQboJLBr-CWUcysf72MFK9cWsxhtTf3gJ9xjl_6loSsqqYnqv4IUXHLa6qfaMQvvXKl6WNRnWXzi9TtPtlQlBKyobLeyGNz95QkWsfiTx_2Njjc5GOpeFpC2uZQAo7l5xdWVWknfrRYyYanFGiApWqlmcB-AtOphrl1J7qpT8erVDYkZlueOgAiysACRPBmkN016-TQsDBL_AbUhtD-hgo5HU3CV1XhqlPPVw9tueU8yR2HEq5GtmNdnDAPV0sqNQKKOG33iMF6cfzTDXOwz9vypJDgXDA\n  - button "Open user actions" [ref=s1e485]:\n    - img [ref=s1e488]\n  - heading "Torn City - World\'s Largest Text-based RPG Free to Play — Be Anyone. Do Anything. Go Anywhere" [level=2] [ref=s1e496]:\n    - link "Torn City - World\'s Largest Text-based RPG" [ref=s1e500]:\n      - /url: https://alb.reddit.com/cr?za=c44-mTC9pCxhjKpl85zLDzK3VVUydx8p4t56VVKJEpIaTd2uFAvs0yAsFHm6phNU5o1EvBwKBt_f8gG0-HRCo9UrjjXvHNxG_9JlA01Sb00iaxLUAKeJ6rdxbh0H3gmk3yPMzYoltCSTaNE314-VNXbW-OnvHL3brFkVaOwDNCuqtAI8N2nbrGBbGO7xTPUpSwPvddrKxxrsJn3eoH5ycSkxaWAtdSrKVdzLrwxOV6xB9jUOa1ocf3zPktE7iSY_uV-dsSL6F24Yrd0OpmUZ5V9_7AKpc0Waoal1GYsPrH2Wya3Lx84VP5mDfU768chBPfHUOxaxmh4zzsNWvi2quzyi1OsH-PZc-rwU9K4Wx6RvDSGB4dXzzH3kFyCIHluOV95ckebF_c7xtDHipOBxY0f_1C5nJDcws_rputTcYce63tOSP-PFF_J7A9AwNC5ybHfzSdtIKHh9qCUk9AX1xX0aUsENwAMmjCGG_Z8HUwboIvFyRdshDujdf06UZ9jikPPt-bi8CRvC14pv9GktqGjcY5OpXSq6Yy3I8NcDvnCM8gfcfgcMtLTZ&zp=V...Content truncated to 8000 characters due to length limit',
-  },
-  {
-    role: "assistant",
-    tool_calls: [
-      {
-        type: "function",
-        id: "call_gQSenAJ1Cjfq7YraGb8JV8wJ",
-        function: {
-          name: "browser_type",
-          arguments:
-            '{"element":"search box","ref":"s1e107","text":"AI marketing tool"}',
-        },
-      },
-    ],
   },
   {
     role: "tool",
@@ -71,26 +75,25 @@ export const exampleMessages = [
     tool_calls: [
       {
         type: "function",
-        id: "call_R7UhjOb65kqWz2cArw6oxBdm",
+        id: "call_haZDmILRV90fD40lVNkkYIa6",
         function: {
-          name: "browser_snapshot",
-          arguments: "{}",
+          name: "browser_click",
+          arguments: '{"element":"input"}',
         },
       },
     ],
   },
   {
-    role: "tool",
-    tool_call_id: "call_R7UhjOb65kqWz2cArw6oxBdm",
-    content:
-      '- Ran Playwright code:\n```js\n// <internal code to capture accessibility snapshot>\n```\n\n- Page URL: https://www.reddit.com/search/?q=AI+marketing+tool&cId=76c4ee55-d828-4b32-bf15-288533d53843&iId=24b96aee-a2c9-4c2a-a1be-b1f8bf4d6ff0\n- Page Title: AI marketing tool - Reddit Search!\n- Page Snapshot\n```yaml\n- link "Skip to main content" [ref=s4e8]:\n  - /url: "#main-content"\n  - generic [ref=s4e10]: Skip to main content\n- generic [ref=s4e22]: AI marketing tool - Reddit Search!\n- banner [ref=s4e47]:\n  - navigation [ref=s4e48]:\n    - link "Home" [ref=s4e61]:\n      - /url: /\n      - img [ref=s4e63]\n      - img [ref=s4e87]\n    - search [ref=s4e103]:\n      - textbox "Clear search" [ref=s4e109]: AI marketing tool\n      - button "Clear search" [ref=s4e112]:\n        - img [ref=s4e115]\n        - generic [ref=s4e117]:\n          - generic: Clear search\n    - link "Advertise on Reddit" [ref=s4e129]:\n      - /url: https://ads.reddit.com/register?utm_source=web3x_consumer&utm_name=nav_cta\n      - img [ref=s4e132]\n      - generic [ref=s4e134]:\n        - generic: Advertise on Reddit\n    - button "Open chat" [ref=s4e149]:\n      - img [ref=s4e152]\n      - generic [ref=s4e154]:\n        - generic: Open chat\n    - link "Create post" [ref=s4e165]:\n      - /url: /submit\n      - img [ref=s4e168]\n      - generic [ref=s4e170]: Create\n      - generic [ref=s4e171]:\n        - generic: Create post\n    - generic [ref=s4e174]:\n      - link "Open inbox" [ref=s4e180]:\n        - /url: /notifications\n        - img [ref=s4e183]\n        - generic [ref=s4e185]:\n          - generic: Open inbox\n      - generic:\n        - generic:\n          - generic:\n            - generic: "2"\n    - button "Expand user menu" [ref=s4e201]:\n      - img [ref=s4e212]\n      - generic [ref=s4e218]:\n        - generic: Expand user menu\n- generic [ref=s4e256]:\n  - tablist [ref=s4e261]:\n    - tab "Posts" [selected] [ref=s4e262]:\n      - button "Posts" [ref=s4e264]:\n        - generic [ref=s4e269]: Posts\n    - tab "Communities" [ref=s4e270]:\n      - link "Communities" [ref=s4e272]:\n        - /url: /search/?q=AI+marketing+tool&type=communities&cId=76c4ee55-d828-4b32-bf15-288533d53843&iId=24b96aee-a2c9-4c2a-a1be-b1f8bf4d6ff0\n        - generic [ref=s4e277]: Communities\n    - tab "Comments" [ref=s4e278]:\n      - link "Comments" [ref=s4e280]:\n        - /url: /search/?q=AI+marketing+tool&type=comments&cId=76c4ee55-d828-4b32-bf15-288533d53843&iId=24b96aee-a2c9-4c2a-a1be-b1f8bf4d6ff0\n        - generic [ref=s4e285]: Comments\n    - tab "Media" [ref=s4e286]:\n      - link "Media" [ref=s4e288]:\n        - /url: /search/?q=AI+marketing+tool&type=media&cId=76c4ee55-d828-4b32-bf15-288533d53843&iId=24b96aee-a2c9-4c2a-a1be-b1f8bf4d6ff0\n        - generic [ref=s4e293]: Media\n    - tab "People" [ref=s4e294]:\n      - link "People" [ref=s4e296]:\n        - /url: /search/?q=AI+marketing+tool&type=people&cId=76c4ee55-d828-4b32-bf15-288533d53843&iId=24b96aee-a2c9-4c2a-a1be-b1f8bf4d6ff0\n        - generic [ref=s4e301]: People\n  - button "forward" [ref=s4e304]:\n    - img [ref=s4e307]\n    - generic [ref=s4e309]:\n      - generic: forward\n  - button "back" [ref=s4e313]:\n    - img [ref=s4e316]\n    - generic [ref=s4e318]:\n      - generic: back\n  - generic:\n    - generic:\n      - tabpanel\n  - button "Relevance" [ref=s4e329]:\n    - generic [ref=s4e333]: Relevance\n    - img [ref=s4e335]\n  - button "All time" [ref=s4e341]:\n    - generic [ref=s4e345]: All time\n    - img [ref=s4e347]\n- link "Skip to Navigation" [ref=s4e353]:\n  - /url: "#left-sidebar-container"\n- link "Skip to Right Sidebar" [ref=s4e354]:\n  - /url: "#right-sidebar-container"\n- main [ref=s4e358]:\n  - generic [ref=s4e362]:\n    - generic:\n      - heading "Best under the radar AI tools for marketers?" [level=2]:\n        - link "Best under the radar AI tools for marketers?" [ref=s4e365]:\n          - /url: /r/digital_marketing/comments/1btayyg/best_under_the_radar_ai_tools_for_marketers/\n          - generic [ref=s4e366]:\n            - generic: Best under the radar AI tools for marketers?\n    - link "r/digital_marketing icon r/digital_marketing" [ref=s4e377]:\n      - /url: /r/digital_marketing/\n      - img "r/digital_marketing icon" [ref=s4e381]\n      - generic [ref=s4e382]: r/digital_marketing\n    - generic [ref=s4e385]: ·\n    - time [ref=s4e387]: 1y ago\n    - link "Best under the radar AI tools for marketers?" [ref=s4e388]:\n      - /url: /r/digital_marketing/comments/1btayyg/best_under_the_radar_ai_tools_for_marketers/\n    - generic [ref=s4e390]:\n      - generic [ref=s4e391]: "12"\n      - text: votes\n    - generic [ref=s4e392]: ·\n    - generic [ref=s4e394]: "21"\n    - generic [ref=s4e395]: comments\n  - separator [ref=s4e396]\n  - generic [ref=s4e398]:\n    - generic:\n      - heading "How Do You Find AI Tools for Marketing?" [level=2]:\n        - link "How Do You Find AI Tools for Marketing?" [ref=s4e401]:\n          - /url: /r/marketing/comments/1gdgfyt/how_do_you_find_ai_tools_for_marketing/\n          - generic [ref=s4e402]:\n            - generic: How Do You Find AI Tools for Marketing?\n    - link "r/marketing icon r/marketing" [ref=s4e413]:\n      - /url: /r/marketing/\n      - img "r/marketing icon" [ref=s4e417]\n      - generic [ref=s4e418]: r/marketing\n    - generic [ref=s4e421]: ·\n    - time [ref=s4e423]: 6mo ago\n    - link "How Do You Find AI Tools for Marketing?" [ref=s4e424]:\n      - /url: /r/marketing/comments/1gdgfyt/how_do_you_find_ai_tools_for_marketing/\n    - generic [ref=s4e426]:\n      - generic [ref=s4e427]: "60"\n      - text: votes\n    - generic [ref=s4e428]: ·\n    - generic [ref=s4e430]: "42"\n    - generic [ref=s4e431]: comments\n  - separator [ref=s4e432]\n  - generic [ref=s4e434]:\n    - generic:\n      - heading "What AI tools are you using to help with performance marketing?" [level=2]:\n        - link "What AI tools are you using to help with performance marketing?" [ref=s4e437]:\n          - /url: /r/DigitalMarketing/comments/1k65uxz/what_ai_tools_are_you_using_to_help_with/\n          - generic [ref=s4e438]:\n            - generic: What AI tools are you using to help with performance marketing?\n    - link "r/DigitalMarketing icon r/DigitalMarketing" [ref=s4e449]:\n      - /url: /r/DigitalMarketing/\n      - img "r/DigitalMarketing icon" [ref=s4e453]\n      - generic [ref=s4e454]: r/DigitalMarketing\n    - generic [ref=s4e457]: ·\n    - time [ref=s4e459]: 17d ago\n    - link "What AI tools are you using to help with performance marketing?" [ref=s4e460]:\n      - /url: /r/DigitalMarketing/comments/1k65uxz/what_ai_tools_are_you_using_to_help_with/\n    - generic [ref=s4e462]:\n      - generic [ref=s4e463]: "5"\n      - text: votes\n    - generic [ref=s4e464]: ·\n    - generic [ref=s4e466]: "15"\n    - generic [ref=s4e467]: comments\n  - separator [ref=s4e468]\n  - generic [ref=s4e470]:\n    - generic:\n      - heading "What AI marketing tool do you WISH existed?" [level=2]:\n        - link "What AI marketing tool do you WISH existed?" [ref=s4e473]:\n          - /url: /r/smallbusiness/comments/1ebo9tw/what_ai_marketing_tool_do_you_wish_existed/\n          - generic [ref=s4e474]:\n            - generic: What AI marketing tool do you WISH existed?\n    - link "r/smallbusiness" [ref=s4e485]:\n      - /url: /r/smallbusiness/\n      - img [ref=s4e489]\n      - generic [ref=s4e491]: r/smallbusiness\n    - generic [ref=s4e494]: ·\n    - time [ref=s4e496]: 10mo ago\n    - link "What AI marketing tool do you WISH existed?" [ref=s4e497]:\n      - /url: /r/smallbusiness/comments/1ebo9tw/what_ai_marketing_tool_do_you_wish_existed/\n      - text: What\n      - generic [ref=s4e498]: AI marketing tool\n      - text: do you WISH existed?\n    - generic [ref=s4e500]:\n      - generic [ref=s4e501]: "0"\n      - text: votes\n    - generic [ref=s4e502]: ·\n    - generic [ref=s4e504]: "14"\n    - generic [ref=s4e505]: comments\n  - separator [ref=s4e506]\n  - generic [ref=s4e508]:\n    - generic:\n      - heading "Recommended AI Tools for Marketing" [level=2]:\n        - link "Recommended AI Tools for Marketing" [ref=s4e511]:\n          - /url: /r/DigitalMarketing/comments/1hvaavn/recommended_ai_tools_for_marketing/\n          - generic [ref=s4e512]:\n            - generic: Recommended AI Tools for Marketing\n    - link "r/DigitalMarketing icon r/DigitalMarketing" [ref=s4e523]:\n      - /url: /r/DigitalMarketing/\n      - img "r/DigitalMarketing icon" [ref=s4e527]\n      - generic [ref=s4e528]: r/DigitalMarketing\n    - generic [ref=s4e531]: ·\n    - time [ref=s4e533]: 4mo ago\n    - link "Recommended AI Tools for Marketing" [ref=s4e534]:\n      - /url: /r/DigitalMarketing/comments/1hvaavn/recommended_ai_tools_for_marketing/\n    - generic [ref=s4e536]:\n      - generic [ref=s4e537]: "20"\n      - text: votes\n    - generic [ref=s4e538]: ·\n    - generic [ref=s4e540]: "54"\n    - generic [ref=s4e541]: comments\n  - separator [ref=s4e542]\n  - generic [ref=s4e544]:\n    - generic:\n      - heading "What\'s the most impressive AI tool you have ever tried for marketing?" [level=2]:\n        - link "What\'s the most impressive AI tool you have ever tried for marketing?" [ref=s4e547]:\n          - /url: /r/marketing/comments/1c5lq7z/whats_the_most_impressive_ai_tool_you_have_ever/\n          - generic [ref=s4e548]:\n            - generic: What\'s the most impressive AI tool you have ever tried for marketing?\n    - link "r/marketing icon r/marketing" [ref=s4e559]:\n      - /url: /r/marketing/\n      - img "r/marketing icon" [ref=s4e563]\n      - generic [ref=s4e564]: r/marketing\n    - generic [ref=s4e567]: ·\n    - time [ref=s4e569]: 1y ago\n    - link "What\'s the most impressive AI tool you have ever tried for marketing?" [ref=s4e570]:\n      - /url: /r/marketing/comments/1c5lq7z/whats_the_most_impressive_ai_tool_you_have_ever/\n    - generic [ref=s4e572]:\n      - generic [ref=s4e573]: "637"\n      - text: votes\n    - generic [ref=s4e574]: ·\n    - generic [ref=s4e576]: "154"\n    - generic [ref=s4e577]: comments\n  - separator [ref=s4e578]\n  - generic [ref=s4e580]:\n    - generic:\n      - heading "Does Anyone Else Feel Like AI Marketing Tools Are a Full-Time Job ...Content truncated to 8000 characters due to length limit',
-  },
-  {
     role: "assistant",
-    content: [
+    tool_calls: [
       {
-        type: "text",
-        text: "Here are **10 Reddit posts where people might be interested** in your AI marketing tool, choose the ones you want to generate a reply:\n\n ",
+        type: "function",
+        id: "call_haZDmILRV90fD40lVNkkYIa6",
+        function: {
+          name: "browser_type",
+          arguments:
+            '{"text":"AI Marketing Agent Copilot 👋 \n this is a great new product we are working at "}',
+        },
       },
     ],
   },
@@ -101,11 +104,34 @@ export const exampleMessages = [
         type: "function",
         id: "call_gQSenAJ1Cjfq7YraGb8JV8wJ",
         function: {
-          name: "prompt_user_multi_choice",
+          name: "prompt_user_single_choice",
           arguments:
             '{"element":"search box","ref":"s1e107","text":"AI marketing tool"}',
         },
       },
     ],
   },
+  // {
+  //   role: "assistant",
+  //   content: [
+  //     {
+  //       type: "text",
+  //       text: "Here are **10 Reddit posts where people might be interested** in your AI marketing tool, choose the ones you want to generate a reply:\n\n ",
+  //     },
+  //   ],
+  // },
+  // {
+  //   role: "assistant",
+  //   tool_calls: [
+  //     {
+  //       type: "function",
+  //       id: "call_gQSenAJ1Cjfq7YraGb8JV8wJ",
+  //       function: {
+  //         name: "prompt_user_multi_choice",
+  //         arguments:
+  //           '{"element":"search box","ref":"s1e107","text":"AI marketing tool"}',
+  //       },
+  //     },
+  //   ],
+  // },
 ];

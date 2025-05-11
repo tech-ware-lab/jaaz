@@ -5,6 +5,7 @@ import {
   DownloadIcon,
   FolderIcon,
   PlusIcon,
+  SendIcon,
   SparklesIcon,
   TriangleIcon,
 } from "lucide-react";
@@ -104,12 +105,13 @@ export default function WorkspaceSidebar() {
                       size={"sm"}
                       className="bg-purple-600 text-white ml-auto"
                     >
-                      Auto Post 🤖 (8)
+                      <SendIcon className="w-4 h-4" />
+                      Auto Post 🤖 (9)
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="text-base">
-                    <DropdownMenuItem className="text-base">
-                      <Checkbox checked />
+                  <DropdownMenuContent className="text-base px-3">
+                    <DropdownMenuItem className="text-base font-semibold">
+                      <Checkbox checked className="mr-3" />
                       <img
                         src="https://www.redditstatic.com/desktop2x/img/favicon/apple-icon-57x57.png"
                         alt="Reddit"
@@ -117,8 +119,17 @@ export default function WorkspaceSidebar() {
                       />
                       Reddit
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base">
-                      <Checkbox checked />
+                    <DropdownMenuItem className="text-base font-semibold">
+                      <Checkbox checked className="mr-3" />
+                      <img
+                        src="https://www.tiktok.com/favicon.ico"
+                        alt="Tiktok"
+                        className="w-4 h-4"
+                      />
+                      Tiktok
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-base font-semibold">
+                      <Checkbox checked className="mr-3" />
                       <img
                         src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LinkedIn_icon.svg/2048px-LinkedIn_icon.svg.png"
                         alt="LinkedIn"
@@ -126,8 +137,8 @@ export default function WorkspaceSidebar() {
                       />
                       LinkedIn
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base">
-                      <Checkbox checked />
+                    <DropdownMenuItem className="text-base font-semibold">
+                      <Checkbox checked className="mr-3" />
                       <img
                         src="https://abs.twimg.com/icons/apple-touch-icon-192x192.png"
                         alt="Twitter"
@@ -135,8 +146,8 @@ export default function WorkspaceSidebar() {
                       />
                       Twitter
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base">
-                      <Checkbox checked />
+                    <DropdownMenuItem className="text-base font-semibold">
+                      <Checkbox checked className="mr-3" />
                       <img
                         src="https://www.instagram.com/static/images/ico/favicon-192.png/68d99ba29cc8.png"
                         alt="Instagram"
@@ -144,8 +155,8 @@ export default function WorkspaceSidebar() {
                       />
                       Instagram
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base">
-                      <Checkbox checked />
+                    <DropdownMenuItem className="text-base font-semibold">
+                      <Checkbox checked className="mr-3" />
                       <img
                         src="https://miro.medium.com/v2/resize:fit:1400/0*zPzAcHbkOUmfNnuB.jpeg"
                         alt="Medium"
@@ -153,8 +164,8 @@ export default function WorkspaceSidebar() {
                       />
                       Medium
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base">
-                      <Checkbox checked />
+                    <DropdownMenuItem className="text-base font-semibold">
+                      <Checkbox checked className="mr-3" />
                       <img
                         src="https://d2fltix0v2e0sb.cloudfront.net/dev-badge.svg"
                         alt="DEV.to"
@@ -162,8 +173,8 @@ export default function WorkspaceSidebar() {
                       />
                       DEV.to
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base">
-                      <Checkbox checked />
+                    <DropdownMenuItem className="text-base font-semibold">
+                      <Checkbox checked className="mr-3" />
                       <img
                         src="https://www.facebook.com/images/fb_icon_325x325.png"
                         alt="Facebook"
@@ -171,8 +182,8 @@ export default function WorkspaceSidebar() {
                       />
                       Facebook
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base">
-                      <Checkbox checked />
+                    <DropdownMenuItem className="text-base font-semibold">
+                      <Checkbox checked className="mr-3" />
                       <img
                         src="https://cdn.iconscout.com/icon/free/png-256/free-producthunt-logo-icon-download-in-svg-png-gif-file-formats--70-flat-social-icons-color-pack-logos-432534.png?f=webp"
                         alt="Product Hunt"
@@ -180,7 +191,7 @@ export default function WorkspaceSidebar() {
                       />
                       Product Hunt
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base">
+                    <DropdownMenuItem className="text-base font-semibold">
                       <Button
                         variant={"outline"}
                         size={"sm"}
@@ -199,26 +210,22 @@ export default function WorkspaceSidebar() {
         markdown={`
 # AI Marketing Agent Copilot 👋
 Indie hacker launching a new product but don’t have time to do marketing yourself? Want to 10X your user growth? Want to improve SEO and win more internet exposure for your product? We've got you covered.
-
+\n\n
 
 Supercharge your product marketing with AI Copilot — your always-on growth partner.
 From writing launch tweets and blog posts to crafting SEO-optimized landing pages and email campaigns, our AI does the heavy lifting so you can stay focused on building.
-
-
+\n\n
 ## Features
-
+\n\n
 ✅ Auto-generate engaging content tailored to your audience
 ✅ Rank higher on Google with smart, keyword-rich articles
 ✅ Launch on Product Hunt, Reddit, Hacker News with confidence
 ✅ Track performance and iterate faster
 
-**Automatic Marketing Content Generation**
-
-<img width="700px" src="https://raw.githubusercontent.com/11cafe/local-manus/refs/heads/mockup/assets/Screenshot%202025-05-11%20at%201.01.03%20AM.png" alt="Content Generation" />
-
+\n\n
 **Analytics Dashboard to track your content performance**
 
-<img width="700px" src="https://github.com/11cafe/local-manus/blob/mockup/assets/Screenshot%202025-05-11%20at%201.11.06%20AM.png?raw=true" alt="Analytics Dashboard" />
+<img width="700px" src="https://raw.githubusercontent.com/11cafe/local-manus/1f95eb6054f4d791b0ea8078a95e9fed5b3c8f76/assets/Screenshot%202025-05-11%20at%201.11.06%20AM.png" alt="Analytics Dashboard" />
 
 
 Whether you’re pre-launch or post-revenue, AI Copilot helps you grow like a pro — without hiring a team.

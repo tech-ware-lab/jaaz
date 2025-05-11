@@ -1,3 +1,4 @@
+import { InfoIcon } from "lucide-react";
 import { Markdown } from "./components/Markdown";
 import { Button } from "./components/ui/button";
 import { Card } from "./components/ui/card";
@@ -6,22 +7,25 @@ import { Checkbox } from "./components/ui/checkbox";
 export default function MultiChoicePrompt() {
   return (
     <div className="flex flex-col gap-2">
-      <Card className="p-4">
-        <div>
+      <Card className="p-3">
+        <div className="flex gap-2">
+          <InfoIcon className="w-8 h-8" />
           <Markdown>
-            {`Do you want to send below reply to this Reddit post? [Recommended AI Tools for Marketing?](https://www.reddit.com/r/digital_marketing/comments/1btayyg/best_under_the_radar_ai_tools_for_marketers/) \n
-            Reply:
-We're building a one-stop AI marketing tool **Runcafe** that helps you generate content, schedule posts, and analyze your marketing performance. It is a local tool that you can install on your computer. Give it a try at https://runcafe.com
-
-            `}
+            {`**✨Post draft done!** I have made a post draft for you. Please review it. If you want to make any edits, please [open browser](https://www.medium.com) to **edit the post**. If you are happy with the post, please click the button below to submit the post.`}
           </Markdown>
         </div>
-        <Button size={"sm"} variant={"secondary"}>
-          Yes
-        </Button>
-        <Button size={"sm"} variant={"destructive"}>
-          No
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size={"sm"}
+            className="flex-1 bg-purple-600 dark:bg-purple-600 text-white"
+          >
+            Post
+          </Button>
+          <Button size={"sm"} variant={"secondary"} className="flex-1">
+            Cancel
+          </Button>
+        </div>
+        <Markdown>{`![My cat](https://i.imgur.com/gufUD2J.png) \n`}</Markdown>
       </Card>
     </div>
   );

@@ -28,6 +28,7 @@ import {
 } from "./components/ui/select";
 import { exampleMessages } from "./exampleMessages";
 import MultiChoicePrompt from "./MultiChoicePrompt";
+import SingleChoicePrompt from "./SingleChoicePrompt";
 
 const FOOTER_HEIGHT = 140; // Adjust this value as needed
 
@@ -439,6 +440,9 @@ const ToolCallTag = ({
   if (name == "prompt_user_multi_choice") {
     return <MultiChoicePrompt />;
   }
+  if (name == "prompt_user_single_choice") {
+    return <SingleChoicePrompt />;
+  }
 
   return (
     <div className="w-full border rounded-md overflow-hidden">
@@ -463,7 +467,7 @@ const ToolCallTag = ({
             Object.entries(parsedArgs).map(([key, value], i) => (
               <span key={i} className="ml-1">
                 <span className="text-muted-foreground">{key}</span>=
-                <span className="text-purple-600 dark:text-purple-400">
+                <span className="text-muted-foreground">
                   {String(value).slice(0, 100)}
                 </span>
               </span>

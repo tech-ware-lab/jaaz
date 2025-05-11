@@ -1,3 +1,4 @@
+import { SendIcon, SparkleIcon } from "lucide-react";
 import { Markdown } from "./components/Markdown";
 import { Button } from "./components/ui/button";
 import { Card } from "./components/ui/card";
@@ -11,11 +12,11 @@ export default function MultiChoicePrompt() {
 
     "[What AI tools are you using to help with performance marketing?](https://www.reddit.com/r/DigitalMarketing/comments/1k65uxz/what_ai_tools_are_you_using_to_help_with/) - Posted 17 days ago on r/DigitalMarketing. Your tool fits into this discussion on performance marketing tools.",
 
-    "What AI marketing tool do you WISH existed? - Posted 10 months ago on r/smallbusiness. Presenting your tool here could answer the question of the requester.",
+    "[What AI marketing tool do you WISH existed?](https://www.reddit.com/r/smallbusiness/comments/1k65uxz/what_ai_marketing_tool_do_you_wish_existed/) - Posted 10 months ago on r/smallbusiness. Presenting your tool here could answer the question of the requester.",
 
-    "Recommended AI Tools for Marketing - Posted 4 months ago on r/DigitalMarketing. This thread discussing recommended tools is ideal for mentioning your product.",
+    "[Recommended AI Tools for Marketing](https://www.reddit.com/r/DigitalMarketing/comments/1k65uxz/recommended_ai_tools_for_marketing/) - Posted 4 months ago on r/DigitalMarketing. This thread discussing recommended tools is ideal for mentioning your product.",
 
-    "What's the most impressive AI tool you have ever tried for marketing? - Posted 1 year ago on r/marketing. A good opportunity to introduce an impressive aspect of your tool.",
+    "[What's the most impressive AI tool you have ever tried for marketing?](https://www.reddit.com/r/marketing/comments/1gdgfyt/whats_the_most_impressive_ai_tool_you_have_ever/) - Posted 1 year ago on r/marketing. A good opportunity to introduce an impressive aspect of your tool.",
 
     "AI Tools for Content Creation - Older post on r/digital_marketing. Your tool’s features in content creation can be mentioned here.",
 
@@ -33,7 +34,8 @@ export default function MultiChoicePrompt() {
           <Checkbox />
           <label>Select all</label>
         </div>
-        <Button size={"sm"} className="bg-purple-600 text-white">
+        <Button size={"sm"} variant={"outline"}>
+          <SparkleIcon className="w-4 h-4" />
           Generate Reply 🤖 (10)
         </Button>
       </div>

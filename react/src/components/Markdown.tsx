@@ -104,6 +104,16 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
         </h6>
       );
     },
+    blockquote: ({ node, children, ...props }: any) => {
+      return (
+        <blockquote
+          className="border-l-3 border-b-accent-foreground pl-4 py-2"
+          {...props}
+        >
+          {children}
+        </blockquote>
+      );
+    },
   };
 
   return (
