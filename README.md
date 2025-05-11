@@ -1,17 +1,19 @@
 # AI Marketing Agent & Copilot - Jaaz 
 
-Your all-in-one AI marketing agent team! Fully local desktop running and free! "Cursor" for marketers and content creators. It's like having an entire marketing team working for you to 10X your efficiency and supercharge your product growth 📈 
+Your all-in-one AI marketing agent team! Fully local desktop app running for free! "Cursor" for marketers and content creators. It's like having an entire marketing team working for you to 10X your efficiency and supercharge your product growth 📈
+
+We are currently in early beta, if you're interested, **please join our waitlist here:** We will reachout to give you a demo to test! This will also help us gain more signals for our product and expedite our development to launch faster.
 
 Features:
-- AI powered marketing content editor, with **content auto-completion** and content improvement suggestions by AI
-- **Corss posting** content to multiple websites, theoretically supports any website by our AI browser automation tool
-- Track your posts performance and view analytics
-- Human in loop - AI will prompt you dialogs to take actions like login, captcha, paywall, to unblock it from executing task
-- "Replyguy" - search for best place to mention your product, generate and post replies that naturally mentions your product
-- [Upcoming!] Multi-media editions: add fancy fonts of relevant content to your images, generate and insert relavent illustration images for your article, etc.
+- AI powered marketing content editor, with content **auto-completion** and AI edit suggestions, auto generate full marketing post from single image and video demo
+- **Corss posting** content to multiple websites, theoretically supports any website by our AI browser automation tool, track your posts performance and view analytics
+- **"Replyguy"** - search for best place to mention your product, generate and post replies that naturally mentions your product
+- [Upcoming!] **Image & video editions**: add fancy fonts of relevant content to your images, generate and insert relavent illustration images for your article etc.
 - [Upcoming!] Multi account profiles support: switch between multiple accounts to post and comment
 
-Available in both MacOS and Windows Desktop apps! You can use Claude, Openai, etc. through API key, or use your locally deployed Ollama models.
+Available in both MacOS and Windows Desktop apps! You can use Claude, Openai, etc. through API key, or use your locally deployed [Ollama](https://github.com/ollama/ollama) models to enjoy 100% free agent.
+
+Supports Human in loop - AI will prompt you dialogs to take sensitive actions like login, captcha, paywall, confirm post/reply content, etc. to unblock it from executing task safely
 
 <img width="1517" alt="Screenshot 2025-05-11 at 11 28 29 PM" src="https://github.com/user-attachments/assets/739cb0ca-d197-40d9-a0f7-2328b26d210c" />
 
@@ -19,7 +21,7 @@ Available in both MacOS and Windows Desktop apps! You can use Claude, Openai, et
 Powered by our advanced browser automation, file operation, code executor, image generation and edition etc. numberous tools, our agents can utilize these tool to perform various kinds of marketing tasks like creating posts, posting comments, search for best place to post, track post performance and run data analysis, etc.
 
 Security:
-- You can add settings to make AI always prompt you confirmation before doing any senstive actions like posting, commenting, etc.
+- Supports **human-in-loop**: add settings to make AI always prompt you confirmation before doing any senstive actions like posting, commenting, etc.
 - You can choose to only sign-in dedicated marketing accounts that doesn't contain any info like payment, credit cards, etc. It can only access scoped data in dedicated folders and browsers separate from your normal browser.
 - All actions taken by AI are strictly recorded in history, as both text and screenshot images. You can manually search the records to identify any security risks. We plan to run a smart safeguard model in future to identify and block high risk AI actions in future.
 
