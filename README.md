@@ -56,7 +56,7 @@ Meet **Jaaz**, your all-in-one AI-powered marketing assistant. A fully **local**
 
 #### ✨1Click Cross Posting marketing content to multiple platforms, image, text, video supported!
 
-<img width="700" alt="Screenshot 2025-05-11 at 11 45 03 PM" src="https://github.com/user-attachments/assets/50694bfa-38b5-4eca-a017-0cc3ccf81781" />
+<img width="700" alt="cross-posting-dropdown" src="https://github.com/user-attachments/assets/c03367a3-0515-49ae-97be-cb470c3d3e78" />
 
 
 
