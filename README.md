@@ -2,6 +2,7 @@
 
 Your all-in-one AI marketing agent team! Fully local desktop running and free! "Cursor" for marketers and content creators. It's like having an entire marketing team working for you to 10X your efficiency and supercharge your product growth 📈 
 
+
 Powered by our advanced browser automation, file operation, code executor, image generation and edition etc. numberous tools, our agents can utilize these tool to perform various kinds of marketing tasks like creating posts, posting comments, search for best place to post, track post performance and run data analysis, etc.
 
 Features:
@@ -13,7 +14,7 @@ Features:
 - [Upcoming!] Multi-media editions: add fancy fonts of relevant content to your images, generate and insert relavent illustration images for your article, etc.
 - [Upcoming!] Multi account profiles support: switch between multiple accounts to post and comment
 
-You can use Claude, Openai, etc. through API key, or use your locally deployed Ollama models.
+Available in both MacOS and Windows Desktop apps! You can use Claude, Openai, etc. through API key, or use your locally deployed Ollama models.
 
 <img width="1517" alt="Screenshot 2025-05-11 at 11 28 29 PM" src="https://github.com/user-attachments/assets/739cb0ca-d197-40d9-a0f7-2328b26d210c" />
 
