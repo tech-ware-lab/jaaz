@@ -1,33 +1,56 @@
-# AI Marketing Agent & Copilot - Jaaz 
+# 🧠 Jaaz – Your AI Marketing Agent & Copilot
 
-Your all-in-one AI marketing agent team! Fully local desktop app running for free! "Cursor" for marketers and content creators. It's like having an entire marketing team working for you to 10X your efficiency and supercharge your product growth 📈
+Meet **Jaaz**, your all-in-one AI-powered marketing assistant. A fully **local** **desktop app** that runs for **free** — no cloud lock-in, no monthly fees. Think of it as the "Cursor" for marketers and content creators: an always-on team that helps you 10x your productivity and supercharge product growth 📈
 
-We are currently in early beta, if you're interested, **please join our waitlist here:** We will reachout to give you a demo to test! This will also help us gain more signals for our product and expedite our development to launch faster.
+****
 
-Features:
-- AI powered marketing content editor, with content **auto-completion** and AI edit suggestions, auto generate full marketing post from single image and video demo
-- **Corss posting** content to multiple websites, theoretically supports any website by our AI browser automation tool, track your posts performance and view analytics
-- **"Replyguy"** - search for best place to mention your product, generate and post replies that naturally mentions your product
-- [Upcoming!] **Image & video editions**: add fancy fonts of relevant content to your images, generate and insert relavent illustration images for your article etc.
-- [Upcoming!] Multi account profiles support: switch between multiple accounts to post and comment
+ 🚀 **Currently in Early Beta**
+ Interested in early access? **[Join the waitlist](#)** and we’ll reach out with a demo invite! Your feedback will help shape Jaaz and accelerate its public launch.
 
-Available in both MacOS and Windows Desktop apps! You can use Claude, Openai, etc. through API key, or use your locally deployed [Ollama](https://github.com/ollama/ollama) models to enjoy 100% free agent.
+---
 
-Supports Human in loop - AI will prompt you dialogs to take sensitive actions like login, captcha, paywall, confirm post/reply content, etc. to unblock it from executing task safely
+## ✨ Key Features
 
-<img width="1517" alt="Screenshot 2025-05-11 at 11 28 29 PM" src="https://github.com/user-attachments/assets/739cb0ca-d197-40d9-a0f7-2328b26d210c" />
+### 🤖 AI Marketing Content Editor
 
+* Smart auto-complete & edit suggestions
+* Generate entire posts from a **single image or video**
 
-Powered by our advanced browser automation, file operation, code executor, image generation and edition etc. numberous tools, our agents can utilize these tool to perform various kinds of marketing tasks like creating posts, posting comments, search for best place to post, track post performance and run data analysis, etc.
+### 🔁 1-Click Cross-Posting
 
-Security:
-- Supports **human-in-loop**: add settings to make AI always prompt you confirmation before doing any senstive actions like posting, commenting, etc.
-- You can choose to only sign-in dedicated marketing accounts that doesn't contain any info like payment, credit cards, etc. It can only access scoped data in dedicated folders and browsers separate from your normal browser.
-- All actions taken by AI are strictly recorded in history, as both text and screenshot images. You can manually search the records to identify any security risks. We plan to run a smart safeguard model in future to identify and block high risk AI actions in future.
+* Publish to multiple platforms at once (e.g., Twitter, Medium, LinkedIn), supports ***almost any site*** by AI browser automation
+* Track performance and view analytics across posts
 
+### 💬 AI “ReplyGuy”
 
+* Automatically find trending posts in your niche
+* Generate & post replies that **naturally mention your product**
+* Always review before submitting – you stay in control
 
-## Features
+### 🖼️ \[Upcoming] Image & Video Enhancements
+
+* Add stylized text overlays (like you see on Tiktok/CapCut)
+* Auto-generate illustrative images for your content
+
+### 👥 \[Upcoming] Multi-Account Support
+
+* Easily switch between multiple identities for posting and engagement
+
+---
+
+* Available for **macOS** and **Windows**
+* Bring your own AI: use Claude, OpenAI, Gemini via API key, or run locally with [Ollama](https://github.com/ollama/ollama) for **100% free** usage
+
+---
+
+## Security
+
+* **You can choose to require sensitive actions always require your confirmation**: logins, posts, replies, etc.
+* You can choose to only sign-in dedicated marketing accounts that doesn't contain any sensitive info – no access to personal data or credit cards
+* All actions taken by AI are strictly recorded in history, as both text and screenshot images. You can manually search the records to identify any security risks
+* Future plan: add a smart safeguard system to detect and block risky behavior
+
+## Screenshots
 
 **✨1Click Cross Posting marketing content to multiple platforms, image, text, video supported!**
 
@@ -58,7 +81,6 @@ You can choose which post to reply to, simply by clicking AI provided options:
 And it can ask you to review the reply content before submitting the reply:
 
 <img width="500" alt="replyguy-confirm-reply-content" src="https://github.com/user-attachments/assets/7371dc11-e3fd-4966-88b0-73070fbbd1be" />
-
 
 
 
