@@ -9,6 +9,8 @@ Meet **Jaaz**, your all-in-one AI-powered marketing assistant. A fully **local**
 
 ---
 
+[中文](https://github.com/11cafe/local-manus/blob/main/README-zh.md)
+
 ## ✨ Key Features
 
 **🤖 AI Marketing Content Copilot in Editor**
