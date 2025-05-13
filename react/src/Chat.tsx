@@ -45,18 +45,20 @@ const ChatInterface = ({
   totalTokens: number;
   agentState: EAgentState;
 }) => {
-  const [messages, setMessages] = useState<Message[]>(exampleMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
   const [disableStop, setDisableStop] = useState(false);
   const [stream, setStream] = useState<string>("");
   const [model, setModel] = useState<{
     provider: string;
     model: string;
+    url: string;
   }>();
   const [modelList, setModelList] = useState<
     {
       provider: string;
       model: string;
+      url: string;
     }[]
   >([]);
   const webSocketRef = useRef<WebSocket | null>(null);
@@ -71,6 +73,7 @@ const ChatInterface = ({
           data: {
             provider: string;
             model: string;
+            url: string;
           }[]
         ) => {
           if (data.length > 0) {
@@ -223,6 +226,11 @@ const ChatInterface = ({
       );
       return;
     }
+    if (!model.url || model.url == "") {
+      toast.error("Please set the model URL in Settings");
+      return;
+    }
+
     const newMessages = messages.concat([
       {
         role: "user",
@@ -246,6 +254,7 @@ const ChatInterface = ({
         session_id: sessionIdRef.current,
         model: model.model,
         provider: model.provider,
+        url: model.url,
       }),
     }).then((resp) => resp.json());
   };

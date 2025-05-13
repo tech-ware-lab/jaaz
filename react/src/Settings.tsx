@@ -21,43 +21,47 @@ import { ArrowLeftIcon, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 type LLMConfig = {
-  model: string;
-  base_url: string;
+  models: string[];
+  url: string;
+  api_key: string;
   max_tokens: number;
-  temperature: number;
-  api_key?: string;
 };
 
-const PROVIDER_URL_MAPPING: { [key: string]: string } = {
-  anthropic: "https://api.anthropic.com/v1/",
-  openai: "https://api.openai.com/v1/",
+const PROVIDER_NAME_MAPPING: { [key: string]: string } = {
+  anthropic: "Claude",
+  openai: "OpenAI",
+  ollama: "Ollama",
 };
+const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
+  anthropic: {
+    models: ["claude-3-7-sonnet-latest"],
+    url: "https://api.anthropic.com/v1/",
+    api_key: "",
+    max_tokens: 8192,
+  },
+  openai: {
+    models: ["gpt-4o", "gpt-4o-mini"],
+    url: "https://api.openai.com/v1/",
+    api_key: "",
+    max_tokens: 8192,
+  },
+  ollama: {
+    models: [],
+    url: "http://localhost:11434",
+    api_key: "",
+    max_tokens: 8192,
+  },
+};
+
 export default function Settings() {
   const [provider, setProvider] = useState("anthropic");
-  const [config, setConfig] = useState<{ [key: string]: LLMConfig }>({});
+  const [config, setConfig] = useState<{
+    [key: string]: LLMConfig;
+  }>(DEFAULT_CONFIG);
   const [isApiKeyDirty, setIsApiKeyDirty] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-
-  const openaiProvider = {
-    name: "openai",
-    baseUrl: "https://api.openai.com/v1/",
-    models: [
-      { value: "gpt-4o-mini", label: "GPT-4o-mini" },
-      { value: "gpt-4o", label: "GPT-4o" },
-    ],
-  };
-
-  const anthropicProvider = {
-    name: "anthropic",
-    baseUrl: "https://api.anthropic.com/v1/",
-    models: [
-      { value: "claude-3-opus-20240229", label: "Claude 3 Opus" },
-      { value: "claude-3-sonnet-20240229", label: "Claude 3 Sonnet" },
-      { value: "claude-2.1", label: "Claude 2.1" },
-    ],
-  };
 
   const navigate = useNavigate();
 
@@ -65,8 +69,21 @@ export default function Settings() {
     const loadConfig = async () => {
       try {
         const response = await fetch("/api/config");
-        const config = await response.json();
-        setConfig(config);
+        const config: { [key: string]: LLMConfig } = await response.json();
+        setConfig((curConfig) => {
+          const res: { [key: string]: LLMConfig } = {};
+          for (const provider in DEFAULT_CONFIG) {
+            if (config[provider] && typeof config[provider] === "object") {
+              res[provider] = {
+                ...DEFAULT_CONFIG[provider],
+                ...config[provider],
+              };
+            } else {
+              res[provider] = DEFAULT_CONFIG[provider];
+            }
+          }
+          return res;
+        });
       } catch (error) {
         console.error("Error loading configuration:", error);
       } finally {
@@ -81,12 +98,6 @@ export default function Settings() {
     try {
       setErrorMessage("");
 
-      for (const key in config) {
-        if (!config[key].api_key?.length) {
-          setErrorMessage("API key is required");
-          return;
-        }
-      }
       const response = await fetch("/api/config", {
         method: "POST",
         headers: {
@@ -112,19 +123,6 @@ export default function Settings() {
     }
   };
 
-  const getModelOptions = () => {
-    switch (provider) {
-      case "openai":
-        return openaiProvider.models;
-      case "anthropic":
-        return anthropicProvider.models;
-      case "url":
-        return openaiProvider.models.concat(anthropicProvider.models);
-      default:
-        return [];
-    }
-  };
-
   return (
     <div className="flex flex-col items-center justify-center p-4">
       <Button
@@ -134,7 +132,7 @@ export default function Settings() {
       >
         <ArrowLeftIcon />
       </Button>
-      <Card className="w-full max-w-md shadow-lg">
+      <Card className="w-full max-w-[800px] shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
             Settings
@@ -146,36 +144,27 @@ export default function Settings() {
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-zinc-500"></div>
             </div>
           )}
-          {Object.keys(config).map((key) => (
+          {Object.keys(config).map((key, index) => (
             <>
               <div className="space-y-2">
-                <Label htmlFor="provider">Provider</Label>
-                <Select value={provider} onValueChange={setProvider}>
-                  <SelectTrigger id="provider" className="w-full">
-                    <SelectValue placeholder="Select a provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="anthropic">Claude</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                {provider === "url" && (
-                  <Input
-                    placeholder="Enter your API URL"
-                    value={config[key]?.base_url ?? PROVIDER_URL_MAPPING[key]}
-                    onChange={(e) => {
-                      setConfig({
-                        ...config,
-                        [key]: {
-                          ...config[key],
-                          base_url: e.target.value,
-                        },
-                      });
-                    }}
-                    className="w-full"
-                  />
-                )}
+                <p className="font-bold bg-purple-500 text-white p-1 rounded-md w-fit">
+                  {PROVIDER_NAME_MAPPING[key]}
+                </p>
+
+                <Input
+                  placeholder="Enter your API URL"
+                  value={config[key]?.url ?? ""}
+                  onChange={(e) => {
+                    setConfig({
+                      ...config,
+                      [key]: {
+                        ...config[key],
+                        url: e.target.value,
+                      },
+                    });
+                  }}
+                  className="w-full"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="apiKey">API Key</Label>
@@ -220,6 +209,9 @@ export default function Settings() {
                   The maximum number of tokens in the response
                 </p>
               </div>
+              {index !== Object.keys(config).length - 1 && (
+                <div className="my-6 border-t bg-border" />
+              )}
             </>
           ))}
 

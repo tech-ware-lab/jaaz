@@ -59,12 +59,20 @@ SYSTEM_TOOLS = [
             "function": {
                 "name": "finish",
                 "description": "You MUST call this tool when you think the task is finished or you think you can't do anything more. Otherwise, you will be continuously asked to do more about this task indefinitely. Calling this tool will end your turn on this task and hand it over to the user for further instructions.",
-                "parameters": None,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "reason": {
+                            "type": "string",
+                            "description": "The reason for calling this tool"
+                        }
+                    }
+                },
             }
         }
     ]
 
-async def chat_openai(messages: list, session_id: str, model: str, provider: str) -> list:
+async def chat_openai(messages: list, session_id: str, model: str, provider: str, url: str) -> list:
     await send_to_websocket(session_id, {
         'type': 'log',
         'messages': messages
@@ -75,9 +83,6 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
         "tools": SYSTEM_TOOLS + openai_client.tools,
         "stream": True
     }
-    url = app_config.get(provider, {}).get("url", "")
-    if provider == 'ollama':
-        url = app_config.get('ollama', {}).get('url', os.getenv('OLLAMA_HOST', 'http://localhost:11434')).rstrip("/") + "/v1"
     url = url.rstrip("/") + "/chat/completions"
     print('start chat session', model, provider, url)
     async with aiohttp.ClientSession() as session:
@@ -308,6 +313,7 @@ async def chat(request: Request):
     messages = data.get('messages')
     session_id = data.get('session_id')
     provider = data.get('provider')
+    url = data.get('url')
     model = data.get('model')
     if model is None:
         raise HTTPException(
@@ -327,7 +333,8 @@ async def chat(request: Request):
     # Create and store the chat task
     async def chat_loop():
         cur_messages = messages
-        while True:
+        # while True:
+        for i in range(4):
             try:
                 if cur_messages[-1].get('role') == 'assistant' and cur_messages[-1].get('tool_calls') and \
                 cur_messages[-1]['tool_calls'][-1].get('function', {}).get('name') == 'finish':
@@ -339,7 +346,7 @@ async def chat(request: Request):
                     })
                     break
                 else:
-                    cur_messages = await chat_openai(cur_messages, session_id, model, provider)
+                    cur_messages = await chat_openai(cur_messages, session_id, model, provider, url)
             except Exception as e:
                 print(f"Error in chat_loop: {e}")
                 traceback.print_exc()
@@ -402,30 +409,24 @@ async def get_models():
     config = app_config
     res = []
     ollama_models = get_ollama_model_list()
+    ollama_url = config_service.get_config().get('ollama', {}).get('url', os.getenv('OLLAMA_HOST', 'http://localhost:11434'))
     print('👇ollama_models', ollama_models)
     for ollama_model in ollama_models:
         res.append({
             'provider': 'ollama',
             'model': ollama_model,
+            'url': ollama_url
         })
     for provider in config.keys():
         models = config[provider].get('models', [])
-        if not models and provider == 'openai':
+        for model in models:
+            if provider != 'ollama' and config[provider].get('api_key', '') == '':
+                continue
             res.append({
                 'provider': provider,
-                'model': 'gpt-4o'
+                'model': model,
+                'url': config[provider].get('url', '')
             })
-        elif not models and provider == 'anthropic':    
-            res.append({
-                'provider': provider,
-                'model': 'claude-3-7-sonnet-latest'
-            })
-        else:
-            for model in models:
-                res.append({
-                    'provider': provider,
-                    'model': model
-                })
     return res
 
 USER_DATA_DIR = os.getenv("USER_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "user_data"))
