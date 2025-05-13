@@ -29,6 +29,8 @@ import {
 import { exampleMessages } from "./exampleMessages";
 import MultiChoicePrompt from "./MultiChoicePrompt";
 import SingleChoicePrompt from "./SingleChoicePrompt";
+import Spinner from "./components/ui/Spinner";
+import { IconPlayerStop } from "@tabler/icons-react";
 
 const FOOTER_HEIGHT = 140; // Adjust this value as needed
 
@@ -48,7 +50,7 @@ const ChatInterface = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
   const [disableStop, setDisableStop] = useState(false);
-  const [stream, setStream] = useState<string>("");
+  const [pending, setPending] = useState(false);
   const [model, setModel] = useState<{
     provider: string;
     model: string;
@@ -106,6 +108,7 @@ const ChatInterface = ({
           console.log(data);
         }
         if (data.type == "error") {
+          setPending(false);
           toast.error("Error: " + data.error, {
             closeButton: true,
             duration: 3600 * 1000, // set super large duration to make it not auto dismiss
@@ -113,6 +116,8 @@ const ChatInterface = ({
               color: "red",
             },
           });
+        } else if (data.type == "done") {
+          setPending(false);
         } else if (data.type == "info") {
           toast.info(data.info, {
             closeButton: true,
@@ -244,6 +249,7 @@ const ChatInterface = ({
     ]);
     setMessages(newMessages);
     setPrompt("");
+    setPending(true);
     fetch("/api/chat", {
       method: "Post",
       headers: {
@@ -369,61 +375,52 @@ const ChatInterface = ({
         className="flex flex-col absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-950 p-4 gap-2"
         style={{ height: FOOTER_HEIGHT }}
       >
-        {/* Agent Status */}
-        {/* <div className="flex w-full max-w-3xl mx-auto gap-2">
-          <Badge variant={"secondary"} style={{ fontSize: "0.9rem" }}>
-            {agentState == EAgentState.RUNNING && (
-              <div className="flex justify-center items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-zinc-500"></div>
-              </div>
-            )}
-
-            {currentStep !== 0 && (
-              <p>
-                {agentState == EAgentState.RUNNING ? "Running" : "Finished"}{" "}
-                Step: {currentStep}/{maxStep}
-              </p>
-            )}
-          </Badge>
-        </div> */}
-
         {/* Input area */}
-        <div className="flex flex-grow w-full items-center space-x-2 max-w-3xl mx-auto">
-          <Textarea
-            className="flex flex-1 flex-grow h-full"
-            placeholder="What do you want to do?"
-            value={prompt}
-            onChange={(e) => {
-              setPrompt(e.target.value);
-            }}
-            rows={2}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault(); // Prevents adding a new line
-                onSendPrompt();
-              }
-            }}
-          />
-          <Button
-            onClick={onSendPrompt}
-            disabled={agentState == EAgentState.RUNNING}
-          >
-            <SendIcon />
-          </Button>
-          {agentState == EAgentState.RUNNING && (
-            <Button
-              disabled={disableStop}
-              onClick={() => {
-                fetch("/api/cancel");
-                setDisableStop(true);
-                setTimeout(() => {
-                  setDisableStop(false);
-                }, 6000);
-              }}
-            >
-              <StopCircleIcon />
-            </Button>
+        <div className="flex flex-col relative flex-grow w-full space-x-2 max-w-3xl mx-auto">
+          {pending && (
+            <div className="flex items-start text-left absolute left-0 top-0">
+              {<Spinner />}
+            </div>
           )}
+
+          <div className="flex flex-grow w-full items-center space-x-2 mt-7">
+            <Textarea
+              className="flex flex-1 flex-grow h-full"
+              placeholder="What do you want to do?"
+              value={prompt}
+              onChange={(e) => {
+                setPrompt(e.target.value);
+              }}
+              rows={2}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault(); // Prevents adding a new line
+                  onSendPrompt();
+                }
+              }}
+            />
+            {!pending && (
+              <Button onClick={onSendPrompt} disabled={pending}>
+                <SendIcon />
+              </Button>
+            )}
+            {pending && (
+              <Button
+                disabled={disableStop}
+                onClick={() => {
+                  fetch("/api/cancel/" + sessionIdRef.current, {
+                    method: "POST",
+                  })
+                    .then((resp) => resp.json())
+                    .finally(() => {
+                      setPending(false);
+                    });
+                }}
+              >
+                <StopCircleIcon />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

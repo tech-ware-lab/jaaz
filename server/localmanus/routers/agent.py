@@ -327,6 +327,9 @@ async def chat(request: Request):
     session_id = data.get('session_id')
     provider = data.get('provider')
     url = data.get('url')
+    if provider == 'ollama' and not url.endswith('/v1'):
+        # openai compatible url
+        url = url.rstrip("/") + "/v1"
     model = data.get('model')
     if model is None:
         raise HTTPException(
@@ -347,7 +350,7 @@ async def chat(request: Request):
     async def chat_loop():
         cur_messages = messages
         # while True:
-        for i in range(4):
+        while True:
             try:
                 if cur_messages[-1].get('role') == 'assistant' and cur_messages[-1].get('tool_calls') and \
                 cur_messages[-1]['tool_calls'][-1].get('function', {}).get('name') == 'finish':
@@ -368,6 +371,9 @@ async def chat(request: Request):
                     'error': str(e)
                 })
                 break
+        await send_to_websocket(session_id, {
+            'type': 'done'
+        })
 
     task = asyncio.create_task(chat_loop())
     stream_tasks[session_id] = task
@@ -510,7 +516,7 @@ async def initialize_mcp():
 async def list_mcp_servers():
     if mcp_clients is None:
         return {}
-    mcp_config_path = os.path.join(USER_DATA_DIR, "mcpServers.json")
+    mcp_config_path = os.path.join(USER_DATA_DIR, "mcp.json")
     if not os.path.exists(mcp_config_path):
         return {}
     with open(mcp_config_path, "r") as f:
