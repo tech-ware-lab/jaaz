@@ -168,9 +168,22 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
                         'text': content_combine
                     }]
                 })
+            else:
+                messages.append({
+                    'role': 'assistant',
+                    'tool_calls': [{
+                        'type': 'function',
+                        'id': 'finish',
+                        'function': {
+                            'name': 'finish',
+                            'arguments': '{}'
+                        }
+                    }]
+                })
             if len(cur_tool_calls) > 0:
                 for tool_call in cur_tool_calls:
                     # append tool call to messages of assistant
+                    print('🕹️tool_call', tool_call)
                     if messages[-1].get('tool_calls') is not None:
                         messages[-1]['tool_calls'].append({
                             'type': 'function',
