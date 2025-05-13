@@ -32,9 +32,6 @@ Meet **Jaaz**, your all-in-one AI-powered marketing assistant. A fully **local**
 * Add stylized text overlays (like you see on Tiktok/CapCut)
 * Auto-generate illustrative images for your content
 
-**👥 \[Upcoming] Multi-Account Support**
-
-* Easily switch between multiple identities for posting and engagement
 
 <img width="900" alt="Screenshot 2025-05-11 at 11 28 29 PM" src="https://github.com/user-attachments/assets/739cb0ca-d197-40d9-a0f7-2328b26d210c" />
 
