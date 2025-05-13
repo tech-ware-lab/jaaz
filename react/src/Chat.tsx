@@ -185,16 +185,6 @@ const ChatInterface = ({
                   text: string;
                 }[];
               } = data;
-              // setMessages(
-              //   prev.concat({
-              //     role: "user",
-              //     content: res.content.map((content) => ({
-              //       ...content,
-              //       type: "tool_result",
-              //       tool_use_id: res.id,
-              //     })),
-              //   })
-              // );
             } else if (data.type == "all_messages") {
               console.log("👇all_messages", data.messages);
               return data.messages;
@@ -367,6 +357,9 @@ const ChatInterface = ({
                 })}
             </div>
           ))}
+          {pending && messages.at(-1)?.role == "user" && (
+            <div className="flex items-start text-left">{<Spinner />}</div>
+          )}
         </div>
       </div>
 
@@ -377,12 +370,6 @@ const ChatInterface = ({
       >
         {/* Input area */}
         <div className="flex flex-col relative flex-grow w-full space-x-2 max-w-3xl mx-auto">
-          {pending && (
-            <div className="flex items-start text-left absolute left-0 top-0">
-              {<Spinner />}
-            </div>
-          )}
-
           <div className="flex flex-grow w-full items-center space-x-2 mt-7">
             <Textarea
               className="flex flex-1 flex-grow h-full"

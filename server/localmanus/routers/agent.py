@@ -379,6 +379,8 @@ async def chat(request: Request):
     stream_tasks[session_id] = task
     try:
         await task
+    except asyncio.exceptions.CancelledError:
+        print(f"🛑Session {session_id} cancelled during stream")
     finally:
         stream_tasks.pop(session_id, None)
 
