@@ -45,7 +45,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
     },
     strong: ({ node, children, ...props }: any) => {
       return (
-        <span className="font-semibold" {...props}>
+        <span className="font-bold" {...props}>
           {children}
         </span>
       );
@@ -102,6 +102,16 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
         <h6 className="text-sm font-semibold mt-6 mb-2" {...props}>
           {children}
         </h6>
+      );
+    },
+    blockquote: ({ node, children, ...props }: any) => {
+      return (
+        <blockquote
+          className="border-l-3 border-b-accent-foreground pl-4 py-2"
+          {...props}
+        >
+          {children}
+        </blockquote>
       );
     },
   };

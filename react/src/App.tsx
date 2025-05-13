@@ -27,6 +27,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { useTheme } from "@/components/theme-provider";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import { Toaster } from "sonner";
+import LeftSidebar from "./LeftSidebar";
 
 function Home() {
   const [agentState, setAgentState] = useState(EAgentState.IDLE);
@@ -34,6 +35,7 @@ function Home() {
   const [currentStep, setCurrentStep] = useState(0);
   const [maxSteps, setMaxSteps] = useState(0);
   const [totalTokens, setTotalTokens] = useState(0);
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
 
   const { setTheme, theme } = useTheme();
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
@@ -60,7 +62,12 @@ function Home() {
 
   return (
     <div className="flex">
-      <div className="flex-1 flex-grow relative">
+      {isLeftSidebarOpen && (
+        <div className="w-[16%] bg-sidebar h-screen">
+          <LeftSidebar />
+        </div>
+      )}
+      <div className="flex-1 flex-grow relative px-4">
         <ChatInterface
           messages={messages}
           totalTokens={totalTokens}
@@ -69,8 +76,15 @@ function Home() {
           agentState={agentState}
         />
         <div className="absolute top-5 left-8 flex gap-1">
+          <Button
+            size={"sm"}
+            variant={"ghost"}
+            onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+          >
+            <SidebarIcon size={30} />
+          </Button>
           <Link to="/settings">
-            <Button size={"sm"}>
+            <Button size={"sm"} variant={"secondary"}>
               <SettingsIcon size={30} />
             </Button>
           </Link>
@@ -99,7 +113,7 @@ function Home() {
         </div>
       </div>
       {isRightSidebarOpen && (
-        <div className="w-[400px] bg-sidebar h-screen">
+        <div className="w-[80vw] bg-sidebar h-screen">
           <WorkspaceSidebar />
         </div>
       )}

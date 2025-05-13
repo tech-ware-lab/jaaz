@@ -59,12 +59,20 @@ SYSTEM_TOOLS = [
             "function": {
                 "name": "finish",
                 "description": "You MUST call this tool when you think the task is finished or you think you can't do anything more. Otherwise, you will be continuously asked to do more about this task indefinitely. Calling this tool will end your turn on this task and hand it over to the user for further instructions.",
-                "parameters": None,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "reason": {
+                            "type": "string",
+                            "description": "The reason for calling this tool"
+                        }
+                    }
+                },
             }
         }
     ]
 
-async def chat_openai(messages: list, session_id: str, model: str, provider: str) -> list:
+async def chat_openai(messages: list, session_id: str, model: str, provider: str, url: str) -> list:
     await send_to_websocket(session_id, {
         'type': 'log',
         'messages': messages
@@ -75,9 +83,6 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
         "tools": SYSTEM_TOOLS + openai_client.tools,
         "stream": True
     }
-    url = app_config.get(provider, {}).get("url", "")
-    if provider == 'ollama':
-        url = app_config.get('ollama', {}).get('url', os.getenv('OLLAMA_HOST', 'http://localhost:11434')).rstrip("/") + "/v1"
     url = url.rstrip("/") + "/chat/completions"
     print('start chat session', model, provider, url)
     async with aiohttp.ClientSession() as session:
@@ -163,9 +168,22 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
                         'text': content_combine
                     }]
                 })
+            else:
+                messages.append({
+                    'role': 'assistant',
+                    'tool_calls': [{
+                        'type': 'function',
+                        'id': 'finish',
+                        'function': {
+                            'name': 'finish',
+                            'arguments': '{}'
+                        }
+                    }]
+                })
             if len(cur_tool_calls) > 0:
                 for tool_call in cur_tool_calls:
                     # append tool call to messages of assistant
+                    print('🕹️tool_call', tool_call)
                     if messages[-1].get('tool_calls') is not None:
                         messages[-1]['tool_calls'].append({
                             'type': 'function',
@@ -266,8 +284,8 @@ async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session
         text_contents = [c.text if c.type == 'text' else "Image result, view user attached image below for detailed result" if c.type == 'image' else json.dumps(c.model_dump()) for c in result.content ]
         text_contents = ''.join(text_contents)
         print('👇tool result text_content length', len(text_contents))
-        # if len(text_contents) > 8000:
-        #     text_contents = text_contents[:8000] + "...Content truncated to 8000 characters due to length limit"
+        if len(text_contents) > 10000:
+            text_contents = text_contents[:10000] + "...Content truncated to 10000 characters due to length limit"
 
         res.append({
             'role': 'tool',
@@ -308,6 +326,10 @@ async def chat(request: Request):
     messages = data.get('messages')
     session_id = data.get('session_id')
     provider = data.get('provider')
+    url = data.get('url')
+    if provider == 'ollama' and not url.endswith('/v1'):
+        # openai compatible url
+        url = url.rstrip("/") + "/v1"
     model = data.get('model')
     if model is None:
         raise HTTPException(
@@ -327,6 +349,7 @@ async def chat(request: Request):
     # Create and store the chat task
     async def chat_loop():
         cur_messages = messages
+        # while True:
         while True:
             try:
                 if cur_messages[-1].get('role') == 'assistant' and cur_messages[-1].get('tool_calls') and \
@@ -339,7 +362,7 @@ async def chat(request: Request):
                     })
                     break
                 else:
-                    cur_messages = await chat_openai(cur_messages, session_id, model, provider)
+                    cur_messages = await chat_openai(cur_messages, session_id, model, provider, url)
             except Exception as e:
                 print(f"Error in chat_loop: {e}")
                 traceback.print_exc()
@@ -348,11 +371,16 @@ async def chat(request: Request):
                     'error': str(e)
                 })
                 break
+        await send_to_websocket(session_id, {
+            'type': 'done'
+        })
 
     task = asyncio.create_task(chat_loop())
     stream_tasks[session_id] = task
     try:
         await task
+    except asyncio.exceptions.CancelledError:
+        print(f"🛑Session {session_id} cancelled during stream")
     finally:
         stream_tasks.pop(session_id, None)
 
@@ -402,30 +430,24 @@ async def get_models():
     config = app_config
     res = []
     ollama_models = get_ollama_model_list()
+    ollama_url = config_service.get_config().get('ollama', {}).get('url', os.getenv('OLLAMA_HOST', 'http://localhost:11434'))
     print('👇ollama_models', ollama_models)
     for ollama_model in ollama_models:
         res.append({
             'provider': 'ollama',
             'model': ollama_model,
+            'url': ollama_url
         })
     for provider in config.keys():
         models = config[provider].get('models', [])
-        if not models and provider == 'openai':
+        for model in models:
+            if provider != 'ollama' and config[provider].get('api_key', '') == '':
+                continue
             res.append({
                 'provider': provider,
-                'model': 'gpt-4o'
+                'model': model,
+                'url': config[provider].get('url', '')
             })
-        elif not models and provider == 'anthropic':    
-            res.append({
-                'provider': provider,
-                'model': 'claude-3-7-sonnet-latest'
-            })
-        else:
-            for model in models:
-                res.append({
-                    'provider': provider,
-                    'model': model
-                })
     return res
 
 USER_DATA_DIR = os.getenv("USER_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "user_data"))
@@ -496,7 +518,7 @@ async def initialize_mcp():
 async def list_mcp_servers():
     if mcp_clients is None:
         return {}
-    mcp_config_path = os.path.join(USER_DATA_DIR, "mcpServers.json")
+    mcp_config_path = os.path.join(USER_DATA_DIR, "mcp.json")
     if not os.path.exists(mcp_config_path):
         return {}
     with open(mcp_config_path, "r") as f:
