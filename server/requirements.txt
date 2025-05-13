@@ -8,3 +8,4 @@ openai
 ollama
 aiohttp
 gunicorn
+aiosqlite
