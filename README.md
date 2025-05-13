@@ -11,7 +11,7 @@ Meet **Jaaz**, your all-in-one AI-powered marketing assistant. A fully **local**
 
 ## ✨ Key Features
 
-**🤖 AI Marketing Content Editor**
+**🤖 AI Marketing Content Copilot in Editor**
 
 * Smart auto-complete & edit suggestions, generate entire posts from a **single image or video**
 
