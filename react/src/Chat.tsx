@@ -26,8 +26,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./components/ui/select";
+import { exampleMessages } from "./exampleMessages";
+import MultiChoicePrompt from "./MultiChoicePrompt";
+import SingleChoicePrompt from "./SingleChoicePrompt";
+import Spinner from "./components/ui/Spinner";
+import { IconPlayerStop } from "@tabler/icons-react";
 
-const FOOTER_HEIGHT = 170; // Adjust this value as needed
+const FOOTER_HEIGHT = 140; // Adjust this value as needed
 
 const ChatInterface = ({
   messages: initialMessages,
@@ -45,15 +50,17 @@ const ChatInterface = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
   const [disableStop, setDisableStop] = useState(false);
-  const [stream, setStream] = useState<string>("");
+  const [pending, setPending] = useState(false);
   const [model, setModel] = useState<{
     provider: string;
     model: string;
+    url: string;
   }>();
   const [modelList, setModelList] = useState<
     {
       provider: string;
       model: string;
+      url: string;
     }[]
   >([]);
   const webSocketRef = useRef<WebSocket | null>(null);
@@ -68,6 +75,7 @@ const ChatInterface = ({
           data: {
             provider: string;
             model: string;
+            url: string;
           }[]
         ) => {
           if (data.length > 0) {
@@ -100,6 +108,7 @@ const ChatInterface = ({
           console.log(data);
         }
         if (data.type == "error") {
+          setPending(false);
           toast.error("Error: " + data.error, {
             closeButton: true,
             duration: 3600 * 1000, // set super large duration to make it not auto dismiss
@@ -107,6 +116,8 @@ const ChatInterface = ({
               color: "red",
             },
           });
+        } else if (data.type == "done") {
+          setPending(false);
         } else if (data.type == "info") {
           toast.info(data.info, {
             closeButton: true,
@@ -174,16 +185,6 @@ const ChatInterface = ({
                   text: string;
                 }[];
               } = data;
-              // setMessages(
-              //   prev.concat({
-              //     role: "user",
-              //     content: res.content.map((content) => ({
-              //       ...content,
-              //       type: "tool_result",
-              //       tool_use_id: res.id,
-              //     })),
-              //   })
-              // );
             } else if (data.type == "all_messages") {
               console.log("👇all_messages", data.messages);
               return data.messages;
@@ -220,6 +221,11 @@ const ChatInterface = ({
       );
       return;
     }
+    if (!model.url || model.url == "") {
+      toast.error("Please set the model URL in Settings");
+      return;
+    }
+
     const newMessages = messages.concat([
       {
         role: "user",
@@ -233,6 +239,7 @@ const ChatInterface = ({
     ]);
     setMessages(newMessages);
     setPrompt("");
+    setPending(true);
     fetch("/api/chat", {
       method: "Post",
       headers: {
@@ -243,6 +250,7 @@ const ChatInterface = ({
         session_id: sessionIdRef.current,
         model: model.model,
         provider: model.provider,
+        url: model.url,
       }),
     }).then((resp) => resp.json());
   };
@@ -251,7 +259,7 @@ const ChatInterface = ({
     <div className="flex flex-col h-screen relative">
       {/* Chat messages */}
       <div
-        className="flex-1 p-4 overflow-y-auto text-left"
+        className="flex-1 overflow-y-auto text-left"
         style={{ paddingBottom: FOOTER_HEIGHT }}
       >
         <div className="space-y-6 max-w-3xl mx-auto">
@@ -303,19 +311,13 @@ const ChatInterface = ({
                     return (
                       <div
                         key={i}
-                        className={`break-all ${
+                        className={`${
                           message.role === "user"
                             ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left"
                             : "text-gray-800 dark:text-gray-200 text-left"
                         } ${
-                          message.role === "user" ? "items-end" : "items-start"
-                        } ${
-                          message.role === "user"
-                            ? "ml-10 items-end"
-                            : "items-start"
-                        } space-y-3 flex flex-col ${
-                          message.role === "user" ? "items-end" : "items-start"
-                        }`}
+                          message.role === "user" ? "ml-auto" : "items-start"
+                        } space-y-3 flex flex-col w-fit`}
                       >
                         <Markdown>{content.text}</Markdown>
                       </div>
@@ -355,6 +357,9 @@ const ChatInterface = ({
                 })}
             </div>
           ))}
+          {pending && messages.at(-1)?.role == "user" && (
+            <div className="flex items-start text-left">{<Spinner />}</div>
+          )}
         </div>
       </div>
 
@@ -363,61 +368,46 @@ const ChatInterface = ({
         className="flex flex-col absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-950 p-4 gap-2"
         style={{ height: FOOTER_HEIGHT }}
       >
-        {/* Agent Status */}
-        {/* <div className="flex w-full max-w-3xl mx-auto gap-2">
-          <Badge variant={"secondary"} style={{ fontSize: "0.9rem" }}>
-            {agentState == EAgentState.RUNNING && (
-              <div className="flex justify-center items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-zinc-500"></div>
-              </div>
-            )}
-
-            {currentStep !== 0 && (
-              <p>
-                {agentState == EAgentState.RUNNING ? "Running" : "Finished"}{" "}
-                Step: {currentStep}/{maxStep}
-              </p>
-            )}
-          </Badge>
-        </div> */}
-
         {/* Input area */}
-        <div className="flex flex-grow w-full items-center space-x-2 max-w-3xl mx-auto">
-          <Textarea
-            className="flex flex-1 flex-grow h-full"
-            placeholder="What do you want to do?"
-            value={prompt}
-            onChange={(e) => {
-              setPrompt(e.target.value);
-            }}
-            rows={2}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault(); // Prevents adding a new line
-                onSendPrompt();
-              }
-            }}
-          />
-          <Button
-            onClick={onSendPrompt}
-            disabled={agentState == EAgentState.RUNNING}
-          >
-            <SendIcon />
-          </Button>
-          {agentState == EAgentState.RUNNING && (
-            <Button
-              disabled={disableStop}
-              onClick={() => {
-                fetch("/api/cancel");
-                setDisableStop(true);
-                setTimeout(() => {
-                  setDisableStop(false);
-                }, 6000);
+        <div className="flex flex-col relative flex-grow w-full space-x-2 max-w-3xl mx-auto">
+          <div className="flex flex-grow w-full items-center space-x-2 mt-7">
+            <Textarea
+              className="flex flex-1 flex-grow h-full"
+              placeholder="What do you want to do?"
+              value={prompt}
+              onChange={(e) => {
+                setPrompt(e.target.value);
               }}
-            >
-              <StopCircleIcon />
-            </Button>
-          )}
+              rows={2}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault(); // Prevents adding a new line
+                  onSendPrompt();
+                }
+              }}
+            />
+            {!pending && (
+              <Button onClick={onSendPrompt} disabled={pending}>
+                <SendIcon />
+              </Button>
+            )}
+            {pending && (
+              <Button
+                disabled={disableStop}
+                onClick={() => {
+                  fetch("/api/cancel/" + sessionIdRef.current, {
+                    method: "POST",
+                  })
+                    .then((resp) => resp.json())
+                    .finally(() => {
+                      setPending(false);
+                    });
+                }}
+              >
+                <StopCircleIcon />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -440,9 +430,20 @@ const ToolCallTag = ({
     parsedArgs = JSON.parse(inputs);
   } catch (error) {}
 
+  if (name == "prompt_user_multi_choice") {
+    return <MultiChoicePrompt />;
+  }
+  if (name == "prompt_user_single_choice") {
+    return <SingleChoicePrompt />;
+  }
+
   return (
     <div className="w-full border rounded-md overflow-hidden">
-      <Button variant={"outline"} onClick={onToggleExpand} className={"w-full"}>
+      <Button
+        variant={"secondary"}
+        onClick={onToggleExpand}
+        className={"w-full justify-start text-left"}
+      >
         {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
         <span
           style={{
@@ -453,22 +454,19 @@ const ToolCallTag = ({
             whiteSpace: "nowrap",
           }}
         >
-          <span className="font-semibold">{name}</span>
+          <span className="font-semibold text-muted-foreground">{name}</span>
 
           {parsedArgs &&
             Object.entries(parsedArgs).map(([key, value], i) => (
               <span key={i} className="ml-1">
-                <span className="text-purple-600 dark:text-purple-400">
-                  {key}
-                </span>
-                =
-                <span className="text-green-600 dark:text-green-400">
+                <span className="text-muted-foreground">{key}</span>=
+                <span className="text-muted-foreground">
                   {String(value).slice(0, 100)}
                 </span>
               </span>
             ))}
           {!parsedArgs && (
-            <span className="text-red-600 dark:text-red-400">
+            <span className="text-muted-foreground">
               {String(inputs).slice(0, 100)}
             </span>
           )}

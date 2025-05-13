@@ -1,4 +1,24 @@
 #root {
   margin: 0 auto;
-  text-align: center;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+h2 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+h3 {
+  font-size: 1.25rem;
+  font-weight: 400;
+  margin-bottom: 0.5rem;
+}
+h4 {
+  font-size: 1rem;
+  font-weight: 300;
+  margin-bottom: 0.5rem;
 }

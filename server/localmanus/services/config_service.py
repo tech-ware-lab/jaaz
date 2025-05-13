@@ -2,14 +2,7 @@ import os
 import traceback
 import toml
 
-DEFAULT_CONFIG =  {
-                    "anthropic": {
-                        "base_url": "https://api.anthropic.com/v1/", 
-                        "api_key": "",                               
-                        "max_tokens": 8192, # Maximum number of tokens in the response
-                        "temperature": 0.0  # Controls randomness
-                    }
-                }
+DEFAULT_CONFIG =  {}
 USER_DATA_DIR = os.getenv("USER_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "user_data"))
 
 app_config = {}
