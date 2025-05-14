@@ -28,6 +28,7 @@ import { useTheme } from "@/components/theme-provider";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import { Toaster } from "sonner";
 import LeftSidebar from "./LeftSidebar";
+import { nanoid } from "nanoid";
 
 function Home() {
   const [agentState, setAgentState] = useState(EAgentState.IDLE);
@@ -36,12 +37,12 @@ function Home() {
   const [maxSteps, setMaxSteps] = useState(0);
   const [totalTokens, setTotalTokens] = useState(0);
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
+  const [sessionId, setSessionId] = useState<string>(nanoid());
 
   const { setTheme, theme } = useTheme();
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
-  const webSocketRef = useRef<WebSocket | null>(null);
   useEffect(() => {
     fetch("/api/config/exists")
       .then((res) => res.json())
@@ -52,29 +53,15 @@ function Home() {
       });
   }, []);
 
-  // Example function to send a message to the server
-  const sendMessage = () => {
-    const socket = webSocketRef.current;
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ text: "Hello from React client!" }));
-    }
-  };
-
   return (
     <div className="flex">
       {isLeftSidebarOpen && (
         <div className="w-[16%] bg-sidebar h-screen">
-          <LeftSidebar />
+          <LeftSidebar sessionId={sessionId} setSessionId={setSessionId} />
         </div>
       )}
       <div className="flex-1 flex-grow relative px-4">
-        <ChatInterface
-          messages={messages}
-          totalTokens={totalTokens}
-          currentStep={currentStep}
-          maxStep={maxSteps}
-          agentState={agentState}
-        />
+        <ChatInterface sessionId={sessionId} />
         <div className="absolute top-5 left-8 flex gap-1">
           <Button
             size={"sm"}
@@ -113,7 +100,7 @@ function Home() {
         </div>
       </div>
       {isRightSidebarOpen && (
-        <div className="w-[80vw] bg-sidebar h-screen">
+        <div className="w-[40%] bg-sidebar h-screen">
           <WorkspaceSidebar />
         </div>
       )}

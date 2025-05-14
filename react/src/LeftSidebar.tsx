@@ -1,17 +1,15 @@
-import {
-  CheckCheckIcon,
-  CheckIcon,
-  CircleCheckIcon,
-  PencilIcon,
-  PlusIcon,
-} from "lucide-react";
+import { PencilIcon, PlusIcon } from "lucide-react";
 import { Button } from "./components/ui/button";
-import Spinner from "./components/ui/Spinner";
-import { IconCircleCheckFilled } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { ChatSession } from "./types/types";
 
-export default function RightSidebar() {
+export default function LeftSidebar({
+  sessionId,
+  setSessionId,
+}: {
+  sessionId: string;
+  setSessionId: (sessionId: string) => void;
+}) {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   useEffect(() => {
     const fetchChatSessions = async () => {
@@ -43,11 +41,20 @@ export default function RightSidebar() {
         <PencilIcon className="w-4 h-4 text-xs size-4" /> Write
       </Button>
 
-      <div className="flex flex-col text-left justify-start">
+      <div className="flex flex-col text-left justify-start overflow-y-auto h-full">
         {chatSessions.map((session) => (
-          <Button variant={"ghost"} className="justify-start text-left px-2">
+          <Button
+            key={session.id}
+            variant={session.id === sessionId ? "default" : "ghost"}
+            className="justify-start text-left px-2 w-full"
+            onClick={() => {
+              setSessionId(session.id);
+            }}
+          >
             {/* <Spinner /> */}
-            {!!session.title ? session.title : "Untitled"}
+            <span className="truncate">
+              {!!session.title ? session.title : "Untitled"}
+            </span>
           </Button>
         ))}
       </div>

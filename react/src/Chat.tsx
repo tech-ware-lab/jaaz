@@ -26,27 +26,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./components/ui/select";
-import { exampleMessages } from "./exampleMessages";
 import MultiChoicePrompt from "./MultiChoicePrompt";
 import SingleChoicePrompt from "./SingleChoicePrompt";
 import Spinner from "./components/ui/Spinner";
-import { IconPlayerStop } from "@tabler/icons-react";
 
-const FOOTER_HEIGHT = 140; // Adjust this value as needed
+const FOOTER_HEIGHT = 140; // Keep this as minimum height
+const MAX_INPUT_HEIGHT = 300; // Add this for maximum input height
 
-const ChatInterface = ({
-  messages: initialMessages,
-  currentStep,
-  maxStep,
-  totalTokens,
-  agentState,
-}: {
-  messages: Message[];
-  currentStep: number;
-  maxStep: number;
-  totalTokens: number;
-  agentState: EAgentState;
-}) => {
+const ChatInterface = ({ sessionId }: { sessionId: string }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
   const [disableStop, setDisableStop] = useState(false);
@@ -66,6 +53,18 @@ const ChatInterface = ({
   const webSocketRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string>(nanoid());
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([]);
+
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+    fetch("/api/chat_session/" + sessionId)
+      .then((resp) => resp.json())
+      .then((data) => {
+        if (data?.length) {
+          setMessages(data);
+        }
+        console.log("👇messages", data);
+      });
+  }, [sessionId]);
 
   useEffect(() => {
     fetch("/api/list_models")
@@ -369,19 +368,23 @@ const ChatInterface = ({
       {/* Chat input */}
       <div
         className="flex flex-col absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-950 p-4 gap-2"
-        style={{ height: FOOTER_HEIGHT }}
+        style={{ minHeight: FOOTER_HEIGHT }}
       >
         {/* Input area */}
         <div className="flex flex-col relative flex-grow w-full space-x-2 max-w-3xl mx-auto">
-          <div className="flex flex-grow w-full items-center space-x-2 mt-7">
+          <div className="flex flex-grow w-full items-end space-x-2 mt-7">
             <Textarea
-              className="flex flex-1 flex-grow h-full"
+              className="flex flex-1 flex-grow resize-none"
               placeholder="What do you want to do?"
               value={prompt}
               onChange={(e) => {
                 setPrompt(e.target.value);
               }}
-              rows={2}
+              style={{
+                maxHeight: MAX_INPUT_HEIGHT,
+                minHeight: "80px",
+                overflowY: "auto",
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault(); // Prevents adding a new line
@@ -390,7 +393,11 @@ const ChatInterface = ({
               }}
             />
             {!pending && (
-              <Button onClick={onSendPrompt} disabled={pending}>
+              <Button
+                onClick={onSendPrompt}
+                disabled={pending}
+                className="mb-1"
+              >
                 <SendIcon />
               </Button>
             )}
@@ -406,6 +413,7 @@ const ChatInterface = ({
                       setPending(false);
                     });
                 }}
+                className="mb-1"
               >
                 <StopCircleIcon />
               </Button>
