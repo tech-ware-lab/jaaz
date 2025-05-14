@@ -216,15 +216,15 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
                     except Exception as e:
                         pass
                     if data and data.get('error') and data.get('error').get('message'):
-                        if data['error'].get('code') == 'rate_limit_error':
-                            print('👇rate_limit_error, sleeping 10 seconds')
-                            await send_to_websocket(session_id, {
-                                'type': 'info', 
-                                'info': f'Hit rate limit, waiting 10 seconds before continue. {data.get("error").get("message")} Please wait for 10 seconds...'
-                            })
-                            await asyncio.sleep(10)
-                        else:
-                            raise Exception(data.get('error').get('message'))
+                        # if data['error'].get('code') == 'rate_limit_error':
+                        #     print('👇rate_limit_error, sleeping 10 seconds')
+                        #     await send_to_websocket(session_id, {
+                        #         'type': 'info', 
+                        #         'info': f'Hit rate limit, waiting 10 seconds before continue. {data.get("error").get("message")} Please wait for 10 seconds...'
+                        #     })
+                        #     await asyncio.sleep(10)
+                        # else:
+                        raise Exception(data.get('error').get('message'))
                     else:
                         # alert info
                         await send_to_websocket(session_id, {
@@ -342,7 +342,9 @@ async def chat(request: Request):
     if len(messages) == 1:
         # create new session
         prompt = messages[0].get('content', '')
-        await db_service.create_chat_session(session_id, model, provider, prompt if isinstance(prompt, str) else '')
+        await db_service.create_chat_session(session_id, model, provider, (prompt[:200] if isinstance(prompt, str) else ''))
+    
+    await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1])) if len(messages) > 0 else None
     # Create and store the chat task
     async def chat_loop():
         cur_messages = messages
@@ -538,7 +540,7 @@ async def list_mcp_servers():
 async def list_chat_sessions():
     return await db_service.list_sessions()
 
-@router.get("/get_chat_history")
-async def get_chat_history(session_id: str):
+@router.get("/chat_session/{session_id}")
+async def get_chat_session(session_id: str):
     return await db_service.get_chat_history(session_id)
 
