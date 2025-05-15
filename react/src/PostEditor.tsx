@@ -93,6 +93,7 @@ export default function PostEditor({
           <ImageIcon />
           Add Image
         </Button>
+
         <DropdownMenu>
           <DropdownMenuTrigger className="ml-auto">
             <Button size={"sm"} className="bg-purple-600 text-white ml-auto">
@@ -101,7 +102,93 @@ export default function PostEditor({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="text-base px-3">
-            {/* Dropdown items */}
+            <DropdownMenuItem className="text-base font-semibold">
+              <Checkbox checked className="mr-3" />
+              <img
+                src="https://www.redditstatic.com/desktop2x/img/favicon/apple-icon-57x57.png"
+                alt="Reddit"
+                className="w-4 h-4"
+              />
+              Reddit
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-base font-semibold">
+              <Checkbox checked className="mr-3" />
+              <img
+                src="https://www.tiktok.com/favicon.ico"
+                alt="Tiktok"
+                className="w-4 h-4"
+              />
+              Tiktok
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-base font-semibold">
+              <Checkbox checked className="mr-3" />
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LinkedIn_icon.svg/2048px-LinkedIn_icon.svg.png"
+                alt="LinkedIn"
+                className="w-4 h-4"
+              />
+              LinkedIn
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-base font-semibold">
+              <Checkbox checked className="mr-3" />
+              <img
+                src="https://abs.twimg.com/icons/apple-touch-icon-192x192.png"
+                alt="Twitter"
+                className="w-4 h-4"
+              />
+              Twitter
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-base font-semibold">
+              <Checkbox checked className="mr-3" />
+              <img
+                src="https://www.instagram.com/static/images/ico/favicon-192.png/68d99ba29cc8.png"
+                alt="Instagram"
+                className="w-4 h-4"
+              />
+              Instagram
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-base font-semibold">
+              <Checkbox checked className="mr-3" />
+              <img
+                src="https://miro.medium.com/v2/resize:fit:1400/0*zPzAcHbkOUmfNnuB.jpeg"
+                alt="Medium"
+                className="w-4 h-4"
+              />
+              Medium
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-base font-semibold">
+              <Checkbox checked className="mr-3" />
+              <img
+                src="https://d2fltix0v2e0sb.cloudfront.net/dev-badge.svg"
+                alt="DEV.to"
+                className="w-4 h-4"
+              />
+              DEV.to
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-base font-semibold">
+              <Checkbox checked className="mr-3" />
+              <img
+                src="https://www.facebook.com/images/fb_icon_325x325.png"
+                alt="Facebook"
+                className="w-4 h-4 mr-2"
+              />
+              Facebook
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-base font-semibold">
+              <Checkbox checked className="mr-3" />
+              <img
+                src="https://cdn.iconscout.com/icon/free/png-256/free-producthunt-logo-icon-download-in-svg-png-gif-file-formats--70-flat-social-icons-color-pack-logos-432534.png?f=webp"
+                alt="Product Hunt"
+                className="w-4 h-4 mr-2"
+              />
+              Product Hunt
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-base font-semibold">
+              <Button variant={"outline"} size={"sm"} className="w-full">
+                <PlusIcon size={16} />
+                Add new
+              </Button>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
