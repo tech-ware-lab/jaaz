@@ -351,6 +351,15 @@ const ChatInterface = ({
                 >
                   🪄 Improve my writing
                 </Button>
+                <Button
+                  size={"sm"}
+                  variant={"outline"}
+                  onClick={() => {
+                    onSendPrompt(`Improve my content:`);
+                  }}
+                >
+                  ✍️ Continue writing
+                </Button>
                 {PLATFORMS_CONFIG.slice(0, 4).map((platform) => (
                   <Button
                     size={"sm"}
@@ -462,7 +471,7 @@ const ChatInterface = ({
           <div className="flex flex-grow w-full items-end space-x-2">
             <Textarea
               className="flex flex-1 flex-grow resize-none"
-              placeholder="What do you want to do?"
+              placeholder="What do you want to do with your content?"
               value={prompt}
               onChange={(e) => {
                 setPrompt(e.target.value);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "./components/ui/button";
 import {
   ChevronDownIcon,
@@ -33,7 +33,6 @@ import {
   linkPlugin,
   imagePlugin,
 } from "@mdxeditor/editor";
-import { Card } from "./components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +43,7 @@ import { Checkbox } from "./components/ui/checkbox";
 import { Input } from "./components/ui/input";
 import { Textarea } from "./components/ui/textarea";
 import { PLATFORMS_CONFIG } from "./platformsConfig";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 
 export default function PostEditor({
   editorTitle,
@@ -57,13 +56,15 @@ export default function PostEditor({
   setEditorTitle: (title: string) => void;
   setEditorContent: (content: string) => void;
 }) {
+  const HEADER_HEIGHT = 50;
   const { theme } = useTheme();
   const [isTextSelected, setIsTextSelected] = useState(false);
   const [selectionPosition, setSelectionPosition] = useState<{
     top: number;
     left: number;
   } | null>(null);
-  const [isRichText, setIsRichText] = useState(false);
+  const [isPostMode, setIsPostMode] = useState(false);
+  const mdxEditorRef = useRef<MDXEditorMethods>(null);
 
   useEffect(() => {
     const toolbar = document.querySelector(".my-classname");
@@ -97,7 +98,10 @@ export default function PostEditor({
   }, []);
   return (
     <div className="h-100vh">
-      <div className="flex justify-between py-2">
+      <div
+        className="flex justify-between py-2 items-center"
+        style={{ height: `${HEADER_HEIGHT}px` }}
+      >
         <Button size={"sm"} variant={"secondary"}>
           <ImageIcon />
           Add Image
@@ -134,72 +138,98 @@ export default function PostEditor({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <Input
-        placeholder="Title"
-        className="text-lg my-3"
-        value={editorTitle}
-        onChange={(e) => setEditorTitle(e.target.value)}
-      />
-      {isRichText ? (
+      <div
+        style={{ height: `calc(100vh - ${HEADER_HEIGHT}px)` }}
+        className="overflow-y-auto"
+      >
         <Textarea
-          placeholder="Post content"
-          className="text-sm flex-1 h-[calc(100vh-200px)]"
-          value={editorContent}
-          onChange={(e) => setEditorContent(e.target.value)}
-        />
-      ) : (
-        <MDXEditor
-          className={`dark-theme dark-editor overflow-y-auto h-[500]`}
-          plugins={[
-            headingsPlugin(),
-            linkPlugin(),
-            // imagePlugin({
-            //   imageUploadHandler: () => {
-            //     return Promise.resolve("https://picsum.photos/200/300");
-            //   },
-            //   imageAutocompleteSuggestions: [
-            //     "https://picsum.photos/200/300",
-            //     "https://picsum.photos/200",
-            //   ],
-            // }),
-            listsPlugin(),
-            quotePlugin(),
-            thematicBreakPlugin(),
-            markdownShortcutPlugin(),
-            toolbarPlugin({
-              toolbarClassName: "my-classname",
-              toolbarPosition: "top",
-              toolbarContents: () => (
-                <>
-                  {isTextSelected && selectionPosition && (
-                    <div
-                      role="toolbar"
-                      className="fixed flex bg-accent rounded-md"
-                      style={{
-                        top: `${selectionPosition.top}px`,
-                        left: `${selectionPosition.left}px`,
-                      }}
-                    >
-                      <BoldItalicUnderlineToggles />
-                      <BlockTypeSelect />
-                      <CodeToggle />
-                      <Separator orientation="vertical" />
-                      <ListsToggle />
-                      <Separator orientation="vertical" />
-                      <CreateLink />
-                    </div>
-                  )}
-                </>
-              ),
-            }),
-          ]}
-          onChange={(t) => {
-            setEditorContent(t);
+          placeholder="Title"
+          value={editorTitle}
+          onChange={(e) => {
+            if (!isPostMode && editorContent.length == 0) {
+              const value = e.target.value.trim();
+              const firstNewlineIndex = value.indexOf("\n");
+              if (firstNewlineIndex !== -1 && value.startsWith("# ")) {
+                const title = value.substring(2, firstNewlineIndex).trim(); // Extract title without '# '
+                const content = value.substring(firstNewlineIndex + 1).trim(); // Extract content after the first newline
+                console.log("content", content);
+                setEditorTitle(title);
+                mdxEditorRef.current?.setMarkdown(content);
+                return;
+              }
+            }
+            setEditorTitle(e.target.value);
           }}
-          placeholder={`Write your post here...`}
-          markdown={editorContent}
+          style={{
+            fontSize: isPostMode ? "1rem" : "2rem",
+            backgroundColor: isPostMode ? undefined : "transparent",
+            outline: isPostMode ? undefined : "none", // Remove outline
+            boxShadow: isPostMode ? undefined : "none", // Remove box shadow
+            border: isPostMode ? undefined : "none", // Remove border
+            resize: "none", // Disable resize
+          }}
+          className={`${!isPostMode ? "border-none text-xl font-bold" : ""}`}
         />
-      )}
+        {isPostMode ? (
+          <Textarea
+            placeholder="Post content"
+            className="text-sm flex-1 h-[calc(100vh-200px)]"
+            value={editorContent}
+            onChange={(e) => setEditorContent(e.target.value)}
+          />
+        ) : (
+          <MDXEditor
+            ref={mdxEditorRef}
+            className={theme == "dark" ? `dark-theme` : ""}
+            plugins={[
+              headingsPlugin(),
+              linkPlugin(),
+              // imagePlugin({
+              //   imageUploadHandler: () => {
+              //     return Promise.resolve("https://picsum.photos/200/300");
+              //   },
+              //   imageAutocompleteSuggestions: [
+              //     "https://picsum.photos/200/300",
+              //     "https://picsum.photos/200",
+              //   ],
+              // }),
+              listsPlugin(),
+              quotePlugin(),
+              thematicBreakPlugin(),
+              markdownShortcutPlugin(),
+              toolbarPlugin({
+                toolbarClassName: "my-classname",
+                toolbarPosition: "top",
+                toolbarContents: () => (
+                  <>
+                    {isTextSelected && selectionPosition && (
+                      <div
+                        role="toolbar"
+                        className="fixed flex bg-accent rounded-md"
+                        style={{
+                          top: `${selectionPosition.top}px`,
+                          left: `${selectionPosition.left}px`,
+                        }}
+                      >
+                        <BoldItalicUnderlineToggles />
+                        <BlockTypeSelect />
+                        <CodeToggle />
+                        <Separator orientation="vertical" />
+                        <CreateLink />
+                      </div>
+                    )}
+                  </>
+                ),
+              }),
+            ]}
+            onChange={(t) => {
+              setEditorContent(t);
+            }}
+            placeholder={`Write your post here...`}
+            markdown={editorContent}
+          />
+        )}
+      </div>
     </div>
   );
 }
