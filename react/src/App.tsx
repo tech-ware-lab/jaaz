@@ -75,6 +75,9 @@ function Home() {
           sessionId={sessionId}
           editorTitle={editorTitle}
           editorContent={editorContent}
+          onClickNewChat={() => {
+            setSessionId(nanoid());
+          }}
         />
 
         {/* <div className="absolute top-5 right-8 flex gap-1">

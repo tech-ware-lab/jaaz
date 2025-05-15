@@ -12,6 +12,7 @@ import {
   ChevronUpIcon,
   Link,
   MoonIcon,
+  PlusIcon,
   SendIcon,
   SettingsIcon,
   SidebarIcon,
@@ -35,18 +36,21 @@ import MultiChoicePrompt from "./MultiChoicePrompt";
 import SingleChoicePrompt from "./SingleChoicePrompt";
 import Spinner from "./components/ui/Spinner";
 import { useTheme } from "./components/theme-provider";
+import { PLATFORMS_CONFIG } from "./platformsConfig";
 
 const FOOTER_HEIGHT = 100; // Keep this as minimum height
 const MAX_INPUT_HEIGHT = 300; // Add this for maximum input height
 
 const ChatInterface = ({
   sessionId,
+  onClickNewChat,
   editorContent,
   editorTitle,
 }: {
   sessionId: string;
   editorTitle: string;
   editorContent: string;
+  onClickNewChat: () => void;
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
@@ -71,11 +75,14 @@ const ChatInterface = ({
 
   useEffect(() => {
     sessionIdRef.current = sessionId;
+
     fetch("/api/chat_session/" + sessionId)
       .then((resp) => resp.json())
       .then((data) => {
         if (data?.length) {
           setMessages(data);
+        } else {
+          setMessages([]);
         }
         console.log("👇messages", data);
       });
@@ -225,7 +232,7 @@ const ChatInterface = ({
       }
     };
   }, []);
-  const onSendPrompt = () => {
+  const onSendPrompt = (promptStr: string) => {
     if (pending) {
       return;
     }
@@ -239,14 +246,14 @@ const ChatInterface = ({
       toast.error("Please set the model URL in Settings");
       return;
     }
-    if (!prompt || prompt == "") {
+    if (!promptStr || promptStr == "") {
       return;
     }
 
     const newMessages = messages.concat([
       {
         role: "user",
-        content: prompt + "\n\n # " + editorTitle + "\n\n" + editorContent,
+        content: promptStr + "\n\n # " + editorTitle + "\n\n" + editorContent,
       },
     ]);
     setMessages(newMessages);
@@ -326,52 +333,33 @@ const ChatInterface = ({
                 <MoonIcon size={30} />
               )}
             </Button>
+            <Button size={"sm"} variant={"outline"} onClick={onClickNewChat}>
+              <PlusIcon /> New Chat
+            </Button>
           </header>
           {/* quick buttons */}
           {messages.length == 0 && (
             <div className="flex flex-col gap-2">
               <span className="text-muted-foreground">✨ Try asking:</span>
               <div className="flex space-x-2 flex-wrap gap-3 px-3">
-                <Button size={"sm"} variant={"outline"}>
-                  <img
-                    src="https://www.redditstatic.com/desktop2x/img/favicon/apple-icon-57x57.png"
-                    alt="Reddit"
-                    className="w-4 h-4"
-                  />
-                  Adapt to Reddit style
-                </Button>
-                <Button size={"sm"} variant={"outline"}>
-                  <img
-                    src="https://www.tiktok.com/favicon.ico"
-                    alt="Tiktok"
-                    className="w-4 h-4"
-                  />
-                  Adapt to Tiktok style
-                </Button>
-                <Button size={"sm"} variant={"outline"}>
-                  <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LinkedIn_icon.svg/2048px-LinkedIn_icon.svg.png"
-                    alt="LinkedIn"
-                    className="w-4 h-4"
-                  />
-                  Adapt to LinkedIn style
-                </Button>
-                <Button size={"sm"} variant={"outline"}>
-                  <img
-                    src="https://abs.twimg.com/icons/apple-touch-icon-192x192.png"
-                    alt="Twitter"
-                    className="w-4 h-4"
-                  />
-                  Adapt to X style
-                </Button>
-                <Button size={"sm"} variant={"outline"}>
-                  <img
-                    src="https://www.instagram.com/static/images/ico/favicon-192.png/68d99ba29cc8.png"
-                    alt="Instagram"
-                    className="w-4 h-4"
-                  />
-                  Adapt to Instagram style
-                </Button>
+                {PLATFORMS_CONFIG.map((platform) => (
+                  <Button
+                    size={"sm"}
+                    variant={"outline"}
+                    onClick={() => {
+                      onSendPrompt(
+                        `Adapt below content to ${platform.name} style.`
+                      );
+                    }}
+                  >
+                    <img
+                      src={platform.icon}
+                      alt={platform.name}
+                      className="w-4 h-4"
+                    />
+                    Adapt to {platform.name} style
+                  </Button>
+                ))}
               </div>
             </div>
           )}
@@ -478,13 +466,13 @@ const ChatInterface = ({
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault(); // Prevents adding a new line
-                  onSendPrompt();
+                  onSendPrompt(prompt);
                 }
               }}
             />
             {!pending && (
               <Button
-                onClick={onSendPrompt}
+                onClick={() => onSendPrompt(prompt)}
                 disabled={pending}
                 className="mb-1"
               >

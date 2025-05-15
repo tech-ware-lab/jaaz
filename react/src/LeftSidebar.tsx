@@ -32,9 +32,6 @@ export default function LeftSidebar({
   return (
     <div className="flex flex-col h-screen">
       <div className="flex flex-col gap-4 p-3 sticky top-0">
-        <Button size={"sm"} variant={"outline"} className="w-full">
-          <PlusIcon /> New Chat
-        </Button>
         <Button
           size={"sm"}
           variant={"outline"}
