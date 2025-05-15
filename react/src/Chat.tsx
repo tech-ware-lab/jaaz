@@ -10,9 +10,13 @@ import { Button } from "./components/ui/button";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
+  Link,
+  MoonIcon,
   SendIcon,
+  SettingsIcon,
   SquareIcon,
   StopCircleIcon,
+  SunIcon,
 } from "lucide-react";
 import { Badge } from "./components/ui/badge";
 import { Textarea } from "./components/ui/textarea";
@@ -29,8 +33,9 @@ import {
 import MultiChoicePrompt from "./MultiChoicePrompt";
 import SingleChoicePrompt from "./SingleChoicePrompt";
 import Spinner from "./components/ui/Spinner";
+import { useTheme } from "./components/theme-provider";
 
-const FOOTER_HEIGHT = 140; // Keep this as minimum height
+const FOOTER_HEIGHT = 100; // Keep this as minimum height
 const MAX_INPUT_HEIGHT = 300; // Add this for maximum input height
 
 const ChatInterface = ({ sessionId }: { sessionId: string }) => {
@@ -38,6 +43,7 @@ const ChatInterface = ({ sessionId }: { sessionId: string }) => {
   const [prompt, setPrompt] = useState("");
   const [disableStop, setDisableStop] = useState(false);
   const [pending, setPending] = useState(false);
+  const { setTheme, theme } = useTheme();
   const [model, setModel] = useState<{
     provider: string;
     model: string;
@@ -260,7 +266,7 @@ const ChatInterface = ({ sessionId }: { sessionId: string }) => {
         style={{ paddingBottom: FOOTER_HEIGHT }}
       >
         <div className="space-y-6 max-w-3xl mx-auto">
-          <header className="p-4">
+          <header className="p-4 flex space-x-2">
             <Select
               value={model?.provider + ":" + model?.model}
               onValueChange={(value) => {
@@ -284,6 +290,26 @@ const ChatInterface = ({ sessionId }: { sessionId: string }) => {
                 ))}
               </SelectContent>
             </Select>
+
+            <Button
+              size={"sm"}
+              variant={"secondary"}
+              onClick={() => (window.location.href = "/settings")}
+            >
+              <SettingsIcon size={30} />
+            </Button>
+
+            <Button
+              size={"sm"}
+              variant={"ghost"}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? (
+                <SunIcon size={30} />
+              ) : (
+                <MoonIcon size={30} />
+              )}
+            </Button>
           </header>
           {/* Messages */}
           {messages.map((message, idx) => (
@@ -367,12 +393,12 @@ const ChatInterface = ({ sessionId }: { sessionId: string }) => {
 
       {/* Chat input */}
       <div
-        className="flex flex-col absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-950 p-4 gap-2"
+        className="p-4 gap-2 sticky bottom-0 border-t"
         style={{ minHeight: FOOTER_HEIGHT }}
       >
         {/* Input area */}
         <div className="flex flex-col relative flex-grow w-full space-x-2 max-w-3xl mx-auto">
-          <div className="flex flex-grow w-full items-end space-x-2 mt-7">
+          <div className="flex flex-grow w-full items-end space-x-2">
             <Textarea
               className="flex flex-1 flex-grow resize-none"
               placeholder="What do you want to do?"
@@ -382,7 +408,7 @@ const ChatInterface = ({ sessionId }: { sessionId: string }) => {
               }}
               style={{
                 maxHeight: MAX_INPUT_HEIGHT,
-                minHeight: "80px",
+                minHeight: FOOTER_HEIGHT,
                 overflowY: "auto",
               }}
               onKeyDown={(e) => {

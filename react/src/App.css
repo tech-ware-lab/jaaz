@@ -22,3 +22,7 @@ h4 {
   font-weight: 300;
   margin-bottom: 0.5rem;
 }
+
+.custom-mdx-editor p {
+  margin-bottom: 0.9rem;
+}
