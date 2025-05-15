@@ -348,28 +348,27 @@ async def chat(request: Request):
     # Create and store the chat task
     async def chat_loop():
         cur_messages = messages
-        # while True:
-        while True:
-            try:
-                if cur_messages[-1].get('role') == 'assistant' and cur_messages[-1].get('tool_calls') and \
-                cur_messages[-1]['tool_calls'][-1].get('function', {}).get('name') == 'finish':
-                    print('👇finish!')
-                    cur_messages.pop()
-                    await send_to_websocket(session_id, {
-                        'type': 'all_messages', 
-                        'messages': cur_messages
-                    })
-                    break
-                else:
-                    cur_messages = await chat_openai(cur_messages, session_id, model, provider, url)
-            except Exception as e:
-                print(f"Error in chat_loop: {e}")
-                traceback.print_exc()
+
+        try:
+            if cur_messages[-1].get('role') == 'assistant' and cur_messages[-1].get('tool_calls') and \
+            cur_messages[-1]['tool_calls'][-1].get('function', {}).get('name') == 'finish':
+                print('👇finish!')
+                cur_messages.pop()
                 await send_to_websocket(session_id, {
-                    'type': 'error',
-                    'error': str(e)
+                    'type': 'all_messages', 
+                    'messages': cur_messages
                 })
-                break
+
+            else:
+                cur_messages = await chat_openai(cur_messages, session_id, model, provider, url)
+        except Exception as e:
+            print(f"Error in chat_loop: {e}")
+            traceback.print_exc()
+            await send_to_websocket(session_id, {
+                'type': 'error',
+                'error': str(e)
+            })
+
         await send_to_websocket(session_id, {
             'type': 'done'
         })
