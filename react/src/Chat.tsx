@@ -342,13 +342,22 @@ const ChatInterface = ({
             <div className="flex flex-col gap-2">
               <span className="text-muted-foreground">✨ Try asking:</span>
               <div className="flex space-x-2 flex-wrap gap-3 px-3">
-                {PLATFORMS_CONFIG.map((platform) => (
+                <Button
+                  size={"sm"}
+                  variant={"outline"}
+                  onClick={() => {
+                    onSendPrompt(`Improve my content:`);
+                  }}
+                >
+                  🪄 Improve my writing
+                </Button>
+                {PLATFORMS_CONFIG.slice(0, 4).map((platform) => (
                   <Button
                     size={"sm"}
                     variant={"outline"}
                     onClick={() => {
                       onSendPrompt(
-                        `Adapt below content to ${platform.name} style.`
+                        `Write below content to ${platform.name} style.`
                       );
                     }}
                   >
@@ -357,7 +366,7 @@ const ChatInterface = ({
                       alt={platform.name}
                       className="w-4 h-4"
                     />
-                    Adapt to {platform.name} style
+                    Write in {platform.name} style
                   </Button>
                 ))}
               </div>

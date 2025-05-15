@@ -22,9 +22,11 @@ h4 {
   font-weight: 300;
   margin-bottom: 0.5rem;
 }
-
+.mdxeditor [role="textbox"] {
+  height: calc(100vh - 100px);
+}
 .mdxeditor p {
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.8rem;
 }
 
 .custom-mdx-editor ul {
