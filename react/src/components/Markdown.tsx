@@ -9,19 +9,27 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       return !inline && match ? (
         <pre
           {...props}
-          className={`${className} text-sm w-full md:max-w-[900px] overflow-x-scroll bg-zinc-100 p-3 rounded-lg mt-2 dark:bg-zinc-800`}
+          className={`${className} text-sm w-full whitespace-pre-wrap max-w-full overflow-x-auto p-3 rounded-lg mt-2 bg-zinc-800 dark:bg-zinc-300 whitespace-pre break-words`}
         >
-          <code className={match[1]}>{children}</code>
+          <code
+            className={match[1]}
+            style={{
+              wordBreak: "break-all",
+            }}
+          >
+            {children}
+          </code>
         </pre>
       ) : (
         <code
-          className={`${className} text-sm bg-zinc-100 dark:bg-zinc-800 py-0.5 px-1 rounded-md`}
+          className={`${className} text-sm py-0.5 px-1 overflow-x-auto whitespace-pre-wrap rounded-md bg-zinc-800 dark:bg-zinc-300 break-words`}
           {...props}
         >
           {children}
         </code>
       );
     },
+
     ol: ({ node, children, ...props }: any) => {
       return (
         <ol className="list-decimal list-outside ml-4" {...props}>
