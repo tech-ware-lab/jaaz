@@ -60,30 +60,21 @@ function Home() {
           <LeftSidebar sessionId={sessionId} setSessionId={setSessionId} />
         </div>
       )}
-      <div className="flex-1 flex-grow relative px-4">
+      <div className="w-[60%] h-screen px-5">
+        <WorkspaceSidebar />
+      </div>
+      <div className="flex-1 flex-grow relative px-4  bg-sidebar">
         <ChatInterface sessionId={sessionId} />
-        <div className="absolute top-5 left-8 flex gap-1">
-          <Button
-            size={"sm"}
-            variant={"ghost"}
-            onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-          >
-            <SidebarIcon size={30} />
-          </Button>
-          <Link to="/settings">
-            <Button size={"sm"} variant={"secondary"}>
-              <SettingsIcon size={30} />
-            </Button>
-          </Link>
-          <Button
-            size={"sm"}
-            variant={"ghost"}
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            {theme === "dark" ? <SunIcon size={30} /> : <MoonIcon size={30} />}
-          </Button>
-        </div>
-        <div className="absolute top-5 right-8 flex gap-1">
+
+        <Button
+          size={"sm"}
+          variant={"ghost"}
+          onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+        >
+          <SidebarIcon size={30} />
+        </Button>
+
+        {/* <div className="absolute top-5 right-8 flex gap-1">
           <Button
             size={"sm"}
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
@@ -97,13 +88,8 @@ function Home() {
               </div>
             )}
           </Button>
-        </div>
+        </div> */}
       </div>
-      {isRightSidebarOpen && (
-        <div className="w-[40%] bg-sidebar h-screen">
-          <WorkspaceSidebar />
-        </div>
-      )}
     </div>
   );
 }

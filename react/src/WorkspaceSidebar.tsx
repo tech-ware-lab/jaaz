@@ -62,7 +62,7 @@ export default function WorkspaceSidebar() {
   return (
     <div>
       <MDXEditor
-        className="dark-theme dark-editor"
+        className="dark-theme dark-editor custom-mdx-editor"
         plugins={[
           headingsPlugin(),
           linkPlugin(),
@@ -83,12 +83,6 @@ export default function WorkspaceSidebar() {
             toolbarClassName: "my-classname",
             toolbarContents: () => (
               <>
-                <Button size={"sm"} variant={"outline"}>
-                  <FolderIcon size={16} />
-                  <ChevronDownIcon size={20} />
-                </Button>
-                <UndoRedo />
-                <Separator orientation="vertical" />
                 <BoldItalicUnderlineToggles />
                 <BlockTypeSelect />
                 <CodeToggle />
@@ -106,7 +100,7 @@ export default function WorkspaceSidebar() {
                       className="bg-purple-600 text-white ml-auto"
                     >
                       <SendIcon className="w-4 h-4" />
-                      Auto Post 🤖 (9)
+                      Post
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="text-base px-3">
