@@ -47,17 +47,31 @@ type WorkspaceList = {
   path: string;
 }[];
 export default function WorkspaceSidebar() {
-  const [data, setData] = useState<WorkspaceList>([]);
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      // fetch("/api/workspace_list")
-      //   .then((res) => res.json())
-      //   .then((data) => {
-      //     setData(data);
-      //   });
-    }, 1000); // Refresh every 1 second
+  const data = [];
+  const [isTextSelected, setIsTextSelected] = useState(false);
+  const [selectionPosition, setSelectionPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
 
-    return () => clearInterval(intervalId); // Cleanup on component unmount
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setSelectionPosition({ top: rect.top - 50, left: rect.left });
+        setIsTextSelected(true);
+      } else {
+        setIsTextSelected(false);
+      }
+    };
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+    };
   }, []);
   return (
     <div>
@@ -83,120 +97,40 @@ export default function WorkspaceSidebar() {
             toolbarClassName: "my-classname",
             toolbarContents: () => (
               <>
-                <BoldItalicUnderlineToggles />
-                <BlockTypeSelect />
-                <CodeToggle />
-                <Separator orientation="vertical" />
-                <ListsToggle />
-                <Separator orientation="vertical" />
-                <CreateLink />
-                <InsertImage />
-                <Separator orientation="vertical" />
-                <InsertTable />
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="ml-auto">
-                    <Button
-                      size={"sm"}
-                      className="bg-purple-600 text-white ml-auto"
-                    >
-                      <SendIcon className="w-4 h-4" />
-                      Post
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="text-base px-3">
-                    <DropdownMenuItem className="text-base font-semibold">
-                      <Checkbox checked className="mr-3" />
-                      <img
-                        src="https://www.redditstatic.com/desktop2x/img/favicon/apple-icon-57x57.png"
-                        alt="Reddit"
-                        className="w-4 h-4"
-                      />
-                      Reddit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base font-semibold">
-                      <Checkbox checked className="mr-3" />
-                      <img
-                        src="https://www.tiktok.com/favicon.ico"
-                        alt="Tiktok"
-                        className="w-4 h-4"
-                      />
-                      Tiktok
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base font-semibold">
-                      <Checkbox checked className="mr-3" />
-                      <img
-                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LinkedIn_icon.svg/2048px-LinkedIn_icon.svg.png"
-                        alt="LinkedIn"
-                        className="w-4 h-4"
-                      />
-                      LinkedIn
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base font-semibold">
-                      <Checkbox checked className="mr-3" />
-                      <img
-                        src="https://abs.twimg.com/icons/apple-touch-icon-192x192.png"
-                        alt="Twitter"
-                        className="w-4 h-4"
-                      />
-                      Twitter
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base font-semibold">
-                      <Checkbox checked className="mr-3" />
-                      <img
-                        src="https://www.instagram.com/static/images/ico/favicon-192.png/68d99ba29cc8.png"
-                        alt="Instagram"
-                        className="w-4 h-4"
-                      />
-                      Instagram
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base font-semibold">
-                      <Checkbox checked className="mr-3" />
-                      <img
-                        src="https://miro.medium.com/v2/resize:fit:1400/0*zPzAcHbkOUmfNnuB.jpeg"
-                        alt="Medium"
-                        className="w-4 h-4"
-                      />
-                      Medium
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base font-semibold">
-                      <Checkbox checked className="mr-3" />
-                      <img
-                        src="https://d2fltix0v2e0sb.cloudfront.net/dev-badge.svg"
-                        alt="DEV.to"
-                        className="w-4 h-4"
-                      />
-                      DEV.to
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base font-semibold">
-                      <Checkbox checked className="mr-3" />
-                      <img
-                        src="https://www.facebook.com/images/fb_icon_325x325.png"
-                        alt="Facebook"
-                        className="w-4 h-4 mr-2"
-                      />
-                      Facebook
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base font-semibold">
-                      <Checkbox checked className="mr-3" />
-                      <img
-                        src="https://cdn.iconscout.com/icon/free/png-256/free-producthunt-logo-icon-download-in-svg-png-gif-file-formats--70-flat-social-icons-color-pack-logos-432534.png?f=webp"
-                        alt="Product Hunt"
-                        className="w-4 h-4 mr-2"
-                      />
-                      Product Hunt
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-base font-semibold">
-                      <Button
-                        variant={"outline"}
-                        size={"sm"}
-                        className="w-full"
-                      >
-                        <PlusIcon size={16} />
-                        Add new
-                      </Button>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {isTextSelected && selectionPosition && (
+                  <div
+                    className="fixed flex bg-accent rounded-md"
+                    style={{
+                      top: `${selectionPosition.top}px`,
+                      left: `${selectionPosition.left}px`,
+                    }}
+                  >
+                    <BoldItalicUnderlineToggles />
+                    <BlockTypeSelect />
+                    <CodeToggle />
+                    <Separator orientation="vertical" />
+                    <ListsToggle />
+                    <Separator orientation="vertical" />
+                    <CreateLink />
+                    <InsertImage />
+                    <Separator orientation="vertical" />
+                    <InsertTable />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="ml-auto">
+                        <Button
+                          size={"sm"}
+                          className="bg-purple-600 text-white ml-auto"
+                        >
+                          <SendIcon className="w-4 h-4" />
+                          Post
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="text-base px-3">
+                        {/* Dropdown items */}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
               </>
             ),
           }),
