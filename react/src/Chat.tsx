@@ -39,7 +39,15 @@ import { useTheme } from "./components/theme-provider";
 const FOOTER_HEIGHT = 100; // Keep this as minimum height
 const MAX_INPUT_HEIGHT = 300; // Add this for maximum input height
 
-const ChatInterface = ({ sessionId }: { sessionId: string }) => {
+const ChatInterface = ({
+  sessionId,
+  editorContent,
+  editorTitle,
+}: {
+  sessionId: string;
+  editorTitle: string;
+  editorContent: string;
+}) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
   const [disableStop, setDisableStop] = useState(false);
@@ -238,7 +246,7 @@ const ChatInterface = ({ sessionId }: { sessionId: string }) => {
     const newMessages = messages.concat([
       {
         role: "user",
-        content: prompt,
+        content: prompt + "\n\n # " + editorTitle + "\n\n" + editorContent,
       },
     ]);
     setMessages(newMessages);

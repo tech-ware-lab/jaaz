@@ -71,7 +71,11 @@ function Home() {
         />
       </div>
       <div className="flex-1 flex-grow relative px-4  bg-sidebar">
-        <ChatInterface sessionId={sessionId} />
+        <ChatInterface
+          sessionId={sessionId}
+          editorTitle={editorTitle}
+          editorContent={editorContent}
+        />
 
         {/* <div className="absolute top-5 right-8 flex gap-1">
           <Button
