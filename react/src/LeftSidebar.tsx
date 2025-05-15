@@ -1,4 +1,9 @@
-import { PencilIcon, PlusIcon } from "lucide-react";
+import {
+  FolderIcon,
+  MessageCircleIcon,
+  PencilIcon,
+  PlusIcon,
+} from "lucide-react";
 import { Button } from "./components/ui/button";
 import { useEffect, useState } from "react";
 import { ChatSession } from "./types/types";
@@ -11,6 +16,7 @@ export default function LeftSidebar({
   setSessionId: (sessionId: string) => void;
 }) {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [type, setType] = useState<"chat" | "space">("chat");
   useEffect(() => {
     const fetchChatSessions = async () => {
       const sessions = await fetch("/api/list_chat_sessions", {
@@ -40,6 +46,24 @@ export default function LeftSidebar({
           }}
         >
           <PencilIcon className="w-4 h-4 text-xs size-4" /> Write
+        </Button>
+      </div>
+      <div className="flex px-3">
+        <Button
+          size={"sm"}
+          className="flex-1"
+          variant={type == "chat" ? "secondary" : "ghost"}
+          onClick={() => setType("chat")}
+        >
+          <MessageCircleIcon className="w-4 h-4" /> Chats
+        </Button>
+        <Button
+          size={"sm"}
+          className="flex-1"
+          variant={type == "space" ? "secondary" : "ghost"}
+          onClick={() => setType("space")}
+        >
+          <FolderIcon className="w-4 h-4" /> Space
         </Button>
       </div>
 
