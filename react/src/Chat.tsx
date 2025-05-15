@@ -14,6 +14,7 @@ import {
   MoonIcon,
   SendIcon,
   SettingsIcon,
+  SidebarIcon,
   SquareIcon,
   StopCircleIcon,
   SunIcon,
@@ -266,7 +267,14 @@ const ChatInterface = ({ sessionId }: { sessionId: string }) => {
         style={{ paddingBottom: FOOTER_HEIGHT }}
       >
         <div className="space-y-6 max-w-3xl mx-auto">
-          <header className="p-4 flex space-x-2">
+          <header className="flex space-x-2 mt-2">
+            {/* <Button
+              size={"sm"}
+              variant={"ghost"}
+              // onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+            >
+              <SidebarIcon size={30} />
+            </Button> */}
             <Select
               value={model?.provider + ":" + model?.model}
               onValueChange={(value) => {
@@ -311,6 +319,54 @@ const ChatInterface = ({ sessionId }: { sessionId: string }) => {
               )}
             </Button>
           </header>
+          {/* quick buttons */}
+          {messages.length == 0 && (
+            <div className="flex flex-col gap-2">
+              <span className="text-muted-foreground">✨ Try asking:</span>
+              <div className="flex space-x-2 flex-wrap gap-3 px-3">
+                <Button size={"sm"} variant={"outline"}>
+                  <img
+                    src="https://www.redditstatic.com/desktop2x/img/favicon/apple-icon-57x57.png"
+                    alt="Reddit"
+                    className="w-4 h-4"
+                  />
+                  Adapt to Reddit style
+                </Button>
+                <Button size={"sm"} variant={"outline"}>
+                  <img
+                    src="https://www.tiktok.com/favicon.ico"
+                    alt="Tiktok"
+                    className="w-4 h-4"
+                  />
+                  Adapt to Tiktok style
+                </Button>
+                <Button size={"sm"} variant={"outline"}>
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LinkedIn_icon.svg/2048px-LinkedIn_icon.svg.png"
+                    alt="LinkedIn"
+                    className="w-4 h-4"
+                  />
+                  Adapt to LinkedIn style
+                </Button>
+                <Button size={"sm"} variant={"outline"}>
+                  <img
+                    src="https://abs.twimg.com/icons/apple-touch-icon-192x192.png"
+                    alt="Twitter"
+                    className="w-4 h-4"
+                  />
+                  Adapt to X style
+                </Button>
+                <Button size={"sm"} variant={"outline"}>
+                  <img
+                    src="https://www.instagram.com/static/images/ico/favicon-192.png/68d99ba29cc8.png"
+                    alt="Instagram"
+                    className="w-4 h-4"
+                  />
+                  Adapt to Instagram style
+                </Button>
+              </div>
+            </div>
+          )}
           {/* Messages */}
           {messages.map((message, idx) => (
             <div key={`${idx}`}>

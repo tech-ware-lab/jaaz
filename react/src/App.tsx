@@ -29,6 +29,7 @@ import WorkspaceSidebar from "./WorkspaceSidebar";
 import { Toaster } from "sonner";
 import LeftSidebar from "./LeftSidebar";
 import { nanoid } from "nanoid";
+import PostEditor from "./PostEditor";
 
 function Home() {
   const [agentState, setAgentState] = useState(EAgentState.IDLE);
@@ -38,7 +39,8 @@ function Home() {
   const [totalTokens, setTotalTokens] = useState(0);
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
   const [sessionId, setSessionId] = useState<string>(nanoid());
-
+  const [editorTitle, setEditorTitle] = useState("");
+  const [editorContent, setEditorContent] = useState("");
   const { setTheme, theme } = useTheme();
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const navigate = useNavigate();
@@ -61,18 +63,15 @@ function Home() {
         </div>
       )}
       <div className="w-[60%] h-screen px-5">
-        <WorkspaceSidebar />
+        <PostEditor
+          editorTitle={editorTitle}
+          editorContent={editorContent}
+          setEditorTitle={setEditorTitle}
+          setEditorContent={setEditorContent}
+        />
       </div>
       <div className="flex-1 flex-grow relative px-4  bg-sidebar">
         <ChatInterface sessionId={sessionId} />
-
-        <Button
-          size={"sm"}
-          variant={"ghost"}
-          onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-        >
-          <SidebarIcon size={30} />
-        </Button>
 
         {/* <div className="absolute top-5 right-8 flex gap-1">
           <Button
