@@ -1,22 +1,27 @@
 export const PLATFORMS_CONFIG = [
   {
-    name: "Reddit",
-    icon: "https://www.redditstatic.com/desktop2x/img/favicon/apple-icon-57x57.png",
+    name: "Bilibili",
+    icon: "https://www.bilibili.com/favicon.ico",
     checked: true,
   },
   {
-    name: "Tiktok",
+    name: "抖音",
     icon: "https://www.tiktok.com/favicon.ico",
     checked: true,
   },
   {
-    name: "LinkedIn",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LinkedIn_icon.svg/2048px-LinkedIn_icon.svg.png",
+    name: "小红书",
+    icon: "https://www.xiaohongshu.com/favicon.ico",
     checked: true,
   },
   {
-    name: "Twitter",
-    icon: "https://abs.twimg.com/icons/apple-touch-icon-192x192.png",
+    name: "推特",
+    icon: "https://www.x.com/favicon.ico",
+    checked: true,
+  },
+  {
+    name: "YouTube",
+    icon: "https://www.youtube.com/favicon.ico",
     checked: true,
   },
   {

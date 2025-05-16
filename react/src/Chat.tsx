@@ -360,7 +360,34 @@ const ChatInterface = ({
                 >
                   ✍️ Continue writing
                 </Button>
-                {PLATFORMS_CONFIG.slice(0, 4).map((platform) => (
+                <Button
+                  size={"sm"}
+                  variant={"outline"}
+                  onClick={() => {
+                    onSendPrompt(`Generate hashtags for my content:`);
+                  }}
+                >
+                  🔥 Generate hashtags #
+                </Button>
+                <Button
+                  size={"sm"}
+                  variant={"outline"}
+                  onClick={() => {
+                    onSendPrompt(`Generate hashtags for my content:`);
+                  }}
+                >
+                  📸 Generate cover photo
+                </Button>
+                {/* <Button
+                  size={"sm"}
+                  variant={"outline"}
+                  onClick={() => {
+                    onSendPrompt(`Generate hashtags for my content:`);
+                  }}
+                >
+                  🚀 生成爆款标题
+                </Button> */}
+                {PLATFORMS_CONFIG.slice(0, 5).map((platform) => (
                   <Button
                     size={"sm"}
                     variant={"outline"}
@@ -471,7 +498,7 @@ const ChatInterface = ({
           <div className="flex flex-grow w-full items-end space-x-2">
             <Textarea
               className="flex flex-1 flex-grow resize-none"
-              placeholder="What do you want to do with your content?"
+              placeholder="您想根据当前文章问什么？"
               value={prompt}
               onChange={(e) => {
                 setPrompt(e.target.value);
