@@ -355,7 +355,7 @@ const ChatInterface = ({
                   size={"sm"}
                   variant={"outline"}
                   onClick={() => {
-                    onSendPrompt(`Improve my content:`);
+                    onSendPrompt(`Continue writing for my content:`);
                   }}
                 >
                   ✍️ Continue writing
