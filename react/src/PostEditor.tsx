@@ -9,6 +9,7 @@ import {
   SendIcon,
   SparklesIcon,
   TriangleIcon,
+  VideoIcon,
 } from "lucide-react";
 import "@mdxeditor/editor/style.css";
 import {
@@ -102,11 +103,16 @@ export default function PostEditor({
         className="flex justify-between py-2 items-center"
         style={{ height: `${HEADER_HEIGHT}px` }}
       >
-        <Button size={"sm"} variant={"secondary"}>
-          <ImageIcon />
-          Add Image
-        </Button>
-
+        <div className="flex flex-row gap-2">
+          <Button size={"sm"} variant={"secondary"}>
+            <ImageIcon />
+            Add Image
+          </Button>
+          <Button size={"sm"} variant={"secondary"}>
+            <VideoIcon />
+            Add Video
+          </Button>
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger className="ml-auto">
             <Button size={"sm"} className="bg-purple-600 text-white ml-auto">
