@@ -44,22 +44,6 @@ function Home() {
   const [curPath, setCurPath] = useState("");
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const navigate = useNavigate();
-  const setEditorTitleWrapper = (title: string) => {
-    const fullContent = `# ${title}\n${editorContent}`;
-    setEditorTitle(title);
-    fetch("/api/workspace/update_file", {
-      method: "POST",
-      body: JSON.stringify({ path: curPath, content: fullContent }),
-    });
-  };
-  const setEditorContentWrapper = (content: string) => {
-    setEditorContent(content);
-    const fullContent = `# ${editorTitle}\n${content}`;
-    fetch("/api/workspace/update_file", {
-      method: "POST",
-      body: JSON.stringify({ path: curPath, content: fullContent }),
-    });
-  };
 
   useEffect(() => {
     fetch("/api/config/exists")
@@ -79,6 +63,7 @@ function Home() {
             sessionId={sessionId}
             setSessionId={setSessionId}
             curPath={curPath}
+            setCurPath={setCurPath}
             onClickWrite={() => {
               fetch("/api/create_file", {
                 method: "POST",
@@ -101,12 +86,7 @@ function Home() {
         </div>
       )}
       <div className="w-[60%] h-screen px-5">
-        <PostEditor
-          editorTitle={editorTitle}
-          editorContent={editorContent}
-          setEditorTitle={setEditorTitleWrapper}
-          setEditorContent={setEditorContentWrapper}
-        />
+        <PostEditor curPath={curPath} setCurPath={setCurPath} />
       </div>
       <div className="flex-1 flex-grow relative px-4  bg-sidebar">
         <ChatInterface

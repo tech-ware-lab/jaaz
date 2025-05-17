@@ -45,17 +45,14 @@ import { Input } from "./components/ui/input";
 import { Textarea } from "./components/ui/textarea";
 import { PLATFORMS_CONFIG } from "./platformsConfig";
 import { useTheme } from "@/components/theme-provider";
+import { toast } from "sonner";
 
 export default function PostEditor({
-  editorTitle,
-  editorContent,
-  setEditorTitle,
-  setEditorContent,
+  curPath,
+  setCurPath,
 }: {
-  editorTitle: string;
-  editorContent: string;
-  setEditorTitle: (title: string) => void;
-  setEditorContent: (content: string) => void;
+  curPath: string;
+  setCurPath: (path: string) => void;
 }) {
   const HEADER_HEIGHT = 50;
   const { theme } = useTheme();
@@ -66,6 +63,59 @@ export default function PostEditor({
   } | null>(null);
   const [isPostMode, setIsPostMode] = useState(false);
   const mdxEditorRef = useRef<MDXEditorMethods>(null);
+  const [editorTitle, setEditorTitle] = useState("");
+  const [editorContent, setEditorContent] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetch("/api/read_file", {
+      method: "POST",
+      body: JSON.stringify({ path: curPath }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (typeof data.content == "string") {
+          const { title, content } = getTitleAndContent(data.content);
+          setEditorTitle(title);
+          setEditorContent(content);
+          mdxEditorRef.current?.setMarkdown(content);
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [curPath]);
+
+  const setEditorTitleWrapper = (title: string) => {
+    const fullContent = `# ${title}\n${editorContent}`;
+    setEditorTitle(title);
+
+    fetch("/api/rename_file", {
+      method: "POST",
+      body: JSON.stringify({ old_path: curPath, new_path: title }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.path) {
+          setCurPath(data.path);
+          fetch("/api/update_file", {
+            method: "POST",
+            body: JSON.stringify({ path: data.path, content: fullContent }),
+          });
+        } else {
+          toast.error(data.error);
+        }
+      });
+  };
+  const setEditorContentWrapper = (content: string) => {
+    setEditorContent(content);
+    const fullContent = `# ${editorTitle}\n${content}`;
+    fetch("/api/update_file", {
+      method: "POST",
+      body: JSON.stringify({ path: curPath, content: fullContent }),
+    });
+  };
 
   useEffect(() => {
     const toolbar = document.querySelector(".my-classname");
@@ -159,12 +209,12 @@ export default function PostEditor({
                 const title = value.substring(2, firstNewlineIndex).trim(); // Extract title without '# '
                 const content = value.substring(firstNewlineIndex + 1).trim(); // Extract content after the first newline
                 console.log("content", content);
-                setEditorTitle(title);
+                setEditorTitleWrapper(title);
                 mdxEditorRef.current?.setMarkdown(content);
                 return;
               }
             }
-            setEditorTitle(e.target.value);
+            setEditorTitleWrapper(e.target.value);
           }}
           style={{
             fontSize: isPostMode ? "1rem" : "2rem",
@@ -181,7 +231,7 @@ export default function PostEditor({
             placeholder="Post content"
             className="text-sm flex-1 h-[calc(100vh-200px)]"
             value={editorContent}
-            onChange={(e) => setEditorContent(e.target.value)}
+            onChange={(e) => setEditorContentWrapper(e.target.value)}
           />
         ) : (
           <MDXEditor
@@ -229,7 +279,7 @@ export default function PostEditor({
               }),
             ]}
             onChange={(t) => {
-              setEditorContent(t);
+              setEditorContentWrapper(t);
             }}
             placeholder={`Write your post here...`}
             markdown={editorContent}
@@ -238,4 +288,15 @@ export default function PostEditor({
       </div>
     </div>
   );
+}
+
+function getTitleAndContent(value: string) {
+  const firstNewlineIndex = value.indexOf("\n");
+  if (firstNewlineIndex !== -1 && value.startsWith("# ")) {
+    const title = value.substring(2, firstNewlineIndex).trim(); // Extract title without '# '
+    const content = value.substring(firstNewlineIndex + 1).trim(); // Extract content after the first newline
+    console.log("content", content);
+    return { title, content };
+  }
+  return { title: "", content: value };
 }

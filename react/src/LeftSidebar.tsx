@@ -20,11 +20,13 @@ export default function LeftSidebar({
   setSessionId,
   onClickWrite,
   curPath,
+  setCurPath,
 }: {
   sessionId: string;
   setSessionId: (sessionId: string) => void;
   onClickWrite: () => void;
   curPath: string;
+  setCurPath: (path: string) => void;
 }) {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [type, setType] = useState<"chat" | "space">("space");
@@ -92,14 +94,30 @@ export default function LeftSidebar({
                 </span>
               </Button>
             ))}
-          {type == "space" && <FileList path={""} />}
+          {type == "space" && (
+            <FileList
+              path={""}
+              curPath={curPath}
+              onClickFile={(relPath) => {
+                setCurPath(relPath);
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function FileList({ path }: { path: string }) {
+function FileList({
+  path,
+  onClickFile,
+  curPath,
+}: {
+  path: string;
+  onClickFile: (path: string) => void;
+  curPath: string;
+}) {
   const [files, setFiles] = useState<FileNode[]>([]);
   useEffect(() => {
     const fetchFiles = async () => {
@@ -119,47 +137,31 @@ function FileList({ path }: { path: string }) {
     <div className="flex flex-col text-left justify-start">
       {files.map((file, index) => (
         <div className="flex flex-col gap-2" key={file.rel_path}>
-          <div key={file.name} className="justify-start text-left px-2 w-full">
+          <Button
+            key={file.name}
+            onClick={() => {
+              onClickFile(file.rel_path);
+            }}
+            variant={file.rel_path == curPath ? "default" : "ghost"}
+            className="justify-start text-left px-2 w-full"
+          >
             {file.is_dir && <FolderIcon />}
 
             <span className="truncate">
               {!!file.name ? file.name : "Untitled"}
             </span>
-          </div>
+          </Button>
           {file.is_dir && (
             <div className="flex flex-col gap-2">
-              <FileList path={file.rel_path} />
+              <FileList
+                path={file.rel_path}
+                onClickFile={onClickFile}
+                curPath={curPath}
+              />
             </div>
           )}
         </div>
       ))}
     </div>
-  );
-}
-
-function FolderIconYellow() {
-  return (
-    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M460,128H272l-64-64H52c-26.5,0-48,21.5-48,48v288c0,26.5,21.5,48,48,48h408c26.5,0,48-21.5,48-48V176
-C508,149.5,486.5,128,460,128z"
-        fill="#FFD43B"
-        stroke="#E6BC35"
-        stroke-width="8"
-      />
-
-      <path
-        d="M460,128H272l-64-64H52c-26.5,0-48,21.5-48,48v48h456V176C460,149.5,460,128,460,128z"
-        fill="#FFEA94"
-        stroke="#E6BC35"
-        stroke-width="8"
-      />
-
-      <path
-        d="M460,400H52c0,26.5,21.5,48,48,48h360c26.5,0,48-21.5,48-48V352C508,378.5,486.5,400,460,400z"
-        fill="#E6BC35"
-        opacity="0.3"
-      />
-    </svg>
   );
 }
