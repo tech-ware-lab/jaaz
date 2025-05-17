@@ -8,12 +8,16 @@ WORKSPACE_ROOT = os.path.join(USER_DATA_DIR, "workspace")
 
 @router.post("/update_file")
 async def update_file(request: Request):
-    data = await request.json()
-    path = data["path"]
-    content = data["content"]
-    with open(path, "w") as f:
-        f.write(content)
-    return {"success": True}
+    try:
+        data = await request.json()
+        path = data["path"]
+        full_path = os.path.join(WORKSPACE_ROOT, path)
+        content = data["content"]
+        with open(full_path, "w") as f:
+            f.write(content)
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e), "path": path}
 
 @router.post("/create_file")
 async def create_file(request: Request):
@@ -46,23 +50,34 @@ async def delete_file(request: Request):
 
 @router.post("/rename_file")
 async def rename_file(request: Request):
-    data = await request.json()
-    old_path = data["old_path"]
-    new_path = data["new_path"]
-    if os.path.exists(new_path):
-        return {"error": f"File {new_path} already exists"}
-    if os.path.exists(old_path):
-        os.rename(old_path, new_path)
-        return {"success": True}
-    else:
-        return {"error": f"File {old_path} does not exist"}
+    try:
+        data = await request.json()
+        old_path = data["old_path"]
+        new_path = data["new_path"]
+        if os.path.exists(new_path):
+            return {"error": f"File {new_path} already exists", "path": old_path}
+        if os.path.exists(old_path):
+            os.rename(old_path, new_path)
+            return {"success": True, "path": new_path}
+        else:
+            return {"error": f"File {old_path} does not exist", "path": old_path}
+    except Exception as e:
+        return {"error": str(e), "path": old_path}
 
-@router.get("/read_file")
+@router.post("/read_file")
 async def read_file(request: Request):
-    data = await request.json()
-    path = data["path"]
-    with open(path, "r") as f:
-        return f.read()
+    try:
+        data = await request.json()
+        path = data["path"]
+        full_path = os.path.join(WORKSPACE_ROOT, path)
+        if os.path.exists(full_path):
+            with open(full_path, "r") as f:
+                content = f.read()
+                return {"content": content}
+        else:
+            return {"error": f"File {path} does not exist", "path": path}
+    except Exception as e:
+        return {"error": str(e), "path": path}
 
 @router.get("/list_files_in_dir")
 async def list_files_in_dir(rel_path: str):
