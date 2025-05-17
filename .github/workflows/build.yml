@@ -58,7 +58,7 @@ jobs:
         run: |
           npm run build:electron  # or electron-builder directly
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
