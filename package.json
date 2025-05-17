@@ -5,9 +5,12 @@
   "author": "weixuanfu",
   "main": "electron/main.js",
   "scripts": {
-    "start": "concurrently \"npm run start:frontend\" \"npm run start:electron\"",
+    "start": "cd react && npm run build && cd .. && npm run start:electron",
+    "dev:react": "cd react && npm run dev",
+    "dev:electron": "cross-env NODE_ENV=development npx electron electron/main.js",
+    "dev": "concurrently \"npm run dev:react\" \"npm run dev:electron\"",
     "start:frontend": "cd frontend && npm run dev",
-    "start:electron": "cross-env NODE_ENV=development electron .",
+    "start:electron": "npx electron electron/main.js",
     "build:electron": "electron-builder",
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
@@ -59,6 +62,8 @@
     }
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
     "electron": "^35.1.0",
     "electron-builder": "^24.0.0"
   }
