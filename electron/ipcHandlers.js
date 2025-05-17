@@ -9,6 +9,8 @@ module.exports = {
     try {
       if (data.channel === "xiaohongshu") {
         await publishXiaohongshu(data);
+      } else if (data.channel === "bilibili") {
+        await publishBilibili(data);
       }
     } catch (error) {
       console.error("Error in publish post:", error);
@@ -35,12 +37,7 @@ let browser;
  */
 async function publishXiaohongshu(data) {
   if (!browser) {
-    browser = await chromium.launchPersistentContext(
-      path.join(userDataDir, "browser_data"),
-      {
-        headless: false,
-      }
-    );
+    browser = await launchBrowser();
   }
   const page = await browser.newPage();
   try {
@@ -76,37 +73,157 @@ async function publishXiaohongshu(data) {
     // Wait for upload progress to appear
     await page.waitForSelector(".uploading", { timeout: 10000 });
 
-    // Wait for upload to complete (100%)
-    while (true) {
-      const progressText = await page.$eval(
-        ".uploading .stage",
-        (el) => el.textContent
-      );
-      // Match the text that contains "上传中" followed by a percentage
-      const progressMatch = progressText?.match(/上传中\s*(\d+)%/);
-
-      if (!progressMatch) {
-        throw new Error("Could not find upload progress percentage");
-      }
-
-      const progress = parseInt(progressMatch[1]);
-      console.log(`⏳Upload progress: ${progress}%`);
-
-      if (progress === 100) {
-        console.log("Upload completed!");
-        break;
-      }
-
-      // Wait a bit before checking again
-      await page.waitForTimeout(1000);
-    }
-
     // Wait a bit more to ensure the upload is fully processed
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(1000);
+
+    const [content, uploadComplete] = await Promise.all([
+      fillXiaohongshuContent(page, data.title, data.content),
+      waitForXiaohongshuUploadComplete(page),
+    ]);
+
+    console.log("🦄🦄uploadComplete:", uploadComplete);
+
+    // Wait a bit to ensure content is properly set
+    await page.waitForTimeout(1000);
   } catch (error) {
     console.error("Error during video upload:", error);
     throw error;
   } finally {
     // await page.close();
   }
+}
+
+async function fillXiaohongshuContent(page, title, content) {
+  // fill in title
+  await page.waitForSelector(
+    'input.d-text[placeholder="填写标题会有更多赞哦～"]',
+    { timeout: 10000 } // Increase timeout if necessary
+  );
+
+  // Focus on the input field
+  await page.focus('input.d-text[placeholder="填写标题会有更多赞哦～"]');
+  await page.fill(
+    'input.d-text[placeholder="填写标题会有更多赞哦～"]',
+    title || ""
+  );
+  // fill in title by typing
+  //   await page.keyboard.type(title || "", { delay: 100 });
+
+  // Fill in the content by clipboard copying pasting
+  await page.evaluate(async (text) => {
+    await navigator.clipboard.writeText(text);
+  }, content || "");
+  await page.waitForTimeout(1000);
+  await page.waitForSelector(".ql-editor");
+  await page.focus(".ql-editor");
+  //   await page.keyboard.type(content || "", { delay: 100 });
+  console.log("platform:", process.platform);
+  await page.keyboard.press(
+    process.platform === "darwin" ? "Meta+V" : "Control+V"
+  );
+  await page.waitForTimeout(2000);
+  // add hashtags
+  const tags = getTagsFromContent(content || "");
+  console.log("🦄🦄tags:", tags);
+  for (const tag of tags) {
+    await page.keyboard.type("#");
+    await page.waitForTimeout(100);
+    await page.keyboard.type(tag, { delay: 300 });
+    await page.waitForTimeout(1000);
+    await page.keyboard.press("Enter");
+  }
+
+  await page.waitForTimeout(1000);
+
+  return true;
+}
+
+async function waitForXiaohongshuUploadComplete(page) {
+  // Wait for upload to complete (100%)
+  while (true) {
+    const progressText = await page.evaluate(() => {
+      return document.querySelector(".stage")?.textContent || "";
+    });
+
+    // Check if the text contains "上传成功" (Upload Successful)
+    if (progressText.includes("上传成功")) {
+      console.log("Upload completed!");
+      return true;
+    }
+
+    // Match the text that contains "上传中" followed by a percentage
+    const progressMatch = progressText.match(/上传中\s*(\d+)%/);
+
+    if (!progressMatch) {
+      throw new Error("Could not find upload progress percentage");
+    }
+
+    const progress = parseInt(progressMatch[1]);
+    console.log(`⏳Upload progress: ${progress}%`);
+
+    if (progress === 99) {
+      console.log("Upload completed!");
+      break;
+    }
+
+    // Wait a bit before checking again
+    await page.waitForTimeout(3000);
+  }
+  return false;
+}
+
+async function launchBrowser() {
+  return await chromium.launchPersistentContext(
+    path.join(userDataDir, "browser_data"),
+    {
+      headless: false,
+      channel: "chrome", // Use real Chrome
+    }
+  );
+}
+
+/**
+ * @param {PublishData} data - The data for publishing the post
+ */
+
+async function publishBilibili(data) {
+  if (!browser) {
+    browser = await launchBrowser();
+  }
+  const page = await browser.newPage();
+  try {
+    await page.goto("https://member.bilibili.com/platform/upload/video/frame");
+    await page.waitForTimeout(3000); // Let Vue UI settle
+
+    // Ensure the "上传视频" button is visible and clickable
+    const uploadButton = await page.waitForSelector(".bcc-upload-wrapper", {
+      timeout: 10000,
+      state: "visible",
+    });
+
+    // Listen for the file chooser BEFORE clicking
+    const [fileChooser] = await Promise.all([
+      page.waitForEvent("filechooser"),
+      uploadButton.click(), // This triggers file picker
+    ]);
+
+    // Use the filechooser to set your file
+    await fileChooser.setFiles(data.video);
+
+    console.log("File selected via file chooser");
+  } catch (err) {
+    console.error("Upload error:", err);
+    throw err;
+  }
+}
+
+/**
+ * @param {string} content - The content of the post
+ * @returns {string[]} - The tags of the post
+ */
+function getTagsFromContent(content) {
+  const tags = content.match(/#(\w+)/g);
+  const ret = tags ? tags.map((tag) => tag.slice(1)) : [];
+  console.log("🦄🦄ret:", ret);
+  return ret;
 }
