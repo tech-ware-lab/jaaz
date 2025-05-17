@@ -15,8 +15,8 @@
   },
   "publish": "always",
   "build": {
-    "appId": "com.bunnyrun.app",
-    "productName": "bunnyrun",
+    "appId": "com.jaaz.app",
+    "productName": "Jaaz",
     "publish": {
       "provider": "github",
       "releaseType": "draft"
