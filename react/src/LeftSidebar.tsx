@@ -8,6 +8,13 @@ import {
 import { Button } from "./components/ui/button";
 import { useEffect, useState } from "react";
 import { ChatSession } from "./types/types";
+import {
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "./components/ui/context-menu";
+import { ContextMenu } from "./components/ui/context-menu";
+import { toast } from "sonner";
 
 type FileNode = {
   name: string;
@@ -119,6 +126,36 @@ function FileList({
   curPath: string;
 }) {
   const [files, setFiles] = useState<FileNode[]>([]);
+
+  // const handleRevealInExplorer = async (filePath: string) => {
+  //   try {
+  //     const result = await ipcRenderer.invoke("reveal-in-explorer", filePath);
+  //     if (result.error) {
+  //       toast.error(result.error);
+  //     }
+  //   } catch (error) {
+  //     toast.error("Failed to reveal file in explorer");
+  //   }
+  // };
+
+  const handleRevealInExplorer = async (filePath: string) => {
+    try {
+      const response = await fetch("/api/reveal_in_explorer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ path: filePath }),
+      });
+      const data = await response.json();
+      if (data.error) {
+        toast.error(data.error);
+      }
+    } catch (error) {
+      toast.error("Failed to reveal file in explorer");
+    }
+  };
+
   useEffect(() => {
     const fetchFiles = async () => {
       const files = await fetch(
@@ -137,20 +174,32 @@ function FileList({
     <div className="flex flex-col text-left justify-start">
       {files.map((file, index) => (
         <div className="flex flex-col gap-2" key={file.rel_path}>
-          <Button
-            key={file.name}
-            onClick={() => {
-              onClickFile(file.rel_path);
-            }}
-            variant={file.rel_path == curPath ? "default" : "ghost"}
-            className="justify-start text-left px-2 w-full"
-          >
-            {file.is_dir && <FolderIcon />}
+          <ContextMenu>
+            <ContextMenuTrigger>
+              <Button
+                key={file.name}
+                onClick={() => {
+                  onClickFile(file.rel_path);
+                }}
+                variant={file.rel_path == curPath ? "default" : "ghost"}
+                className="justify-start text-left px-2 w-full"
+              >
+                {file.is_dir && <FolderIcon />}
 
-            <span className="truncate">
-              {!!file.name ? file.name : "Untitled"}
-            </span>
-          </Button>
+                <span className="truncate">
+                  {!!file.name ? file.name : "Untitled"}
+                </span>
+              </Button>
+            </ContextMenuTrigger>
+            <ContextMenuContent>
+              <ContextMenuItem
+                onClick={() => handleRevealInExplorer(file.rel_path)}
+              >
+                Reveal in File Explorer
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
+
           {file.is_dir && (
             <div className="flex flex-col gap-2">
               <FileList

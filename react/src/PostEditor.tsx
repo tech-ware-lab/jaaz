@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "./components/ui/button";
 import {
   ChevronDownIcon,
@@ -47,6 +47,26 @@ import { PLATFORMS_CONFIG } from "./platformsConfig";
 import { useTheme } from "@/components/theme-provider";
 import { toast } from "sonner";
 
+function useDebounce<T extends (...args: any[]) => any>(
+  callback: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  return useCallback(
+    (...args: Parameters<T>) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    },
+    [callback, delay]
+  );
+}
+
 export default function PostEditor({
   curPath,
   setCurPath,
@@ -87,50 +107,62 @@ export default function PostEditor({
       });
   }, [curPath]);
 
-  const renameFile = (title: string) => {
-    const fullContent = `# ${title}\n${editorContent}`;
-    fetch("/api/rename_file", {
-      method: "POST",
-      body: JSON.stringify({ old_path: curPath, new_title: title }),
-    })
-      .then((res) => res.json())
-      .then(async (data) => {
-        if (data.path) {
-          // successfully renamed, update to the new path
-          await fetch("/api/update_file", {
-            method: "POST",
-            body: JSON.stringify({ path: data.path, content: fullContent }),
-          });
-          setCurPath(data.path);
-          dispatchEvent(new CustomEvent("refresh_workspace"));
-        } else {
-          // failed to rename, update to the old path
-          await fetch("/api/update_file", {
-            method: "POST",
-            body: JSON.stringify({ path: curPath, content: fullContent }),
-          });
-          toast.error(data.error);
-        }
+  const renameFile = useCallback(
+    (title: string) => {
+      const fullContent = `# ${title}\n${editorContent}`;
+      fetch("/api/rename_file", {
+        method: "POST",
+        body: JSON.stringify({ old_path: curPath, new_title: title }),
       })
-      .finally(() => {
-        setIsLoading(false);
+        .then((res) => res.json())
+        .then(async (data) => {
+          if (data.path) {
+            // successfully renamed, update to the new path
+            await fetch("/api/update_file", {
+              method: "POST",
+              body: JSON.stringify({ path: data.path, content: fullContent }),
+            });
+            setCurPath(data.path);
+            dispatchEvent(new CustomEvent("refresh_workspace"));
+          } else {
+            // failed to rename, update to the old path
+            await fetch("/api/update_file", {
+              method: "POST",
+              body: JSON.stringify({ path: curPath, content: fullContent }),
+            });
+            toast.error(data.error);
+          }
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    },
+    [curPath, editorContent, setCurPath]
+  );
+
+  const updateFile = useCallback(
+    (content: string) => {
+      const fullContent = `# ${editorTitle}\n${content}`;
+      fetch("/api/update_file", {
+        method: "POST",
+        body: JSON.stringify({ path: curPath, content: fullContent }),
       });
-  };
+    },
+    [curPath, editorTitle]
+  );
+
+  // Create debounced versions of the functions
+  const debouncedRenameFile = useDebounce(renameFile, 500);
+  const debouncedUpdateFile = useDebounce(updateFile, 500);
 
   const setEditorTitleWrapper = (title: string) => {
     setEditorTitle(title);
-    renameFile(title);
+    debouncedRenameFile(title);
   };
-  const updateFile = (content: string) => {
-    const fullContent = `# ${editorTitle}\n${content}`;
-    fetch("/api/update_file", {
-      method: "POST",
-      body: JSON.stringify({ path: curPath, content: fullContent }),
-    });
-  };
+
   const setEditorContentWrapper = (content: string) => {
     setEditorContent(content);
-    updateFile(content);
+    debouncedUpdateFile(content);
   };
 
   useEffect(() => {
