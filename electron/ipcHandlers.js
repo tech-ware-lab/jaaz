@@ -23,6 +23,26 @@ const userDataDir = app.getPath("userData");
 /** @type {BrowserContext | null} */
 let browser;
 
+async function launchBrowser() {
+  const context = await chromium.launchPersistentContext(
+    path.join(userDataDir, "browser_data"),
+    {
+      headless: false,
+      channel: "chrome",
+      args: [
+        "--disable-blink-features=AutomationControlled",
+        "--disable-infobars", // hides "Chrome is being controlled" banner
+      ],
+      userAgent:
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+      viewport: null,
+      ignoreDefaultArgs: ["--enable-automation"],
+    }
+  );
+
+  return context;
+}
+
 /**
  * @typedef {Object} PublishData
  * @property {"youtube" | "bilibili" | "douyin" | "xiaohongshu"} channel - The platform to publish to
@@ -40,6 +60,11 @@ async function publishXiaohongshu(data) {
     browser = await launchBrowser();
   }
   const page = await browser.newPage();
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "webdriver", {
+      get: () => false,
+    });
+  });
   try {
     await page.goto("https://creator.xiaohongshu.com/publish/publish");
 
@@ -106,8 +131,6 @@ async function fillXiaohongshuContent(page, title, content) {
     'input.d-text[placeholder="填写标题会有更多赞哦～"]',
     title || ""
   );
-  // fill in title by typing
-  //   await page.keyboard.type(title || "", { delay: 100 });
 
   // Fill in the content by clipboard copying pasting
   await page.evaluate(async (text) => {
@@ -170,16 +193,6 @@ async function waitForXiaohongshuUploadComplete(page) {
     await page.waitForTimeout(3000);
   }
   return false;
-}
-
-async function launchBrowser() {
-  return await chromium.launchPersistentContext(
-    path.join(userDataDir, "browser_data"),
-    {
-      headless: false,
-      channel: "chrome", // Use real Chrome
-    }
-  );
 }
 
 /**
