@@ -88,12 +88,18 @@ async def list_files_in_dir(rel_path: str):
         files = os.listdir(full_path)
         file_nodes = []
         for file in files:
-            full_path = os.path.join(full_path, file)
+            file_path = os.path.join(full_path, file)
             file_nodes.append({
                 "name": file,
-                "is_dir": os.path.isdir(full_path),
-                    "rel_path": os.path.join(rel_path, file)
-                })
+                "is_dir": os.path.isdir(file_path),
+                "rel_path": os.path.join(rel_path, file),
+                "mtime": os.path.getmtime(file_path)  # Get modification time
+            })
+        # Sort by modification time in descending order
+        file_nodes.sort(key=lambda x: x["mtime"], reverse=True)
+        # Remove mtime from response as it was only used for sorting
+        for node in file_nodes:
+            node.pop("mtime")
         return file_nodes
     except Exception as e:
         return []
