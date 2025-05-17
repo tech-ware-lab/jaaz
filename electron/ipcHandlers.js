@@ -82,7 +82,8 @@ async function publishXiaohongshu(data) {
         ".uploading .stage",
         (el) => el.textContent
       );
-      const progressMatch = progressText?.match(/(\d+)%/);
+      // Match the text that contains "上传中" followed by a percentage
+      const progressMatch = progressText?.match(/上传中\s*(\d+)%/);
 
       if (!progressMatch) {
         throw new Error("Could not find upload progress percentage");
