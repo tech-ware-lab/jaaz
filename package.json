@@ -10,10 +10,10 @@
     "start:electron": "cross-env NODE_ENV=development electron .",
     "build": "npm run build:frontend && npm run build:electron",
     "build:frontend": "cd frontend && npm run build",
-    "build:electron": "electron-builder",
-    "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux"
+    "build:electron": "electron-builder --publish always",
+    "build:win": "electron-builder --win --publish always",
+    "build:mac": "electron-builder --mac --publish always",
+    "build:linux": "electron-builder --linux --publish always"
   },
   "publish": "always",
   "build": {
