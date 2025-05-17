@@ -1,6 +1,6 @@
 {
   "name": "electron-fastapi-react-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Local agent desktop app with MCP tools",
   "author": "weixuanfu",
   "main": "electron/main.js",
