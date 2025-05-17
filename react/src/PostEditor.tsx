@@ -1,0 +1,241 @@
+import { useEffect, useRef, useState } from "react";
+import { Button } from "./components/ui/button";
+import {
+  ChevronDownIcon,
+  DownloadIcon,
+  FolderIcon,
+  ImageIcon,
+  PlusIcon,
+  SendIcon,
+  SparklesIcon,
+  TriangleIcon,
+  VideoIcon,
+} from "lucide-react";
+import "@mdxeditor/editor/style.css";
+import {
+  headingsPlugin,
+  listsPlugin,
+  quotePlugin,
+  thematicBreakPlugin,
+  markdownShortcutPlugin,
+  MDXEditor,
+  type MDXEditorMethods,
+  type MDXEditorProps,
+  BoldItalicUnderlineToggles,
+  UndoRedo,
+  toolbarPlugin,
+  InsertTable,
+  InsertImage,
+  Separator,
+  CodeToggle,
+  ListsToggle,
+  CreateLink,
+  BlockTypeSelect,
+  linkPlugin,
+  imagePlugin,
+} from "@mdxeditor/editor";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./components/ui/dropdown-menu";
+import { Checkbox } from "./components/ui/checkbox";
+import { Input } from "./components/ui/input";
+import { Textarea } from "./components/ui/textarea";
+import { PLATFORMS_CONFIG } from "./platformsConfig";
+import { useTheme } from "@/components/theme-provider";
+
+export default function PostEditor({
+  editorTitle,
+  editorContent,
+  setEditorTitle,
+  setEditorContent,
+}: {
+  editorTitle: string;
+  editorContent: string;
+  setEditorTitle: (title: string) => void;
+  setEditorContent: (content: string) => void;
+}) {
+  const HEADER_HEIGHT = 50;
+  const { theme } = useTheme();
+  const [isTextSelected, setIsTextSelected] = useState(false);
+  const [selectionPosition, setSelectionPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [isPostMode, setIsPostMode] = useState(false);
+  const mdxEditorRef = useRef<MDXEditorMethods>(null);
+
+  useEffect(() => {
+    const toolbar = document.querySelector(".my-classname");
+    if (toolbar) {
+      (toolbar as HTMLElement).style.padding = "0px";
+    }
+
+    const handleSelectionChange = () => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+
+        // Ensure that there's a non-empty selection
+        if (!range.collapsed) {
+          const rect = range.getBoundingClientRect();
+          setSelectionPosition({ top: rect.top - 50, left: rect.left });
+          setIsTextSelected(true);
+        } else {
+          setIsTextSelected(false); // No selection or collapsed selection
+        }
+      } else {
+        setIsTextSelected(false); // No selection
+      }
+    };
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+    };
+  }, []);
+  return (
+    <div className="h-100vh">
+      <div
+        className="flex justify-between py-2 items-center"
+        style={{ height: `${HEADER_HEIGHT}px` }}
+      >
+        <div className="flex flex-row gap-2">
+          <Button size={"sm"} variant={"secondary"}>
+            <ImageIcon />
+            Add Image
+          </Button>
+          <Button size={"sm"} variant={"secondary"}>
+            <VideoIcon />
+            Add Video
+          </Button>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="ml-auto">
+            <Button size={"sm"} className="bg-purple-600 text-white ml-auto">
+              <SendIcon className="w-4 h-4" />
+              Post
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="text-base px-3">
+            {PLATFORMS_CONFIG.map((platform) => (
+              <DropdownMenuItem
+                key={platform.name}
+                className="text-base font-semibold"
+              >
+                <Checkbox checked className="mr-3" />
+                <img
+                  src={platform.icon}
+                  alt={platform.name}
+                  className="w-4 h-4"
+                />
+                {platform.name}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuItem className="text-base font-semibold">
+              <Button variant={"outline"} size={"sm"} className="w-full">
+                <PlusIcon size={16} />
+                Add new
+              </Button>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div
+        style={{ height: `calc(100vh - ${HEADER_HEIGHT}px)` }}
+        className="overflow-y-auto"
+      >
+        <Textarea
+          placeholder="Title"
+          value={editorTitle}
+          onChange={(e) => {
+            if (!isPostMode && editorContent.length == 0) {
+              const value = e.target.value.trim();
+              const firstNewlineIndex = value.indexOf("\n");
+              if (firstNewlineIndex !== -1 && value.startsWith("# ")) {
+                const title = value.substring(2, firstNewlineIndex).trim(); // Extract title without '# '
+                const content = value.substring(firstNewlineIndex + 1).trim(); // Extract content after the first newline
+                console.log("content", content);
+                setEditorTitle(title);
+                mdxEditorRef.current?.setMarkdown(content);
+                return;
+              }
+            }
+            setEditorTitle(e.target.value);
+          }}
+          style={{
+            fontSize: isPostMode ? "1rem" : "2rem",
+            backgroundColor: isPostMode ? undefined : "transparent",
+            outline: isPostMode ? undefined : "none", // Remove outline
+            boxShadow: isPostMode ? undefined : "none", // Remove box shadow
+            border: isPostMode ? undefined : "none", // Remove border
+            resize: "none", // Disable resize
+          }}
+          className={`${!isPostMode ? "border-none text-xl font-bold" : ""}`}
+        />
+        {isPostMode ? (
+          <Textarea
+            placeholder="Post content"
+            className="text-sm flex-1 h-[calc(100vh-200px)]"
+            value={editorContent}
+            onChange={(e) => setEditorContent(e.target.value)}
+          />
+        ) : (
+          <MDXEditor
+            ref={mdxEditorRef}
+            className={theme == "dark" ? `dark-theme` : ""}
+            plugins={[
+              headingsPlugin(),
+              linkPlugin(),
+              // imagePlugin({
+              //   imageUploadHandler: () => {
+              //     return Promise.resolve("https://picsum.photos/200/300");
+              //   },
+              //   imageAutocompleteSuggestions: [
+              //     "https://picsum.photos/200/300",
+              //     "https://picsum.photos/200",
+              //   ],
+              // }),
+              listsPlugin(),
+              quotePlugin(),
+              thematicBreakPlugin(),
+              markdownShortcutPlugin(),
+              toolbarPlugin({
+                toolbarClassName: "my-classname",
+                toolbarPosition: "top",
+                toolbarContents: () => (
+                  <>
+                    {isTextSelected && selectionPosition && (
+                      <div
+                        role="toolbar"
+                        className="fixed flex bg-accent rounded-md"
+                        style={{
+                          top: `${selectionPosition.top}px`,
+                          left: `${selectionPosition.left}px`,
+                        }}
+                      >
+                        <BoldItalicUnderlineToggles />
+                        <BlockTypeSelect />
+                        <CodeToggle />
+                        <Separator orientation="vertical" />
+                        <CreateLink />
+                      </div>
+                    )}
+                  </>
+                ),
+              }),
+            ]}
+            onChange={(t) => {
+              setEditorContent(t);
+            }}
+            placeholder={`Write your post here...`}
+            markdown={editorContent}
+          />
+        )}
+      </div>
+    </div>
+  );
+}

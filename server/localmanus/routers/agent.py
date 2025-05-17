@@ -13,7 +13,7 @@ import aiohttp
 import requests
 from localmanus.services.agent_service import openai_client, anthropic_client, ollama_client
 from localmanus.services.mcp import MCPClient
-from localmanus.services.config_service import config_service, app_config
+from localmanus.services.config_service import config_service, app_config, USER_DATA_DIR
 from starlette.websockets import WebSocketDisconnect
 from localmanus.services.db_service import db_service
 
@@ -78,7 +78,7 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
     payload = {
         "model": model,
         "messages": messages,
-        "tools": SYSTEM_TOOLS + openai_client.tools,
+        # "tools": SYSTEM_TOOLS + openai_client.tools,
         "stream": True
     }
     url = url.rstrip("/") + "/chat/completions"
@@ -216,15 +216,15 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
                     except Exception as e:
                         pass
                     if data and data.get('error') and data.get('error').get('message'):
-                        if data['error'].get('code') == 'rate_limit_error':
-                            print('👇rate_limit_error, sleeping 10 seconds')
-                            await send_to_websocket(session_id, {
-                                'type': 'info', 
-                                'info': f'Hit rate limit, waiting 10 seconds before continue. {data.get("error").get("message")} Please wait for 10 seconds...'
-                            })
-                            await asyncio.sleep(10)
-                        else:
-                            raise Exception(data.get('error').get('message'))
+                        # if data['error'].get('code') == 'rate_limit_error':
+                        #     print('👇rate_limit_error, sleeping 10 seconds')
+                        #     await send_to_websocket(session_id, {
+                        #         'type': 'info', 
+                        #         'info': f'Hit rate limit, waiting 10 seconds before continue. {data.get("error").get("message")} Please wait for 10 seconds...'
+                        #     })
+                        #     await asyncio.sleep(10)
+                        # else:
+                        raise Exception(data.get('error').get('message'))
                     else:
                         # alert info
                         await send_to_websocket(session_id, {
@@ -342,32 +342,33 @@ async def chat(request: Request):
     if len(messages) == 1:
         # create new session
         prompt = messages[0].get('content', '')
-        await db_service.create_chat_session(session_id, model, provider, prompt if isinstance(prompt, str) else '')
+        await db_service.create_chat_session(session_id, model, provider, (prompt[:200] if isinstance(prompt, str) else ''))
+    
+    await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1])) if len(messages) > 0 else None
     # Create and store the chat task
     async def chat_loop():
         cur_messages = messages
-        # while True:
-        while True:
-            try:
-                if cur_messages[-1].get('role') == 'assistant' and cur_messages[-1].get('tool_calls') and \
-                cur_messages[-1]['tool_calls'][-1].get('function', {}).get('name') == 'finish':
-                    print('👇finish!')
-                    cur_messages.pop()
-                    await send_to_websocket(session_id, {
-                        'type': 'all_messages', 
-                        'messages': cur_messages
-                    })
-                    break
-                else:
-                    cur_messages = await chat_openai(cur_messages, session_id, model, provider, url)
-            except Exception as e:
-                print(f"Error in chat_loop: {e}")
-                traceback.print_exc()
+
+        try:
+            if cur_messages[-1].get('role') == 'assistant' and cur_messages[-1].get('tool_calls') and \
+            cur_messages[-1]['tool_calls'][-1].get('function', {}).get('name') == 'finish':
+                print('👇finish!')
+                cur_messages.pop()
                 await send_to_websocket(session_id, {
-                    'type': 'error',
-                    'error': str(e)
+                    'type': 'all_messages', 
+                    'messages': cur_messages
                 })
-                break
+
+            else:
+                cur_messages = await chat_openai(cur_messages, session_id, model, provider, url)
+        except Exception as e:
+            print(f"Error in chat_loop: {e}")
+            traceback.print_exc()
+            await send_to_websocket(session_id, {
+                'type': 'error',
+                'error': str(e)
+            })
+
         await send_to_websocket(session_id, {
             'type': 'done'
         })
@@ -446,8 +447,6 @@ async def get_models():
                 'url': config[provider].get('url', '')
             })
     return res
-
-USER_DATA_DIR = os.getenv("USER_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "user_data"))
 
 mcp_clients: dict[str, MCPClient] = {}
 mcp_clients_status = {}
@@ -538,7 +537,7 @@ async def list_mcp_servers():
 async def list_chat_sessions():
     return await db_service.list_sessions()
 
-@router.get("/get_chat_history")
-async def get_chat_history(session_id: str):
+@router.get("/chat_session/{session_id}")
+async def get_chat_session(session_id: str):
     return await db_service.get_chat_history(session_id)
 

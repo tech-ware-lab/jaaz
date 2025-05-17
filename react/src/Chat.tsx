@@ -10,9 +10,15 @@ import { Button } from "./components/ui/button";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
+  Link,
+  MoonIcon,
+  PlusIcon,
   SendIcon,
+  SettingsIcon,
+  SidebarIcon,
   SquareIcon,
   StopCircleIcon,
+  SunIcon,
 } from "lucide-react";
 import { Badge } from "./components/ui/badge";
 import { Textarea } from "./components/ui/textarea";
@@ -26,31 +32,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./components/ui/select";
-import { exampleMessages } from "./exampleMessages";
 import MultiChoicePrompt from "./MultiChoicePrompt";
 import SingleChoicePrompt from "./SingleChoicePrompt";
 import Spinner from "./components/ui/Spinner";
-import { IconPlayerStop } from "@tabler/icons-react";
+import { useTheme } from "./components/theme-provider";
+import { PLATFORMS_CONFIG } from "./platformsConfig";
 
-const FOOTER_HEIGHT = 140; // Adjust this value as needed
+const FOOTER_HEIGHT = 100; // Keep this as minimum height
+const MAX_INPUT_HEIGHT = 300; // Add this for maximum input height
 
 const ChatInterface = ({
-  messages: initialMessages,
-  currentStep,
-  maxStep,
-  totalTokens,
-  agentState,
+  sessionId,
+  onClickNewChat,
+  editorContent,
+  editorTitle,
 }: {
-  messages: Message[];
-  currentStep: number;
-  maxStep: number;
-  totalTokens: number;
-  agentState: EAgentState;
+  sessionId: string;
+  editorTitle: string;
+  editorContent: string;
+  onClickNewChat: () => void;
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
   const [disableStop, setDisableStop] = useState(false);
   const [pending, setPending] = useState(false);
+  const { setTheme, theme } = useTheme();
   const [model, setModel] = useState<{
     provider: string;
     model: string;
@@ -66,6 +72,21 @@ const ChatInterface = ({
   const webSocketRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string>(nanoid());
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([]);
+
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+
+    fetch("/api/chat_session/" + sessionId)
+      .then((resp) => resp.json())
+      .then((data) => {
+        if (data?.length) {
+          setMessages(data);
+        } else {
+          setMessages([]);
+        }
+        console.log("👇messages", data);
+      });
+  }, [sessionId]);
 
   useEffect(() => {
     fetch("/api/list_models")
@@ -211,7 +232,7 @@ const ChatInterface = ({
       }
     };
   }, []);
-  const onSendPrompt = () => {
+  const onSendPrompt = (promptStr: string) => {
     if (pending) {
       return;
     }
@@ -225,14 +246,14 @@ const ChatInterface = ({
       toast.error("Please set the model URL in Settings");
       return;
     }
-    if (!prompt || prompt == "") {
+    if (!promptStr || promptStr == "") {
       return;
     }
 
     const newMessages = messages.concat([
       {
         role: "user",
-        content: prompt,
+        content: promptStr + "\n\n # " + editorTitle + "\n\n" + editorContent,
       },
     ]);
     setMessages(newMessages);
@@ -261,7 +282,14 @@ const ChatInterface = ({
         style={{ paddingBottom: FOOTER_HEIGHT }}
       >
         <div className="space-y-6 max-w-3xl mx-auto">
-          <header className="p-4">
+          <header className="flex space-x-2 mt-2">
+            {/* <Button
+              size={"sm"}
+              variant={"ghost"}
+              // onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+            >
+              <SidebarIcon size={30} />
+            </Button> */}
             <Select
               value={model?.provider + ":" + model?.model}
               onValueChange={(value) => {
@@ -285,7 +313,101 @@ const ChatInterface = ({
                 ))}
               </SelectContent>
             </Select>
+
+            <Button
+              size={"sm"}
+              variant={"secondary"}
+              onClick={() => (window.location.href = "/settings")}
+            >
+              <SettingsIcon size={30} />
+            </Button>
+
+            <Button
+              size={"sm"}
+              variant={"ghost"}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? (
+                <SunIcon size={30} />
+              ) : (
+                <MoonIcon size={30} />
+              )}
+            </Button>
+            <Button size={"sm"} variant={"outline"} onClick={onClickNewChat}>
+              <PlusIcon /> New Chat
+            </Button>
           </header>
+          {/* quick buttons */}
+          {messages.length == 0 && (
+            <div className="flex flex-col gap-2">
+              <span className="text-muted-foreground">✨ Try asking:</span>
+              <div className="flex space-x-2 flex-wrap gap-3 px-3">
+                <Button
+                  size={"sm"}
+                  variant={"outline"}
+                  onClick={() => {
+                    onSendPrompt(`Improve my content:`);
+                  }}
+                >
+                  🪄 Improve my writing
+                </Button>
+                <Button
+                  size={"sm"}
+                  variant={"outline"}
+                  onClick={() => {
+                    onSendPrompt(`Continue writing for my content:`);
+                  }}
+                >
+                  ✍️ Continue writing
+                </Button>
+                <Button
+                  size={"sm"}
+                  variant={"outline"}
+                  onClick={() => {
+                    onSendPrompt(`Generate hashtags for my content:`);
+                  }}
+                >
+                  🔥 Generate hashtags #
+                </Button>
+                <Button
+                  size={"sm"}
+                  variant={"outline"}
+                  onClick={() => {
+                    onSendPrompt(`Generate hashtags for my content:`);
+                  }}
+                >
+                  📸 Generate cover photo
+                </Button>
+                {/* <Button
+                  size={"sm"}
+                  variant={"outline"}
+                  onClick={() => {
+                    onSendPrompt(`Generate hashtags for my content:`);
+                  }}
+                >
+                  🚀 生成爆款标题
+                </Button> */}
+                {PLATFORMS_CONFIG.slice(0, 5).map((platform) => (
+                  <Button
+                    size={"sm"}
+                    variant={"outline"}
+                    onClick={() => {
+                      onSendPrompt(
+                        `Write below content to ${platform.name} style.`
+                      );
+                    }}
+                  >
+                    <img
+                      src={platform.icon}
+                      alt={platform.name}
+                      className="w-4 h-4"
+                    />
+                    Write in {platform.name} style
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
           {/* Messages */}
           {messages.map((message, idx) => (
             <div key={`${idx}`}>
@@ -368,29 +490,37 @@ const ChatInterface = ({
 
       {/* Chat input */}
       <div
-        className="flex flex-col absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-950 p-4 gap-2"
-        style={{ height: FOOTER_HEIGHT }}
+        className="p-4 gap-2 sticky bottom-0 border-t"
+        style={{ minHeight: FOOTER_HEIGHT }}
       >
         {/* Input area */}
         <div className="flex flex-col relative flex-grow w-full space-x-2 max-w-3xl mx-auto">
-          <div className="flex flex-grow w-full items-center space-x-2 mt-7">
+          <div className="flex flex-grow w-full items-end space-x-2">
             <Textarea
-              className="flex flex-1 flex-grow h-full"
-              placeholder="What do you want to do?"
+              className="flex flex-1 flex-grow resize-none"
+              placeholder="您想根据当前文章问什么？"
               value={prompt}
               onChange={(e) => {
                 setPrompt(e.target.value);
               }}
-              rows={2}
+              style={{
+                maxHeight: MAX_INPUT_HEIGHT,
+                minHeight: FOOTER_HEIGHT,
+                overflowY: "auto",
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault(); // Prevents adding a new line
-                  onSendPrompt();
+                  onSendPrompt(prompt);
                 }
               }}
             />
             {!pending && (
-              <Button onClick={onSendPrompt} disabled={pending}>
+              <Button
+                onClick={() => onSendPrompt(prompt)}
+                disabled={pending}
+                className="mb-1"
+              >
                 <SendIcon />
               </Button>
             )}
@@ -406,6 +536,7 @@ const ChatInterface = ({
                       setPending(false);
                     });
                 }}
+                className="mb-1"
               >
                 <StopCircleIcon />
               </Button>
