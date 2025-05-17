@@ -107,8 +107,15 @@ app.whenReady().then(async () => {
   while (true) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     // wait for the server to start
-    let status = await fetch(`http://127.0.0.1:${pyPort}`);
-    if (status.ok) {
+    let status = await fetch(`http://127.0.0.1:${pyPort}`)
+      .then((res) => {
+        return res.ok;
+      })
+      .catch((err) => {
+        console.error(err);
+        return false;
+      });
+    if (status) {
       break;
     }
   }
