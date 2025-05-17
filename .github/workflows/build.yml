@@ -56,7 +56,7 @@ jobs:
 
       - name: Build and Package Electron app
         run: |
-          npm run build:electron  # or electron-builder directly
+          npm run build:electron
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
