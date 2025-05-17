@@ -11,51 +11,20 @@ import { ChatSession } from "./types/types";
 
 type FileNode = {
   name: string;
-  path: string;
   is_dir: boolean;
+  rel_path: string;
 };
 
-const EXAMPLE_FILES: FileNode[] = [
-  {
-    name: "AI marketing copilot agent that helps you get users and grow - free runs local",
-    path: "example.mdx",
-    is_dir: false,
-  },
-  {
-    name: "微调千问复现Manus - 手把手教学",
-    path: "example.mdx",
-    is_dir: false,
-  },
-  {
-    name: "类Manus通用类AI agent技术分析",
-    path: "example.mdx",
-    is_dir: false,
-  },
-  {
-    name: "会议纪要",
-    path: "example.mdx",
-    is_dir: true,
-  },
-];
-
-const EXAMPLE_CHILD_FILES: FileNode[] = [
-  {
-    name: "2025-05-16 会议纪要",
-    path: "example.mdx",
-    is_dir: false,
-  },
-  {
-    name: "2025-05-15 会议纪要",
-    path: "example.mdx",
-    is_dir: false,
-  },
-];
 export default function LeftSidebar({
   sessionId,
   setSessionId,
+  onClickWrite,
+  curPath,
 }: {
   sessionId: string;
   setSessionId: (sessionId: string) => void;
+  onClickWrite: () => void;
+  curPath: string;
 }) {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [type, setType] = useState<"chat" | "space">("space");
@@ -70,8 +39,11 @@ export default function LeftSidebar({
       const data = await sessions.json();
       setChatSessions(data);
     };
-    fetchChatSessions();
-  }, []);
+
+    if (type == "chat") {
+      fetchChatSessions();
+    }
+  }, [type]);
   return (
     <div className="flex flex-col h-screen">
       <div className="flex flex-col gap-4 p-3 sticky top-0">
@@ -79,11 +51,7 @@ export default function LeftSidebar({
           size={"sm"}
           variant={"outline"}
           className="w-full"
-          onClick={() => {
-            alert(
-              "AI content writing Copilot is coming soon! We're working on it as fast as we can!"
-            );
-          }}
+          onClick={onClickWrite}
         >
           <PencilIcon className="w-4 h-4 text-xs size-4" /> Write
         </Button>
@@ -124,41 +92,43 @@ export default function LeftSidebar({
                 </span>
               </Button>
             ))}
-          {type == "space" && <FileList files={files} />}
+          {type == "space" && <FileList path={""} />}
         </div>
       </div>
     </div>
   );
 }
 
-function FileList({ files }: { files: FileNode[] }) {
+function FileList({ path }: { path: string }) {
+  const [files, setFiles] = useState<FileNode[]>([]);
+  useEffect(() => {
+    const fetchFiles = async () => {
+      const files = await fetch(
+        `/api/list_files_in_dir?rel_path=${encodeURIComponent(path)}`
+      ).then((res) => res.json());
+      if (Array.isArray(files)) {
+        setFiles(files);
+      }
+    };
+    window.addEventListener("refresh_workspace", () => {
+      fetchFiles();
+    });
+    fetchFiles();
+  }, [path]);
   return (
     <div className="flex flex-col text-left justify-start">
-      {EXAMPLE_FILES.map((file, index) => (
-        <div className="flex flex-col gap-2">
-          <Button
-            key={file.path}
-            variant={index === 0 ? "secondary" : "ghost"}
-            className="justify-start text-left px-2 w-full"
-          >
+      {files.map((file, index) => (
+        <div className="flex flex-col gap-2" key={file.rel_path}>
+          <div key={file.name} className="justify-start text-left px-2 w-full">
             {file.is_dir && <FolderIcon />}
 
             <span className="truncate">
               {!!file.name ? file.name : "Untitled"}
             </span>
-          </Button>
+          </div>
           {file.is_dir && (
             <div className="flex flex-col gap-2">
-              {EXAMPLE_CHILD_FILES.map((child) => (
-                <Button
-                  size={"sm"}
-                  variant={"ghost"}
-                  key={child.path}
-                  className="justify-start text-left pl-8"
-                >
-                  {child.name}
-                </Button>
-              ))}
+              <FileList path={file.rel_path} />
             </div>
           )}
         </div>

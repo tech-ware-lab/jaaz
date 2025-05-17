@@ -26,7 +26,7 @@ import { exampleMessages } from "./exampleMessages";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useTheme } from "@/components/theme-provider";
 import WorkspaceSidebar from "./WorkspaceSidebar";
-import { Toaster } from "sonner";
+import { toast, Toaster } from "sonner";
 import LeftSidebar from "./LeftSidebar";
 import { nanoid } from "nanoid";
 import PostEditor from "./PostEditor";
@@ -42,8 +42,25 @@ function Home() {
   const [editorTitle, setEditorTitle] = useState("");
   const [editorContent, setEditorContent] = useState("");
   const { setTheme, theme } = useTheme();
+  const [curPath, setCurPath] = useState("");
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const setEditorTitleWrapper = (title: string) => {
+    const fullContent = `# ${title}\n${editorContent}`;
+    setEditorTitle(title);
+    fetch("/api/workspace/update_file", {
+      method: "POST",
+      body: JSON.stringify({ path: curPath, content: fullContent }),
+    });
+  };
+  const setEditorContentWrapper = (content: string) => {
+    setEditorContent(content);
+    const fullContent = `# ${editorTitle}\n${content}`;
+    fetch("/api/workspace/update_file", {
+      method: "POST",
+      body: JSON.stringify({ path: curPath, content: fullContent }),
+    });
+  };
 
   useEffect(() => {
     fetch("/api/config/exists")
@@ -59,15 +76,37 @@ function Home() {
     <div className="flex">
       {isLeftSidebarOpen && (
         <div className="w-[16%] bg-sidebar h-screen">
-          <LeftSidebar sessionId={sessionId} setSessionId={setSessionId} />
+          <LeftSidebar
+            sessionId={sessionId}
+            setSessionId={setSessionId}
+            curPath={curPath}
+            onClickWrite={() => {
+              fetch("/api/create_file", {
+                method: "POST",
+                body: JSON.stringify({ rel_dir: "" }),
+              })
+                .then((res) => res.json())
+                .then((data) => {
+                  if (data.path) {
+                    setCurPath(data.path);
+                    dispatchEvent(new Event("refresh_workspace"));
+                  } else {
+                    throw new Error("Failed to create file");
+                  }
+                })
+                .catch((err) => {
+                  toast.error("Failed to create file");
+                });
+            }}
+          />
         </div>
       )}
       <div className="w-[60%] h-screen px-5">
         <PostEditor
           editorTitle={editorTitle}
           editorContent={editorContent}
-          setEditorTitle={setEditorTitle}
-          setEditorContent={setEditorContent}
+          setEditorTitle={setEditorTitleWrapper}
+          setEditorContent={setEditorContentWrapper}
         />
       </div>
       <div className="flex-1 flex-grow relative px-4  bg-sidebar">
