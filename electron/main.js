@@ -3,6 +3,7 @@
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
+const { chromium } = require("playwright");
 
 const net = require("net");
 
@@ -135,6 +136,14 @@ ipcMain.handle("pick-video", async () => {
   }
   return null;
 });
+
+const handlers = require("./ipcHandlers");
+console.log("Registering IPC handlers:", Object.keys(handlers));
+
+for (const [name, fn] of Object.entries(handlers)) {
+  console.log(`Registering handler for: ${name}`);
+  ipcMain.handle(name, fn);
+}
 
 app.whenReady().then(async () => {
   if (process.env.NODE_ENV !== "development") {

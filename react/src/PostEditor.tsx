@@ -239,6 +239,9 @@ export default function PostEditor({
       toast.error("Failed to pick video");
     }
   };
+  const publishPost = async () => {
+    const result = await window.electronAPI.publishRednote();
+  };
 
   const removeMedia = (index: number) => {
     setMediaFiles((prev) => prev.filter((_, i) => i !== index));
@@ -272,6 +275,7 @@ export default function PostEditor({
               <DropdownMenuItem
                 key={platform.name}
                 className="text-base font-semibold"
+                onClick={publishPost}
               >
                 <Checkbox checked className="mr-3" />
                 <img
