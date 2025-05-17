@@ -239,10 +239,10 @@ export default function PostEditor({
       toast.error("Failed to pick video");
     }
   };
-  const publishPost = async () => {
+  const publishPost = async (platformId: string) => {
     const result = await window.electronAPI.publishPost({
-      channel: "xiaohongshu",
-      title: "New post",
+      channel: platformId as any,
+      title: editorTitle,
       content: editorContent,
       images: mediaFiles
         .filter((file) => file.type == "image")
@@ -283,7 +283,7 @@ export default function PostEditor({
               <DropdownMenuItem
                 key={platform.name}
                 className="text-base font-semibold"
-                onClick={publishPost}
+                onClick={() => publishPost(platform.id)}
               >
                 <Checkbox checked className="mr-3" />
                 <img
