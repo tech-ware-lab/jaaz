@@ -25,7 +25,6 @@ import ChatInterface from "./Chat";
 import { exampleMessages } from "./exampleMessages";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useTheme } from "@/components/theme-provider";
-import WorkspaceSidebar from "./WorkspaceSidebar";
 import { toast, Toaster } from "sonner";
 import LeftSidebar from "./LeftSidebar";
 import { nanoid } from "nanoid";
