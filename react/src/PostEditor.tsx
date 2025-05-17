@@ -240,7 +240,15 @@ export default function PostEditor({
     }
   };
   const publishPost = async () => {
-    const result = await window.electronAPI.publishRednote();
+    const result = await window.electronAPI.publishPost({
+      channel: "xiaohongshu",
+      title: "New post",
+      content: editorContent,
+      images: mediaFiles
+        .filter((file) => file.type == "image")
+        .map((file) => file.path),
+      video: mediaFiles.find((file) => file.type == "video")?.path || "",
+    });
   };
 
   const removeMedia = (index: number) => {
