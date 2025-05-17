@@ -132,28 +132,28 @@ async function fillXiaohongshuContent(page, title, content) {
     title || ""
   );
 
-  // Fill in the content by clipboard copying pasting
-  await page.evaluate(async (text) => {
-    await navigator.clipboard.writeText(text);
-  }, content || "");
   await page.waitForTimeout(1000);
   await page.waitForSelector(".ql-editor");
   await page.focus(".ql-editor");
-  //   await page.keyboard.type(content || "", { delay: 100 });
-  console.log("platform:", process.platform);
-  await page.keyboard.press(
-    process.platform === "darwin" ? "Meta+V" : "Control+V"
+  const { tags, content: contentWithoutTags } = getTagsFromContent(
+    content || ""
   );
+
+  // Fill in the content by clipboard copying pasting
+  await copyPasteContent(page, contentWithoutTags);
   await page.waitForTimeout(2000);
+
+  await page.keyboard.press("Enter");
+
+  await page.waitForTimeout(1000);
+
   // add hashtags
-  const tags = getTagsFromContent(content || "");
   console.log("🦄🦄tags:", tags);
   for (const tag of tags) {
-    await page.keyboard.type("#");
-    await page.waitForTimeout(100);
-    await page.keyboard.type(tag, { delay: 300 });
-    await page.waitForTimeout(1000);
+    await copyPasteContent(page, `#${tag}`);
+    await page.waitForTimeout(2000);
     await page.keyboard.press("Enter");
+    await page.waitForTimeout(1000);
   }
 
   await page.waitForTimeout(1000);
@@ -222,8 +222,35 @@ async function publishBilibili(data) {
 
     // Use the filechooser to set your file
     await fileChooser.setFiles(data.video);
+    // fill in title
+    await page.locator('input[placeholder="请输入稿件标题"]').click();
+    await page.keyboard.press(
+      process.platform === "darwin" ? "Meta+A" : "Control+A"
+    );
+    await page.keyboard.press("Delete");
+    await copyPasteContent(page, data.title);
 
-    console.log("File selected via file chooser");
+    const { tags, content: contentWithoutTags } = getTagsFromContent(
+      data.content || ""
+    );
+    // fill in content
+    await page.focus(".ql-editor");
+    await copyPasteContent(page, contentWithoutTags);
+    await page.waitForTimeout(1000);
+    // fill in tags
+    const tagInput = await page
+      .locator('input[placeholder="按回车键Enter创建标签"]')
+      .nth(0);
+    await tagInput.click();
+    await page.waitForTimeout(1000);
+    for (const tag of tags) {
+      await copyPasteContent(page, `${tag}`);
+      await page.waitForTimeout(1000);
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(1000);
+    }
+
+    await page.waitForTimeout(2000);
   } catch (err) {
     console.error("Upload error:", err);
     throw err;
@@ -232,11 +259,26 @@ async function publishBilibili(data) {
 
 /**
  * @param {string} content - The content of the post
- * @returns {string[]} - The tags of the post
+ * @returns {{tags: string[], content: string}} - The tags of the post and the content without tags
  */
 function getTagsFromContent(content) {
   const tags = content.match(/#(\w+)/g);
   const ret = tags ? tags.map((tag) => tag.slice(1)) : [];
   console.log("🦄🦄ret:", ret);
-  return ret;
+  // remove tags from content
+  for (const tag of ret) {
+    content = content.replace(`#${tag}`, "");
+  }
+  // remove spaces and trailing \n from content
+  content = content.trim().replace(/\n+$/, "");
+
+  return { tags: ret, content };
+}
+async function copyPasteContent(page, content) {
+  await page.evaluate(async (text) => {
+    await navigator.clipboard.writeText(text);
+  }, content || "");
+  await page.keyboard.press(
+    process.platform === "darwin" ? "Meta+V" : "Control+V"
+  );
 }
