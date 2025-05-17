@@ -3,7 +3,6 @@
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
-const { chromium } = require("playwright");
 
 const net = require("net");
 

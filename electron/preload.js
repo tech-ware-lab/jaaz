@@ -16,9 +16,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 // console.log("Exposing API with methods:", Object.keys(exposedAPI));
 
 contextBridge.exposeInMainWorld("electronAPI", {
-  publishRednote: (...args) => {
-    console.log("🦄publishRednote called with args:", args);
-    return ipcRenderer.invoke("publishRednote", ...args);
+  publishPost: (...args) => {
+    return ipcRenderer.invoke("publishPost", ...args);
   },
   // Add new file picker methods
   pickImage: () => ipcRenderer.invoke("pick-image"),
