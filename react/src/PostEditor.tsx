@@ -87,34 +87,50 @@ export default function PostEditor({
       });
   }, [curPath]);
 
-  const setEditorTitleWrapper = (title: string) => {
+  const renameFile = (title: string) => {
     const fullContent = `# ${title}\n${editorContent}`;
-    setEditorTitle(title);
-
     fetch("/api/rename_file", {
       method: "POST",
-      body: JSON.stringify({ old_path: curPath, new_path: title }),
+      body: JSON.stringify({ old_path: curPath, new_title: title }),
     })
       .then((res) => res.json())
-      .then((data) => {
+      .then(async (data) => {
         if (data.path) {
-          setCurPath(data.path);
-          fetch("/api/update_file", {
+          // successfully renamed, update to the new path
+          await fetch("/api/update_file", {
             method: "POST",
             body: JSON.stringify({ path: data.path, content: fullContent }),
           });
+          setCurPath(data.path);
+          dispatchEvent(new CustomEvent("refresh_workspace"));
         } else {
+          // failed to rename, update to the old path
+          await fetch("/api/update_file", {
+            method: "POST",
+            body: JSON.stringify({ path: curPath, content: fullContent }),
+          });
           toast.error(data.error);
         }
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   };
-  const setEditorContentWrapper = (content: string) => {
-    setEditorContent(content);
+
+  const setEditorTitleWrapper = (title: string) => {
+    setEditorTitle(title);
+    renameFile(title);
+  };
+  const updateFile = (content: string) => {
     const fullContent = `# ${editorTitle}\n${content}`;
     fetch("/api/update_file", {
       method: "POST",
       body: JSON.stringify({ path: curPath, content: fullContent }),
     });
+  };
+  const setEditorContentWrapper = (content: string) => {
+    setEditorContent(content);
+    updateFile(content);
   };
 
   useEffect(() => {

@@ -1,4 +1,5 @@
 import os
+import traceback
 from fastapi import APIRouter, Request
 from localmanus.services.config_service import USER_DATA_DIR
 
@@ -53,16 +54,17 @@ async def rename_file(request: Request):
     try:
         data = await request.json()
         old_path = data["old_path"]
-        new_path = data["new_path"]
-        if os.path.exists(new_path):
-            return {"error": f"File {new_path} already exists", "path": old_path}
+        old_path = os.path.join(WORKSPACE_ROOT, old_path)
+        new_title = data["new_title"]
         if os.path.exists(old_path):
+            new_path = os.path.join(os.path.dirname(old_path), new_title)
             os.rename(old_path, new_path)
             return {"success": True, "path": new_path}
         else:
             return {"error": f"File {old_path} does not exist", "path": old_path}
     except Exception as e:
-        return {"error": str(e), "path": old_path}
+        traceback.print_exc()
+        return {"error": str(e)}
 
 @router.post("/read_file")
 async def read_file(request: Request):
