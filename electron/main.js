@@ -1,6 +1,6 @@
 // electron/main.js
 // npx electron electron/main.js
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
 
@@ -49,7 +49,7 @@ const createWindow = (pyPort) => {
 
   // In development, use Vite dev server
   if (process.env.NODE_ENV === "development") {
-    mainWindow.loadURL("http://127.0.0.1:5173");
+    mainWindow.loadURL("http://localhost:5174");
     mainWindow.webContents.openDevTools();
   } else {
     // In production, load built files
@@ -63,6 +63,7 @@ const appRoot = app.getAppPath();
 const startPythonApi = async () => {
   // Find an available port
   pyPort = await findAvailablePort(5100);
+  console.log("available pyPort:", pyPort);
 
   // 确定UI dist目录
   const env = { ...process.env };
@@ -105,21 +106,50 @@ const startPythonApi = async () => {
   return pyPort;
 };
 
+// Add these handlers before app.whenReady()
+ipcMain.handle("pick-image", async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ["openFile"],
+    filters: [
+      { name: "Images", extensions: ["jpg", "jpeg", "png", "gif", "webp"] },
+    ],
+  });
+
+  if (!result.canceled && result.filePaths.length > 0) {
+    return result.filePaths[0];
+  }
+  return null;
+});
+
+ipcMain.handle("pick-video", async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ["openFile"],
+    filters: [{ name: "Videos", extensions: ["mp4", "webm", "mov", "avi"] }],
+  });
+
+  if (!result.canceled && result.filePaths.length > 0) {
+    return result.filePaths[0];
+  }
+  return null;
+});
+
 app.whenReady().then(async () => {
-  const pyPort = await startPythonApi();
-  while (true) {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    // wait for the server to start
-    let status = await fetch(`http://127.0.0.1:${pyPort}`)
-      .then((res) => {
-        return res.ok;
-      })
-      .catch((err) => {
-        console.error(err);
-        return false;
-      });
-    if (status) {
-      break;
+  if (process.env.NODE_ENV !== "development") {
+    const pyPort = await startPythonApi();
+    while (true) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // wait for the server to start
+      let status = await fetch(`http://127.0.0.1:${pyPort}`)
+        .then((res) => {
+          return res.ok;
+        })
+        .catch((err) => {
+          console.error(err);
+          return false;
+        });
+      if (status) {
+        break;
+      }
     }
   }
   createWindow(pyPort);

@@ -10,6 +10,7 @@ import {
   SparklesIcon,
   TriangleIcon,
   VideoIcon,
+  XIcon,
 } from "lucide-react";
 import "@mdxeditor/editor/style.css";
 import {
@@ -46,6 +47,12 @@ import { Textarea } from "./components/ui/textarea";
 import { PLATFORMS_CONFIG } from "./platformsConfig";
 import { useTheme } from "@/components/theme-provider";
 import { toast } from "sonner";
+
+type MediaFile = {
+  path: string;
+  type: "image" | "video";
+  name: string;
+};
 
 function useDebounce<T extends (...args: any[]) => any>(
   callback: T,
@@ -86,6 +93,7 @@ export default function PostEditor({
   const [editorTitle, setEditorTitle] = useState("");
   const [editorContent, setEditorContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -100,10 +108,10 @@ export default function PostEditor({
           setEditorTitle(title);
           setEditorContent(content);
           mdxEditorRef.current?.setMarkdown(content);
+          setIsLoading(false);
+        } else {
+          toast.error("Failed to read file " + curPath);
         }
-      })
-      .finally(() => {
-        setIsLoading(false);
       });
   }, [curPath]);
 
@@ -195,6 +203,35 @@ export default function PostEditor({
       document.removeEventListener("selectionchange", handleSelectionChange);
     };
   }, []);
+
+  const handlePickImage = async () => {
+    try {
+      const path = await window.electronAPI.pickImage();
+      if (path) {
+        const name = path.split("/").pop() || path;
+        setMediaFiles((prev) => [...prev, { path, type: "image", name }]);
+      }
+    } catch (error) {
+      toast.error("Failed to pick image");
+    }
+  };
+
+  const handlePickVideo = async () => {
+    try {
+      const path = await window.electronAPI.pickVideo();
+      if (path) {
+        const name = path.split("/").pop() || path;
+        setMediaFiles((prev) => [...prev, { path, type: "video", name }]);
+      }
+    } catch (error) {
+      toast.error("Failed to pick video");
+    }
+  };
+
+  const removeMedia = (index: number) => {
+    setMediaFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   return (
     <div className="h-100vh">
       <div
@@ -202,11 +239,11 @@ export default function PostEditor({
         style={{ height: `${HEADER_HEIGHT}px` }}
       >
         <div className="flex flex-row gap-2">
-          <Button size={"sm"} variant={"secondary"}>
+          <Button size={"sm"} variant={"secondary"} onClick={handlePickImage}>
             <ImageIcon />
             Add Image
           </Button>
-          <Button size={"sm"} variant={"secondary"}>
+          <Button size={"sm"} variant={"secondary"} onClick={handlePickVideo}>
             <VideoIcon />
             Add Video
           </Button>
@@ -242,6 +279,33 @@ export default function PostEditor({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      {mediaFiles.length > 0 && (
+        <div className="flex flex-wrap gap-4 p-4 border-b">
+          {mediaFiles.map((file, index) => (
+            <div key={index} className="relative group">
+              {file.type === "image" ? (
+                <img
+                  src={`file://${file.path}`}
+                  alt={file.name}
+                  className="h-24 w-24 object-cover rounded"
+                />
+              ) : (
+                <video
+                  src={`file://${file.path}`}
+                  className="h-24 w-24 object-cover rounded"
+                />
+              )}
+              <button
+                onClick={() => removeMedia(index)}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+              <div className="text-xs mt-1 truncate max-w-24">{file.name}</div>
+            </div>
+          ))}
+        </div>
+      )}
       <div
         style={{ height: `calc(100vh - ${HEADER_HEIGHT}px)` }}
         className="overflow-y-auto"
