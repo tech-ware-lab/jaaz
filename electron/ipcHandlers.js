@@ -1,6 +1,6 @@
 // ipcHandlers.js
 module.exports = {
-  publishRednote: async (data) => {
+  publishRednote: async (event, data) => {
     console.log("🦄🦄publishRednote called with data:", data);
     try {
       // logic here

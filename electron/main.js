@@ -137,12 +137,10 @@ ipcMain.handle("pick-video", async () => {
   return null;
 });
 
-const handlers = require("./ipcHandlers");
-console.log("Registering IPC handlers:", Object.keys(handlers));
+const ipcHandlers = require("./ipcHandlers");
 
-for (const [name, fn] of Object.entries(handlers)) {
-  console.log(`Registering handler for: ${name}`);
-  ipcMain.handle(name, fn);
+for (const [channel, handler] of Object.entries(ipcHandlers)) {
+  ipcMain.handle(channel, handler);
 }
 
 app.whenReady().then(async () => {

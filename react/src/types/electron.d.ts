@@ -1,7 +1,13 @@
 interface ElectronAPI {
   pickImage: () => Promise<string[] | null>;
   pickVideo: () => Promise<string | null>;
-  publishRednote: () => Promise<any>;
+  publishPost: (args: {
+    channel: "youtube" | "bilibili" | "douyin" | "xiaohongshu";
+    title: string;
+    content: string;
+    images: string[];
+    video: string;
+  }) => Promise<any>;
 }
 
 declare global {
