@@ -105,6 +105,7 @@ export default function LeftSidebar({
             <FileList
               path={""}
               curPath={curPath}
+              setCurPath={setCurPath}
               onClickFile={(relPath) => {
                 setCurPath(relPath);
               }}
@@ -120,10 +121,12 @@ function FileList({
   path,
   onClickFile,
   curPath,
+  setCurPath,
 }: {
   path: string;
   onClickFile: (path: string) => void;
   curPath: string;
+  setCurPath: (path: string) => void;
 }) {
   const [files, setFiles] = useState<FileNode[]>([]);
 
@@ -163,6 +166,9 @@ function FileList({
       ).then((res) => res.json());
       if (Array.isArray(files)) {
         setFiles(files);
+        if (curPath == "") {
+          setCurPath(files[0].rel_path);
+        }
       }
     };
     window.addEventListener("refresh_workspace", () => {
@@ -206,6 +212,7 @@ function FileList({
                 path={file.rel_path}
                 onClickFile={onClickFile}
                 curPath={curPath}
+                setCurPath={setCurPath}
               />
             </div>
           )}
