@@ -63,5 +63,5 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-app-${{ matrix.os }}
+          name: desktop-app-${{ runner.os }}-${{ github.run_id }}
           path: dist/
