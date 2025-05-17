@@ -1,5 +1,5 @@
 interface ElectronAPI {
-  pickImage: () => Promise<string | null>;
+  pickImage: () => Promise<string[] | null>;
   pickVideo: () => Promise<string | null>;
 }
 

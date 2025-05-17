@@ -44,6 +44,9 @@ const createWindow = (pyPort) => {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      // for showing local image and video files
+      webSecurity: false,
+      allowRunningInsecureContent: true,
     },
   });
 
@@ -109,14 +112,14 @@ const startPythonApi = async () => {
 // Add these handlers before app.whenReady()
 ipcMain.handle("pick-image", async () => {
   const result = await dialog.showOpenDialog({
-    properties: ["openFile"],
+    properties: ["openFile", "multiSelections"],
     filters: [
       { name: "Images", extensions: ["jpg", "jpeg", "png", "gif", "webp"] },
     ],
   });
 
   if (!result.canceled && result.filePaths.length > 0) {
-    return result.filePaths[0];
+    return result.filePaths;
   }
   return null;
 });

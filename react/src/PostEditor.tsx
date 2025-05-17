@@ -206,17 +206,29 @@ export default function PostEditor({
 
   const handlePickImage = async () => {
     try {
-      const path = await window.electronAPI.pickImage();
-      if (path) {
-        const name = path.split("/").pop() || path;
-        setMediaFiles((prev) => [...prev, { path, type: "image", name }]);
+      const paths = await window.electronAPI.pickImage();
+      if (paths) {
+        const newMediaFiles = paths.map((path) => ({
+          path,
+          type: "image" as const,
+          name: path.split("/").pop() || path,
+        }));
+        setMediaFiles((prev) => [...prev, ...newMediaFiles]);
       }
     } catch (error) {
-      toast.error("Failed to pick image");
+      toast.error("Failed to pick images");
     }
   };
 
   const handlePickVideo = async () => {
+    if (mediaFiles.at(-1)?.type == "image") {
+      toast.error("Please remove all images before picking a video");
+      return;
+    }
+    if (mediaFiles.at(-1)?.type == "video") {
+      toast.error("You can only add one video at a time");
+      return;
+    }
     try {
       const path = await window.electronAPI.pickVideo();
       if (path) {
