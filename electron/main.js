@@ -1,6 +1,6 @@
 // electron/main.js
 // npx electron electron/main.js
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
 
@@ -10,16 +10,19 @@ function findAvailablePort(startPort = 5000) {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
 
-    server.on("error", (err) => {
-      if (err.code === "EADDRINUSE") {
-        // Port is in use, try the next one
-        findAvailablePort(startPort + 1)
-          .then(resolve)
-          .catch(reject);
-      } else {
-        reject(err);
+    server.on(
+      "error",
+      /** @param {NodeJS.ErrnoException} err */ (err) => {
+        if (err.code === "EADDRINUSE") {
+          // Port is in use, try the next one
+          findAvailablePort(startPort + 1)
+            .then(resolve)
+            .catch(reject);
+        } else {
+          reject(err);
+        }
       }
-    });
+    );
 
     server.listen(startPort, () => {
       server.close(() => {
@@ -129,3 +132,17 @@ app.on("will-quit", () => {
     pyProc = null;
   }
 });
+
+// ipcMain.handle("reveal-in-explorer", async (event, filePath) => {
+//   try {
+//     // Convert relative path to absolute path
+//     const fullPath = path.join(app.getPath("userData"), "workspace", filePath);
+
+//     // Use shell.openPath which is the recommended way in Electron
+//     await shell.showItemInFolder(fullPath);
+//     return { success: true };
+//   } catch (error) {
+//     console.error("Error revealing file:", error);
+//     return { error: error.message };
+//   }
+// });
