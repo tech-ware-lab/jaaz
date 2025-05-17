@@ -13,7 +13,7 @@ import aiohttp
 import requests
 from localmanus.services.agent_service import openai_client, anthropic_client, ollama_client
 from localmanus.services.mcp import MCPClient
-from localmanus.services.config_service import config_service, app_config
+from localmanus.services.config_service import config_service, app_config, USER_DATA_DIR
 from starlette.websockets import WebSocketDisconnect
 from localmanus.services.db_service import db_service
 
@@ -447,8 +447,6 @@ async def get_models():
                 'url': config[provider].get('url', '')
             })
     return res
-
-USER_DATA_DIR = os.getenv("USER_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "user_data"))
 
 mcp_clients: dict[str, MCPClient] = {}
 mcp_clients_status = {}
