@@ -171,7 +171,6 @@ export default function PostEditor({
   const setEditorContentWrapper = (content: string) => {
     setEditorContent(content);
     debouncedUpdateFile(content);
-    console.log("content", content);
   };
 
   useEffect(() => {
