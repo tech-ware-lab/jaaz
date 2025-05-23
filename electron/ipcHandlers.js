@@ -11,6 +11,8 @@ module.exports = {
         await publishXiaohongshu(data);
       } else if (data.channel === "bilibili") {
         await publishBilibili(data);
+      } else if (data.channel === "youtube") {
+        await publishYoutube(data);
       }
     } catch (error) {
       console.error("Error in publish post:", error);
@@ -257,6 +259,19 @@ async function publishBilibili(data) {
   }
 }
 
+async function publishYoutube(data) {
+  if (!browser) {
+    browser = await launchBrowser();
+  }
+  const page = await browser.newPage();
+  try {
+    await page.goto("https://www.youtube.com/upload");
+    await page.waitForTimeout(3000); // Let Vue UI settle
+  } catch (err) {
+    console.error("Upload error:", err);
+    throw err;
+  }
+}
 /**
  * @param {string} content - The content of the post
  * @returns {{tags: string[], content: string}} - The tags of the post and the content without tags

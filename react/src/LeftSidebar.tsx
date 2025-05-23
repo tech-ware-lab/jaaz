@@ -130,17 +130,6 @@ function FileList({
 }) {
   const [files, setFiles] = useState<FileNode[]>([]);
 
-  // const handleRevealInExplorer = async (filePath: string) => {
-  //   try {
-  //     const result = await ipcRenderer.invoke("reveal-in-explorer", filePath);
-  //     if (result.error) {
-  //       toast.error(result.error);
-  //     }
-  //   } catch (error) {
-  //     toast.error("Failed to reveal file in explorer");
-  //   }
-  // };
-
   const handleRevealInExplorer = async (filePath: string) => {
     try {
       const response = await fetch("/api/reveal_in_explorer", {
