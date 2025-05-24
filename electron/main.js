@@ -40,6 +40,7 @@ const createWindow = (pyPort) => {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: path.join(__dirname, "../assets/icons/unicorn.png"), // ✅ Use .png for dev
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
