@@ -43,12 +43,14 @@
     ],
     "mac": {
       "category": "public.app-category.utilities",
+      "icon": "assets/icons/unicorn.icns",
       "target": [
         "dmg",
         "zip"
       ]
     },
     "win": {
+      "icon": "assets/icons/unicorn.ico",
       "target": [
         "nsis",
         "portable"
