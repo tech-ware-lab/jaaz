@@ -29,7 +29,8 @@
     },
     "files": [
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "assets/icons/*"
     ],
     "extraResources": [
       {
