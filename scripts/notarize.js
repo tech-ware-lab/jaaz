@@ -1,14 +1,15 @@
-const { notarize } = require("electron-notarize");
+// scripts/notarize.js
+import { notarize } from "@electron/notarize";
 
-exports.default = async function notarizing(context) {
+export default async function notarizing(context) {
   const { electronPlatformName, appOutDir } = context;
   if (electronPlatformName !== "darwin") return;
-
+  const appPath = `${appOutDir}/Jaaz.app`;
+  console.log("appPath", appPath);
   return await notarize({
-    appBundleId: "com.jaaz.app",
-    appPath: `${appOutDir}/Jaaz.app`, // Replace with your actual .app name
+    appPath,
     appleId: process.env.APPLE_ID,
     appleIdPassword: process.env.APPLE_APP_PASSWORD,
     teamId: process.env.TEAM_ID,
   });
-};
+}
