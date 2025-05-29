@@ -45,10 +45,7 @@
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "assets/icons/unicorn.icns",
-      "target": [
-        "dmg",
-        "zip"
-      ],
+      "target": "dmg",
       "gatekeeperAssess": false,
       "hardenedRuntime": true,
       "entitlements": "entitlements.mac.plist",
