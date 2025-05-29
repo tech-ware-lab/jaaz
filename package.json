@@ -1,6 +1,6 @@
 {
-  "name": "electron-fastapi-react-app",
-  "version": "1.0.1",
+  "name": "jaaz",
+  "version": "1.0.2",
   "description": "Local agent desktop app with MCP tools",
   "author": "weixuanfu",
   "main": "electron/main.js",
@@ -45,14 +45,14 @@
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "assets/icons/unicorn.icns",
-      "target": "dmg",
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "gatekeeperAssess": false,
       "hardenedRuntime": true,
       "entitlements": "entitlements.mac.plist",
       "entitlementsInherit": "entitlements.mac.plist",
-      "asarUnpack": [
-        "**/*.{json,gz,txt,dat}"
-      ],
       "notarize": false
     },
     "afterSign": "scripts/notarize.js",
