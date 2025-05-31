@@ -231,6 +231,15 @@ const ChatInterface = ({
             } else if (data.type == "all_messages") {
               console.log("👇all_messages", data.messages);
               return data.messages;
+            } else if (data.type == "image_generated") {
+              console.log("👇image_generated", data);
+              window.dispatchEvent(
+                new CustomEvent("image_generated", {
+                  detail: {
+                    image_data: data.image_data,
+                  },
+                })
+              );
             }
             return prev;
           });
