@@ -78,7 +78,7 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
     payload = {
         "model": model,
         "messages": messages,
-        # "tools": SYSTEM_TOOLS + openai_client.tools,
+        "tools": SYSTEM_TOOLS + openai_client.tools,
         "stream": True
     }
     url = url.rstrip("/") + "/chat/completions"
