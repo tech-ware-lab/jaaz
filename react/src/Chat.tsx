@@ -74,21 +74,6 @@ const ChatInterface = ({
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([]);
 
   useEffect(() => {
-    sessionIdRef.current = sessionId;
-
-    fetch("/api/chat_session/" + sessionId)
-      .then((resp) => resp.json())
-      .then((data) => {
-        if (data?.length) {
-          setMessages(data);
-        } else {
-          setMessages([]);
-        }
-        console.log("👇messages", data);
-      });
-  }, [sessionId]);
-
-  useEffect(() => {
     fetch("/api/list_models")
       .then((resp) => resp.json())
       .then(
@@ -113,6 +98,20 @@ const ChatInterface = ({
           }
         }
       );
+  }, []);
+
+  const initChat = async () => {
+    await fetch("/api/chat_session/" + sessionId)
+      .then((resp) => resp.json())
+      .then((data) => {
+        if (data?.length) {
+          setMessages(data);
+        } else {
+          setMessages([]);
+        }
+        console.log("👇messages", data);
+      });
+
     const socket = new WebSocket(`/ws?session_id=${sessionIdRef.current}`);
     webSocketRef.current = socket;
 
@@ -225,13 +224,18 @@ const ChatInterface = ({
     socket.addEventListener("error", (event) => {
       console.error("WebSocket error:", event);
     });
+  };
 
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+    initChat();
     return () => {
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.close();
+      if (webSocketRef.current?.readyState === WebSocket.OPEN) {
+        webSocketRef.current?.close();
       }
     };
-  }, []);
+  }, [sessionId]);
+
   const onSendPrompt = (promptStr: string) => {
     if (pending) {
       return;
