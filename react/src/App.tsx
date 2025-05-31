@@ -65,7 +65,7 @@ function Home() {
       <div
         style={{
           position: "fixed",
-          right: "20%",
+          right: "24%",
           top: 0,
           bottom: 0,
           left: 0,
@@ -74,7 +74,7 @@ function Home() {
         <CanvasExcali />
       </div>
 
-      <div className="flex-1 flex-grow px-4 bg-accent w-[20%] absolute right-0">
+      <div className="flex-1 flex-grow px-4 bg-accent w-[24%] absolute right-0">
         <ChatInterface
           sessionId={sessionId}
           editorTitle={editorTitle}
