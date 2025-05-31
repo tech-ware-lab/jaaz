@@ -204,6 +204,7 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
                     if tool_result is not None:
                         for r in tool_result:
                             messages.append(r)
+                            await db_service.create_message(session_id, 'tool', json.dumps(r))
                     await send_to_websocket(session_id, {
                         'type': 'all_messages',
                         'messages': messages
