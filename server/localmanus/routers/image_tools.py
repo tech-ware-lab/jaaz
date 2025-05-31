@@ -1,7 +1,7 @@
 import requests
 from localmanus.services.config_service import app_config
 import traceback
-
+import time
 async def generate_image(args_json: dict):
     model: str = args_json.get('model', 'black-forest-labs/flux-1.1-pro')
     prompt: str = args_json.get('prompt', '')
@@ -25,19 +25,16 @@ async def generate_image(args_json: dict):
     }
     try:
         response = requests.post(url, headers=headers, json=data)
-        print('🎨image gen response status: ', response.status_code)
-        print('🎨image gen response: ', response)
-        print('🎨image gen response: ', response.json())
-    
         res = response.json()
-        print('🎨image gen result: ', res)
         output = res.get('output', '')
-        print('🎨image gen output: ', output)
+        image_id = time.time()
+        if output == '':
+            raise Exception('Image generation failed: no output url found')
 
         return [
             {
                 'role': 'tool',
-                'content': f'Image generation successful: {output}',
+                'content': f'Image generation successful: ![image id: {image_id}]({output})',
             }
         ]
     except Exception as e:

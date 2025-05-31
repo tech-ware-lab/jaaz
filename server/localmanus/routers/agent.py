@@ -65,10 +65,6 @@ SYSTEM_TOOLS = [
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "reason": {
-                            "type": "string",
-                            "description": "The reason for calling this tool"
-                        }
                     }
                 },
             }
@@ -96,7 +92,7 @@ SYSTEM_TOOLS = [
     ]
 
 
-async def chat_openai(messages: list, session_id: str, model: str, provider: str, url: str) -> list:
+async def chat_openai(messages: list, session_id: str, model: str, provider: str, url: str, is_agent_loop_prompt = False) -> list:
     await send_to_websocket(session_id, {
         'type': 'log',
         'messages': messages
@@ -118,6 +114,8 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
             combine = ''
             cur_tool_calls:list[ToolCall] = []
             content_combine = ''
+            if is_agent_loop_prompt:
+                messages.pop() # hide the agent loop prompt
             async for line in response.content:
                 if session_id in stream_tasks and stream_tasks[session_id].cancelled():
                     print(f"🛑Session {session_id} cancelled during stream")
@@ -129,7 +127,7 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
                         line_str = line.decode('utf-8').strip()
                         if not line_str:  # Skip empty lines
                             continue
-                        print('👇raw line:', line_str)
+                        # print('👇raw line:', line_str)
                         # Handle SSE updates
                         if line_str.startswith('data: {'):
                             line_str = line_str[6:]  # Remove "data: " prefix
@@ -371,7 +369,7 @@ async def chat(request: Request):
             try:
                 if cur_messages[-1].get('role') == 'assistant' and cur_messages[-1].get('tool_calls') and \
                 cur_messages[-1]['tool_calls'][-1].get('function', {}).get('name') == 'finish':
-                    print('👇finish!')
+                    print('✅finish!')
                     cur_messages.pop()
                     await send_to_websocket(session_id, {
                         'type': 'all_messages', 
@@ -380,7 +378,14 @@ async def chat(request: Request):
                     break
 
                 else:
-                    cur_messages = await chat_openai(cur_messages, session_id, model, provider, url)
+                    is_loop_prompt = False
+                    if cur_messages[-1].get('role') == 'assistant':
+                        is_loop_prompt = True
+                        cur_messages.append({
+                            'role': 'user',
+                            'content': 'If you think you have finished the task or you think you can\'t do anything more, or you need to ask for more information from the user, please call the "finish" tool to end your turn and wait for more instructions from the user.'
+                        })
+                    cur_messages = await chat_openai(cur_messages, session_id, model, provider, url, is_agent_loop_prompt=is_loop_prompt)
             except Exception as e:
                 print(f"Error in chat_loop: {e}")
                 traceback.print_exc()
