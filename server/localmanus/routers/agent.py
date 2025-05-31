@@ -16,6 +16,7 @@ from localmanus.services.mcp import MCPClient
 from localmanus.services.config_service import config_service, app_config, USER_DATA_DIR
 from starlette.websockets import WebSocketDisconnect
 from localmanus.services.db_service import db_service
+from localmanus.routers.image_tools import generate_image
 
 llm_config = config_service.get_config()
 
@@ -42,6 +43,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...))
         if session_id in active_websockets:
             del active_websockets[session_id]
 
+async def finish_chat(args_json: dict):
+    return []
+
 class ToolCall:
     def __init__(self, id: str, name: str, arguments: str):
         self.id = id
@@ -49,7 +53,8 @@ class ToolCall:
         self.arguments = arguments
 
 SYSTEM_TOOLS_MAPPING = {
-    'finish': ""
+    'finish': finish_chat,
+    'generate_image': generate_image
 }
 SYSTEM_TOOLS = [
         {
@@ -67,8 +72,29 @@ SYSTEM_TOOLS = [
                     }
                 },
             }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "generate_image",
+                "description": "You MUST call this tool when you think the task is finished or you think you can't do anything more. Otherwise, you will be continuously asked to do more about this task indefinitely. Calling this tool will end your turn on this task and hand it over to the user for further instructions.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "prompt": {
+                            "type": "string",
+                            "description": "The prompt for image generation"
+                        },
+                        "aspect_ratio": {
+                            "type": "string",
+                            "description": "Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3"
+                        }
+                    }
+                },
+            }
         }
     ]
+
 
 async def chat_openai(messages: list, session_id: str, model: str, provider: str, url: str) -> list:
     await send_to_websocket(session_id, {
@@ -245,14 +271,17 @@ def detect_image_type_from_base64(b64_data: str) -> str:
 async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session_id: str):
     res = []
     try:
-        if tool_name in SYSTEM_TOOLS_MAPPING:
-            return res
         args_json = {}
         try:
             args_json = json.loads(args_str)
         except Exception as e:
             pass
         print('🦄executing tool', tool_name, args_json)
+        if tool_name in SYSTEM_TOOLS_MAPPING:
+            res = await SYSTEM_TOOLS_MAPPING[tool_name](args_json)
+            for r in res:
+                r['tool_call_id'] = tool_call_id
+            return res
         mcp_client = mcp_tool_to_server_mapping[tool_name]
         if mcp_client.session is None:
             raise Exception(f"MCP client not found for tool {tool_name}")
@@ -359,6 +388,7 @@ async def chat(request: Request):
                     'type': 'error',
                     'error': str(e)
                 })
+                break
 
             await send_to_websocket(session_id, {
                 'type': 'done'
@@ -413,6 +443,20 @@ def get_ollama_model_list():
     except requests.RequestException as e:
         print(f"Error querying Ollama: {e}")
         return []
+
+@router.get("/list_image_models")
+async def get_image_models():
+    replicate = config.get('replicate', {})
+    if replicate.get('api_key', '') == '':
+        return []
+    res = []
+    for replicate_model in ['black-forest-labs/flux-1.1-pro', 'black-forest-labs/flux-kontext-pro', 'black-forest-labs/flux-kontext-max', 'recraft-ai/recraft-v3', 'stability-ai/sdxl']:
+        res.append({
+            'provider': 'replicate',
+            'model': replicate_model,
+            'url': replicate.get('url', '')
+            })
+    return res
 
 @router.get("/list_models")
 async def get_models():
