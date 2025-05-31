@@ -20,6 +20,7 @@ import LeftSidebar from "./LeftSidebar";
 import { nanoid } from "nanoid";
 import PostEditor from "./PostEditor";
 import Canvas from "./Canvas";
+import CanvasExcali from "./CanvasExcali";
 
 function Home() {
   const [agentState, setAgentState] = useState(EAgentState.IDLE);
@@ -62,7 +63,6 @@ function Home() {
       )} */}
 
       <div
-        className="tldraw__editor "
         style={{
           position: "fixed",
           right: "20%",
@@ -71,7 +71,7 @@ function Home() {
           left: 0,
         }}
       >
-        <Canvas />
+        <CanvasExcali />
       </div>
 
       <div className="flex-1 flex-grow px-4 bg-accent w-[20%] absolute right-0">
