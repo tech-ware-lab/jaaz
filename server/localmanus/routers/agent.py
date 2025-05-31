@@ -389,10 +389,9 @@ async def chat(request: Request):
                     'error': str(e)
                 })
                 break
-
-            await send_to_websocket(session_id, {
-                'type': 'done'
-            })
+        await send_to_websocket(session_id, {
+            'type': 'done'
+        })
 
     task = asyncio.create_task(chat_loop())
     stream_tasks[session_id] = task
