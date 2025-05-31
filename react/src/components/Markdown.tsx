@@ -9,7 +9,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       return !inline && match ? (
         <pre
           {...props}
-          className={`${className} text-sm w-full whitespace-pre-wrap max-w-full overflow-x-auto p-3 rounded-lg mt-2 bg-zinc-800 text-white dark:bg-zinc-300 dark:text-black whitespace-pre break-words`}
+          className={`${className} text-sm w-full whitespace-pre-wrap max-w-full overflow-x-auto p-3 rounded-lg mt-2 bg-zinc-800 text-white dark:bg-zinc-300 dark:text-black whitespace-pre break-all`}
         >
           <code
             className={match[1]}
@@ -22,7 +22,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
         </pre>
       ) : (
         <code
-          className={`${className} text-sm py-0.5 px-1 overflow-x-auto whitespace-pre-wrap rounded-md bg-zinc-800 text-white dark:bg-zinc-300 dark:text-black break-words`}
+          className={`${className} text-sm py-0.5 px-1 overflow-x-auto whitespace-pre-wrap rounded-md bg-zinc-800 text-white dark:bg-zinc-300 dark:text-black break-all`}
           {...props}
         >
           {children}
