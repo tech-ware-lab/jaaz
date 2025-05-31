@@ -121,7 +121,7 @@ const ChatInterface = ({
 
     socket.addEventListener("message", (event) => {
       // const data = JSON.parse(event.data);
-      console.log(event.data);
+      // console.log(event.data);
       try {
         const data = JSON.parse(event.data);
         if (data.type == "log") {
@@ -282,7 +282,7 @@ const ChatInterface = ({
     <div className="flex flex-col h-screen relative">
       {/* Chat messages */}
       <div
-        className="flex-1 overflow-y-auto text-left space-y-6 max-w-3xl mx-auto mt-[60px]"
+        className="flex-1 overflow-y-auto text-left space-y-6 max-w-3xl mt-[60px]"
         style={{ paddingBottom: FOOTER_HEIGHT }}
       >
         <header className="flex space-x-2 mt-2 absolute top-0 left-0">
