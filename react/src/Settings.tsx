@@ -31,6 +31,7 @@ const PROVIDER_NAME_MAPPING: { [key: string]: string } = {
   anthropic: "Claude",
   openai: "OpenAI",
   ollama: "Ollama",
+  replicate: "Replicate 🎨 Image Generation",
 };
 const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
   anthropic: {
@@ -48,6 +49,12 @@ const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
   ollama: {
     models: [],
     url: "http://localhost:11434",
+    api_key: "",
+    max_tokens: 8192,
+  },
+  replicate: {
+    models: [],
+    url: "https://api.replicate.com/v1/",
     api_key: "",
     max_tokens: 8192,
   },
