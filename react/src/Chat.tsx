@@ -232,7 +232,7 @@ const ChatInterface = ({
               console.log("👇all_messages", data.messages);
               return data.messages;
             } else if (data.type == "image_generated") {
-              console.log("👇image_generated", data);
+              console.log("⭐️dispatching image_generated", data);
               window.dispatchEvent(
                 new CustomEvent("image_generated", {
                   detail: {

@@ -7,20 +7,26 @@ import { nanoid } from "nanoid";
 import {
   ExcalidrawImageElement,
   FileId,
+  Theme,
 } from "@excalidraw/excalidraw/element/types";
+import { useTheme } from "./components/theme-provider";
 
 export default function CanvasExcali() {
-  const [excalidrawAPI, setExcalidrawAPI] =
-    useState<ExcalidrawImperativeAPI | null>(null);
-  const lastImagePosition = useRef<{ x: number; y: number }>({
-    x: 100,
-    y: 100,
+  const excalidrawAPI = useRef<ExcalidrawImperativeAPI | null>(null);
+  const lastImagePosition = useRef<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
   });
-
+  const { theme } = useTheme();
+  console.log("👇theme", theme);
   useEffect(() => {
-    const imgUrl =
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Aspect-ratio-16x9.svg/1024px-Aspect-ratio-16x9.svg.png";
-
     const addImageToExcalidraw = async (imageData: {
       url: string;
       mime_type: string;
@@ -37,7 +43,7 @@ export default function CanvasExcali() {
       const fileid = nanoid() as FileId;
 
       // Add file to Excalidraw
-      excalidrawAPI.addFiles([
+      excalidrawAPI.current?.addFiles([
         {
           mimeType: imageData.mime_type,
           id: fileid,
@@ -47,8 +53,8 @@ export default function CanvasExcali() {
       ]);
 
       // Position image next to the previous one
-      const { x, y } = lastImagePosition.current;
-      const newX = x + 200; // adjust spacing as needed
+      const { x, y, width } = lastImagePosition.current;
+      const newX = x + width + 20; // adjust spacing to 20px
       const newY = y;
 
       const imageElement: ExcalidrawImageElement = {
@@ -61,6 +67,11 @@ export default function CanvasExcali() {
         angle: 0,
         fileId: fileid,
         strokeColor: "#000000",
+        fillStyle: "solid",
+        strokeStyle: "solid",
+        boundElements: null,
+        roundness: null,
+        frameId: null,
         backgroundColor: "transparent",
         strokeWidth: 1,
         roughness: 0,
@@ -71,13 +82,19 @@ export default function CanvasExcali() {
         versionNonce: Math.floor(Math.random() * 100000),
         isDeleted: false,
       };
-
-      excalidrawAPI.updateScene({
-        elements: [imageElement],
+      const currentElements = excalidrawAPI.current?.getSceneElements();
+      console.log("👇 adding to currentElements", currentElements);
+      excalidrawAPI.current?.updateScene({
+        elements: [...(currentElements || []), imageElement],
       });
 
       // Update position for the next image
-      lastImagePosition.current = { x: newX, y: newY };
+      lastImagePosition.current = {
+        x: newX,
+        y: newY,
+        width: imageData.width,
+        height: imageData.height,
+      };
     };
 
     const handleImageGenerated = (e: Event) => {
@@ -89,12 +106,13 @@ export default function CanvasExcali() {
     window.addEventListener("image_generated", handleImageGenerated);
     return () =>
       window.removeEventListener("image_generated", handleImageGenerated);
-  }, [excalidrawAPI]);
+  }, []);
 
   return (
     <Excalidraw
-      excalidrawAPI={(api) => setExcalidrawAPI(api)}
-      onChange={(e) => console.log(e)}
+      theme={theme as Theme}
+      excalidrawAPI={(api) => (excalidrawAPI.current = api)}
+      // onChange={(e) => console.log(e)}
     />
   );
 }
