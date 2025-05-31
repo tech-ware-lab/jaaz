@@ -1,17 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
-import { Button } from "./components/ui/button";
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ComputerIcon,
-  MoonIcon,
-  SettingsIcon,
-  SidebarCloseIcon,
-  SidebarIcon,
-  SidebarOpenIcon,
-  SunIcon,
-} from "lucide-react";
+import { Tldraw } from "tldraw";
+import "tldraw/tldraw.css";
 import {
   BrowserRouter,
   Routes,
@@ -29,6 +19,7 @@ import { toast, Toaster } from "sonner";
 import LeftSidebar from "./LeftSidebar";
 import { nanoid } from "nanoid";
 import PostEditor from "./PostEditor";
+import Canvas from "./Canvas";
 
 function Home() {
   const [agentState, setAgentState] = useState(EAgentState.IDLE);
@@ -57,38 +48,33 @@ function Home() {
 
   return (
     <div className="flex">
-      {isLeftSidebarOpen && (
+      {/* {isLeftSidebarOpen && (
         <div className="w-[16%] bg-sidebar h-screen">
           <LeftSidebar
             sessionId={sessionId}
             setSessionId={setSessionId}
             curPath={curPath}
             setCurPath={setCurPath}
-            onClickWrite={() => {
-              fetch("/api/create_file", {
-                method: "POST",
-                body: JSON.stringify({ rel_dir: "" }),
-              })
-                .then((res) => res.json())
-                .then((data) => {
-                  if (data.path) {
-                    setCurPath(data.path);
-                    dispatchEvent(new Event("refresh_workspace"));
-                  } else {
-                    throw new Error("Failed to create file");
-                  }
-                })
-                .catch((err) => {
-                  toast.error("Failed to create file");
-                });
-            }}
+            onClose={() => setIsLeftSidebarOpen(false)}
+            onClickWrite={() => {}}
           />
         </div>
-      )}
-      <div className="w-[60%] h-screen px-5">
-        {!!curPath && <PostEditor curPath={curPath} setCurPath={setCurPath} />}
+      )} */}
+
+      <div
+        className="tldraw__editor "
+        style={{
+          position: "fixed",
+          right: "20%",
+          top: 0,
+          bottom: 0,
+          left: 0,
+        }}
+      >
+        <Canvas />
       </div>
-      <div className="flex-1 flex-grow relative px-4  bg-sidebar">
+
+      <div className="flex-1 flex-grow px-4 bg-accent w-[20%] absolute right-0">
         <ChatInterface
           sessionId={sessionId}
           editorTitle={editorTitle}

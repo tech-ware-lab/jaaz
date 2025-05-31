@@ -330,7 +330,7 @@ const ChatInterface = ({
               );
             }}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[45%]">
               <SelectValue placeholder="Theme" />
             </SelectTrigger>
             <SelectContent>
@@ -354,7 +354,7 @@ const ChatInterface = ({
               );
             }}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[45%]">
               <span>🎨</span>
               <SelectValue placeholder="Theme" />
             </SelectTrigger>
