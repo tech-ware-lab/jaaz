@@ -10,3 +10,5 @@ aiohttp
 gunicorn
 aiosqlite
 requests
+Pillow
+nanoid

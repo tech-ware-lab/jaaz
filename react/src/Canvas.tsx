@@ -2,11 +2,17 @@ import "tldraw/tldraw.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   TLEditorSnapshot,
+  TLImageShape,
   Tldraw,
+  createShapeId,
   getSnapshot,
   loadSnapshot,
   useEditor,
+  Editor,
+  TLImageAsset,
+  AssetRecordType,
 } from "tldraw";
+
 import "tldraw/tldraw.css";
 import { Button } from "./components/ui/button";
 import { ChevronDownIcon, FolderIcon, PlusIcon } from "lucide-react";
@@ -31,8 +37,67 @@ function debounce(func: Function, wait: number) {
   };
 }
 
+// Assume 'editor' is your tldraw Editor instance
+// Assume 'id' is the desired ID for your shape, or generate one:
+
+async function addImageToTldraw(
+  editor: Editor,
+  imageData: {
+    url: string;
+    mime_type: string;
+    width: number;
+    height: number;
+  }
+) {
+  // Optional: Fetch image to get its natural dimensions for the asset metadata
+  // This is good practice but not strictly necessary if you know them.
+  const shapeId = createShapeId();
+
+  // 1. Create the asset
+  const assetId = AssetRecordType.createId();
+
+  const imageAsset: TLImageAsset = {
+    id: assetId,
+    meta: {},
+    type: "image",
+    typeName: "asset",
+    props: {
+      src: imageData.url,
+      h: imageData.height,
+      w: imageData.width,
+      isAnimated: false,
+      mimeType: imageData.mime_type,
+      name: "image.png",
+    },
+  };
+  editor.createAssets([imageAsset]);
+
+  // 2. Create the shape and link it to the asset
+  editor.createShape<TLImageShape>({
+    id: shapeId,
+    type: "image",
+    x: 100,
+    y: 100,
+    props: {
+      assetId: assetId, // Link to the created asset
+      w: imageData.width, // Desired display width on the canvas
+      h: imageData.height, // Desired display height on the canvas
+      // playing: false, // if it were an animated image/gif
+      // crop: null,
+    },
+  });
+}
+
 function AutoSaveWrapper() {
   const editor = useEditor();
+  const [imageId, setImageId] = useState("");
+  useEffect(() => {
+    window.addEventListener("image_generated", (e) => {
+      const event = e as CustomEvent;
+      console.log("👇image_generated", event.detail);
+      addImageToTldraw(editor, event.detail.image_data);
+    });
+  }, []);
 
   const saveSnapshot = useCallback(() => {
     if (editor) {
@@ -58,7 +123,11 @@ function AutoSaveWrapper() {
     return unsubscribe;
   }, [editor, debouncedSave]);
 
-  return null;
+  return (
+    <div>
+      <SnapshotToolbar />
+    </div>
+  );
 }
 function SnapshotToolbar() {
   const editor = useEditor();
@@ -80,6 +149,10 @@ function SnapshotToolbar() {
     // [2]
     const { document, session } = getSnapshot(editor.store);
     // [3]
+    console.log("🦄snapshot", {
+      document,
+      session,
+    });
     localStorage.setItem("snapshot", JSON.stringify({ document, session }));
   }, [editor]);
 
@@ -138,6 +211,7 @@ function CustomPageMenu() {
   const [openWorkspace, setOpenWorkspace] = useState(false);
   const [curFile, setCurFile] = useState("");
   const editor = useEditor();
+
   return (
     <div
       className="flex gap-2 items-center"
@@ -211,7 +285,7 @@ export default function Canvas() {
       //   persistenceKey="disable-pages"
       //   options={{ maxPages: 1 }}
       components={{
-        SharePanel: SnapshotToolbar,
+        SharePanel: AutoSaveWrapper,
         PageMenu: CustomPageMenu,
       }}
     ></Tldraw>

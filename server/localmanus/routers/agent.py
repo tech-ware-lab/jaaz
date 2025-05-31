@@ -17,11 +17,11 @@ from localmanus.services.config_service import config_service, app_config, USER_
 from starlette.websockets import WebSocketDisconnect
 from localmanus.services.db_service import db_service
 from localmanus.routers.image_tools import generate_image
+from localmanus.routers.websocket import active_websockets, send_to_websocket
 
 llm_config = config_service.get_config()
 
 wsrouter = APIRouter()
-active_websockets = {}  # Changed to dictionary to store session_id -> websocket mapping
 stream_tasks = {}
 
 @wsrouter.websocket("/ws")
@@ -43,7 +43,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...))
         if session_id in active_websockets:
             del active_websockets[session_id]
 
-async def finish_chat(args_json: dict, model_info: dict):
+async def finish_chat(args_json: dict, ctx: dict):
     return []
 
 class ToolCall:
@@ -301,7 +301,11 @@ async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session
             pass
         print('🦄executing tool', tool_name, args_json,)
         if tool_name in SYSTEM_TOOLS_MAPPING:
-            res = await SYSTEM_TOOLS_MAPPING[tool_name](args_json, model_info)
+            ctx = {
+                'session_id': session_id,
+                'model_info': model_info,
+            }
+            res = await SYSTEM_TOOLS_MAPPING[tool_name](args_json, ctx)
             for r in res:
                 r['tool_call_id'] = tool_call_id
             return res
@@ -416,15 +420,6 @@ async def chat(request: Request):
         stream_tasks.pop(session_id, None)
 
     return {"status": "done"}
-
-async def send_to_websocket(session_id: str, event:dict):
-    ws = active_websockets.get(session_id)
-    if ws:
-        try:
-            await ws.send_text(json.dumps(event))
-        except Exception as e:
-            print(f"Error sending to websocket: {e}")
-            traceback.print_exc()
 
 @router.post("/cancel/{session_id}")
 async def cancel_chat(session_id: str):
