@@ -310,10 +310,10 @@ const ChatInterface = ({
     <div className="flex flex-col h-screen relative">
       {/* Chat messages */}
       <div
-        className="flex-1 overflow-y-auto text-left space-y-6 max-w-3xl mt-[60px]"
+        className="flex-1 overflow-y-auto text-left space-y-6 max-w-3xl mt-[100px]"
         style={{ paddingBottom: FOOTER_HEIGHT }}
       >
-        <header className="flex space-x-2 mt-2 absolute top-0 left-0 flex-wrap">
+        <header className="flex space-x-2 space-y-2 mt-2 absolute top-0 left-0 flex-wrap">
           {/* <Button
               size={"sm"}
               variant={"ghost"}
