@@ -43,7 +43,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...))
         if session_id in active_websockets:
             del active_websockets[session_id]
 
-async def finish_chat(args_json: dict):
+async def finish_chat(args_json: dict, model_info: dict):
     return []
 
 class ToolCall:
@@ -83,7 +83,7 @@ SYSTEM_TOOLS = [
                         },
                         "aspect_ratio": {
                             "type": "string",
-                            "description": "Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3"
+                            "description": "Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4"
                         }
                     }
                 },
@@ -92,7 +92,29 @@ SYSTEM_TOOLS = [
     ]
 
 
-async def chat_openai(messages: list, session_id: str, model: str, provider: str, url: str, is_agent_loop_prompt = False) -> list:
+async def chat_openai(messages: list, session_id: str, text_model: dict, image_model: dict, is_agent_loop_prompt = False) -> list:
+    model = text_model.get('model')
+    provider = text_model.get('provider')
+    url = text_model.get('url')
+    if provider == 'ollama' and not url.endswith('/v1'):
+        # openai compatible url
+        url = url.rstrip("/") + "/v1"
+    
+    if model is None:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail="model is required"
+        )
+    if provider is None:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail="provider is required"
+        )
+    if session_id is None:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail="session_id is required"
+        )
     await send_to_websocket(session_id, {
         'type': 'log',
         'messages': messages
@@ -212,7 +234,10 @@ async def chat_openai(messages: list, session_id: str, model: str, provider: str
                     messages.append(msg)
                     await db_service.create_message(session_id, 'assistant', json.dumps(msg))
                     # tool call args complete, execute tool call
-                    tool_result = await execute_tool(tool_call.id, tool_call.name, tool_call.arguments, session_id)
+                    model_info = {
+                        'image': image_model
+                    }
+                    tool_result = await execute_tool(tool_call.id, tool_call.name, tool_call.arguments, session_id, model_info=model_info)
                     # append tool call result to messages of user
                     if tool_result is not None:
                         for r in tool_result:
@@ -266,7 +291,7 @@ def detect_image_type_from_base64(b64_data: str) -> str:
     else:
         return "application/octet-stream"
 
-async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session_id: str):
+async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session_id: str, model_info: dict = {}):
     res = []
     try:
         args_json = {}
@@ -274,9 +299,9 @@ async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session
             args_json = json.loads(args_str)
         except Exception as e:
             pass
-        print('🦄executing tool', tool_name, args_json)
+        print('🦄executing tool', tool_name, args_json,)
         if tool_name in SYSTEM_TOOLS_MAPPING:
-            res = await SYSTEM_TOOLS_MAPPING[tool_name](args_json)
+            res = await SYSTEM_TOOLS_MAPPING[tool_name](args_json, model_info)
             for r in res:
                 r['tool_call_id'] = tool_call_id
             return res
@@ -324,8 +349,9 @@ async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session
         traceback.print_exc()
         await send_to_websocket(session_id, {
             'type': 'error',
-            'error': f'Error calling tool {tool_name} with inputs {args_str} - {e}'
+            'error': f'Error calling tool {tool_name} with inputs {args_str[:100]} - {e}'
         })
+        raise e
     return res
 
 
@@ -335,31 +361,13 @@ async def chat(request: Request):
     data = await request.json()
     messages = data.get('messages')
     session_id = data.get('session_id')
-    provider = data.get('provider')
-    url = data.get('url')
-    if provider == 'ollama' and not url.endswith('/v1'):
-        # openai compatible url
-        url = url.rstrip("/") + "/v1"
-    model = data.get('model')
-    if model is None:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail="model is required"
-        )
-    if provider is None:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail="provider is required"
-        )
-    if session_id is None:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail="session_id is required"
-        )
+    text_model = data.get('text_model')
+    image_model = data.get('image_model')
+
     if len(messages) == 1:
         # create new session
         prompt = messages[0].get('content', '')
-        await db_service.create_chat_session(session_id, model, provider, (prompt[:200] if isinstance(prompt, str) else ''))
+        await db_service.create_chat_session(session_id, text_model.get('model'), text_model.get('provider'), (prompt[:200] if isinstance(prompt, str) else ''))
     
     await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1])) if len(messages) > 0 else None
     # Create and store the chat task
@@ -385,7 +393,7 @@ async def chat(request: Request):
                             'role': 'user',
                             'content': 'If you think you have finished the task or you think you can\'t do anything more, or you need to ask for more information from the user, please call the "finish" tool to end your turn and wait for more instructions from the user.'
                         })
-                    cur_messages = await chat_openai(cur_messages, session_id, model, provider, url, is_agent_loop_prompt=is_loop_prompt)
+                    cur_messages = await chat_openai(cur_messages, session_id, text_model=text_model, image_model=image_model, is_agent_loop_prompt=is_loop_prompt)
             except Exception as e:
                 print(f"Error in chat_loop: {e}")
                 traceback.print_exc()
@@ -448,23 +456,9 @@ def get_ollama_model_list():
         print(f"Error querying Ollama: {e}")
         return []
 
-@router.get("/list_image_models")
-async def get_image_models():
-    replicate = config.get('replicate', {})
-    if replicate.get('api_key', '') == '':
-        return []
-    res = []
-    for replicate_model in ['black-forest-labs/flux-1.1-pro', 'black-forest-labs/flux-kontext-pro', 'black-forest-labs/flux-kontext-max', 'recraft-ai/recraft-v3', 'stability-ai/sdxl']:
-        res.append({
-            'provider': 'replicate',
-            'model': replicate_model,
-            'url': replicate.get('url', '')
-            })
-    return res
-
 @router.get("/list_models")
 async def get_models():
-    config = app_config
+    config = config_service.get_config()
     res = []
     ollama_models = get_ollama_model_list()
     ollama_url = config_service.get_config().get('ollama', {}).get('url', os.getenv('OLLAMA_HOST', 'http://localhost:11434'))
@@ -473,17 +467,22 @@ async def get_models():
         res.append({
             'provider': 'ollama',
             'model': ollama_model,
-            'url': ollama_url
+            'url': ollama_url,
+            'type': 'text'
         })
     for provider in config.keys():
-        models = config[provider].get('models', [])
-        for model in models:
-            if provider != 'ollama' and config[provider].get('api_key', '') == '':
+        models = config[provider].get('models', {})
+        for model_name in models:
+            if provider == 'ollama':
                 continue
+            if config[provider].get('api_key', '') == '':
+                continue
+            model = models[model_name]
             res.append({
                 'provider': provider,
-                'model': model,
-                'url': config[provider].get('url', '')
+                'model': model_name,
+                'url': config[provider].get('url', ''),
+                'type': model.get('type', 'text')
             })
     return res
 

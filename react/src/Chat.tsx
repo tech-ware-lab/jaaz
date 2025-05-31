@@ -57,18 +57,27 @@ const ChatInterface = ({
   const [disableStop, setDisableStop] = useState(false);
   const [pending, setPending] = useState(false);
   const { setTheme, theme } = useTheme();
-  const [model, setModel] = useState<{
+  const [textModel, setTextModel] = useState<{
     provider: string;
     model: string;
     url: string;
   }>();
+  const [imageModel, setImageModel] = useState<{
+    provider: string;
+    model: string;
+    url: string;
+  }>();
+
   const [modelList, setModelList] = useState<
     {
       provider: string;
       model: string;
       url: string;
+      type: string;
     }[]
   >([]);
+  const textModels = modelList.filter((m) => m.type == "text");
+  const imageModels = modelList.filter((m) => m.type == "image");
   const webSocketRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string>(nanoid());
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([]);
@@ -81,18 +90,32 @@ const ChatInterface = ({
           data: {
             provider: string;
             model: string;
+            type: string;
             url: string;
           }[]
         ) => {
           if (data.length > 0) {
-            const model = localStorage.getItem("model");
+            const textModel = localStorage.getItem("text_model");
             if (
-              model &&
-              data.find((m) => m.provider + ":" + m.model == model)
+              textModel &&
+              data.find((m) => m.provider + ":" + m.model == textModel)
             ) {
-              setModel(data.find((m) => m.provider + ":" + m.model == model));
+              setTextModel(
+                data.find((m) => m.provider + ":" + m.model == textModel)
+              );
             } else {
-              setModel(data[0]);
+              setTextModel(data.find((m) => m.type == "text"));
+            }
+            const imageModel = localStorage.getItem("image_model");
+            if (
+              imageModel &&
+              data.find((m) => m.provider + ":" + m.model == imageModel)
+            ) {
+              setImageModel(
+                data.find((m) => m.provider + ":" + m.model == imageModel)
+              );
+            } else {
+              setImageModel(data.find((m) => m.type == "image"));
             }
             setModelList(data);
           }
@@ -240,13 +263,19 @@ const ChatInterface = ({
     if (pending) {
       return;
     }
-    if (!model) {
+    if (!textModel) {
       toast.error(
-        "Please select a model! Go to Settings to set your API keys if you haven't done so."
+        "Please select a text model! Go to Settings to set your API keys if you haven't done so."
       );
       return;
     }
-    if (!model.url || model.url == "") {
+    if (!imageModel) {
+      toast.error(
+        "Please select an image model! Go to Settings to set your API keys if you haven't done so."
+      );
+      return;
+    }
+    if (!textModel.url || textModel.url == "") {
       toast.error("Please set the model URL in Settings");
       return;
     }
@@ -264,16 +293,15 @@ const ChatInterface = ({
     setPrompt("");
     setPending(true);
     fetch("/api/chat", {
-      method: "Post",
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         messages: newMessages,
         session_id: sessionIdRef.current,
-        model: model.model,
-        provider: model.provider,
-        url: model.url,
+        text_model: textModel,
+        image_model: imageModel,
       }),
     }).then((resp) => resp.json());
   };
@@ -285,7 +313,7 @@ const ChatInterface = ({
         className="flex-1 overflow-y-auto text-left space-y-6 max-w-3xl mt-[60px]"
         style={{ paddingBottom: FOOTER_HEIGHT }}
       >
-        <header className="flex space-x-2 mt-2 absolute top-0 left-0">
+        <header className="flex space-x-2 mt-2 absolute top-0 left-0 flex-wrap">
           {/* <Button
               size={"sm"}
               variant={"ghost"}
@@ -294,10 +322,10 @@ const ChatInterface = ({
               <SidebarIcon size={30} />
             </Button> */}
           <Select
-            value={model?.provider + ":" + model?.model}
+            value={textModel?.provider + ":" + textModel?.model}
             onValueChange={(value) => {
-              localStorage.setItem("model", value);
-              setModel(
+              localStorage.setItem("text_model", value);
+              setTextModel(
                 modelList.find((m) => m.provider + ":" + m.model == value)
               );
             }}
@@ -306,7 +334,32 @@ const ChatInterface = ({
               <SelectValue placeholder="Theme" />
             </SelectTrigger>
             <SelectContent>
-              {modelList.map((model) => (
+              {textModels.map((model) => (
+                <SelectItem
+                  key={model.provider + ":" + model.model}
+                  value={model.provider + ":" + model.model}
+                >
+                  {model.model}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={imageModel?.provider + ":" + imageModel?.model}
+            onValueChange={(value) => {
+              localStorage.setItem("image_model", value);
+              setImageModel(
+                modelList.find((m) => m.provider + ":" + m.model == value)
+              );
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <span>🎨</span>
+              <SelectValue placeholder="Theme" />
+            </SelectTrigger>
+            <SelectContent>
+              {imageModels.map((model) => (
                 <SelectItem
                   key={model.provider + ":" + model.model}
                   value={model.provider + ":" + model.model}
@@ -333,7 +386,7 @@ const ChatInterface = ({
             {theme === "dark" ? <SunIcon size={30} /> : <MoonIcon size={30} />}
           </Button>
           <Button size={"sm"} variant={"outline"} onClick={onClickNewChat}>
-            <PlusIcon /> New Chat
+            <PlusIcon /> New
           </Button>
         </header>
 

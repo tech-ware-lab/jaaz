@@ -19,41 +19,64 @@ import { Button } from "./components/ui/button";
 import { Label } from "./components/ui/label";
 import { ArrowLeftIcon, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Checkbox } from "./components/ui/checkbox";
 
 type LLMConfig = {
-  models: string[];
+  models: Record<string, { type?: "text" | "image" | "video" }>;
   url: string;
   api_key: string;
   max_tokens: number;
 };
 
-const PROVIDER_NAME_MAPPING: { [key: string]: string } = {
-  anthropic: "Claude",
-  openai: "OpenAI",
-  ollama: "Ollama",
-  replicate: "Replicate 🎨 Image Generation",
-};
+const PROVIDER_NAME_MAPPING: { [key: string]: { name: string; icon: string } } =
+  {
+    anthropic: {
+      name: "Claude",
+      icon: "https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/claude-color.png",
+    },
+    openai: { name: "OpenAI", icon: "https://openai.com/favicon.ico" },
+    ollama: {
+      name: "Ollama",
+      icon: "https://images.seeklogo.com/logo-png/59/1/ollama-logo-png_seeklogo-593420.png",
+    },
+    replicate: {
+      name: "Replicate",
+      icon: "https://images.seeklogo.com/logo-png/61/1/replicate-icon-logo-png_seeklogo-611690.png",
+    },
+  };
 const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
   anthropic: {
-    models: ["claude-3-7-sonnet-latest"],
+    models: {
+      "claude-3-7-sonnet-latest": { type: "text" },
+    },
     url: "https://api.anthropic.com/v1/",
     api_key: "",
     max_tokens: 8192,
   },
   openai: {
-    models: ["gpt-4o", "gpt-4o-mini"],
+    models: {
+      "gpt-4o": { type: "text" },
+      "gpt-4o-mini": { type: "text" },
+    },
     url: "https://api.openai.com/v1/",
     api_key: "",
     max_tokens: 8192,
   },
   ollama: {
-    models: [],
+    models: {},
     url: "http://localhost:11434",
     api_key: "",
     max_tokens: 8192,
   },
   replicate: {
-    models: [],
+    models: {
+      "google/imagen-4": { type: "image" },
+      "black-forest-labs/flux-1.1-pro": { type: "image" },
+      "black-forest-labs/flux-kontext-pro": { type: "image" },
+      "black-forest-labs/flux-kontext-max": { type: "image" },
+      "recraft-ai/recraft-v3": { type: "image" },
+      "stability-ai/sdxl": { type: "image" },
+    },
     url: "https://api.replicate.com/v1/",
     api_key: "",
     max_tokens: 8192,
@@ -145,7 +168,7 @@ export default function Settings() {
             Settings
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pb-26">
           {isLoading && (
             <div className="flex justify-center items-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-zinc-500"></div>
@@ -154,10 +177,17 @@ export default function Settings() {
           {Object.keys(config).map((key, index) => (
             <>
               <div className="space-y-2">
-                <p className="font-bold bg-purple-500 text-white p-1 rounded-md w-fit">
-                  {PROVIDER_NAME_MAPPING[key]}
-                </p>
-
+                <div className="flex items-center gap-2">
+                  <img
+                    src={PROVIDER_NAME_MAPPING[key].icon}
+                    alt={PROVIDER_NAME_MAPPING[key].name}
+                    className="w-10 h-10 rounded-full"
+                  />
+                  <p className="font-bold text-2xl w-fit">
+                    {PROVIDER_NAME_MAPPING[key].name}
+                  </p>
+                  {key === "replicate" && <span>🎨 Image Generation</span>}
+                </div>
                 <Input
                   placeholder="Enter your API URL"
                   value={config[key]?.url ?? ""}
@@ -216,15 +246,55 @@ export default function Settings() {
                   The maximum number of tokens in the response
                 </p>
               </div>
+              <p>
+                Models ({Object.keys(config[key]?.models ?? {}).length ?? 0})
+              </p>
+              <div className="space-y-2 ml-4">
+                {Object.keys({
+                  ...DEFAULT_CONFIG[key]?.models,
+                  ...config[key]?.models,
+                }).map((model) => (
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      key={model}
+                      id={model}
+                      checked={!!config[key]?.models[model]?.type}
+                      onCheckedChange={(checked) => {
+                        setConfig((prevConfig) => {
+                          const newConfig = {
+                            ...prevConfig,
+                            [key]: structuredClone(prevConfig[key]),
+                          };
+                          if (checked) {
+                            newConfig[key].models[model] =
+                              DEFAULT_CONFIG[key].models[model] ??
+                              newConfig[key].models[model];
+                          } else {
+                            delete newConfig[key]?.models[model];
+                          }
+                          return newConfig;
+                        });
+                      }}
+                    />
+                    <Label htmlFor={model}>
+                      {model}
+                      {config[key]?.models[model]?.type === "image" && (
+                        <span>🎨</span>
+                      )}
+                    </Label>
+                  </div>
+                ))}
+              </div>
               {index !== Object.keys(config).length - 1 && (
                 <div className="my-6 border-t bg-border" />
               )}
             </>
           ))}
-
-          <Button onClick={handleSave} className="w-full">
-            <Save className="mr-2 h-4 w-4" /> Save Settings
-          </Button>
+          <div className="flex justify-center fixed bottom-4 left-1/2 -translate-x-1/2">
+            <Button onClick={handleSave} className="w-[400px]">
+              <Save className="mr-2 h-4 w-4" /> Save Settings
+            </Button>
+          </div>
 
           {successMessage && (
             <div className="text-green-500 text-center mb-4">
