@@ -257,7 +257,7 @@ const ChatInterface = ({
     const newMessages = messages.concat([
       {
         role: "user",
-        content: promptStr + "\n\n # " + editorTitle + "\n\n" + editorContent,
+        content: promptStr,
       },
     ]);
     setMessages(newMessages);
@@ -282,214 +282,135 @@ const ChatInterface = ({
     <div className="flex flex-col h-screen relative">
       {/* Chat messages */}
       <div
-        className="flex-1 overflow-y-auto text-left"
+        className="flex-1 overflow-y-auto text-left space-y-6 max-w-3xl mx-auto mt-[60px]"
         style={{ paddingBottom: FOOTER_HEIGHT }}
       >
-        <div className="space-y-6 max-w-3xl mx-auto">
-          <header className="flex space-x-2 mt-2">
-            {/* <Button
+        <header className="flex space-x-2 mt-2 absolute top-0 left-0">
+          {/* <Button
               size={"sm"}
               variant={"ghost"}
               // onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
             >
               <SidebarIcon size={30} />
             </Button> */}
-            <Select
-              value={model?.provider + ":" + model?.model}
-              onValueChange={(value) => {
-                localStorage.setItem("model", value);
-                setModel(
-                  modelList.find((m) => m.provider + ":" + m.model == value)
-                );
-              }}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Theme" />
-              </SelectTrigger>
-              <SelectContent>
-                {modelList.map((model) => (
-                  <SelectItem
-                    key={model.provider + ":" + model.model}
-                    value={model.provider + ":" + model.model}
-                  >
-                    {model.model}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Select
+            value={model?.provider + ":" + model?.model}
+            onValueChange={(value) => {
+              localStorage.setItem("model", value);
+              setModel(
+                modelList.find((m) => m.provider + ":" + m.model == value)
+              );
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Theme" />
+            </SelectTrigger>
+            <SelectContent>
+              {modelList.map((model) => (
+                <SelectItem
+                  key={model.provider + ":" + model.model}
+                  value={model.provider + ":" + model.model}
+                >
+                  {model.model}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            <Button
-              size={"sm"}
-              variant={"secondary"}
-              onClick={() => (window.location.href = "/settings")}
-            >
-              <SettingsIcon size={30} />
-            </Button>
+          <Button
+            size={"sm"}
+            variant={"secondary"}
+            onClick={() => (window.location.href = "/settings")}
+          >
+            <SettingsIcon size={30} />
+          </Button>
 
-            <Button
-              size={"sm"}
-              variant={"ghost"}
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              {theme === "dark" ? (
-                <SunIcon size={30} />
-              ) : (
-                <MoonIcon size={30} />
-              )}
-            </Button>
-            <Button size={"sm"} variant={"outline"} onClick={onClickNewChat}>
-              <PlusIcon /> New Chat
-            </Button>
-          </header>
-          {/* quick buttons */}
-          {messages.length == 0 && (
-            <div className="flex flex-col gap-2">
-              <span className="text-muted-foreground">✨ Try asking:</span>
-              <div className="flex space-x-2 flex-wrap gap-3 px-3">
-                <Button
-                  size={"sm"}
-                  variant={"outline"}
-                  onClick={() => {
-                    onSendPrompt(`Improve my content:`);
-                  }}
-                >
-                  🪄 Improve my writing
-                </Button>
-                <Button
-                  size={"sm"}
-                  variant={"outline"}
-                  onClick={() => {
-                    onSendPrompt(`Continue writing for my content:`);
-                  }}
-                >
-                  ✍️ Continue writing
-                </Button>
-                <Button
-                  size={"sm"}
-                  variant={"outline"}
-                  onClick={() => {
-                    onSendPrompt(`Generate hashtags for my content:`);
-                  }}
-                >
-                  🔥 Generate hashtags #
-                </Button>
-                <Button
-                  size={"sm"}
-                  variant={"outline"}
-                  onClick={() => {
-                    onSendPrompt(`Generate hashtags for my content:`);
-                  }}
-                >
-                  📸 Generate cover photo
-                </Button>
-                {/* <Button
-                  size={"sm"}
-                  variant={"outline"}
-                  onClick={() => {
-                    onSendPrompt(`Generate hashtags for my content:`);
-                  }}
-                >
-                  🚀 生成爆款标题
-                </Button> */}
-                {PLATFORMS_CONFIG.slice(0, 5).map((platform) => (
-                  <Button
-                    size={"sm"}
-                    variant={"outline"}
-                    onClick={() => {
-                      onSendPrompt(
-                        `Write below content to ${platform.name} style.`
-                      );
-                    }}
-                  >
-                    <img
-                      src={platform.icon}
-                      alt={platform.name}
-                      className="w-4 h-4"
-                    />
-                    Write in {platform.name} style
-                  </Button>
-                ))}
+          <Button
+            size={"sm"}
+            variant={"ghost"}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? <SunIcon size={30} /> : <MoonIcon size={30} />}
+          </Button>
+          <Button size={"sm"} variant={"outline"} onClick={onClickNewChat}>
+            <PlusIcon /> New Chat
+          </Button>
+        </header>
+
+        {/* Messages */}
+        {messages.map((message, idx) => (
+          <div key={`${idx}`}>
+            {/* Regular message content */}
+            {typeof message.content == "string" && message.role !== "tool" && (
+              <div
+                className={`${
+                  message.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto"
+                    : "text-gray-800 dark:text-gray-200 text-left items-start"
+                } space-y-3 flex flex-col w-fit`}
+              >
+                <Markdown>{message.content}</Markdown>
               </div>
-            </div>
-          )}
-          {/* Messages */}
-          {messages.map((message, idx) => (
-            <div key={`${idx}`}>
-              {/* Regular message content */}
-              {typeof message.content == "string" &&
-                message.role !== "tool" && (
-                  <div
-                    className={`${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto"
-                        : "text-gray-800 dark:text-gray-200 text-left items-start"
-                    } space-y-3 flex flex-col w-fit`}
-                  >
-                    <Markdown>{message.content}</Markdown>
-                  </div>
-                )}
-              {typeof message.content == "string" &&
-                message.role == "tool" &&
-                expandingToolCalls.includes(message.tool_call_id) && (
-                  <div>
-                    <Markdown>{message.content}</Markdown>
-                  </div>
-                )}
-              {Array.isArray(message.content) &&
-                message.content.map((content, i) => {
-                  if (content.type == "text") {
-                    return (
-                      <div
-                        key={i}
-                        className={`${
-                          message.role === "user"
-                            ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto"
-                            : "text-gray-800 dark:text-gray-200 text-left items-start"
-                        } space-y-3 flex flex-col w-fit`}
-                      >
-                        <Markdown>{content.text}</Markdown>
-                      </div>
-                    );
-                  } else if (content.type == "image_url") {
-                    return (
-                      <div key={i}>
-                        <img src={content.image_url.url} alt="Image" />
-                      </div>
-                    );
-                  }
-                })}
-              {message.role === "assistant" &&
-                message.tool_calls &&
-                message.tool_calls.at(-1)?.function.name != "finish" &&
-                message.tool_calls.map((toolCall, i) => {
+            )}
+            {typeof message.content == "string" &&
+              message.role == "tool" &&
+              expandingToolCalls.includes(message.tool_call_id) && (
+                <div>
+                  <Markdown>{message.content}</Markdown>
+                </div>
+              )}
+            {Array.isArray(message.content) &&
+              message.content.map((content, i) => {
+                if (content.type == "text") {
                   return (
-                    <ToolCallTag
-                      key={toolCall.id}
-                      toolCall={toolCall}
-                      isExpanded={expandingToolCalls.includes(toolCall.id)}
-                      onToggleExpand={() => {
-                        if (expandingToolCalls.includes(toolCall.id)) {
-                          setExpandingToolCalls(
-                            expandingToolCalls.filter(
-                              (id) => id !== toolCall.id
-                            )
-                          );
-                        } else {
-                          setExpandingToolCalls([
-                            ...expandingToolCalls,
-                            toolCall.id,
-                          ]);
-                        }
-                      }}
-                    />
+                    <div
+                      key={i}
+                      className={`${
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto"
+                          : "text-gray-800 dark:text-gray-200 text-left items-start"
+                      } space-y-3 flex flex-col w-fit`}
+                    >
+                      <Markdown>{content.text}</Markdown>
+                    </div>
                   );
-                })}
-            </div>
-          ))}
-          {pending && messages.at(-1)?.role == "user" && (
-            <div className="flex items-start text-left">{<Spinner />}</div>
-          )}
-        </div>
+                } else if (content.type == "image_url") {
+                  return (
+                    <div key={i}>
+                      <img src={content.image_url.url} alt="Image" />
+                    </div>
+                  );
+                }
+              })}
+            {message.role === "assistant" &&
+              message.tool_calls &&
+              message.tool_calls.at(-1)?.function.name != "finish" &&
+              message.tool_calls.map((toolCall, i) => {
+                return (
+                  <ToolCallTag
+                    key={toolCall.id}
+                    toolCall={toolCall}
+                    isExpanded={expandingToolCalls.includes(toolCall.id)}
+                    onToggleExpand={() => {
+                      if (expandingToolCalls.includes(toolCall.id)) {
+                        setExpandingToolCalls(
+                          expandingToolCalls.filter((id) => id !== toolCall.id)
+                        );
+                      } else {
+                        setExpandingToolCalls([
+                          ...expandingToolCalls,
+                          toolCall.id,
+                        ]);
+                      }
+                    }}
+                  />
+                );
+              })}
+          </div>
+        ))}
+        {pending && messages.at(-1)?.role == "user" && (
+          <div className="flex items-start text-left">{<Spinner />}</div>
+        )}
       </div>
 
       {/* Chat input */}
@@ -502,7 +423,7 @@ const ChatInterface = ({
           <div className="flex flex-grow w-full items-end space-x-2">
             <Textarea
               className="flex flex-1 flex-grow resize-none"
-              placeholder="您想根据当前文章问什么？"
+              placeholder="What do you want to do?"
               value={prompt}
               onChange={(e) => {
                 setPrompt(e.target.value);
@@ -594,7 +515,7 @@ const ToolCallTag = ({
         >
           <span className="font-semibold text-muted-foreground">{name}</span>
 
-          {parsedArgs &&
+          {/* {parsedArgs &&
             Object.entries(parsedArgs).map(([key, value], i) => (
               <span key={i} className="ml-1">
                 <span className="text-muted-foreground">{key}</span>=
@@ -607,11 +528,11 @@ const ToolCallTag = ({
             <span className="text-muted-foreground">
               {String(inputs).slice(0, 100)}
             </span>
-          )}
+          )} */}
         </span>
       </Button>
       {isExpanded && (
-        <div className="p-2">
+        <div className="p-2 break-all">
           <Markdown>{inputs}</Markdown>
         </div>
       )}
