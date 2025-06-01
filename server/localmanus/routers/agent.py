@@ -73,17 +73,21 @@ SYSTEM_TOOLS = [
             "type": "function",
             "function": {
                 "name": "generate_image",
-                "description": "You MUST call this tool when you think the task is finished or you think you can't do anything more. Otherwise, you will be continuously asked to do more about this task indefinitely. Calling this tool will end your turn on this task and hand it over to the user for further instructions.",
+                "description": "Generate an image using text prompt or optionally pass an image for reference or for editing",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "prompt": {
                             "type": "string",
-                            "description": "The prompt for image generation"
+                            "description": "Required. The prompt for image generation"
                         },
                         "aspect_ratio": {
                             "type": "string",
-                            "description": "Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4"
+                            "description": "Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4"
+                        } ,
+                        "input_image": {
+                            "type": "string",
+                            "description": "Optional. Image to use as reference. Pass image_id here, e.g. 'im_jurheut7'. Best for image editing cases like: Editing specific parts of the image, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc."
                         }
                     }
                 },
