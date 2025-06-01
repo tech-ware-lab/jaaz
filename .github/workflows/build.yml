@@ -48,7 +48,7 @@ jobs:
       - name: Build React app
         run: |
           cd react
-          npm run build
+          npx vite build
 
       - name: Install Apple certificate
         if: matrix.os == 'macos-latest'
