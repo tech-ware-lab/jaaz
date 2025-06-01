@@ -10,6 +10,7 @@ import { Button } from "./components/ui/button";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
+  ImageIcon,
   Link,
   MoonIcon,
   PlusIcon,
@@ -19,6 +20,7 @@ import {
   SquareIcon,
   StopCircleIcon,
   SunIcon,
+  XIcon,
 } from "lucide-react";
 import { Badge } from "./components/ui/badge";
 import { Textarea } from "./components/ui/textarea";
@@ -54,6 +56,7 @@ const ChatInterface = ({
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
+  const [fileId, setFileId] = useState<string | null>(null);
   const [disableStop, setDisableStop] = useState(false);
   const [pending, setPending] = useState(false);
   const { setTheme, theme } = useTheme();
@@ -483,6 +486,55 @@ const ChatInterface = ({
       >
         {/* Input area */}
         <div className="flex flex-col relative flex-grow w-full space-x-2 max-w-3xl mx-auto">
+          {fileId && (
+            <div className="flex items-center space-x-2">
+              <img src={`/api/file/${fileId}`} alt="Uploaded Image" />
+              <Button
+                variant={"ghost"}
+                size={"sm"}
+                onClick={() => setFileId(null)}
+              >
+                <XIcon />
+              </Button>
+            </div>
+          )}
+          <Button
+            variant={"ghost"}
+            className="w-fit"
+            size={"sm"}
+            onClick={() => {
+              // open file input
+              const input = document.createElement("input");
+              input.type = "file";
+              input.accept =
+                "image/png, image/jpeg, image/jpg, image/webp,image/gif";
+              input.onchange = (e) => {
+                const file = (e.target as HTMLInputElement).files?.[0];
+                if (file) {
+                  // Create a FormData object
+                  const formData = new FormData();
+                  formData.append("session_id", sessionIdRef.current);
+                  formData.append("file", file);
+
+                  // Upload image
+                  fetch("/api/upload_image", {
+                    method: "POST",
+                    body: formData, // Use FormData as the body
+                  })
+                    .then((resp) => resp.json())
+                    .then((data) => {
+                      console.log("👇upload_image", data);
+                      if (data.file_id) {
+                        setFileId(data.file_id);
+                      }
+                    });
+                }
+              };
+              input.click();
+            }}
+          >
+            <ImageIcon />
+          </Button>
           <div className="flex flex-grow w-full items-end space-x-2">
             <Textarea
               className="flex flex-1 flex-grow resize-none"

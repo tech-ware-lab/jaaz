@@ -12,3 +12,5 @@ aiosqlite
 requests
 Pillow
 nanoid
+python-multipart
+aiofiles
