@@ -79,7 +79,7 @@ SYSTEM_TOOLS = [
                     "properties": {
                         "prompt": {
                             "type": "string",
-                            "description": "Required. The prompt for image generation"
+                            "description": "Required. The prompt for image generation. If you want to edit an image, please describe what you want to edit in the prompt."
                         },
                         "aspect_ratio": {
                             "type": "string",
@@ -87,7 +87,7 @@ SYSTEM_TOOLS = [
                         } ,
                         "input_image": {
                             "type": "string",
-                            "description": "Optional. Image to use as reference. Pass image filename here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc."
+                            "description": "Optional. Image to use as reference. Pass image filename here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc."
                         }
                     }
                 },
