@@ -5,7 +5,7 @@
   "author": "weixuanfu",
   "main": "electron/main.js",
   "scripts": {
-    "start": "cd react && npm run build && cd .. && npm run start:electron",
+    "start": "cd react && npx vite build && cd .. && npm run start:electron",
     "dev:react": "cd react && npm run dev",
     "dev:electron": "cross-env NODE_ENV=development npx electron electron/main.js",
     "dev": "concurrently \"npm run dev:react\" \"npm run dev:electron\"",
