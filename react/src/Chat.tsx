@@ -11,6 +11,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   ImageIcon,
+  ImagePlusIcon,
   Link,
   MoonIcon,
   PlusIcon,
@@ -545,7 +546,7 @@ const ChatInterface = ({
               size={"sm"}
               onClick={() => onUploadImage()}
             >
-              <ImageIcon />
+              <ImagePlusIcon />
             </Button>
           )}
           <div className="flex flex-grow w-full items-end space-x-2 mt-2">
