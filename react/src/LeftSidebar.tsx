@@ -26,7 +26,7 @@ export default function LeftSidebar({
   onClose: () => void;
 }) {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
-  const [type, setType] = useState<"chat" | "space">("space");
+  const [type, setType] = useState<"chat" | "space">("chat");
   useEffect(() => {
     const fetchChatSessions = async () => {
       const sessions = await fetch("/api/list_chat_sessions", {
@@ -43,7 +43,7 @@ export default function LeftSidebar({
     }
   }, [type]);
   return (
-    <div className="flex flex-col h-screen mt-10 bg-accent text-foreground">
+    <div className="flex flex-col bg-sidebar text-foreground h-screen">
       <div className="flex flex-col gap-4 p-3 sticky top-0 right-0 items-end">
         <Button variant={"ghost"} onClick={onClose} className="w-fit">
           <XIcon />

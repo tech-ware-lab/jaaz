@@ -21,6 +21,13 @@ import { nanoid } from "nanoid";
 import PostEditor from "./PostEditor";
 import Canvas from "./Canvas";
 import CanvasExcali from "./CanvasExcali";
+import { Button } from "./components/ui/button";
+import {
+  HistoryIcon,
+  MessageCircleIcon,
+  SidebarIcon,
+  SidebarOpenIcon,
+} from "lucide-react";
 
 function Home() {
   const [agentState, setAgentState] = useState(EAgentState.IDLE);
@@ -28,12 +35,12 @@ function Home() {
   const [currentStep, setCurrentStep] = useState(0);
   const [maxSteps, setMaxSteps] = useState(0);
   const [totalTokens, setTotalTokens] = useState(0);
-  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(false);
   const [sessionId, setSessionId] = useState<string>(nanoid());
   const [editorTitle, setEditorTitle] = useState("");
   const [editorContent, setEditorContent] = useState("");
   const { setTheme, theme } = useTheme();
-  const [curPath, setCurPath] = useState("");
+  const [curFile, setCurFile] = useState("");
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -49,19 +56,6 @@ function Home() {
 
   return (
     <div className="flex">
-      {/* {isLeftSidebarOpen && (
-        <div className="w-[16%] bg-sidebar h-screen">
-          <LeftSidebar
-            sessionId={sessionId}
-            setSessionId={setSessionId}
-            curPath={curPath}
-            setCurPath={setCurPath}
-            onClose={() => setIsLeftSidebarOpen(false)}
-            onClickWrite={() => {}}
-          />
-        </div>
-      )} */}
-
       <div
         style={{
           position: "fixed",
@@ -100,6 +94,27 @@ function Home() {
           </Button>
         </div> */}
       </div>
+      {isLeftSidebarOpen && (
+        <div className="fixed left-0 top-0 w-[20%] bg-sidebar h-screen">
+          <LeftSidebar
+            sessionId={sessionId}
+            setSessionId={setSessionId}
+            curFile={curFile}
+            setCurFile={setCurFile}
+            onClose={() => setIsLeftSidebarOpen(false)}
+          />
+        </div>
+      )}
+      {!isLeftSidebarOpen && (
+        <div className="fixed left-[60px] top-[16px]">
+          <Button
+            onClick={() => setIsLeftSidebarOpen(true)}
+            variant={"secondary"}
+          >
+            <MessageCircleIcon />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
