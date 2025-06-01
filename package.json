@@ -1,6 +1,6 @@
 {
   "name": "jaaz",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Local agent desktop app with MCP tools",
   "author": "weixuanfu",
   "main": "electron/main.js",

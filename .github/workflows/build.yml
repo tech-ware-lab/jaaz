@@ -3,9 +3,9 @@ name: Build and Package Desktop App
 
 on:
   push:
-    branches: [main, mcp]
+    branches: [main, mcp, art]
   pull_request:
-    branches: [main, mcp]
+    branches: [main, mcp, art]
 
 jobs:
   build:
