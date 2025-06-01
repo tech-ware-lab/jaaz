@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./components/ui/select";
+import { useNavigate } from "react-router-dom";
 import MultiChoicePrompt from "./MultiChoicePrompt";
 import SingleChoicePrompt from "./SingleChoicePrompt";
 import Spinner from "./components/ui/Spinner";
@@ -84,6 +85,7 @@ const ChatInterface = ({
   const webSocketRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string>(nanoid());
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch("/api/list_models")
@@ -419,7 +421,7 @@ const ChatInterface = ({
           <Button
             size={"sm"}
             variant={"secondary"}
-            onClick={() => (window.location.href = "/settings")}
+            onClick={() => navigate("/settings")}
           >
             <SettingsIcon size={30} />
           </Button>

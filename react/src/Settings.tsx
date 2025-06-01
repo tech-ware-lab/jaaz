@@ -1,14 +1,6 @@
 import { useState, useEffect } from "react";
 import { Input } from "./components/ui/input";
 import {
-  Select,
-  SelectValue,
-  SelectTrigger,
-  SelectItem,
-  SelectGroup,
-  SelectContent,
-} from "./components/ui/select";
-import {
   Card,
   CardContent,
   CardHeader,

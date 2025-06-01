@@ -1,4 +1,4 @@
-# 🧠 Jaaz – AI Design Agent
+# 🦄 Jaaz – AI Design Agent
 
 AI design agent. Local alternative for Lovart. AI agent with ability to design, edit and generate images, posters, storyboards, etc.
 
