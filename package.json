@@ -1,7 +1,7 @@
 {
   "name": "jaaz",
-  "version": "1.0.3",
-  "description": "Local agent desktop app with MCP tools",
+  "version": "1.0.4",
+  "description": "AI design agent local desktop app",
   "author": "weixuanfu",
   "main": "electron/main.js",
   "scripts": {
