@@ -17,7 +17,13 @@ import {
 } from "@excalidraw/excalidraw/element/types";
 import { useTheme } from "./components/theme-provider";
 import debounce from "lodash.debounce"; // or use your own debounce
-
+type LastImagePosition = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  col: number; // col index
+};
 export default function CanvasExcali() {
   const excalidrawAPI = useRef<ExcalidrawImperativeAPI | null>(null);
   const saveScene = (elements: any[], appState: AppState, files: any[]) => {
@@ -36,20 +42,10 @@ export default function CanvasExcali() {
     debounce(saveScene, 500), // wait 500ms after changes stop
     []
   );
-  const lastImagePosition = useRef<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  }>(
+  const lastImagePosition = useRef<LastImagePosition | null>(
     localStorage.getItem("excalidraw-last-image-position")
       ? JSON.parse(localStorage.getItem("excalidraw-last-image-position")!)
-      : {
-          x: 0,
-          y: 0,
-          width: 0,
-          height: 0,
-        }
+      : null
   );
   const { theme } = useTheme();
   console.log("👇theme", theme);
@@ -79,10 +75,25 @@ export default function CanvasExcali() {
         },
       ]);
 
-      // Position image next to the previous one
-      const { x, y, width } = lastImagePosition.current;
-      const newX = x + width + 20; // adjust spacing to 20px
-      const newY = y;
+      // Position image next to the previous one, 4 items per row
+      let newX = 0;
+      let newY = 0;
+      let newCol = 0;
+      // Check if we need to start a new row
+      if (!lastImagePosition.current) {
+        // first image in canvas
+      } else if (lastImagePosition.current.col >= 3) {
+        // 0-based index, so 3 means 4th item
+        const { x, y, width, height, col } = lastImagePosition.current;
+        newX = 0; // Reset X position
+        newY = y + height + 20; // Move to the next row
+        newCol = 0; // Reset column index
+      } else {
+        const { x, y, width, height, col } = lastImagePosition.current;
+        newX = x + width + 20; // adjust spacing to 20px
+        newY = y;
+        newCol = col + 1; // Increment column index
+      }
 
       const imageElement: ExcalidrawImageElement = {
         type: "image",
@@ -121,7 +132,9 @@ export default function CanvasExcali() {
         y: newY,
         width: imageData.width,
         height: imageData.height,
+        col: newCol,
       };
+      console.log("👇lastImagePosition", lastImagePosition.current);
       localStorage.setItem(
         "excalidraw-last-image-position",
         JSON.stringify(lastImagePosition.current)

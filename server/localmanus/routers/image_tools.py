@@ -13,6 +13,7 @@ from nanoid import generate
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 import httpx
 import aiofiles
+from mimetypes import guess_type
 
 router = APIRouter(prefix="/api")
 
@@ -26,13 +27,19 @@ async def upload_image(session_id: str = Form(...), file: UploadFile = File(...)
     print('🦄upload_image session_id', session_id)
     print('🦄upload_image file', file.filename)
     file_id = generate_file_id()
-    file_path = os.path.join(FILES_DIR, f'{file_id}')
+    filename = file.filename or ''
+
+    # Determine the file extension
+    mime_type, _ = guess_type(filename)
+    extension = mime_type.split('/')[-1] if mime_type else ''  # default to 'bin' if unknown
+
+    file_path = os.path.join(FILES_DIR, f'{file_id}.{extension}')
     async with aiofiles.open(file_path, 'wb') as f:
         content = await file.read()  # Read the file content
         await f.write(content)
     print('🦄upload_image file_path', file_path)
     return {
-        'file_id': file_id,
+        'file_id': f'{file_id}.{extension}',
     }
 
 @router.get("/file/{file_id}")
@@ -67,7 +74,11 @@ async def generate_image(args_json: dict, ctx: dict):
         async with aiofiles.open(image_path, 'rb') as f:
             image_data = await f.read()
         b64 = base64.b64encode(image_data).decode('utf-8')
-        input_image = f"data:application/octet-stream,{b64}"
+
+        mime_type, _ = guess_type(image_path)
+        if not mime_type:
+            mime_type = "image/png"  # default fallback
+        input_image = f"data:{mime_type};base64,{b64}"
     url = f"https://api.replicate.com/v1/models/{model}/predictions"
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -97,11 +108,12 @@ async def generate_image(args_json: dict, ctx: dict):
     print('🦄image generation image_id', image_id)
     # get image dimensions
     mime_type, width, height, extension = await get_image_info_and_save(output, os.path.join(FILES_DIR, f'{image_id}'))
+    filename = f'{image_id}.{extension}'
     await send_to_websocket(session_id, {
         'type': 'image_generated',
         'image_data': {
             'mime_type': mime_type,
-            'url': f'/api/file/{image_id}.{extension}',
+            'url': f'/api/file/{filename}',
             'width': width,
             'height': height,
         }
@@ -109,7 +121,7 @@ async def generate_image(args_json: dict, ctx: dict):
     return [
         {
             'role': 'tool',
-            'content': f'Image generation successful: ![image_id: {image_id}]({output})',
+            'content': f'Image generation successful: ![image filename: {filename}]({output})',
         }
     ]
 
