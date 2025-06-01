@@ -204,9 +204,9 @@ export default function Settings() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="apiKey">API Key</Label>
+                <Label htmlFor={`${key}-apiKey`}>API Key</Label>
                 <Input
-                  id="apiKey"
+                  id={`${key}-apiKey`}
                   type="password"
                   placeholder="Enter your API key"
                   value={config[key]?.api_key ?? ""}
@@ -225,9 +225,9 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="maxTokens">Max Tokens</Label>
+                <Label htmlFor={`${key}-maxTokens`}>Max Tokens</Label>
                 <Input
-                  id="maxTokens"
+                  id={`${key}-maxTokens`}
                   type="number"
                   placeholder="Enter your max tokens"
                   value={config[key]?.max_tokens ?? 8192}
@@ -291,7 +291,7 @@ export default function Settings() {
             </>
           ))}
           <div className="flex justify-center fixed bottom-4 left-1/2 -translate-x-1/2">
-            <Button onClick={handleSave} className="w-[400px]">
+            <Button onClick={handleSave} className="w-[400px]" size={"lg"}>
               <Save className="mr-2 h-4 w-4" /> Save Settings
             </Button>
           </div>
