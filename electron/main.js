@@ -136,13 +136,30 @@ const startPythonApi = async () => {
     }
   );
 
-  // Log output
+  // Log output to logStream (shared with console.log)
   pyProc.stdout.on("data", (data) => {
-    console.log(`Python stdout: ${data}`);
+    const log = `[${new Date().toISOString()}][PYTHON stdout] ${data}`;
+    logStream.write(log);
+    process.stdout.write(log); // optional: echo to terminal if running from CLI
   });
 
   pyProc.stderr.on("data", (data) => {
-    console.error(`Python stderr: ${data}`);
+    const log = `[${new Date().toISOString()}][PYTHON stderr] ${data}`;
+    logStream.write(log);
+    process.stderr.write(log); // optional: echo to terminal if running from CLI
+  });
+
+  // Optional: log if spawn fails
+  pyProc.on("error", (err) => {
+    const log = `[${new Date().toISOString()}][PYTHON spawn error] ${err.toString()}\n`;
+    logStream.write(log);
+    process.stderr.write(log);
+  });
+
+  // Optional: log process exit
+  pyProc.on("exit", (code, signal) => {
+    const log = `[${new Date().toISOString()}][PYTHON exited] code=${code}, signal=${signal}\n`;
+    logStream.write(log);
   });
 
   return pyPort;
