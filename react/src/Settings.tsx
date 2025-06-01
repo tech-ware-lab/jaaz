@@ -27,13 +27,13 @@ const PROVIDER_NAME_MAPPING: { [key: string]: { name: string; icon: string } } =
       icon: "https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/claude-color.png",
     },
     openai: { name: "OpenAI", icon: "https://openai.com/favicon.ico" },
-    ollama: {
-      name: "Ollama",
-      icon: "https://images.seeklogo.com/logo-png/59/1/ollama-logo-png_seeklogo-593420.png",
-    },
     replicate: {
       name: "Replicate",
       icon: "https://images.seeklogo.com/logo-png/61/1/replicate-icon-logo-png_seeklogo-611690.png",
+    },
+    ollama: {
+      name: "Ollama",
+      icon: "https://images.seeklogo.com/logo-png/59/1/ollama-logo-png_seeklogo-593420.png",
     },
   };
 const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
@@ -54,12 +54,6 @@ const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
     api_key: "",
     max_tokens: 8192,
   },
-  ollama: {
-    models: {},
-    url: "http://localhost:11434",
-    api_key: "",
-    max_tokens: 8192,
-  },
   replicate: {
     models: {
       "google/imagen-4": { type: "image" },
@@ -70,6 +64,12 @@ const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
       "stability-ai/sdxl": { type: "image" },
     },
     url: "https://api.replicate.com/v1/",
+    api_key: "",
+    max_tokens: 8192,
+  },
+  ollama: {
+    models: {},
+    url: "http://localhost:11434",
     api_key: "",
     max_tokens: 8192,
   },
