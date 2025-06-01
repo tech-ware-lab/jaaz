@@ -96,7 +96,10 @@ const startPythonApi = async () => {
   console.log("available pyPort:", pyPort);
 
   // 确定UI dist目录
-  const env = { ...process.env };
+  const env = {
+    ...process.env,
+  };
+  env.PYTHONIOENCODING = "utf-8";
   if (app.isPackaged) {
     env.UI_DIST_DIR = path.join(process.resourcesPath, "react", "dist");
     env.USER_DATA_DIR = app.getPath("userData");
@@ -131,9 +134,7 @@ const startPythonApi = async () => {
   pyProc = spawn(
     pythonExecutable,
     app.isPackaged ? [`--port`, pyPort] : [scriptPath, `--port`, pyPort],
-    {
-      env: env,
-    }
+    { env: env }
   );
 
   // Log output to logStream (shared with console.log)
