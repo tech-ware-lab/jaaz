@@ -486,7 +486,7 @@ mcp_clients_status = {}
 mcp_tool_to_server_mapping: dict[str, MCPClient] = {}
 
 async def initialize():
-    await initialize_mcp()
+    # await initialize_mcp()
     for session_id in active_websockets:
         await send_to_websocket(session_id, {
             'type': 'init_done'
