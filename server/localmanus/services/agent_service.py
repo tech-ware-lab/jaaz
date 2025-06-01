@@ -4,8 +4,6 @@ from openai import AsyncOpenAI
 from ollama import Client
 
 llm_config = config_service.get_config()
-print('llm_config', llm_config)
-
 
 class OpenAILLM:
     tools: list[dict] = []
