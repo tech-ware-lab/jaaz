@@ -1,7 +1,33 @@
 // electron/main.js
 // npx electron electron/main.js
-const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+
+const fs = require("fs");
 const path = require("path");
+const os = require("os");
+
+// Create or append to a log file in the user's home directory
+const logPath = path.join(os.homedir(), "jaaz-log.txt");
+const logStream = fs.createWriteStream(logPath, { flags: "a" });
+
+// Redirect all stdout and stderr to the log file
+process.stdout.write = process.stderr.write = logStream.write.bind(logStream);
+
+// Optional: Add timestamps to log output
+const origLog = console.log;
+console.log = (...args) => {
+  const time = new Date().toISOString();
+  origLog(`[${time}]`, ...args);
+};
+
+console.error = (...args) => {
+  const time = new Date().toISOString();
+  origLog(`[${time}][ERROR]`, ...args);
+};
+
+// Initial log entry
+console.log("🟢 Jaaz Electron app starting...");
+
+const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const { spawn } = require("child_process");
 
 const net = require("net");
@@ -78,10 +104,22 @@ const startPythonApi = async () => {
   }
 
   // Determine the Python executable path (considering packaged app)
+  const isWindows = process.platform === "win32";
   const pythonExecutable = app.isPackaged
-    ? path.join(process.resourcesPath, "server", "dist", "main", "main")
+    ? path.join(
+        process.resourcesPath,
+        "server",
+        "dist",
+        "main",
+        isWindows ? "main.exe" : "main"
+      )
     : "python";
+  console.log("Resolved Python executable:", pythonExecutable);
+
   const fs = require("fs");
+
+  console.log("Exists?", fs.existsSync(pythonExecutable));
+
   // fs.chmodSync(pythonExecutable, "755");
 
   console.log("Python executable path:", pythonExecutable);
