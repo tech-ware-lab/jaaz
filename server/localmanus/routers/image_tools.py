@@ -10,6 +10,8 @@ from io import BytesIO
 import os
 from nanoid import generate
 from fastapi import APIRouter, HTTPException, Request
+import httpx
+import aiofiles
 
 router = APIRouter(prefix="/api")
 
@@ -52,8 +54,8 @@ async def generate_image(args_json: dict, ctx: dict):
             "aspect_ratio": aspect_ratio,
         }
     }
-
-    response = requests.post(url, headers=headers, json=data)
+    async with httpx.AsyncClient(timeout=10) as client:
+        response = await client.post(url, headers=headers, json=data)
     res = response.json()
     print('🦄image generation response', res)
     output = res.get('output', '')
@@ -66,7 +68,7 @@ async def generate_image(args_json: dict, ctx: dict):
             raise Exception('Replicate image generation failed: no output url found')
     print('🦄image generation image_id', image_id)
     # get image dimensions
-    mime_type, width, height, extension = get_image_info_and_save(output, os.path.join(files_dir, f'{image_id}'))
+    mime_type, width, height, extension = await get_image_info_and_save(output, os.path.join(files_dir, f'{image_id}'))
     await send_to_websocket(session_id, {
         'type': 'image_generated',
         'image_data': {
@@ -83,9 +85,10 @@ async def generate_image(args_json: dict, ctx: dict):
         }
     ]
 
-def get_image_info_and_save(url, file_path_without_extension):
-    # Fetch the image
-    response = requests.get(url)
+async def get_image_info_and_save(url, file_path_without_extension):
+    # Fetch the image asynchronously
+    async with httpx.AsyncClient(timeout=20) as client:
+        response = await client.get(url)
     response.raise_for_status()  # Raise an error for bad responses
 
     # Open the image
@@ -101,8 +104,9 @@ def get_image_info_and_save(url, file_path_without_extension):
     extension = image.format.lower() if image.format else 'png'
     file_path = f"{file_path_without_extension}.{extension}"
 
-    # Save the image to a local file with the correct extension
-    image.save(file_path)
+    # Save the image to a local file with the correct extension asynchronously
+    async with aiofiles.open(file_path, 'wb') as out_file:
+        await out_file.write(response.content)
     print('🦄image saved to file_path', file_path)
 
     return mime_type, width, height, extension
