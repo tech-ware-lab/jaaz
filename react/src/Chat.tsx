@@ -166,6 +166,15 @@ const ChatInterface = ({
             closeButton: true,
             duration: 10 * 1000,
           });
+        } else if (data.type == "image_generated") {
+          console.log("⭐️dispatching image_generated", data);
+          window.dispatchEvent(
+            new CustomEvent("image_generated", {
+              detail: {
+                image_data: data.image_data,
+              },
+            })
+          );
         } else {
           setMessages((prev) => {
             if (data.type == "delta") {
@@ -195,6 +204,7 @@ const ChatInterface = ({
                 ];
               }
             } else if (data.type == "tool_call") {
+              console.log("👇tool_call event get", data);
               setExpandingToolCalls([...expandingToolCalls, data.id]);
               return prev.concat({
                 role: "assistant",
@@ -231,15 +241,6 @@ const ChatInterface = ({
             } else if (data.type == "all_messages") {
               console.log("👇all_messages", data.messages);
               return data.messages;
-            } else if (data.type == "image_generated") {
-              console.log("⭐️dispatching image_generated", data);
-              window.dispatchEvent(
-                new CustomEvent("image_generated", {
-                  detail: {
-                    image_data: data.image_data,
-                  },
-                })
-              );
             }
             return prev;
           });
