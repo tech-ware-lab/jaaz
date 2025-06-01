@@ -1,11 +1,16 @@
 import asyncio
 import os
 import sys
+import io
 import argparse
 from contextlib import asynccontextmanager
 from localmanus.services.db_service import DatabaseService
 
 root_dir = os.path.dirname(__file__)
+
+# Ensure stdout and stderr use utf-8 encoding to prevent emoji logs from crashing python server
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
