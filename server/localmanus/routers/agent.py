@@ -158,7 +158,7 @@ async def chat_openai(messages: list, session_id: str, text_model: dict, image_m
                         if line_str.startswith('data: {'):
                             line_str = line_str[6:]  # Remove "data: " prefix
                             chunk = json.loads(line_str) # Parse the JSON
-                            
+                            print('👇 chunk:', chunk)
                             # Extract content from the choices array
                             if 'choices' in chunk and len(chunk['choices']) > 0:
                                 delta = chunk['choices'][0].get('delta', {})
@@ -176,15 +176,18 @@ async def chat_openai(messages: list, session_id: str, text_model: dict, image_m
                                 for tool_call in tool_calls:
                                     tool_call_id = tool_call.get('id')
                                     tool_call_name = tool_call.get('function', {}).get('name')
+                                    
                                     if tool_call_id and tool_call_name:
                                         # tool call start
-                                        cur_tool_calls.append(ToolCall(tool_call_id, tool_call_name, ''))
-                                        print('🦄tool_call', tool_call_id, tool_call_name)
-
+                                        
+                                        tool_call_args_str = tool_call.get('function', {}).get('arguments', '')
+                                        cur_tool_calls.append(ToolCall(tool_call_id, tool_call_name, tool_call_args_str))
+                                        print('🦄tool_call', tool_call_id, tool_call_name, tool_call_args_str)
                                         await send_to_websocket(session_id, {
                                             'type': 'tool_call',
                                             'id': tool_call_id,
-                                            'name': tool_call_name
+                                            'name': tool_call_name,
+                                            'arguments': tool_call_args_str if tool_call_args_str else '{}'
                                         })
                                     elif tool_call.get('function', {}).get('arguments', '') and len(cur_tool_calls) > 0:
                                         delta = tool_call.get('function', {}).get('arguments', '')
@@ -206,8 +209,8 @@ async def chat_openai(messages: list, session_id: str, text_model: dict, image_m
 
                     except Exception as e:
                         traceback.print_exc()
-            print('👇combine', combine)
-            print('👇content_combine', content_combine)
+            # print('👇combine', combine)
+            # print('👇content_combine', content_combine)
             if content_combine != '':
                 msg = {
                     'role': 'assistant',
@@ -223,7 +226,7 @@ async def chat_openai(messages: list, session_id: str, text_model: dict, image_m
             if len(cur_tool_calls) > 0:
                 for tool_call in cur_tool_calls:
                     # append tool call to messages of assistant
-                    print('🕹️tool_call', tool_call)
+                    print('🕹️tool_call', tool_call.id, tool_call.name, 'arguments', tool_call.arguments)
                     msg = {
                         'role': 'assistant',
                         'tool_calls': [{
