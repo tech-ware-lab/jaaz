@@ -9,8 +9,10 @@ AI design agent. Local alternative for Lovart. AI agent with ability to design, 
 ## ✨ Key Features
 
 - AI designer agent powered by LLM that can smartly write prompt and batch generate images or even a whole storyboard!
+- Support Ollama, Stable Diffusion, Flux Dev, local image and LLM models for free image generations and (upcoming!) Wan2.1 for free video generations
 - Edit images in conversation using GPT-4o, Flux Kontext: object removal, style transfer, edit specific elements in image, consistent character generation etc. All through chat!
 - Canvas and storyboard: unleash your creativity using our infinite canvas!
+- [Upcoming] Video generations through Wan2.1, Kling, and video creation and editing agent
 
 ---
 
