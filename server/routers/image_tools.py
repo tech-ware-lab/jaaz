@@ -1,6 +1,8 @@
 import base64
+import sys
 from fastapi.responses import FileResponse
 import requests
+from common import DEFAULT_PORT
 from services.config_service import app_config
 import traceback
 import time
@@ -91,7 +93,7 @@ async def generate_image(args_json: dict, ctx: dict):
     return [
         {
             'role': 'tool',
-            'content': f'Image generation successful: ![image filename: {filename}](/api/file/{filename})',
+            'content': f'Image generation successful: ![image_id: {filename}](http://127.0.0.1:{DEFAULT_PORT}/api/file/{filename})',
         }
     ]
 async def generate_image_replicate(prompt, model, aspect_ratio, input_image):
@@ -130,17 +132,26 @@ async def generate_image_replicate(prompt, model, aspect_ratio, input_image):
     filename = f'{image_id}.{extension}'
     return mime_type, width, height, filename
 
-async def generate_image_huggingface(args_json: dict, ctx: dict):
-    from diffusers.pipelines.auto_pipeline import AutoPipelineForText2Image
-    import torch
+async def generate_image_huggingface(prompt, model, aspect_ratio, input_image):
+    from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion import StableDiffusionPipeline
 
-    pipe_txt2img = AutoPipelineForText2Image.from_pretrained(
-        "dreamlike-art/dreamlike-photoreal-2.0", torch_dtype=torch.float16, use_safetensors=True
-    ).to("cuda")
+    pipe = StableDiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4")
+    pipe = pipe.to("mps")
 
-    prompt = "cinematic photo of Godzilla eating sushi with a cat in a izakaya, 35mm photograph, film, professional, 4k, highly detailed"
-    generator = torch.Generator(device="cpu").manual_seed(37)
-    image = pipe_txt2img(prompt, generator=generator).images[0]
+    prompt = "a photo of an astronaut riding a horse on mars"
+
+    # First-time "warmup" pass (see explanation above)
+    _ = pipe(prompt, num_inference_steps=1)
+
+    # Results match those from the CPU device after the warmup pass.
+    image = pipe(prompt).images[0]
+    # image = pipe(prompt, generator=generator).images[0]
+    image_id = 'im_' + generate(size=8) + '.png'
+    image_path = os.path.join(FILES_DIR, f'{image_id}')
+    image.save(image_path)
+    mime_type = 'image/png'
+    width, height = image.size
+    return mime_type, width, height, image_id
 
 async def get_image_info_and_save(url, file_path_without_extension):
     # Fetch the image asynchronously

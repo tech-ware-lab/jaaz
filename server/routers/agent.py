@@ -87,7 +87,7 @@ SYSTEM_TOOLS = [
                         } ,
                         "input_image": {
                             "type": "string",
-                            "description": "Optional. Image to use as reference. Pass image filename here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc."
+                            "description": "Optional. Image to use as reference. Pass image_id here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc."
                         }
                     }
                 },

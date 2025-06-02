@@ -37,7 +37,7 @@ const { spawn } = require("child_process");
 
 const net = require("net");
 
-function findAvailablePort(startPort = 5000) {
+function findAvailablePort(startPort) {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
 
@@ -97,7 +97,7 @@ const appRoot = app.getAppPath();
 
 const startPythonApi = async () => {
   // Find an available port
-  pyPort = await findAvailablePort(5100);
+  pyPort = await findAvailablePort(57988);
   console.log("available pyPort:", pyPort);
 
   // 确定UI dist目录
