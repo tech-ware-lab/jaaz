@@ -25,13 +25,7 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 
 ## Install
 
-#### MacOS
-
-Download latest desktop app here: https://github.com/11cafe/localart/releases Jaaz-1.0.X-arm64.dmg 
-
-#### Windows
-
-Download latest desktop app here: https://github.com/11cafe/localart/releases Jaaz-1.0.X.exe 
+<div align="center"> <a href="https://github.com/11cafe/localart/releases/latest/download/Jaaz-1.0.5-arm64.dmg"> <img src="https://img.shields.io/badge/⬇️%20Download%20for-macOS-black?style=for-the-badge&logo=apple" alt="Download for macOS" /> </a> &nbsp;&nbsp; <a href="https://github.com/11cafe/localart/releases/latest/download/Jaaz-1.0.5.exe"> <img src="https://img.shields.io/badge/⬇️%20Download%20for-Windows-blue?style=for-the-badge&logo=windows" alt="Download for Windows" /> </a> </div>
 
 #### Manual Install (For Linux or local builds)
 
