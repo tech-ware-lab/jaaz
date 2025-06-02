@@ -25,15 +25,15 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 
 ## Install
 
-## MacOS
+#### MacOS
 
 Download latest desktop app here: https://github.com/11cafe/localart/releases Jaaz-1.0.X-arm64.dmg 
 
-## Windows
+#### Windows
 
 Download latest desktop app here: https://github.com/11cafe/localart/releases Jaaz-1.0.X.exe 
 
-### Manual Install (For Linux or local builds)
+#### Manual Install (For Linux or local builds)
 
 First git clone this repo:
 
@@ -45,6 +45,18 @@ First git clone this repo:
 `pip install -r requirements.txt`
 
 `python main.py`
+
+## Usage
+
+1. Add LLM API key like OpenAI or Claude, or install [Ollama](https://ollama.com/) to use local models
+2. Add image generations API key like [Replicate](https://replicate.com/) 
+
+<img width="1485" alt="Screenshot 2025-06-02 at 3 08 51 PM" src="https://github.com/user-attachments/assets/80bf76b1-229b-4491-893e-3f5102062a37" />
+
+3. Start chatting with agent to generate stories or storyboards!
+
+<img width="1727" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/6001af3a-2e2d-4bce-8112-7ee81cc75670" />
+
 
 ## Development
 
