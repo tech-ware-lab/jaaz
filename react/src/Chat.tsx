@@ -311,6 +311,7 @@ const ChatInterface = ({
 
     setMessages(newMessages);
     setPrompt("");
+    setFileId(null)
     setPending(true);
     fetch("/api/chat", {
       method: "POST",
