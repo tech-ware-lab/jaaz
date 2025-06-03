@@ -39,6 +39,10 @@ const PROVIDER_NAME_MAPPING: { [key: string]: { name: string; icon: string } } =
       name: "Hugging Face",
       icon: "https://huggingface.co/favicon.ico",
     },
+    wavespeed: {
+      name: "WaveSpeedAi",
+      icon: "https://www.wavespeed.ai/favicon.ico",
+    },
   };
 const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
   anthropic: {
@@ -70,6 +74,13 @@ const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
     url: "https://api.replicate.com/v1/",
     api_key: "",
     max_tokens: 8192,
+  },
+  wavespeed: {
+    models: {
+      "wavespeed-ai/flux-dev": { type: "image" },
+    },
+    url: "https://api.wavespeed.ai/api/v3",
+    api_key: "",
   },
   // huggingface: {
   //   models: {
