@@ -1,178 +1,94 @@
-import { useState, useEffect } from "react";
-import { Input } from "./components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "./components/ui/card";
-import { Button } from "./components/ui/button";
-import { Label } from "./components/ui/label";
-import { ArrowLeftIcon, Save } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { Checkbox } from "./components/ui/checkbox";
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { DEFAULT_CONFIG, PROVIDER_NAME_MAPPING } from '@/constants'
+import { LLMConfig } from '@/types/types'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { ArrowLeftIcon, Save } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-type LLMConfig = {
-  models: Record<string, { type?: "text" | "image" | "video" }>;
-  url: string;
-  api_key: string;
-  max_tokens?: number;
-};
-
-const PROVIDER_NAME_MAPPING: { [key: string]: { name: string; icon: string } } =
-  {
-    anthropic: {
-      name: "Claude",
-      icon: "https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/claude-color.png",
-    },
-    openai: { name: "OpenAI", icon: "https://openai.com/favicon.ico" },
-    replicate: {
-      name: "Replicate",
-      icon: "https://images.seeklogo.com/logo-png/61/1/replicate-icon-logo-png_seeklogo-611690.png",
-    },
-    ollama: {
-      name: "Ollama",
-      icon: "https://images.seeklogo.com/logo-png/59/1/ollama-logo-png_seeklogo-593420.png",
-    },
-    huggingface: {
-      name: "Hugging Face",
-      icon: "https://huggingface.co/favicon.ico",
-    },
-    wavespeed: {
-      name: "WaveSpeedAi",
-      icon: "https://www.wavespeed.ai/favicon.ico",
-    },
-  };
-const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
-  anthropic: {
-    models: {
-      "claude-3-7-sonnet-latest": { type: "text" },
-    },
-    url: "https://api.anthropic.com/v1/",
-    api_key: "",
-    max_tokens: 8192,
-  },
-  openai: {
-    models: {
-      "gpt-4o": { type: "text" },
-      "gpt-4o-mini": { type: "text" },
-    },
-    url: "https://api.openai.com/v1/",
-    api_key: "",
-    max_tokens: 8192,
-  },
-  replicate: {
-    models: {
-      "google/imagen-4": { type: "image" },
-      "black-forest-labs/flux-1.1-pro": { type: "image" },
-      "black-forest-labs/flux-kontext-pro": { type: "image" },
-      "black-forest-labs/flux-kontext-max": { type: "image" },
-      "recraft-ai/recraft-v3": { type: "image" },
-      "stability-ai/sdxl": { type: "image" },
-    },
-    url: "https://api.replicate.com/v1/",
-    api_key: "",
-    max_tokens: 8192,
-  },
-  wavespeed: {
-    models: {
-      "wavespeed-ai/flux-dev": { type: "image" },
-    },
-    url: "https://api.wavespeed.ai/api/v3",
-    api_key: "",
-  },
-  // huggingface: {
-  //   models: {
-  //     "dreamlike-art/dreamlike-photoreal-2.0": { type: "image" },
-  //   },
-  //   url: "https://api.replicate.com/v1/",
-  //   api_key: "",
-  // },
-  ollama: {
-    models: {},
-    url: "http://localhost:11434",
-    api_key: "",
-    max_tokens: 8192,
-  },
-};
+export const Route = createFileRoute('/settings')({
+  component: Settings,
+})
 
 export default function Settings() {
-  const [provider, setProvider] = useState("anthropic");
+  const [provider, setProvider] = useState('anthropic')
   const [config, setConfig] = useState<{
-    [key: string]: LLMConfig;
-  }>(DEFAULT_CONFIG);
-  const [isApiKeyDirty, setIsApiKeyDirty] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+    [key: string]: LLMConfig
+  }>(DEFAULT_CONFIG)
+  const [isApiKeyDirty, setIsApiKeyDirty] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
 
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const response = await fetch("/api/config");
-        const config: { [key: string]: LLMConfig } = await response.json();
+        const response = await fetch('/api/config')
+        const config: { [key: string]: LLMConfig } = await response.json()
         setConfig((curConfig) => {
-          const res: { [key: string]: LLMConfig } = {};
+          const res: { [key: string]: LLMConfig } = {}
           for (const provider in DEFAULT_CONFIG) {
-            if (config[provider] && typeof config[provider] === "object") {
+            if (config[provider] && typeof config[provider] === 'object') {
               res[provider] = {
                 ...DEFAULT_CONFIG[provider],
                 ...config[provider],
-              };
+              }
             } else {
-              res[provider] = DEFAULT_CONFIG[provider];
+              res[provider] = DEFAULT_CONFIG[provider]
             }
           }
-          return res;
-        });
+          return res
+        })
       } catch (error) {
-        console.error("Error loading configuration:", error);
+        console.error('Error loading configuration:', error)
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
+    }
 
-    loadConfig();
-  }, []);
+    loadConfig()
+  }, [])
 
   const handleSave = async () => {
     try {
-      setErrorMessage("");
+      setErrorMessage('')
 
-      const response = await fetch("/api/config", {
-        method: "POST",
+      const response = await fetch('/api/config', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(config),
-      });
+      })
 
       if (!response.ok) {
-        throw new Error("Failed to save configuration");
+        throw new Error('Failed to save configuration')
       }
 
-      const result = await response.json();
-      if (result.status === "success") {
-        navigate("/");
+      const result = await response.json()
+      if (result.status === 'success') {
+        navigate({ to: '/' })
       } else {
-        throw new Error(result.message || "Failed to save configuration");
+        throw new Error(result.message || 'Failed to save configuration')
       }
     } catch (error) {
-      console.error("Error saving settings:", error);
-      setErrorMessage("Failed to save settings");
+      console.error('Error saving settings:', error)
+      setErrorMessage('Failed to save settings')
       // You might want to show an error message to the user here
     }
-  };
+  }
 
   return (
     <div className="flex flex-col items-center justify-center p-4">
       <Button
-        onClick={() => navigate("/")}
+        onClick={() => navigate({ to: '/' })}
         className="fixed top-4 left-4"
-        size={"icon"}
+        size={'icon'}
       >
         <ArrowLeftIcon />
       </Button>
@@ -200,11 +116,11 @@ export default function Settings() {
                   <p className="font-bold text-2xl w-fit">
                     {PROVIDER_NAME_MAPPING[key].name}
                   </p>
-                  {key === "replicate" && <span>🎨 Image Generation</span>}
+                  {key === 'replicate' && <span>🎨 Image Generation</span>}
                 </div>
                 <Input
                   placeholder="Enter your API URL"
-                  value={config[key]?.url ?? ""}
+                  value={config[key]?.url ?? ''}
                   onChange={(e) => {
                     setConfig({
                       ...config,
@@ -212,7 +128,7 @@ export default function Settings() {
                         ...config[key],
                         url: e.target.value,
                       },
-                    });
+                    })
                   }}
                   className="w-full"
                 />
@@ -223,13 +139,13 @@ export default function Settings() {
                   id={`${key}-apiKey`}
                   type="password"
                   placeholder="Enter your API key"
-                  value={config[key]?.api_key ?? ""}
+                  value={config[key]?.api_key ?? ''}
                   onChange={(e) => {
                     setConfig({
                       ...config,
                       [key]: { ...config[key], api_key: e.target.value },
-                    });
-                    setIsApiKeyDirty(true);
+                    })
+                    setIsApiKeyDirty(true)
                   }}
                   className="w-full"
                 />
@@ -237,7 +153,7 @@ export default function Settings() {
                   Your API key will be stored securely
                 </p>
               </div>
-              {key !== "replicate" && key !== "huggingface" && (
+              {key !== 'replicate' && key !== 'huggingface' && (
                 <div className="space-y-2">
                   <Label htmlFor={`${key}-maxTokens`}>Max Tokens</Label>
                   <Input
@@ -279,21 +195,21 @@ export default function Settings() {
                           const newConfig = {
                             ...prevConfig,
                             [key]: structuredClone(prevConfig[key]),
-                          };
+                          }
                           if (checked) {
                             newConfig[key].models[model] =
                               DEFAULT_CONFIG[key].models[model] ??
-                              newConfig[key].models[model];
+                              newConfig[key].models[model]
                           } else {
-                            delete newConfig[key]?.models[model];
+                            delete newConfig[key]?.models[model]
                           }
-                          return newConfig;
-                        });
+                          return newConfig
+                        })
                       }}
                     />
                     <Label htmlFor={model}>
                       {model}
-                      {config[key]?.models[model]?.type === "image" && (
+                      {config[key]?.models[model]?.type === 'image' && (
                         <span>🎨</span>
                       )}
                     </Label>
@@ -306,7 +222,7 @@ export default function Settings() {
             </>
           ))}
           <div className="flex justify-center fixed bottom-4 left-1/2 -translate-x-1/2">
-            <Button onClick={handleSave} className="w-[400px]" size={"lg"}>
+            <Button onClick={handleSave} className="w-[400px]" size={'lg'}>
               <Save className="mr-2 h-4 w-4" /> Save Settings
             </Button>
           </div>
@@ -322,5 +238,5 @@ export default function Settings() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
