@@ -325,17 +325,6 @@ async function downloadFile(url, filePath, onProgress) {
         // Store current request for cancellation
         currentDownloadRequest = req
 
-        // Handle redirects (301, 302, 303, 307, 308)
-        if (
-          response.statusCode >= 300 &&
-          response.statusCode < 400 &&
-          response.headers.location
-        ) {
-          console.log(`Redirecting to: ${response.headers.location}`)
-          downloadFromUrl(response.headers.location, maxRedirects - 1)
-          return
-        }
-
         if (response.statusCode !== 200) {
           reject(new Error(`Download failed: HTTP ${response.statusCode}`))
           return
@@ -831,6 +820,8 @@ if (isWorkerProcess) {
 module.exports = {
   installComfyUI,
   cancelInstallation,
+  resetCancellationState,
+  isInstallationCancelled,
   getLatestComfyUIRelease,
   downloadFile,
   findComfyUIMainDir,
