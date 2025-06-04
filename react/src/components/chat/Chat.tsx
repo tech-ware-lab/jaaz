@@ -27,7 +27,7 @@ import {
 import { nanoid } from "nanoid";
 import { toast } from "sonner";
 import { Markdown } from "./Markdown";
-import InstallComfyUIDialog from "./InstallComfyUIDialog";
+import InstallComfyUIDialog from "@/components/comfyui/InstallComfyUIDialog";
 import MultiChoicePrompt from "./MultiChoicePrompt";
 import SingleChoicePrompt from "./SingleChoicePrompt";
 
