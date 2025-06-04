@@ -107,113 +107,53 @@ async function getLatestComfyUIRelease() {
 }
 
 /**
- * Create installation progress window
- * @returns {BrowserWindow} - Progress window instance
+ * Send progress update to main window
+ * @param {number} percent - Progress percentage
+ * @param {string} status - Status message
  */
-function createProgressWindow() {
-  const progressWindow = new BrowserWindow({
-    width: 600,
-    height: 400,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-    title: 'Installing ComfyUI',
-    resizable: false,
-    minimizable: false,
-    maximizable: false,
-  })
+function sendProgress(percent, status) {
+  const mainWindow = BrowserWindow.getAllWindows()[0]
+  if (mainWindow) {
+    mainWindow.webContents.executeJavaScript(`
+      window.dispatchEvent(new CustomEvent('comfyui-install-progress', {
+        detail: { percent: ${percent}, status: "${status.replace(
+      /"/g,
+      '\\"'
+    )}" }
+      }));
+    `)
+  }
+}
 
-  // Create simple progress page
-  const progressHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Installing ComfyUI</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          padding: 20px;
-          background: #f5f5f5;
-        }
-        .container {
-          max-width: 500px;
-          margin: 0 auto;
-          background: white;
-          padding: 30px;
-          border-radius: 10px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .progress-bar {
-          width: 100%;
-          height: 20px;
-          background: #e0e0e0;
-          border-radius: 10px;
-          overflow: hidden;
-          margin: 20px 0;
-        }
-        .progress-fill {
-          height: 100%;
-          background: #4CAF50;
-          width: 0%;
-          transition: width 0.3s ease;
-        }
-        .log {
-          background: #f0f0f0;
-          padding: 10px;
-          border-radius: 5px;
-          height: 200px;
-          overflow-y: auto;
-          font-family: monospace;
-          font-size: 12px;
-        }
-        h2 { color: #333; text-align: center; }
-        .status { text-align: center; margin: 10px 0; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h2>🎨 Installing Flux Image Generation Model</h2>
-        <div class="status" id="status">Preparing to start download...</div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="progress"></div>
-        </div>
-        <div class="log" id="log">Waiting to start...\\n</div>
-      </div>
-      <script>
-        function updateProgress(percent) {
-          document.getElementById('progress').style.width = percent + '%';
-        }
-        function updateStatus(text) {
-          document.getElementById('status').textContent = text;
-        }
-        function addLog(text) {
-          const log = document.getElementById('log');
-          log.textContent += text + '\\n';
-          log.scrollTop = log.scrollHeight;
-        }
+/**
+ * Send log message to main window
+ * @param {string} message - Log message
+ */
+function sendLog(message) {
+  const mainWindow = BrowserWindow.getAllWindows()[0]
+  if (mainWindow) {
+    mainWindow.webContents.executeJavaScript(`
+      window.dispatchEvent(new CustomEvent('comfyui-install-log', {
+        detail: { message: "${message.replace(/"/g, '\\"')}" }
+      }));
+    `)
+  }
+  console.log(`[ComfyUI Install] ${message}`)
+}
 
-        // Listen for messages from main process
-        window.addEventListener('message', (event) => {
-          const { type, data } = event.data;
-          if (type === 'progress') {
-            updateProgress(data.percent);
-            updateStatus(data.status);
-          } else if (type === 'log') {
-            addLog(data.message);
-          }
-        });
-      </script>
-    </body>
-    </html>
-  `
-
-  // Load progress page
-  progressWindow.loadURL(
-    `data:text/html;charset=utf-8,${encodeURIComponent(progressHtml)}`
-  )
-
-  return progressWindow
+/**
+ * Send error message to main window
+ * @param {string} error - Error message
+ */
+function sendError(error) {
+  const mainWindow = BrowserWindow.getAllWindows()[0]
+  if (mainWindow) {
+    mainWindow.webContents.executeJavaScript(`
+      window.dispatchEvent(new CustomEvent('comfyui-install-error', {
+        detail: { error: "${error.replace(/"/g, '\\"')}" }
+      }));
+    `)
+  }
 }
 
 /**
@@ -479,9 +419,6 @@ async function updateConfigWithComfyUI() {
 async function installComfyUI() {
   console.log('🦄 Starting ComfyUI installation...')
 
-  // Create installation progress window
-  const progressWindow = createProgressWindow()
-
   try {
     // Get user data directory and temp directory
     const userDataDir = app.getPath('userData')
@@ -491,21 +428,6 @@ async function installComfyUI() {
     // Ensure directory exists
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true })
-    }
-
-    // Send log messages to progress window
-    const sendProgress = (percent, status) => {
-      progressWindow.webContents.executeJavaScript(`
-        updateProgress(${percent});
-        updateStatus("${status}");
-      `)
-    }
-
-    const sendLog = (message) => {
-      progressWindow.webContents.executeJavaScript(`
-        addLog("${message.replace(/"/g, '\\"')}");
-      `)
-      console.log(`[ComfyUI Install] ${message}`)
     }
 
     sendLog('Starting ComfyUI installation...')
@@ -612,26 +534,10 @@ async function installComfyUI() {
     sendLog('ComfyUI installation successful!')
     sendLog('You can now use local ComfyUI for image generation.')
 
-    // Close progress window after 3 seconds
-    setTimeout(() => {
-      progressWindow.close()
-    }, 3000)
-
     return { success: true }
   } catch (error) {
     console.error('ComfyUI installation failed:', error)
-
-    // Show error message
-    progressWindow.webContents.executeJavaScript(`
-      updateStatus("Installation failed: ${error.message}");
-      addLog("Error: ${error.message}");
-    `)
-
-    // Close window after 5 seconds
-    setTimeout(() => {
-      progressWindow.close()
-    }, 5000)
-
+    sendError(error.message)
     throw error
   }
 }
@@ -639,7 +545,6 @@ async function installComfyUI() {
 module.exports = {
   installComfyUI,
   getLatestComfyUIRelease,
-  createProgressWindow,
   downloadFile,
   findComfyUIMainDir,
   findRunScript,
