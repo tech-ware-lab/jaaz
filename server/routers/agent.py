@@ -311,6 +311,7 @@ async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session
             ctx = {
                 'session_id': session_id,
                 'model_info': model_info,
+                'tool_call_id': tool_call_id,
             }
             res = await SYSTEM_TOOLS_MAPPING[tool_name](args_json, ctx)
             for r in res:

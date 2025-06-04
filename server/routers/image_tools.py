@@ -1,4 +1,5 @@
 import base64
+import json
 import sys
 from fastapi.responses import FileResponse
 import requests
@@ -133,7 +134,7 @@ async def generate_image(args_json: dict, ctx: dict):
                 if not mime_type:
                     mime_type = "image/png"  # default fallback
                 input_image = f"data:{mime_type};base64,{b64}"
-            
+            # mime_type, width, height, filename = await generate_image_comfyui(args_json, ctx)
             mime_type, width, height, filename = await generate_image_replicate(prompt, model, aspect_ratio, input_image)
             await send_to_websocket(session_id, {
                 'type': 'image_generated',
@@ -194,26 +195,32 @@ async def generate_image_replicate(prompt, model, aspect_ratio, input_image):
     filename = f'{image_id}.{extension}'
     return mime_type, width, height, filename
 
-async def generate_image_huggingface(prompt, model, aspect_ratio, input_image):
-    from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion import StableDiffusionPipeline
+def get_asset_path(filename):
+    # To get the correct path for pyinstaller bundled application
+    if getattr(sys, 'frozen', False):
+        # If the application is run as a bundle, the path is relative to the executable
+        base_path = sys._MEIPASS
+    else:
+        # If the application is run in a normal Python environment
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    pipe = StableDiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4")
-    pipe = pipe.to("mps")
+    return os.path.join(base_path, 'asset', filename)
 
-    prompt = "a photo of an astronaut riding a horse on mars"
-
-    # First-time "warmup" pass (see explanation above)
-    _ = pipe(prompt, num_inference_steps=1)
-
-    # Results match those from the CPU device after the warmup pass.
-    image = pipe(prompt).images[0]
-    # image = pipe(prompt, generator=generator).images[0]
-    image_id = 'im_' + generate(size=8) + '.png'
-    image_path = os.path.join(FILES_DIR, f'{image_id}')
-    image.save(image_path)
-    mime_type = 'image/png'
-    width, height = image.size
-    return mime_type, width, height, image_id
+asset_dir = get_asset_path('flux_comfy_workflow.json')
+flux_comfy_workflow = json.load(open(asset_dir, 'r'))
+from routers.comfyui_execution import execute
+async def generate_image_comfyui(args_json: dict, ctx: dict):
+    api_url = app_config.get('comfyui', {}).get('url', '')
+    api_url = 'http://127.0.0.1:8188'
+    prompt = args_json.get('prompt', '')
+    flux_comfy_workflow['6']['inputs']['text'] = prompt
+    execution = await execute(flux_comfy_workflow, '127.0.0.1', 8188, ctx=ctx)
+    url = execution.outputs[0]
+    # get image dimensions
+    image_id = 'im_' + generate(size=8)
+    mime_type, width, height, extension = await get_image_info_and_save(url, os.path.join(FILES_DIR, f'{image_id}'))
+    filename = f'{image_id}.{extension}'
+    return mime_type, width, height, filename
 
 async def generate_wavespeed_image(prompt: str, model: str, api_key: str, url: str, input_image: Optional[str] = None, **kwargs):
     async with aiohttp.ClientSession() as session:
