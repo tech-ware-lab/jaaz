@@ -14,7 +14,7 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from routers import config, agent, workspace, image_tools
+from routers import config, agent, workspace, image_tools, canvas
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,6 +29,7 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(config.router)
 app.include_router(agent.router)
 app.include_router(agent.wsrouter)
+app.include_router(canvas.router)
 app.include_router(workspace.router)
 app.include_router(image_tools.router)
 # Mount the React build directory

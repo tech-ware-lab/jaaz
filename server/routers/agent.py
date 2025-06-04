@@ -372,6 +372,7 @@ async def chat(request: Request):
     data = await request.json()
     messages = data.get('messages')
     session_id = data.get('session_id')
+    canvas_id = data.get('canvas_id')
     text_model = data.get('text_model')
     image_model = data.get('image_model')
     print('👇app_config.get("system_prompt", "")', app_config.get('system_prompt', ''))
@@ -384,7 +385,7 @@ async def chat(request: Request):
     if len(messages) == 1:
         # create new session
         prompt = messages[0].get('content', '')
-        await db_service.create_chat_session(session_id, text_model.get('model'), text_model.get('provider'), (prompt[:200] if isinstance(prompt, str) else ''))
+        await db_service.create_chat_session(session_id, text_model.get('model'), text_model.get('provider'), canvas_id, (prompt[:200] if isinstance(prompt, str) else ''))
     
     await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1])) if len(messages) > 0 else None
     # Create and store the chat task

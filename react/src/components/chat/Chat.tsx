@@ -33,16 +33,14 @@ import SingleChoicePrompt from './SingleChoicePrompt'
 const FOOTER_HEIGHT = 100 // Keep this as minimum height
 const MAX_INPUT_HEIGHT = 300 // Add this for maximum input height
 
-const ChatInterface = ({
+type ChatInterfaceProps = {
+  sessionId: string
+  onClickNewChat: () => void
+}
+
+const ChatInterface: React.FC<ChatInterfaceProps> = ({
   sessionId,
   onClickNewChat,
-  editorContent,
-  editorTitle,
-}: {
-  sessionId: string
-  editorTitle: string
-  editorContent: string
-  onClickNewChat: () => void
 }) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [prompt, setPrompt] = useState('')

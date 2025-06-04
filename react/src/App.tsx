@@ -1,5 +1,6 @@
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { useTheme } from '@/hooks/use-theme'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { Toaster } from 'sonner'
 
@@ -15,13 +16,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+const queryClient = new QueryClient()
+
 function App() {
   const { theme } = useTheme()
   return (
     <ThemeProvider defaultTheme={theme} storageKey="vite-ui-theme">
-      <div className="app-container">
-        <RouterProvider router={router} />
-      </div>
+      <QueryClientProvider client={queryClient}>
+        <div className="app-container">
+          <RouterProvider router={router} />
+        </div>
+      </QueryClientProvider>
       <Toaster />
     </ThemeProvider>
   )

@@ -1,104 +1,81 @@
-import CanvasExcali from '@/components/canvas/CanvasExcali'
-import ChatInterface from '@/components/chat/Chat'
-import LeftSidebar from '@/components/sidebar/LeftSidebar'
-import { Button } from '@/components/ui/button'
-import { useTheme } from '@/hooks/use-theme'
-import { EAgentState, Message } from '@/types/types'
+import { createCanvas } from '@/api/canvas'
+import ChatTextarea from '@/components/chat/ChatTextarea'
+import CanvasList from '@/components/home/CanvasList'
+import HomeHeader from '@/components/home/HomeHeader'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { MessageCircleIcon } from 'lucide-react'
-import { nanoid } from 'nanoid'
-import { useEffect, useState } from 'react'
+import { motion } from 'motion/react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { v4 as uuidv4 } from 'uuid'
 
 export const Route = createFileRoute('/')({
   component: Home,
 })
 
 function Home() {
-  const [agentState, setAgentState] = useState(EAgentState.IDLE)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [currentStep, setCurrentStep] = useState(0)
-  const [maxSteps, setMaxSteps] = useState(0)
-  const [totalTokens, setTotalTokens] = useState(0)
-  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(false)
-  const [sessionId, setSessionId] = useState<string>(nanoid())
-  const [editorTitle, setEditorTitle] = useState('')
-  const [editorContent, setEditorContent] = useState('')
-  const { setTheme, theme } = useTheme()
-  const [curFile, setCurFile] = useState('')
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false)
+  const [prompt, setPrompt] = useState('')
   const navigate = useNavigate()
 
-  useEffect(() => {
-    fetch('/api/config/exists')
-      .then((res) => res.json())
-      .then((data) => {
-        if (!data.exists) {
-          navigate({ to: '/settings' })
-        }
+  const { mutate: createCanvasMutation, isPending } = useMutation({
+    mutationFn: createCanvas,
+    onSuccess: (data) => {
+      navigate({ to: '/canvas/$id', params: { id: data.id } })
+    },
+    onError: (error) => {
+      toast.error('Failed to create canvas', {
+        description: error.message,
       })
-  }, [navigate])
+    },
+  })
 
   return (
-    <div className="flex">
-      <div
-        style={{
-          position: 'fixed',
-          right: '24%',
-          top: 0,
-          bottom: 0,
-          left: 0,
-        }}
-      >
-        <CanvasExcali />
-      </div>
+    <div className="flex flex-col h-screen">
+      <ScrollArea className="h-full">
+        <HomeHeader />
 
-      <div className="flex-1 flex-grow px-4 bg-accent w-[24%] absolute right-0">
-        <ChatInterface
-          sessionId={sessionId}
-          editorTitle={editorTitle}
-          editorContent={editorContent}
-          onClickNewChat={() => {
-            setSessionId(nanoid())
-          }}
-        />
-
-        {/* <div className="absolute top-5 right-8 flex gap-1">
-          <Button
-            size={"sm"}
-            onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-300px)] select-none">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
           >
-            {isRightSidebarOpen ? (
-              <SidebarOpenIcon />
-            ) : (
-              <div className="flex">
-                <ChevronLeftIcon />
-                <ComputerIcon />
-              </div>
-            )}
-          </Button>
-        </div> */}
-      </div>
-      {isLeftSidebarOpen && (
-        <div className="fixed left-0 top-0 w-[20%] bg-sidebar h-screen">
-          <LeftSidebar
-            sessionId={sessionId}
-            setSessionId={setSessionId}
-            curFile={curFile}
-            setCurFile={setCurFile}
-            onClose={() => setIsLeftSidebarOpen(false)}
+            <h1 className="text-5xl font-bold mb-2 mt-8 text-center">
+              Hello, Jaaz!
+            </h1>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <p className="text-xl text-gray-500 mb-8 text-center">
+              Ready to turn your ideas into art?
+            </p>
+          </motion.div>
+
+          <ChatTextarea
+            className="w-full max-w-xl"
+            value={prompt}
+            onChange={setPrompt}
+            messages={[]}
+            onSendMessages={(messages, configs) => {
+              createCanvasMutation({
+                name: 'New Canvas',
+                canvas_id: uuidv4(),
+                messages: messages,
+                session_id: uuidv4(),
+                text_model: configs.textModel,
+                image_model: configs.imageModel,
+              })
+            }}
+            pending={isPending}
           />
         </div>
-      )}
-      {!isLeftSidebarOpen && (
-        <div className="fixed left-[60px] top-[16px]">
-          <Button
-            onClick={() => setIsLeftSidebarOpen(true)}
-            variant={'secondary'}
-          >
-            <MessageCircleIcon />
-          </Button>
-        </div>
-      )}
+
+        <CanvasList />
+      </ScrollArea>
     </div>
   )
 }
