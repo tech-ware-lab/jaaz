@@ -329,6 +329,30 @@ async function downloadFile(url, filePath, onProgress) {
         // Store current request for cancellation
         currentDownloadRequest = req
 
+        // Handle redirects (301, 302, 303, 307, 308)
+        if (
+          response.statusCode >= 300 &&
+          response.statusCode < 400 &&
+          response.headers.location
+        ) {
+          console.log(`Redirecting to: ${response.headers.location}`)
+
+          // Handle relative URLs
+          let redirectUrl = response.headers.location
+          if (redirectUrl.startsWith('/')) {
+            // Relative URL - construct full URL
+            const url = new URL(downloadUrl)
+            redirectUrl = `${url.protocol}//${url.host}${redirectUrl}`
+          } else if (!redirectUrl.startsWith('http')) {
+            // Relative path - construct full URL
+            const url = new URL(downloadUrl)
+            redirectUrl = new URL(redirectUrl, url).href
+          }
+
+          downloadFromUrl(redirectUrl, maxRedirects - 1)
+          return
+        }
+
         if (response.statusCode !== 200) {
           reject(new Error(`Download failed: HTTP ${response.statusCode}`))
           return
@@ -336,16 +360,36 @@ async function downloadFile(url, filePath, onProgress) {
 
         const totalSize = parseInt(response.headers['content-length'] || '0')
         let downloadedSize = 0
+        let lastDataTime = Date.now()
+
+        // Set up idle timeout to detect stalled downloads
+        const idleTimeout = setInterval(() => {
+          const now = Date.now()
+          // If no data received for 60 seconds, consider it stalled
+          if (now - lastDataTime > 60000) {
+            clearInterval(idleTimeout)
+            response.destroy()
+            file.close()
+            fs.unlink(filePath, () => {}) // Delete incomplete file
+            reject(
+              new Error('Download stalled - no data received for 60 seconds')
+            )
+          }
+        }, 5000) // Check every 5 seconds
 
         response.on('data', (chunk) => {
           // Check cancellation during download
           if (isInstallationCancelled()) {
+            clearInterval(idleTimeout)
             response.destroy()
             file.close()
             fs.unlink(filePath, () => {}) // Delete incomplete file
             reject(new Error('Installation cancelled'))
             return
           }
+
+          // Update last data received time
+          lastDataTime = Date.now()
 
           downloadedSize += chunk.length
           if (totalSize > 0) {
@@ -357,12 +401,22 @@ async function downloadFile(url, filePath, onProgress) {
         response.pipe(file)
 
         file.on('finish', () => {
+          clearInterval(idleTimeout)
           file.close()
           currentDownloadRequest = null
           resolve()
         })
 
         file.on('error', (error) => {
+          clearInterval(idleTimeout)
+          fs.unlink(filePath, () => {}) // Delete incomplete file
+          reject(error)
+        })
+
+        // Handle response errors
+        response.on('error', (error) => {
+          clearInterval(idleTimeout)
+          file.close()
           fs.unlink(filePath, () => {}) // Delete incomplete file
           reject(error)
         })
@@ -372,9 +426,14 @@ async function downloadFile(url, filePath, onProgress) {
         reject(error)
       })
 
+      // Set connection timeout (30 seconds to establish connection)
       req.setTimeout(30000, () => {
         req.destroy()
-        reject(new Error('Download timeout'))
+        reject(
+          new Error(
+            'Connection timeout - failed to establish connection within 30 seconds'
+          )
+        )
       })
     }
 
