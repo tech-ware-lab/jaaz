@@ -1,11 +1,80 @@
 // comfyUIInstaller.js
 const path = require('path')
-const { app, BrowserWindow } = require('electron')
 const fs = require('fs')
 const https = require('https')
 const { spawn } = require('child_process')
 const { createWriteStream } = require('fs')
 const _7z = require('7zip-min')
+
+// Check if running in worker process
+const isWorkerProcess =
+  process.send !== undefined || process.env.IS_WORKER_PROCESS === 'true'
+
+// Import electron modules only if not in worker process
+let app, BrowserWindow
+if (!isWorkerProcess) {
+  const electron = require('electron')
+  app = electron.app
+  BrowserWindow = electron.BrowserWindow
+}
+
+// Global cancellation flag
+let installationCancelled = false
+let currentDownloadRequest = null
+let currentChildProcess = null
+
+/**
+ * Get user data directory
+ * @returns {string} - User data directory path
+ */
+function getUserDataDir() {
+  if (isWorkerProcess) {
+    // In worker process, use environment variable
+    return process.env.USER_DATA_DIR
+  } else {
+    // In main process, use app.getPath
+    return app.getPath('userData')
+  }
+}
+
+/**
+ * Cancel the current ComfyUI installation
+ */
+function cancelInstallation() {
+  console.log('🦄 Cancelling ComfyUI installation...')
+  installationCancelled = true
+
+  // Cancel ongoing download
+  if (currentDownloadRequest) {
+    currentDownloadRequest.destroy()
+    currentDownloadRequest = null
+  }
+
+  // Kill child processes
+  if (currentChildProcess) {
+    currentChildProcess.kill('SIGTERM')
+    currentChildProcess = null
+  }
+
+  sendCancelled('Installation cancelled by user')
+}
+
+/**
+ * Reset cancellation state
+ */
+function resetCancellationState() {
+  installationCancelled = false
+  currentDownloadRequest = null
+  currentChildProcess = null
+}
+
+/**
+ * Check if installation is cancelled
+ * @returns {boolean} - True if cancelled
+ */
+function isInstallationCancelled() {
+  return installationCancelled
+}
 
 /**
  * Get the latest ComfyUI release information from GitHub
@@ -107,53 +176,118 @@ async function getLatestComfyUIRelease() {
 }
 
 /**
- * Send progress update to main window
+ * Send progress update to main window or parent process
  * @param {number} percent - Progress percentage
  * @param {string} status - Status message
  */
 function sendProgress(percent, status) {
-  const mainWindow = BrowserWindow.getAllWindows()[0]
-  if (mainWindow) {
-    mainWindow.webContents.executeJavaScript(`
-      window.dispatchEvent(new CustomEvent('comfyui-install-progress', {
-        detail: { percent: ${percent}, status: "${status.replace(
-      /"/g,
-      '\\"'
-    )}" }
-      }));
-    `)
+  if (isWorkerProcess) {
+    // In worker process, send to parent process
+    if (process.send) {
+      process.send({
+        type: 'progress',
+        percent: percent,
+        status: status,
+      })
+    }
+  } else {
+    // In main process, send to renderer
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.webContents.executeJavaScript(`
+        window.dispatchEvent(new CustomEvent('comfyui-install-progress', {
+          detail: { percent: ${percent}, status: "${status.replace(
+        /"/g,
+        '\\"'
+      )}" }
+        }));
+      `)
+    }
   }
 }
 
 /**
- * Send log message to main window
+ * Send log message to main window or parent process
  * @param {string} message - Log message
  */
 function sendLog(message) {
-  const mainWindow = BrowserWindow.getAllWindows()[0]
-  if (mainWindow) {
-    mainWindow.webContents.executeJavaScript(`
-      window.dispatchEvent(new CustomEvent('comfyui-install-log', {
-        detail: { message: "${message.replace(/"/g, '\\"')}" }
-      }));
-    `)
+  if (isWorkerProcess) {
+    // In worker process, send to parent process
+    if (process.send) {
+      process.send({
+        type: 'log',
+        message: message,
+      })
+    }
+  } else {
+    // In main process, send to renderer
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.webContents.executeJavaScript(`
+        window.dispatchEvent(new CustomEvent('comfyui-install-log', {
+          detail: { message: "${message.replace(/"/g, '\\"')}" }
+        }));
+      `)
+    }
   }
   console.log(`[ComfyUI Install] ${message}`)
 }
 
 /**
- * Send error message to main window
+ * Send error message to main window or parent process
  * @param {string} error - Error message
  */
 function sendError(error) {
-  const mainWindow = BrowserWindow.getAllWindows()[0]
-  if (mainWindow) {
-    mainWindow.webContents.executeJavaScript(`
-      window.dispatchEvent(new CustomEvent('comfyui-install-error', {
-        detail: { error: "${error.replace(/"/g, '\\"')}" }
-      }));
-    `)
+  const errorMessage = error || 'Unknown error occurred'
+
+  if (isWorkerProcess) {
+    // In worker process, send to parent process
+    if (process.send) {
+      process.send({
+        type: 'error',
+        error: errorMessage,
+      })
+    }
+  } else {
+    // In main process, send to renderer
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.webContents.executeJavaScript(`
+        window.dispatchEvent(new CustomEvent('comfyui-install-error', {
+          detail: { error: "${errorMessage.replace(/"/g, '\\"')}" }
+        }));
+      `)
+    }
   }
+}
+
+/**
+ * Send cancellation message to main window or parent process
+ * @param {string} message - Cancellation message
+ */
+function sendCancelled(message) {
+  const cancelMessage = message || 'Installation cancelled'
+
+  if (isWorkerProcess) {
+    // In worker process, send to parent process
+    if (process.send) {
+      process.send({
+        type: 'cancelled',
+        message: cancelMessage,
+      })
+    }
+  } else {
+    // In main process, send to renderer
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.webContents.executeJavaScript(`
+        window.dispatchEvent(new CustomEvent('comfyui-install-cancelled', {
+          detail: { message: "${cancelMessage.replace(/"/g, '\\"')}" }
+        }));
+      `)
+    }
+  }
+  console.log(`[ComfyUI Install Cancelled] ${cancelMessage}`)
 }
 
 /**
@@ -165,6 +299,12 @@ function sendError(error) {
  */
 async function downloadFile(url, filePath, onProgress) {
   return new Promise((resolve, reject) => {
+    // Check cancellation before starting
+    if (isInstallationCancelled()) {
+      reject(new Error('Installation cancelled'))
+      return
+    }
+
     const file = createWriteStream(filePath)
 
     const downloadFromUrl = (downloadUrl, maxRedirects = 5) => {
@@ -173,50 +313,76 @@ async function downloadFile(url, filePath, onProgress) {
         return
       }
 
-      https
-        .get(downloadUrl, (response) => {
-          // Handle redirects (301, 302, 303, 307, 308)
-          if (
-            response.statusCode >= 300 &&
-            response.statusCode < 400 &&
-            response.headers.location
-          ) {
-            console.log(`Redirecting to: ${response.headers.location}`)
-            downloadFromUrl(response.headers.location, maxRedirects - 1)
-            return
-          }
+      // Check cancellation before each request
+      if (isInstallationCancelled()) {
+        file.close()
+        fs.unlink(filePath, () => {}) // Delete incomplete file
+        reject(new Error('Installation cancelled'))
+        return
+      }
 
-          if (response.statusCode !== 200) {
-            reject(new Error(`Download failed: HTTP ${response.statusCode}`))
-            return
-          }
+      const req = https.get(downloadUrl, (response) => {
+        // Store current request for cancellation
+        currentDownloadRequest = req
 
-          const totalSize = parseInt(response.headers['content-length'] || '0')
-          let downloadedSize = 0
+        // Handle redirects (301, 302, 303, 307, 308)
+        if (
+          response.statusCode >= 300 &&
+          response.statusCode < 400 &&
+          response.headers.location
+        ) {
+          console.log(`Redirecting to: ${response.headers.location}`)
+          downloadFromUrl(response.headers.location, maxRedirects - 1)
+          return
+        }
 
-          response.on('data', (chunk) => {
-            downloadedSize += chunk.length
-            if (totalSize > 0) {
-              const progress = downloadedSize / totalSize
-              onProgress(progress)
-            }
-          })
+        if (response.statusCode !== 200) {
+          reject(new Error(`Download failed: HTTP ${response.statusCode}`))
+          return
+        }
 
-          response.pipe(file)
+        const totalSize = parseInt(response.headers['content-length'] || '0')
+        let downloadedSize = 0
 
-          file.on('finish', () => {
+        response.on('data', (chunk) => {
+          // Check cancellation during download
+          if (isInstallationCancelled()) {
+            response.destroy()
             file.close()
-            resolve()
-          })
-
-          file.on('error', (error) => {
             fs.unlink(filePath, () => {}) // Delete incomplete file
-            reject(error)
-          })
+            reject(new Error('Installation cancelled'))
+            return
+          }
+
+          downloadedSize += chunk.length
+          if (totalSize > 0) {
+            const progress = downloadedSize / totalSize
+            onProgress(progress)
+          }
         })
-        .on('error', (error) => {
+
+        response.pipe(file)
+
+        file.on('finish', () => {
+          file.close()
+          currentDownloadRequest = null
+          resolve()
+        })
+
+        file.on('error', (error) => {
+          fs.unlink(filePath, () => {}) // Delete incomplete file
           reject(error)
         })
+      })
+
+      req.on('error', (error) => {
+        reject(error)
+      })
+
+      req.setTimeout(30000, () => {
+        req.destroy()
+        reject(new Error('Download timeout'))
+      })
     }
 
     downloadFromUrl(url)
@@ -420,8 +586,15 @@ async function installComfyUI() {
   console.log('🦄 Starting ComfyUI installation...')
 
   try {
+    // Reset cancellation state at start
+    resetCancellationState()
+
     // Get user data directory and temp directory
-    const userDataDir = app.getPath('userData')
+    const userDataDir = getUserDataDir()
+    if (!userDataDir) {
+      throw new Error('Unable to get user data directory')
+    }
+
     const tempDir = path.join(userDataDir, 'temp')
     const comfyUIDir = path.join(userDataDir, 'comfyui')
 
@@ -432,6 +605,11 @@ async function installComfyUI() {
 
     sendLog('Starting ComfyUI installation...')
     sendProgress(5, 'Fetching latest ComfyUI version...')
+
+    // Check cancellation
+    if (isInstallationCancelled()) {
+      throw new Error('Installation cancelled')
+    }
 
     // Get latest ComfyUI release information
     let releaseInfo
@@ -454,6 +632,11 @@ async function installComfyUI() {
           'https://github.com/comfyanonymous/ComfyUI/releases/download/v0.3.39/ComfyUI_windows_portable_nvidia.7z',
         fileName: 'ComfyUI_windows_portable_nvidia.7z',
       }
+    }
+
+    // Check cancellation
+    if (isInstallationCancelled()) {
+      throw new Error('Installation cancelled')
     }
 
     sendProgress(10, 'Checking existing files...')
@@ -480,6 +663,11 @@ async function installComfyUI() {
       }
     }
 
+    // Check cancellation
+    if (isInstallationCancelled()) {
+      throw new Error('Installation cancelled')
+    }
+
     if (shouldDownload) {
       sendProgress(15, 'Starting ComfyUI download...')
       sendLog(
@@ -494,6 +682,11 @@ async function installComfyUI() {
       sendLog('Download completed')
     }
 
+    // Check cancellation
+    if (isInstallationCancelled()) {
+      throw new Error('Installation cancelled')
+    }
+
     sendProgress(75, 'Extracting installation package...')
     sendLog('Starting ComfyUI extraction...')
 
@@ -501,6 +694,11 @@ async function installComfyUI() {
     if (fs.existsSync(comfyUIDir)) {
       sendLog('Removing old ComfyUI directory...')
       fs.rmSync(comfyUIDir, { recursive: true, force: true })
+    }
+
+    // Check cancellation
+    if (isInstallationCancelled()) {
+      throw new Error('Installation cancelled')
     }
 
     try {
@@ -511,6 +709,11 @@ async function installComfyUI() {
     } catch (error) {
       sendLog(`Extraction failed: ${error.message}`)
       throw error
+    }
+
+    // Check cancellation
+    if (isInstallationCancelled()) {
+      throw new Error('Installation cancelled')
     }
 
     sendProgress(90, 'Configuring ComfyUI...')
@@ -524,11 +727,21 @@ async function installComfyUI() {
 
     sendLog(`Found ComfyUI main directory: ${comfyUIMainDir}`)
 
+    // Check cancellation
+    if (isInstallationCancelled()) {
+      throw new Error('Installation cancelled')
+    }
+
     sendProgress(95, 'Updating configuration...')
     sendLog('Updating application configuration...')
 
     // Update configuration, add ComfyUI as image model
     await updateConfigWithComfyUI()
+
+    // Check cancellation
+    if (isInstallationCancelled()) {
+      throw new Error('Installation cancelled')
+    }
 
     sendProgress(100, 'Installation completed!')
     sendLog('ComfyUI installation successful!')
@@ -537,13 +750,87 @@ async function installComfyUI() {
     return { success: true }
   } catch (error) {
     console.error('ComfyUI installation failed:', error)
-    sendError(error.message)
-    throw error
+
+    if (error.message === 'Installation cancelled') {
+      sendCancelled('Installation was cancelled by user')
+      return { cancelled: true }
+    } else {
+      sendError(error.message)
+      throw error
+    }
   }
+}
+
+// Worker process logic
+if (isWorkerProcess) {
+  console.log('🦄 ComfyUI install worker process started and ready')
+
+  // Handle process messages
+  process.on('message', async (message) => {
+    if (message.type === 'start-install') {
+      try {
+        console.log('🦄 Starting ComfyUI installation in worker process...')
+        const result = await installComfyUI()
+
+        // Check if installation was cancelled
+        if (result.cancelled) {
+          process.send({
+            type: 'install-cancelled',
+            success: true,
+            message: result.message || 'Installation cancelled',
+          })
+        } else {
+          // Send success result back to main process
+          process.send({
+            type: 'install-complete',
+            success: true,
+            result: result,
+          })
+        }
+      } catch (error) {
+        console.error(
+          '🦄 ComfyUI installation failed in worker process:',
+          error
+        )
+
+        // Send error result back to main process
+        process.send({
+          type: 'install-error',
+          success: false,
+          error: error.message || 'Unknown error occurred',
+        })
+      }
+    } else if (message.type === 'cancel-install') {
+      console.log('🦄 Received cancellation request in worker process')
+      cancelInstallation()
+
+      process.send({
+        type: 'install-cancelled',
+        success: true,
+        message: 'Installation cancelled',
+      })
+    }
+  })
+
+  // Handle process exit
+  process.on('exit', (code) => {
+    console.log(`🦄 ComfyUI install worker process exiting with code ${code}`)
+  })
+
+  process.on('SIGTERM', () => {
+    console.log('🦄 ComfyUI install worker process received SIGTERM')
+    process.exit(0)
+  })
+
+  process.on('SIGINT', () => {
+    console.log('🦄 ComfyUI install worker process received SIGINT')
+    process.exit(0)
+  })
 }
 
 module.exports = {
   installComfyUI,
+  cancelInstallation,
   getLatestComfyUIRelease,
   downloadFile,
   findComfyUIMainDir,
