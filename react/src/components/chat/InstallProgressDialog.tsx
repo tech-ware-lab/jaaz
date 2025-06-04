@@ -32,6 +32,8 @@ const InstallProgressDialog = ({ open, onOpenChange, onInstallComplete }: Instal
   const [logs, setLogs] = useState<string[]>(["Waiting to start..."]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isCancelled, setIsCancelled] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -41,6 +43,8 @@ const InstallProgressDialog = ({ open, onOpenChange, onInstallComplete }: Instal
       setLogs(["Waiting to start..."]);
       setIsCompleted(false);
       setHasError(false);
+      setIsCancelling(false);
+      setIsCancelled(false);
       return;
     }
 
@@ -76,26 +80,59 @@ const InstallProgressDialog = ({ open, onOpenChange, onInstallComplete }: Instal
       setLogs(prev => [...prev, `Error: ${error}`]);
     };
 
+    const handleCancelled = (event: CustomEvent<{ message: string }>) => {
+      const { message } = event.detail;
+      setIsCancelled(true);
+      setIsCancelling(false);
+      setStatus('Installation cancelled');
+      setLogs(prev => [...prev, `Cancelled: ${message}`]);
+    };
+
     // Add event listeners
     window.addEventListener('comfyui-install-progress', handleProgress as EventListener);
     window.addEventListener('comfyui-install-log', handleLog as EventListener);
     window.addEventListener('comfyui-install-error', handleError as EventListener);
+    window.addEventListener('comfyui-install-cancelled', handleCancelled as EventListener);
 
     return () => {
       // Remove event listeners
       window.removeEventListener('comfyui-install-progress', handleProgress as EventListener);
       window.removeEventListener('comfyui-install-log', handleLog as EventListener);
       window.removeEventListener('comfyui-install-error', handleError as EventListener);
+      window.removeEventListener('comfyui-install-cancelled', handleCancelled as EventListener);
     };
   }, [open, onInstallComplete, onOpenChange]);
 
   const handleClose = () => {
-    if (!isCompleted && !hasError) {
-      // Don't allow closing during installation unless there's an error
+    if (!isCompleted && !hasError && !isCancelled) {
+      // Don't allow closing during installation unless there's an error or it's cancelled
       return;
     }
     onOpenChange(false);
   };
+
+  const handleCancel = async () => {
+    if (isCompleted || hasError || isCancelling || isCancelled) {
+      return;
+    }
+
+    setIsCancelling(true);
+    setStatus('Cancelling installation...');
+    setLogs(prev => [...prev, 'User requested cancellation...']);
+
+    try {
+      // Call electron API to cancel installation
+      if (window.electronAPI?.cancelComfyUIInstall) {
+        await window.electronAPI.cancelComfyUIInstall();
+      }
+    } catch (error) {
+      console.error('Failed to cancel installation:', error);
+      setLogs(prev => [...prev, `Failed to cancel: ${error}`]);
+    }
+  };
+
+  const canCancel = !isCompleted && !hasError && !isCancelling && !isCancelled;
+  const canClose = isCompleted || hasError || isCancelled;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -128,7 +165,9 @@ const InstallProgressDialog = ({ open, onOpenChange, onInstallComplete }: Instal
                       ? 'text-red-600 dark:text-red-400'
                       : log.toLowerCase().includes('success') || log.toLowerCase().includes('completed')
                         ? 'text-green-600 dark:text-green-400'
-                        : 'text-foreground'
+                        : log.toLowerCase().includes('cancel')
+                          ? 'text-yellow-600 dark:text-yellow-400'
+                          : 'text-foreground'
                       }`}
                   >
                     {log}
@@ -139,17 +178,31 @@ const InstallProgressDialog = ({ open, onOpenChange, onInstallComplete }: Instal
           </div>
         </div>
 
-        <DialogFooter>
-          {(isCompleted || hasError) && (
-            <Button onClick={handleClose}>
-              {isCompleted ? "Close" : "Close"}
-            </Button>
-          )}
-          {!isCompleted && !hasError && (
-            <div className="text-sm text-muted-foreground">
-              Installation in progress... Please wait.
-            </div>
-          )}
+        <DialogFooter className="flex justify-between">
+          <div className="flex gap-2">
+            {canCancel && (
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isCancelling}
+              >
+                {isCancelling ? "Cancelling..." : "Cancel Installation"}
+              </Button>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            {canClose && (
+              <Button onClick={handleClose}>
+                Close
+              </Button>
+            )}
+            {!canClose && !canCancel && (
+              <div className="text-sm text-muted-foreground">
+                Installation in progress... Please wait.
+              </div>
+            )}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

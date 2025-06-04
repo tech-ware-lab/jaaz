@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer } = require('electron')
 
 // const ipcHandlers = require("./ipcHandlers");
 
@@ -15,13 +15,14 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 // console.log("Exposing API with methods:", Object.keys(exposedAPI));
 
-contextBridge.exposeInMainWorld("electronAPI", {
+contextBridge.exposeInMainWorld('electronAPI', {
   publishPost: (...args) => {
-    return ipcRenderer.invoke("publishPost", ...args);
+    return ipcRenderer.invoke('publishPost', ...args)
   },
   // Add new file picker methods
-  pickImage: () => ipcRenderer.invoke("pick-image"),
-  pickVideo: () => ipcRenderer.invoke("pick-video"),
-  // Add ComfyUI installation method
-  installComfyUI: () => ipcRenderer.invoke("install-comfyui"),
-});
+  pickImage: () => ipcRenderer.invoke('pick-image'),
+  pickVideo: () => ipcRenderer.invoke('pick-video'),
+  // Add ComfyUI installation methods
+  installComfyUI: () => ipcRenderer.invoke('install-comfyui'),
+  cancelComfyUIInstall: () => ipcRenderer.invoke('cancel-comfyui-install'),
+})
