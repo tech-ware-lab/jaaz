@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -22,16 +23,16 @@ import {
   StopCircleIcon,
   SunIcon,
   XIcon,
-} from 'lucide-react'
-import { nanoid } from 'nanoid'
-import { useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
-import { Markdown } from './Markdown'
-import MultiChoicePrompt from './MultiChoicePrompt'
-import SingleChoicePrompt from './SingleChoicePrompt'
+} from "lucide-react";
+import { nanoid } from "nanoid";
+import { toast } from "sonner";
+import { Markdown } from "./Markdown";
+import InstallComfyUIDialog from "@/components/comfyui/InstallComfyUIDialog";
+import MultiChoicePrompt from "./MultiChoicePrompt";
+import SingleChoicePrompt from "./SingleChoicePrompt";
 
-const FOOTER_HEIGHT = 100 // Keep this as minimum height
-const MAX_INPUT_HEIGHT = 300 // Add this for maximum input height
+const FOOTER_HEIGHT = 100; // Keep this as minimum height
+const MAX_INPUT_HEIGHT = 300; // Add this for maximum input height
 
 const ChatInterface = ({
   sessionId,
@@ -60,6 +61,7 @@ const ChatInterface = ({
     model: string
     url: string
   }>()
+  const [showInstallDialog, setShowInstallDialog] = useState(false);
 
   const [modelList, setModelList] = useState<
     {
@@ -182,7 +184,7 @@ const ChatInterface = ({
                     lastMessage.content.at(-1) &&
                     lastMessage.content.at(-1)!.type === 'text'
                   ) {
-                    ;(lastMessage.content.at(-1) as { text: string }).text +=
+                    ; (lastMessage.content.at(-1) as { text: string }).text +=
                       data.text
                   }
                   // TODO: handle other response type
@@ -273,15 +275,16 @@ const ChatInterface = ({
       )
       return
     }
-    if (!imageModel) {
-      toast.error(
-        "Please select an image model! Go to Settings to set your API keys if you haven't done so."
-      )
-      return
+
+    // Check if there are image models, if not, prompt to install ComfyUI
+    if (!imageModel || imageModels.length === 0) {
+      setShowInstallDialog(true);
+      return;
     }
-    if (!textModel.url || textModel.url == '') {
-      toast.error('Please set the model URL in Settings')
-      return
+
+    if (!textModel.url || textModel.url == "") {
+      toast.error("Please set model URL in settings");
+      return;
     }
     if (!promptStr || promptStr == '') {
       return
@@ -314,11 +317,17 @@ const ChatInterface = ({
       }),
     }).then((resp) => resp.json())
   }
+
+  const handleInstallSuccess = () => {
+    // Reload model list
+    window.location.reload();
+  };
+
   const onUploadImage = () => {
-    // open file input
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/png, image/jpeg, image/jpg, image/webp,image/gif'
+    // Open file input
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png, image/jpeg, image/jpg, image/webp,image/gif";
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (file) {
@@ -346,6 +355,13 @@ const ChatInterface = ({
 
   return (
     <div className="flex flex-col h-screen relative">
+      {/* Install ComfyUI Dialog */}
+      <InstallComfyUIDialog
+        open={showInstallDialog}
+        onOpenChange={setShowInstallDialog}
+        onInstallSuccess={handleInstallSuccess}
+      />
+
       {/* Chat messages */}
       <div
         className="flex-1 overflow-y-auto text-left space-y-6 max-w-3xl mt-[100px]"
@@ -434,11 +450,10 @@ const ChatInterface = ({
             {/* Regular message content */}
             {typeof message.content == 'string' && message.role !== 'tool' && (
               <div
-                className={`${
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto'
-                    : 'text-gray-800 dark:text-gray-200 text-left items-start'
-                } space-y-3 flex flex-col w-fit`}
+                className={`${message.role === 'user'
+                  ? 'bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto'
+                  : 'text-gray-800 dark:text-gray-200 text-left items-start'
+                  } space-y-3 flex flex-col w-fit`}
               >
                 <Markdown>{message.content}</Markdown>
               </div>
@@ -456,11 +471,10 @@ const ChatInterface = ({
                   return (
                     <div
                       key={i}
-                      className={`${
-                        message.role === 'user'
-                          ? 'bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto'
-                          : 'text-gray-800 dark:text-gray-200 text-left items-start'
-                      } space-y-3 flex flex-col w-fit`}
+                      className={`${message.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto'
+                        : 'text-gray-800 dark:text-gray-200 text-left items-start'
+                        } space-y-3 flex flex-col w-fit`}
                     >
                       <Markdown>{content.text}</Markdown>
                     </div>
