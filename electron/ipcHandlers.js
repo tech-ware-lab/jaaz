@@ -184,36 +184,8 @@ module.exports = {
     console.log('🦄🦄check-comfyui-installed called')
 
     try {
-      const userDataDir = app.getPath('userData')
-      const comfyUIDir = path.join(userDataDir, 'comfyui')
-
-      // Check if ComfyUI directory exists
-      if (!fs.existsSync(comfyUIDir)) {
-        return false
-      }
-
-      // Check if ComfyUI main directory exists
-      const comfyUIMainDir = path.join(comfyUIDir, 'ComfyUI_windows_portable')
-      if (!fs.existsSync(comfyUIMainDir)) {
-        return false
-      }
-
-      // Only check if run script (bat file) exists
-      const runScripts = [
-        'run_nvidia_gpu.bat',
-        'run_nvidia_gpu_fast_fp16_accumulation.bat',
-        'run_cpu.bat',
-        'run.bat',
-      ]
-
-      for (const script of runScripts) {
-        const scriptPath = path.join(comfyUIMainDir, script)
-        if (fs.existsSync(scriptPath)) {
-          return true
-        }
-      }
-
-      return false
+      const { isComfyUIInstalled } = require('./comfyUIManager')
+      return isComfyUIInstalled()
     } catch (error) {
       console.error('Error checking ComfyUI installation:', error)
       return false
@@ -223,7 +195,7 @@ module.exports = {
     console.log('🦄🦄start-comfyui-process called')
 
     try {
-      const { startComfyUIProcess } = require('./comfyUIInstaller')
+      const { startComfyUIProcess } = require('./comfyUIManager')
       const result = await startComfyUIProcess()
       return result
     } catch (error) {
@@ -235,7 +207,7 @@ module.exports = {
     console.log('🦄🦄stop-comfyui-process called')
 
     try {
-      const { stopComfyUIProcess } = require('./comfyUIInstaller')
+      const { stopComfyUIProcess } = require('./comfyUIManager')
       const result = await stopComfyUIProcess()
       return result
     } catch (error) {
@@ -247,7 +219,7 @@ module.exports = {
     console.log('🦄🦄get-comfyui-process-status called')
 
     try {
-      const { getComfyUIProcessStatus } = require('./comfyUIInstaller')
+      const { getComfyUIProcessStatus } = require('./comfyUIManager')
       const status = getComfyUIProcessStatus()
       return status
     } catch (error) {
