@@ -60,14 +60,15 @@ const InstallComfyUIDialog = ({ open, onOpenChange, onInstallSuccess }: InstallC
               No image generation models detected.
               <br />
               To use AI image generation features, you can install ComfyUI and Flux models.
-              <br />
+            </DialogDescription>
+            <div className="text-sm text-muted-foreground mt-2">
               This will:
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>Download and install ComfyUI (~2000MB)</li>
                 <li>Configure Flux image generation models</li>
                 <li>Start local image generation service</li>
               </ul>
-            </DialogDescription>
+            </div>
           </DialogHeader>
           <DialogFooter>
             <Button
