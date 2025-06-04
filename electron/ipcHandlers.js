@@ -8,7 +8,7 @@ const { spawn } = require("child_process");
 const { createWriteStream } = require("fs");
 const { pipeline } = require("stream");
 const { promisify } = require("util");
-const AdmZip = require("adm-zip");
+const _7z = require("7zip-min");
 
 module.exports = {
   publishPost: async (event, data) => {
@@ -624,8 +624,9 @@ async function installComfyUI() {
     }
 
     try {
-      const zip = new AdmZip(zipPath);
-      zip.extractAllTo(comfyUIDir, true);
+      // ComfyUI packages are only available in 7z format
+      sendLog("Extracting 7z archive...");
+      await _7z.unpack(zipPath, comfyUIDir);
       sendLog("Extraction completed");
     } catch (error) {
       sendLog(`Extraction failed: ${error.message}`);
@@ -836,7 +837,7 @@ async function updateConfigWithComfyUI() {
 
 // Find ComfyUI main directory (may be in subdirectory after extraction)
 function findComfyUIMainDir(comfyUIDir) {
-  const possibleDirs = ["ComfyUI-master", "ComfyUI-main"];
+  const possibleDirs = ["ComfyUI_windows_portable"];
 
   for (const dir of possibleDirs) {
     const dirPath = path.join(comfyUIDir, dir);
