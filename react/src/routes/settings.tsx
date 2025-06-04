@@ -41,6 +41,7 @@ export default function Settings() {
       // First check if ComfyUI process is running via electron API
       if (window.electronAPI?.getComfyUIProcessStatus) {
         const processStatus = await window.electronAPI.getComfyUIProcessStatus()
+        console.log('🦄 ComfyUI process status:', processStatus)
         if (processStatus.running) {
           setComfyUIStatus('running')
           return
@@ -49,15 +50,18 @@ export default function Settings() {
 
       // If process is not running, check if ComfyUI is responding via HTTP
       try {
+        console.log('🦄 Checking ComfyUI HTTP response...')
         const response = await fetch('http://127.0.0.1:8188/system_stats', {
           method: 'GET',
           signal: AbortSignal.timeout(3000) // 3 second timeout
         })
+        console.log('🦄 ComfyUI HTTP response status:', response.status)
         if (response.ok) {
           setComfyUIStatus('running')
           return
         }
       } catch (error) {
+        console.log('🦄 2. HTTP Error:', error instanceof Error ? error.message : String(error))
         // ComfyUI is not running via HTTP, continue to check installation
       }
 
@@ -65,8 +69,10 @@ export default function Settings() {
       if (window.electronAPI?.checkComfyUIInstalled) {
         try {
           const installed = await window.electronAPI.checkComfyUIInstalled()
+          console.log('🦄 ComfyUI installation status:', installed)
           setComfyUIStatus(installed ? 'installed' : 'not-installed')
         } catch (error) {
+          console.log('🦄 ComfyUI installation check failed:', error instanceof Error ? error.message : String(error))
           setComfyUIStatus('not-installed')
         }
       } else {
@@ -76,6 +82,46 @@ export default function Settings() {
       console.error('Error checking ComfyUI status:', error)
       setComfyUIStatus('not-installed')
     }
+  }
+
+  // Manual verification function for debugging
+  const verifyComfyUIStatus = async () => {
+    console.log('🦄 === Manual ComfyUI Status Verification ===')
+
+    // 1. Check process status
+    try {
+      const processStatus = await window.electronAPI?.getComfyUIProcessStatus()
+      console.log('🦄 1. Process Status:', processStatus)
+    } catch (error) {
+      console.log('🦄 1. Process Status Error:', error)
+    }
+
+    // 2. Check HTTP response
+    try {
+      const response = await fetch('http://127.0.0.1:8188/system_stats', {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000)
+      })
+      console.log('🦄 2. HTTP Status:', response.status, response.ok)
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🦄 2. HTTP Response Data:', data)
+      }
+    } catch (error) {
+      console.log('🦄 2. HTTP Error:', error instanceof Error ? error.message : String(error))
+    }
+
+    // 3. Check installation
+    try {
+      const installed = await window.electronAPI?.checkComfyUIInstalled()
+      console.log('🦄 3. Installation Status:', installed)
+    } catch (error) {
+      console.log('🦄 3. Installation Error:', error instanceof Error ? error.message : String(error))
+    }
+
+    // 4. Try to access ComfyUI web interface
+    console.log('🦄 4. You can manually check by opening: http://127.0.0.1:8188 in your browser')
+    console.log('🦄 === End Verification ===')
   }
 
   useEffect(() => {
@@ -215,19 +261,42 @@ export default function Settings() {
         }
       }))
 
-      // Start ComfyUI process if installed
-      if (comfyUIStatus === 'installed') {
+      // Check if ComfyUI is installed first
+      let isInstalled = false
+      try {
+        isInstalled = await window.electronAPI?.checkComfyUIInstalled()
+        console.log('🦄 ComfyUI installation check result:', isInstalled)
+      } catch (error) {
+        console.error('Error checking ComfyUI installation:', error)
+      }
+
+      if (isInstalled) {
+        // Update status to installed if not already set
+        if (comfyUIStatus !== 'installed' && comfyUIStatus !== 'running') {
+          setComfyUIStatus('installed')
+        }
+
+        // Try to start ComfyUI process
         try {
+          console.log('🦄 Attempting to start ComfyUI process...')
           const result = await window.electronAPI?.startComfyUIProcess()
+          console.log('🦄 Start result:', result)
+
           if (result?.success) {
             setComfyUIStatus('running')
-            console.log('ComfyUI process started successfully')
+            console.log('ComfyUI process started successfully:', result.message)
           } else {
             console.error('Failed to start ComfyUI process:', result?.message)
+            setComfyUIStatus('installed') // Keep as installed but not running
           }
         } catch (error) {
           console.error('Error starting ComfyUI process:', error)
+          setComfyUIStatus('installed') // Keep as installed but not running
         }
+      } else {
+        // ComfyUI is not installed
+        setComfyUIStatus('not-installed')
+        console.log('ComfyUI is not installed, please install it first')
       }
     } else {
       // Clear models when disabling
@@ -239,22 +308,41 @@ export default function Settings() {
         }
       }))
 
-      // Stop ComfyUI process if running
-      if (comfyUIStatus === 'running') {
-        try {
+      // Check actual process status before attempting to stop
+      try {
+        const processStatus = await window.electronAPI?.getComfyUIProcessStatus()
+        console.log('🦄 Current process status:', processStatus)
+
+        if (processStatus?.running) {
+          // Only try to stop if process is actually running
+          console.log('🦄 Stopping ComfyUI process...')
           const result = await window.electronAPI?.stopComfyUIProcess()
+          console.log('🦄 Stop result:', result)
+
           if (result?.success) {
-            setComfyUIStatus('installed')
             console.log('ComfyUI process stopped successfully')
           } else {
             console.error('Failed to stop ComfyUI process:', result?.message)
           }
-        } catch (error) {
-          console.error('Error stopping ComfyUI process:', error)
+        } else {
+          console.log('🦄 ComfyUI process is not running, no need to stop')
+        }
+
+        // Update status based on installation after stopping
+        const installed = await window.electronAPI?.checkComfyUIInstalled()
+        setComfyUIStatus(installed ? 'installed' : 'not-installed')
+
+      } catch (error) {
+        console.error('Error checking/stopping ComfyUI process:', error)
+        // Fallback: just check installation status
+        try {
+          const installed = await window.electronAPI?.checkComfyUIInstalled()
+          setComfyUIStatus(installed ? 'installed' : 'not-installed')
+        } catch (fallbackError) {
+          console.error('Fallback installation check failed:', fallbackError)
+          setComfyUIStatus('unknown')
         }
       }
-
-      setComfyUIStatus('unknown')
     }
   }
 
@@ -344,6 +432,15 @@ export default function Settings() {
                     <Label htmlFor="comfyui-enable" className="text-sm font-medium">
                       Enable ComfyUI Local Image Generation
                     </Label>
+                    {/* Debug button for verification */}
+                    <Button
+                      onClick={verifyComfyUIStatus}
+                      variant="outline"
+                      size="sm"
+                      className="ml-4"
+                    >
+                      🔍 Debug Status
+                    </Button>
                   </div>
                 )}
 
@@ -388,7 +485,7 @@ export default function Settings() {
                   />
                 )}
 
-                {key === 'comfyui' && comfyUIEnabled && (
+                {/* {key === 'comfyui' && comfyUIEnabled && (
                   <Input
                     placeholder="ComfyUI API URL"
                     value={config[key]?.url ?? 'http://127.0.0.1:8188'}
@@ -404,7 +501,7 @@ export default function Settings() {
                     className="w-full"
                     disabled={comfyUIStatus === 'not-installed'}
                   />
-                )}
+                )} */}
               </div>
 
               {/* API Key - show for all providers except ComfyUI */}
@@ -455,51 +552,6 @@ export default function Settings() {
                     The maximum number of tokens in the response
                   </p>
                 </div>
-              )}
-
-              {/* Models section - only show when enabled for ComfyUI */}
-              {(key !== 'comfyui' || comfyUIEnabled) && (
-                <>
-                  <p>
-                    Models ({Object.keys(config[key]?.models ?? {}).length ?? 0})
-                  </p>
-                  <div className="space-y-2 ml-4">
-                    {Object.keys({
-                      ...DEFAULT_CONFIG[key]?.models,
-                      ...config[key]?.models,
-                    }).map((model) => (
-                      <div className="flex items-center gap-3" key={model}>
-                        <Checkbox
-                          id={model}
-                          checked={!!config[key]?.models[model]?.type}
-                          onCheckedChange={(checked) => {
-                            setConfig((prevConfig) => {
-                              const newConfig = {
-                                ...prevConfig,
-                                [key]: structuredClone(prevConfig[key]),
-                              }
-                              if (checked) {
-                                newConfig[key].models[model] =
-                                  DEFAULT_CONFIG[key].models[model] ??
-                                  newConfig[key].models[model]
-                              } else {
-                                delete newConfig[key]?.models[model]
-                              }
-                              return newConfig
-                            })
-                          }}
-                          disabled={key === 'comfyui' && (comfyUIStatus === 'not-installed' || !comfyUIEnabled)}
-                        />
-                        <Label htmlFor={model}>
-                          {model}
-                          {config[key]?.models[model]?.type === 'image' && (
-                            <span>🎨</span>
-                          )}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </>
               )}
 
               {index !== Object.keys(config).length - 1 && (
