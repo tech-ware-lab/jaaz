@@ -23,6 +23,10 @@ let installationCancelled = false
 let currentDownloadRequest = null
 let currentChildProcess = null
 
+// Global ComfyUI process management
+let comfyUIProcess = null
+let comfyUIProcessPid = null
+
 /**
  * Get user data directory
  * @returns {string} - User data directory path
@@ -403,9 +407,10 @@ function findComfyUIMainDir(comfyUIDir) {
  */
 function findRunScript(comfyUIDir) {
   const possibleScripts = [
-    'run_cpu.bat',
     'run_nvidia_gpu.bat',
     'run_nvidia_gpu_fast_fp16_accumulation.bat',
+    'run_cpu.bat',
+    'run.bat',
   ]
 
   for (const script of possibleScripts) {
@@ -471,72 +476,6 @@ async function startComfyUI(scriptPath, sendLog) {
 }
 
 /**
- * Start ComfyUI from source code
- * @param {string} comfyUIMainDir - ComfyUI main directory
- * @param {Function} sendLog - Log callback
- * @returns {Promise<void>}
- */
-async function startComfyUIFromSource(comfyUIMainDir, sendLog) {
-  return new Promise((resolve, reject) => {
-    sendLog(`Starting ComfyUI from source: ${comfyUIMainDir}`)
-
-    // Check if main.py file exists
-    const mainPyPath = path.join(comfyUIMainDir, 'main.py')
-    if (!fs.existsSync(mainPyPath)) {
-      reject(new Error('main.py file not found'))
-      return
-    }
-
-    // Use Python to start ComfyUI
-    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3'
-    const process = spawn(
-      pythonCmd,
-      ['main.py', '--listen', '127.0.0.1', '--port', '8188'],
-      {
-        cwd: comfyUIMainDir,
-        detached: true,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      }
-    )
-
-    let startupTimeout = setTimeout(() => {
-      sendLog('ComfyUI startup timeout, but process is running in background')
-      resolve()
-    }, 60000) // 60 second timeout, as first startup may need to download models
-
-    process.stdout.on('data', (data) => {
-      const output = data.toString()
-      sendLog(`ComfyUI: ${output.trim()}`)
-
-      // Check if startup is successful
-      if (
-        output.includes('Starting server') ||
-        output.includes('127.0.0.1:8188') ||
-        output.includes('To see the GUI go to')
-      ) {
-        clearTimeout(startupTimeout)
-        sendLog('ComfyUI service started successfully!')
-        resolve()
-      }
-    })
-
-    process.stderr.on('data', (data) => {
-      const output = data.toString()
-      sendLog(`ComfyUI Error: ${output.trim()}`)
-    })
-
-    process.on('error', (error) => {
-      clearTimeout(startupTimeout)
-      sendLog(`Startup failed: ${error.message}`)
-      reject(error)
-    })
-
-    // Detach process to run in background
-    process.unref()
-  })
-}
-
-/**
  * Update configuration, add ComfyUI models
  * @returns {Promise<void>}
  */
@@ -564,6 +503,165 @@ async function updateConfigWithComfyUI() {
   } catch (error) {
     console.error('Configuration update failed:', error)
     throw error
+  }
+}
+
+/**
+ * Check if ComfyUI is installed
+ * @returns {boolean} - True if ComfyUI is installed
+ */
+function isComfyUIInstalled() {
+  const userDataDir = getUserDataDir()
+  if (!userDataDir) return false
+
+  const comfyUIDir = path.join(userDataDir, 'comfyui')
+  const comfyUIMainDir = findComfyUIMainDir(comfyUIDir)
+
+  if (!comfyUIMainDir) return false
+
+  // Only check if run script (bat file) exists
+  const runScript = findRunScript(comfyUIMainDir)
+  return !!runScript
+}
+
+/**
+ * Start ComfyUI process
+ * @returns {Promise<{success: boolean, message?: string}>}
+ */
+async function startComfyUIProcess() {
+  try {
+    // Check if already running
+    if (comfyUIProcess && !comfyUIProcess.killed) {
+      return { success: false, message: 'ComfyUI is already running' }
+    }
+
+    // Check if ComfyUI is installed
+    if (!isComfyUIInstalled()) {
+      return { success: false, message: 'ComfyUI is not installed' }
+    }
+
+    const userDataDir = getUserDataDir()
+    const comfyUIDir = path.join(userDataDir, 'comfyui')
+    const comfyUIMainDir = findComfyUIMainDir(comfyUIDir)
+
+    console.log('🦄 Starting ComfyUI process...')
+
+    // Only use bat script
+    const runScript = findRunScript(comfyUIMainDir)
+    if (!runScript) {
+      return {
+        success: false,
+        message:
+          'No run script (bat file) found. ComfyUI requires a bat script to start.',
+      }
+    }
+
+    console.log(`🦄 Using run script: ${runScript}`)
+
+    comfyUIProcess = spawn(runScript, [], {
+      cwd: path.dirname(runScript),
+      detached: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+
+    comfyUIProcessPid = comfyUIProcess.pid
+    console.log(`🦄 ComfyUI process started with PID: ${comfyUIProcessPid}`)
+
+    // Handle process output
+    comfyUIProcess.stdout.on('data', (data) => {
+      const output = data.toString()
+      console.log(`[ComfyUI] ${output.trim()}`)
+    })
+
+    comfyUIProcess.stderr.on('data', (data) => {
+      const output = data.toString()
+      console.log(`[ComfyUI Error] ${output.trim()}`)
+    })
+
+    // Handle process exit
+    comfyUIProcess.on('exit', (code, signal) => {
+      console.log(
+        `🦄 ComfyUI process exited with code ${code}, signal ${signal}`
+      )
+      comfyUIProcess = null
+      comfyUIProcessPid = null
+    })
+
+    comfyUIProcess.on('error', (error) => {
+      console.error(`🦄 ComfyUI process error: ${error.message}`)
+      comfyUIProcess = null
+      comfyUIProcessPid = null
+    })
+
+    // Detach process to run independently
+    comfyUIProcess.unref()
+
+    return { success: true, message: 'ComfyUI process started successfully' }
+  } catch (error) {
+    console.error('🦄 Failed to start ComfyUI process:', error)
+    comfyUIProcess = null
+    comfyUIProcessPid = null
+    return {
+      success: false,
+      message: `Failed to start ComfyUI: ${error.message}`,
+    }
+  }
+}
+
+/**
+ * Stop ComfyUI process
+ * @returns {Promise<{success: boolean, message?: string}>}
+ */
+async function stopComfyUIProcess() {
+  try {
+    if (!comfyUIProcess || comfyUIProcess.killed) {
+      return { success: false, message: 'ComfyUI process is not running' }
+    }
+
+    console.log(`🦄 Stopping ComfyUI process (PID: ${comfyUIProcessPid})...`)
+
+    // Try graceful shutdown first
+    comfyUIProcess.kill('SIGTERM')
+
+    // Wait a bit for graceful shutdown
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+
+    // Force kill if still running
+    if (comfyUIProcess && !comfyUIProcess.killed) {
+      console.log('🦄 Force killing ComfyUI process...')
+      comfyUIProcess.kill('SIGKILL')
+    }
+
+    comfyUIProcess = null
+    comfyUIProcessPid = null
+
+    console.log('🦄 ComfyUI process stopped successfully')
+    return { success: true, message: 'ComfyUI process stopped successfully' }
+  } catch (error) {
+    console.error('🦄 Failed to stop ComfyUI process:', error)
+    return {
+      success: false,
+      message: `Failed to stop ComfyUI: ${error.message}`,
+    }
+  }
+}
+
+/**
+ * Check if ComfyUI process is running
+ * @returns {boolean} - True if ComfyUI process is running
+ */
+function isComfyUIProcessRunning() {
+  return comfyUIProcess && !comfyUIProcess.killed
+}
+
+/**
+ * Get ComfyUI process status
+ * @returns {{running: boolean, pid?: number}}
+ */
+function getComfyUIProcessStatus() {
+  return {
+    running: isComfyUIProcessRunning(),
+    pid: comfyUIProcessPid,
   }
 }
 
@@ -705,7 +803,7 @@ async function installComfyUI() {
       throw new Error('Installation cancelled')
     }
 
-    sendProgress(90, 'Configuring ComfyUI...')
+    sendProgress(85, 'Configuring ComfyUI...')
     sendLog('Configuring ComfyUI environment...')
 
     // Find ComfyUI main directory (may be in subdirectory after extraction)
@@ -721,11 +819,17 @@ async function installComfyUI() {
       throw new Error('Installation cancelled')
     }
 
-    sendProgress(95, 'Updating configuration...')
+    sendProgress(90, 'Updating configuration...')
     sendLog('Updating application configuration...')
 
     // Update configuration, add ComfyUI as image model
-    await updateConfigWithComfyUI()
+    try {
+      await updateConfigWithComfyUI()
+      sendLog('Configuration updated successfully')
+    } catch (error) {
+      sendLog(`Configuration update failed: ${error.message}`)
+      // Don't fail the installation if config update fails
+    }
 
     // Check cancellation
     if (isInstallationCancelled()) {
@@ -733,8 +837,9 @@ async function installComfyUI() {
     }
 
     sendProgress(100, 'Installation completed!')
-    sendLog('ComfyUI installation successful!')
-    sendLog('You can now use local ComfyUI for image generation.')
+    sendLog('ComfyUI installation completed successfully!')
+    sendLog('ComfyUI is ready to use at http://127.0.0.1:8188')
+    sendLog('You can now enable ComfyUI in settings to start the service.')
 
     return { success: true }
   } catch (error) {
@@ -827,6 +932,10 @@ module.exports = {
   findComfyUIMainDir,
   findRunScript,
   startComfyUI,
-  startComfyUIFromSource,
   updateConfigWithComfyUI,
+  isComfyUIInstalled,
+  startComfyUIProcess,
+  stopComfyUIProcess,
+  isComfyUIProcessRunning,
+  getComfyUIProcessStatus,
 }

@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { DEFAULT_CONFIG, PROVIDER_NAME_MAPPING } from '@/constants'
 import { LLMConfig } from '@/types/types'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ArrowLeftIcon, Save } from 'lucide-react'
+import { ArrowLeftIcon, Save, Download, CheckCircle, AlertCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
 
 export const Route = createFileRoute('/settings')({
   component: Settings,
@@ -22,8 +24,59 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(true)
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [showInstallDialog, setShowInstallDialog] = useState(false)
+  const [comfyUIStatus, setComfyUIStatus] = useState<'unknown' | 'installed' | 'not-installed' | 'running'>('unknown')
+  const [comfyUIEnabled, setComfyUIEnabled] = useState(false)
 
   const navigate = useNavigate()
+
+  // Check ComfyUI status
+  const checkComfyUIStatus = async () => {
+    if (!comfyUIEnabled) {
+      setComfyUIStatus('unknown')
+      return
+    }
+
+    try {
+      // First check if ComfyUI process is running via electron API
+      if (window.electronAPI?.getComfyUIProcessStatus) {
+        const processStatus = await window.electronAPI.getComfyUIProcessStatus()
+        if (processStatus.running) {
+          setComfyUIStatus('running')
+          return
+        }
+      }
+
+      // If process is not running, check if ComfyUI is responding via HTTP
+      try {
+        const response = await fetch('http://127.0.0.1:8188/system_stats', {
+          method: 'GET',
+          signal: AbortSignal.timeout(3000) // 3 second timeout
+        })
+        if (response.ok) {
+          setComfyUIStatus('running')
+          return
+        }
+      } catch (error) {
+        // ComfyUI is not running via HTTP, continue to check installation
+      }
+
+      // Check if ComfyUI is installed via electron API
+      if (window.electronAPI?.checkComfyUIInstalled) {
+        try {
+          const installed = await window.electronAPI.checkComfyUIInstalled()
+          setComfyUIStatus(installed ? 'installed' : 'not-installed')
+        } catch (error) {
+          setComfyUIStatus('not-installed')
+        }
+      } else {
+        setComfyUIStatus('not-installed')
+      }
+    } catch (error) {
+      console.error('Error checking ComfyUI status:', error)
+      setComfyUIStatus('not-installed')
+    }
+  }
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -44,6 +97,32 @@ export default function Settings() {
           }
           return res
         })
+
+        // Check if ComfyUI is enabled in config
+        const isComfyUIEnabled = config.comfyui && Object.keys(config.comfyui.models || {}).length > 0
+        setComfyUIEnabled(isComfyUIEnabled)
+
+        // Auto-start ComfyUI process if enabled and installed
+        if (isComfyUIEnabled && window.electronAPI?.checkComfyUIInstalled) {
+          try {
+            const installed = await window.electronAPI.checkComfyUIInstalled()
+            if (installed) {
+              // Check if process is already running
+              const processStatus = await window.electronAPI.getComfyUIProcessStatus?.()
+              if (!processStatus?.running) {
+                // Start ComfyUI process
+                const result = await window.electronAPI.startComfyUIProcess?.()
+                if (result?.success) {
+                  console.log('ComfyUI process auto-started successfully')
+                } else {
+                  console.log('Failed to auto-start ComfyUI process:', result?.message)
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error auto-starting ComfyUI process:', error)
+          }
+        }
       } catch (error) {
         console.error('Error loading configuration:', error)
       } finally {
@@ -54,16 +133,30 @@ export default function Settings() {
     loadConfig()
   }, [])
 
+  // Check ComfyUI status when enabled state changes
+  useEffect(() => {
+    checkComfyUIStatus()
+  }, [comfyUIEnabled])
+
   const handleSave = async () => {
     try {
       setErrorMessage('')
+
+      // If ComfyUI is disabled, remove its models from config
+      const configToSave = { ...config }
+      if (!comfyUIEnabled && configToSave.comfyui) {
+        configToSave.comfyui = {
+          ...configToSave.comfyui,
+          models: {}
+        }
+      }
 
       const response = await fetch('/api/config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(config),
+        body: JSON.stringify(configToSave),
       })
 
       if (!response.ok) {
@@ -80,6 +173,118 @@ export default function Settings() {
       console.error('Error saving settings:', error)
       setErrorMessage('Failed to save settings')
       // You might want to show an error message to the user here
+    }
+  }
+
+  const handleInstallSuccess = async () => {
+    setComfyUIStatus('installed')
+    // Enable ComfyUI and restore default models
+    setComfyUIEnabled(true)
+    setConfig(prev => ({
+      ...prev,
+      comfyui: {
+        ...prev.comfyui,
+        models: DEFAULT_CONFIG.comfyui.models
+      }
+    }))
+
+    // Start ComfyUI process since user just installed it
+    try {
+      const result = await window.electronAPI?.startComfyUIProcess?.()
+      if (result?.success) {
+        setComfyUIStatus('running')
+        console.log('ComfyUI process started after installation')
+      } else {
+        console.error('Failed to start ComfyUI process after installation:', result?.message)
+      }
+    } catch (error) {
+      console.error('Error starting ComfyUI process after installation:', error)
+    }
+  }
+
+  const handleComfyUIToggle = async (enabled: boolean) => {
+    setComfyUIEnabled(enabled)
+
+    if (enabled) {
+      // Restore default models when enabling
+      setConfig(prev => ({
+        ...prev,
+        comfyui: {
+          ...prev.comfyui,
+          models: DEFAULT_CONFIG.comfyui.models
+        }
+      }))
+
+      // Start ComfyUI process if installed
+      if (comfyUIStatus === 'installed') {
+        try {
+          const result = await window.electronAPI?.startComfyUIProcess()
+          if (result?.success) {
+            setComfyUIStatus('running')
+            console.log('ComfyUI process started successfully')
+          } else {
+            console.error('Failed to start ComfyUI process:', result?.message)
+          }
+        } catch (error) {
+          console.error('Error starting ComfyUI process:', error)
+        }
+      }
+    } else {
+      // Clear models when disabling
+      setConfig(prev => ({
+        ...prev,
+        comfyui: {
+          ...prev.comfyui,
+          models: {}
+        }
+      }))
+
+      // Stop ComfyUI process if running
+      if (comfyUIStatus === 'running') {
+        try {
+          const result = await window.electronAPI?.stopComfyUIProcess()
+          if (result?.success) {
+            setComfyUIStatus('installed')
+            console.log('ComfyUI process stopped successfully')
+          } else {
+            console.error('Failed to stop ComfyUI process:', result?.message)
+          }
+        } catch (error) {
+          console.error('Error stopping ComfyUI process:', error)
+        }
+      }
+
+      setComfyUIStatus('unknown')
+    }
+  }
+
+  const getComfyUIStatusIcon = () => {
+    if (!comfyUIEnabled) return null
+
+    switch (comfyUIStatus) {
+      case 'running':
+        return <CheckCircle className="w-5 h-5 text-green-500" />
+      case 'installed':
+        return <AlertCircle className="w-5 h-5 text-yellow-500" />
+      case 'not-installed':
+        return <AlertCircle className="w-5 h-5 text-red-500" />
+      default:
+        return <AlertCircle className="w-5 h-5 text-gray-500" />
+    }
+  }
+
+  const getComfyUIStatusText = () => {
+    if (!comfyUIEnabled) return 'Disabled'
+
+    switch (comfyUIStatus) {
+      case 'running':
+        return 'Running'
+      case 'installed':
+        return 'Installed (Not Running)'
+      case 'not-installed':
+        return 'Not Installed'
+      default:
+        return 'Checking...'
     }
   }
 
@@ -117,43 +322,117 @@ export default function Settings() {
                     {PROVIDER_NAME_MAPPING[key].name}
                   </p>
                   {key === 'replicate' && <span>🎨 Image Generation</span>}
+                  {key === 'comfyui' && (
+                    <div className="flex items-center gap-2">
+                      <span>🎨 Local Image Generation</span>
+                      {getComfyUIStatusIcon()}
+                      <span className="text-sm text-muted-foreground">
+                        {getComfyUIStatusText()}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <Input
-                  placeholder="Enter your API URL"
-                  value={config[key]?.url ?? ''}
-                  onChange={(e) => {
-                    setConfig({
-                      ...config,
-                      [key]: {
-                        ...config[key],
-                        url: e.target.value,
-                      },
-                    })
-                  }}
-                  className="w-full"
-                />
+
+                {/* ComfyUI Enable/Disable Switch */}
+                {key === 'comfyui' && (
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Switch
+                      id="comfyui-enable"
+                      checked={comfyUIEnabled}
+                      onCheckedChange={handleComfyUIToggle}
+                    />
+                    <Label htmlFor="comfyui-enable" className="text-sm font-medium">
+                      Enable ComfyUI Local Image Generation
+                    </Label>
+                  </div>
+                )}
+
+                {/* ComfyUI special handling - only show when enabled */}
+                {key === 'comfyui' && comfyUIEnabled && comfyUIStatus === 'not-installed' && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-yellow-800">ComfyUI Not Installed</h4>
+                        <p className="text-sm text-yellow-700 mt-1">
+                          Install ComfyUI to enable local image generation with Flux models
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => setShowInstallDialog(true)}
+                        variant="outline"
+                        size="sm"
+                        className="border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Install ComfyUI
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* URL Input - show for all providers except ComfyUI when disabled */}
+                {(key !== 'comfyui' || comfyUIEnabled) && key !== 'comfyui' && (
+                  <Input
+                    placeholder="Enter your API URL"
+                    value={config[key]?.url ?? ''}
+                    onChange={(e) => {
+                      setConfig({
+                        ...config,
+                        [key]: {
+                          ...config[key],
+                          url: e.target.value,
+                        },
+                      })
+                    }}
+                    className="w-full"
+                  />
+                )}
+
+                {key === 'comfyui' && comfyUIEnabled && (
+                  <Input
+                    placeholder="ComfyUI API URL"
+                    value={config[key]?.url ?? 'http://127.0.0.1:8188'}
+                    onChange={(e) => {
+                      setConfig({
+                        ...config,
+                        [key]: {
+                          ...config[key],
+                          url: e.target.value,
+                        },
+                      })
+                    }}
+                    className="w-full"
+                    disabled={comfyUIStatus === 'not-installed'}
+                  />
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor={`${key}-apiKey`}>API Key</Label>
-                <Input
-                  id={`${key}-apiKey`}
-                  type="password"
-                  placeholder="Enter your API key"
-                  value={config[key]?.api_key ?? ''}
-                  onChange={(e) => {
-                    setConfig({
-                      ...config,
-                      [key]: { ...config[key], api_key: e.target.value },
-                    })
-                    setIsApiKeyDirty(true)
-                  }}
-                  className="w-full"
-                />
-                <p className="text-xs text-gray-500">
-                  Your API key will be stored securely
-                </p>
-              </div>
-              {key !== 'replicate' && key !== 'huggingface' && (
+
+              {/* API Key - show for all providers except ComfyUI */}
+              {key !== 'comfyui' && (
+                <div className="space-y-2">
+                  <Label htmlFor={`${key}-apiKey`}>API Key</Label>
+                  <Input
+                    id={`${key}-apiKey`}
+                    type="password"
+                    placeholder="Enter your API key"
+                    value={config[key]?.api_key ?? ''}
+                    onChange={(e) => {
+                      setConfig({
+                        ...config,
+                        [key]: { ...config[key], api_key: e.target.value },
+                      })
+                      setIsApiKeyDirty(true)
+                    }}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Your API key will be stored securely
+                  </p>
+                </div>
+              )}
+
+              {/* Max Tokens - show for text providers */}
+              {key !== 'replicate' && key !== 'huggingface' && key !== 'comfyui' && (
                 <div className="space-y-2">
                   <Label htmlFor={`${key}-maxTokens`}>Max Tokens</Label>
                   <Input
@@ -177,45 +456,52 @@ export default function Settings() {
                   </p>
                 </div>
               )}
-              <p>
-                Models ({Object.keys(config[key]?.models ?? {}).length ?? 0})
-              </p>
-              <div className="space-y-2 ml-4">
-                {Object.keys({
-                  ...DEFAULT_CONFIG[key]?.models,
-                  ...config[key]?.models,
-                }).map((model) => (
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      key={model}
-                      id={model}
-                      checked={!!config[key]?.models[model]?.type}
-                      onCheckedChange={(checked) => {
-                        setConfig((prevConfig) => {
-                          const newConfig = {
-                            ...prevConfig,
-                            [key]: structuredClone(prevConfig[key]),
-                          }
-                          if (checked) {
-                            newConfig[key].models[model] =
-                              DEFAULT_CONFIG[key].models[model] ??
-                              newConfig[key].models[model]
-                          } else {
-                            delete newConfig[key]?.models[model]
-                          }
-                          return newConfig
-                        })
-                      }}
-                    />
-                    <Label htmlFor={model}>
-                      {model}
-                      {config[key]?.models[model]?.type === 'image' && (
-                        <span>🎨</span>
-                      )}
-                    </Label>
+
+              {/* Models section - only show when enabled for ComfyUI */}
+              {(key !== 'comfyui' || comfyUIEnabled) && (
+                <>
+                  <p>
+                    Models ({Object.keys(config[key]?.models ?? {}).length ?? 0})
+                  </p>
+                  <div className="space-y-2 ml-4">
+                    {Object.keys({
+                      ...DEFAULT_CONFIG[key]?.models,
+                      ...config[key]?.models,
+                    }).map((model) => (
+                      <div className="flex items-center gap-3" key={model}>
+                        <Checkbox
+                          id={model}
+                          checked={!!config[key]?.models[model]?.type}
+                          onCheckedChange={(checked) => {
+                            setConfig((prevConfig) => {
+                              const newConfig = {
+                                ...prevConfig,
+                                [key]: structuredClone(prevConfig[key]),
+                              }
+                              if (checked) {
+                                newConfig[key].models[model] =
+                                  DEFAULT_CONFIG[key].models[model] ??
+                                  newConfig[key].models[model]
+                              } else {
+                                delete newConfig[key]?.models[model]
+                              }
+                              return newConfig
+                            })
+                          }}
+                          disabled={key === 'comfyui' && (comfyUIStatus === 'not-installed' || !comfyUIEnabled)}
+                        />
+                        <Label htmlFor={model}>
+                          {model}
+                          {config[key]?.models[model]?.type === 'image' && (
+                            <span>🎨</span>
+                          )}
+                        </Label>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
+
               {index !== Object.keys(config).length - 1 && (
                 <div className="my-6 border-t bg-border" />
               )}
@@ -237,6 +523,12 @@ export default function Settings() {
           )}
         </CardContent>
       </Card>
+
+      <InstallComfyUIDialog
+        open={showInstallDialog}
+        onOpenChange={setShowInstallDialog}
+        onInstallSuccess={handleInstallSuccess}
+      />
     </div>
   )
 }

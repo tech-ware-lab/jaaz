@@ -14,6 +14,11 @@ interface ElectronAPI {
     error?: string
     message?: string
   }>
+  checkComfyUIInstalled: () => Promise<boolean>
+  // ComfyUI process management methods
+  startComfyUIProcess: () => Promise<{ success: boolean; message?: string }>
+  stopComfyUIProcess: () => Promise<{ success: boolean; message?: string }>
+  getComfyUIProcessStatus: () => Promise<{ running: boolean; pid?: number }>
 }
 
 declare global {

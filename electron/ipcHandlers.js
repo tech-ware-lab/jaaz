@@ -180,6 +180,81 @@ module.exports = {
       return { error: error.message }
     }
   },
+  'check-comfyui-installed': async (event) => {
+    console.log('🦄🦄check-comfyui-installed called')
+
+    try {
+      const userDataDir = app.getPath('userData')
+      const comfyUIDir = path.join(userDataDir, 'comfyui')
+
+      // Check if ComfyUI directory exists
+      if (!fs.existsSync(comfyUIDir)) {
+        return false
+      }
+
+      // Check if ComfyUI main directory exists
+      const comfyUIMainDir = path.join(comfyUIDir, 'ComfyUI_windows_portable')
+      if (!fs.existsSync(comfyUIMainDir)) {
+        return false
+      }
+
+      // Only check if run script (bat file) exists
+      const runScripts = [
+        'run_nvidia_gpu.bat',
+        'run_nvidia_gpu_fast_fp16_accumulation.bat',
+        'run_cpu.bat',
+        'run.bat',
+      ]
+
+      for (const script of runScripts) {
+        const scriptPath = path.join(comfyUIMainDir, script)
+        if (fs.existsSync(scriptPath)) {
+          return true
+        }
+      }
+
+      return false
+    } catch (error) {
+      console.error('Error checking ComfyUI installation:', error)
+      return false
+    }
+  },
+  'start-comfyui-process': async (event) => {
+    console.log('🦄🦄start-comfyui-process called')
+
+    try {
+      const { startComfyUIProcess } = require('./comfyUIInstaller')
+      const result = await startComfyUIProcess()
+      return result
+    } catch (error) {
+      console.error('Error starting ComfyUI process:', error)
+      return { success: false, message: error.message }
+    }
+  },
+  'stop-comfyui-process': async (event) => {
+    console.log('🦄🦄stop-comfyui-process called')
+
+    try {
+      const { stopComfyUIProcess } = require('./comfyUIInstaller')
+      const result = await stopComfyUIProcess()
+      return result
+    } catch (error) {
+      console.error('Error stopping ComfyUI process:', error)
+      return { success: false, message: error.message }
+    }
+  },
+  'get-comfyui-process-status': async (event) => {
+    console.log('🦄🦄get-comfyui-process-status called')
+
+    try {
+      const { getComfyUIProcessStatus } = require('./comfyUIInstaller')
+      const status = getComfyUIProcessStatus()
+      return status
+    } catch (error) {
+      console.error('Error getting ComfyUI process status:', error)
+      return { running: false }
+    }
+  },
 }
 
 const userDataDir = app.getPath('userData')
