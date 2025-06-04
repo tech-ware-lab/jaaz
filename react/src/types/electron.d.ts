@@ -1,13 +1,14 @@
 interface ElectronAPI {
-  pickImage: () => Promise<string[] | null>;
-  pickVideo: () => Promise<string | null>;
-  publishPost: (args: {
-    channel: "youtube" | "bilibili" | "douyin" | "xiaohongshu";
+  publishPost: (data: {
+    channel: string;
     title: string;
     content: string;
     images: string[];
     video: string;
-  }) => Promise<any>;
+  }) => Promise<{ success?: boolean; error?: string }>;
+  pickImage: () => Promise<string[] | null>;
+  pickVideo: () => Promise<string | null>;
+  installComfyUI: () => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {

@@ -22,16 +22,36 @@ import {
   StopCircleIcon,
   SunIcon,
   XIcon,
-} from 'lucide-react'
-import { nanoid } from 'nanoid'
-import { useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
-import { Markdown } from './Markdown'
-import MultiChoicePrompt from './MultiChoicePrompt'
-import SingleChoicePrompt from './SingleChoicePrompt'
+} from "lucide-react";
+import { Badge } from "./components/ui/badge";
+import { Textarea } from "./components/ui/textarea";
+import { nanoid } from "nanoid";
+import { Markdown } from "./components/Markdown";
+import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./components/ui/select";
+import { useNavigate } from "react-router-dom";
+import MultiChoicePrompt from "./MultiChoicePrompt";
+import SingleChoicePrompt from "./SingleChoicePrompt";
+import Spinner from "./components/ui/Spinner";
+import { useTheme } from "./components/theme-provider";
+import { PLATFORMS_CONFIG } from "./platformsConfig";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./components/ui/dialog";
 
-const FOOTER_HEIGHT = 100 // Keep this as minimum height
-const MAX_INPUT_HEIGHT = 300 // Add this for maximum input height
+const FOOTER_HEIGHT = 100; // Keep this as minimum height
+const MAX_INPUT_HEIGHT = 300; // Add this for maximum input height
 
 const ChatInterface = ({
   sessionId,
@@ -60,6 +80,8 @@ const ChatInterface = ({
     model: string
     url: string
   }>()
+  const [showInstallDialog, setShowInstallDialog] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
 
   const [modelList, setModelList] = useState<
     {
@@ -273,15 +295,16 @@ const ChatInterface = ({
       )
       return
     }
-    if (!imageModel) {
-      toast.error(
-        "Please select an image model! Go to Settings to set your API keys if you haven't done so."
-      )
-      return
+
+    // Check if there are image models, if not, prompt to install ComfyUI
+    if (!imageModel || imageModels.length === 0) {
+      setShowInstallDialog(true);
+      return;
     }
-    if (!textModel.url || textModel.url == '') {
-      toast.error('Please set the model URL in Settings')
-      return
+
+    if (!textModel.url || textModel.url == "") {
+      toast.error("Please set model URL in settings");
+      return;
     }
     if (!promptStr || promptStr == '') {
       return
@@ -314,11 +337,32 @@ const ChatInterface = ({
       }),
     }).then((resp) => resp.json())
   }
+
+  const handleInstallComfyUI = async () => {
+    setIsInstalling(true);
+    try {
+      const result = await window.electronAPI.installComfyUI();
+      if (result.success) {
+        toast.success("ComfyUI installation successful!");
+        setShowInstallDialog(false);
+        // Reload model list
+        window.location.reload();
+      } else {
+        toast.error(`Installation failed: ${result.error}`);
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(`Installation failed: ${errorMessage}`);
+    } finally {
+      setIsInstalling(false);
+    }
+  };
+
   const onUploadImage = () => {
-    // open file input
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/png, image/jpeg, image/jpg, image/webp,image/gif'
+    // Open file input
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png, image/jpeg, image/jpg, image/webp,image/gif";
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (file) {
@@ -346,6 +390,49 @@ const ChatInterface = ({
 
   return (
     <div className="flex flex-col h-screen relative">
+      {/* Install ComfyUI Dialog */}
+      <Dialog open={showInstallDialog} onOpenChange={setShowInstallDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>🎨 Install Flux Image Generation Model</DialogTitle>
+            <DialogDescription>
+              No image generation models detected.
+              <br />
+              To use AI image generation features, you can install ComfyUI and Flux models.
+              <br />
+              This will:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Download and install ComfyUI (~2000MB)</li>
+                <li>Configure Flux image generation models</li>
+                <li>Start local image generation service</li>
+              </ul>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowInstallDialog(false)}
+              disabled={isInstalling}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleInstallComfyUI}
+              disabled={isInstalling}
+            >
+              {isInstalling ? (
+                <>
+                  <Spinner />
+                  Installing...
+                </>
+              ) : (
+                "Install Flux Image Model"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Chat messages */}
       <div
         className="flex-1 overflow-y-auto text-left space-y-6 max-w-3xl mt-[100px]"

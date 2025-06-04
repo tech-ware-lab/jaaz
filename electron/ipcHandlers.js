@@ -1,7 +1,14 @@
 // ipcHandlers.js
 const { chromium, BrowserContext } = require("playwright");
 const path = require("path");
-const { app } = require("electron");
+const { app, BrowserWindow } = require("electron");
+const fs = require("fs");
+const https = require("https");
+const { spawn } = require("child_process");
+const { createWriteStream } = require("fs");
+const { pipeline } = require("stream");
+const { promisify } = require("util");
+const AdmZip = require("adm-zip");
 
 module.exports = {
   publishPost: async (event, data) => {
@@ -16,6 +23,16 @@ module.exports = {
       }
     } catch (error) {
       console.error("Error in publish post:", error);
+      return { error: error.message };
+    }
+  },
+  "install-comfyui": async (event) => {
+    console.log("🦄🦄install-comfyui called");
+    try {
+      await installComfyUI();
+      return { success: true };
+    } catch (error) {
+      console.error("Error installing ComfyUI:", error);
       return { error: error.message };
     }
   },
@@ -149,7 +166,7 @@ async function fillXiaohongshuContent(page, title, content) {
 
   await page.waitForTimeout(1000);
 
-  // add hashtags
+  // Add hashtags
   console.log("🦄🦄tags:", tags);
   for (const tag of tags) {
     await copyPasteContent(page, `#${tag}`);
@@ -296,4 +313,454 @@ async function copyPasteContent(page, content) {
   await page.keyboard.press(
     process.platform === "darwin" ? "Meta+V" : "Control+V"
   );
+}
+
+/**
+ * Install ComfyUI
+ * @returns {Promise<{success: boolean}>} - Promise resolving to installation result
+ */
+async function installComfyUI() {
+  console.log("🦄 Starting ComfyUI installation...");
+
+  // Create installation progress window
+  const progressWindow = new BrowserWindow({
+    width: 600,
+    height: 400,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+    title: "Installing ComfyUI",
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+  });
+
+  // Create simple progress page
+  const progressHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Installing ComfyUI</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          padding: 20px;
+          background: #f5f5f5;
+        }
+        .container {
+          max-width: 500px;
+          margin: 0 auto;
+          background: white;
+          padding: 30px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+          width: 100%;
+          height: 20px;
+          background: #e0e0e0;
+          border-radius: 10px;
+          overflow: hidden;
+          margin: 20px 0;
+        }
+        .progress-fill {
+          height: 100%;
+          background: #4CAF50;
+          width: 0%;
+          transition: width 0.3s ease;
+        }
+        .log {
+          background: #f0f0f0;
+          padding: 10px;
+          border-radius: 5px;
+          height: 200px;
+          overflow-y: auto;
+          font-family: monospace;
+          font-size: 12px;
+        }
+        h2 { color: #333; text-align: center; }
+        .status { text-align: center; margin: 10px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>🎨 Installing Flux Image Generation Model</h2>
+        <div class="status" id="status">Preparing to start download...</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress"></div>
+        </div>
+        <div class="log" id="log">Waiting to start...\\n</div>
+      </div>
+      <script>
+        function updateProgress(percent) {
+          document.getElementById('progress').style.width = percent + '%';
+        }
+        function updateStatus(text) {
+          document.getElementById('status').textContent = text;
+        }
+        function addLog(text) {
+          const log = document.getElementById('log');
+          log.textContent += text + '\\n';
+          log.scrollTop = log.scrollHeight;
+        }
+
+        // Listen for messages from main process
+        window.addEventListener('message', (event) => {
+          const { type, data } = event.data;
+          if (type === 'progress') {
+            updateProgress(data.percent);
+            updateStatus(data.status);
+          } else if (type === 'log') {
+            addLog(data.message);
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `;
+
+  // Load progress page
+  progressWindow.loadURL(
+    `data:text/html;charset=utf-8,${encodeURIComponent(progressHtml)}`
+  );
+
+  try {
+    // Get user data directory and temp directory
+    const userDataDir = app.getPath("userData");
+    const tempDir = path.join(userDataDir, "temp");
+    const comfyUIDir = path.join(userDataDir, "comfyui");
+    const zipPath = path.join(tempDir, "comfyui-portable.zip");
+
+    // Ensure directory exists
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // Send log messages to progress window
+    const sendProgress = (percent, status) => {
+      progressWindow.webContents.executeJavaScript(`
+        updateProgress(${percent});
+        updateStatus("${status}");
+      `);
+    };
+
+    const sendLog = (message) => {
+      progressWindow.webContents.executeJavaScript(`
+        addLog("${message.replace(/"/g, '\\"')}");
+      `);
+      console.log(`[ComfyUI Install] ${message}`);
+    };
+
+    sendLog("Starting ComfyUI installation...");
+    sendProgress(5, "Checking existing files...");
+
+    const comfyUIUrl =
+      "https://github.com/comfyanonymous/ComfyUI/releases/download/v0.3.39/ComfyUI_windows_portable_nvidia.7z";
+
+    // Check if already downloaded
+    let shouldDownload = true;
+    if (fs.existsSync(zipPath)) {
+      sendLog("Found existing installation package, checking integrity...");
+      try {
+        const stats = fs.statSync(zipPath);
+        if (stats.size > 1000000) {
+          // At least 1MB, simple integrity check
+          sendLog("Installation package is complete, skipping download");
+          shouldDownload = false;
+        } else {
+          sendLog("Installation package is incomplete, re-downloading");
+          fs.unlinkSync(zipPath);
+        }
+      } catch (error) {
+        sendLog("Error checking installation package, re-downloading");
+        shouldDownload = true;
+      }
+    }
+
+    if (shouldDownload) {
+      sendProgress(10, "Starting ComfyUI download...");
+      sendLog(`Downloading ComfyUI from ${comfyUIUrl}...`);
+
+      await downloadFile(comfyUIUrl, zipPath, (progress) => {
+        const percent = 10 + progress * 60; // 10-70% for download
+        sendProgress(percent, `Downloading... ${Math.round(progress * 100)}%`);
+      });
+
+      sendLog("Download completed");
+    }
+
+    sendProgress(75, "Extracting installation package...");
+    sendLog("Starting ComfyUI extraction...");
+
+    // Extract files
+    if (fs.existsSync(comfyUIDir)) {
+      sendLog("Removing old ComfyUI directory...");
+      fs.rmSync(comfyUIDir, { recursive: true, force: true });
+    }
+
+    try {
+      const zip = new AdmZip(zipPath);
+      zip.extractAllTo(comfyUIDir, true);
+      sendLog("Extraction completed");
+    } catch (error) {
+      sendLog(`Extraction failed: ${error.message}`);
+      throw error;
+    }
+
+    sendProgress(90, "Configuring ComfyUI...");
+    sendLog("Configuring ComfyUI environment...");
+
+    // Find ComfyUI main directory (may be in subdirectory after extraction)
+    const comfyUIMainDir = findComfyUIMainDir(comfyUIDir);
+    if (!comfyUIMainDir) {
+      throw new Error("ComfyUI main directory not found");
+    }
+
+    sendLog(`Found ComfyUI main directory: ${comfyUIMainDir}`);
+
+    sendProgress(95, "Updating configuration...");
+    sendLog("Updating application configuration...");
+
+    // Update configuration, add ComfyUI as image model
+    await updateConfigWithComfyUI();
+
+    sendProgress(100, "Installation completed!");
+    sendLog("ComfyUI installation successful!");
+    sendLog("You can now use local ComfyUI for image generation.");
+
+    // Close progress window after 3 seconds
+    setTimeout(() => {
+      progressWindow.close();
+    }, 3000);
+
+    return { success: true };
+  } catch (error) {
+    console.error("ComfyUI installation failed:", error);
+
+    // Show error message
+    progressWindow.webContents.executeJavaScript(`
+      updateStatus("Installation failed: ${error.message}");
+      addLog("Error: ${error.message}");
+    `);
+
+    // Close window after 5 seconds
+    setTimeout(() => {
+      progressWindow.close();
+    }, 5000);
+
+    throw error;
+  }
+}
+
+// Helper function to download files
+async function downloadFile(url, filePath, onProgress) {
+  return new Promise((resolve, reject) => {
+    const file = createWriteStream(filePath);
+
+    https
+      .get(url, (response) => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`Download failed: HTTP ${response.statusCode}`));
+          return;
+        }
+
+        const totalSize = parseInt(response.headers["content-length"] || "0");
+        let downloadedSize = 0;
+
+        response.on("data", (chunk) => {
+          downloadedSize += chunk.length;
+          if (totalSize > 0) {
+            const progress = downloadedSize / totalSize;
+            onProgress(progress);
+          }
+        });
+
+        response.pipe(file);
+
+        file.on("finish", () => {
+          file.close();
+          resolve();
+        });
+
+        file.on("error", (error) => {
+          fs.unlink(filePath, () => {}); // Delete incomplete file
+          reject(error);
+        });
+      })
+      .on("error", (error) => {
+        reject(error);
+      });
+  });
+}
+
+// Find run script
+function findRunScript(comfyUIDir) {
+  const possibleScripts = [
+    "run_cpu.bat",
+    "run_nvidia_gpu.bat",
+    "run_nvidia_gpu_fast_fp16_accumulation.bat",
+  ];
+
+  for (const script of possibleScripts) {
+    const scriptPath = path.join(comfyUIDir, script);
+    if (fs.existsSync(scriptPath)) {
+      return scriptPath;
+    }
+  }
+
+  return null;
+}
+
+// Start ComfyUI
+async function startComfyUI(scriptPath, sendLog) {
+  return new Promise((resolve, reject) => {
+    sendLog(`Executing startup script: ${scriptPath}`);
+
+    const process = spawn(scriptPath, [], {
+      cwd: path.dirname(scriptPath),
+      detached: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    let startupTimeout = setTimeout(() => {
+      sendLog("ComfyUI startup timeout, but process is running in background");
+      resolve();
+    }, 30000); // 30 second timeout
+
+    process.stdout.on("data", (data) => {
+      const output = data.toString();
+      sendLog(`ComfyUI: ${output.trim()}`);
+
+      // Check if startup is successful
+      if (
+        output.includes("Starting server") ||
+        output.includes("127.0.0.1:8188")
+      ) {
+        clearTimeout(startupTimeout);
+        sendLog("ComfyUI service started successfully!");
+        resolve();
+      }
+    });
+
+    process.stderr.on("data", (data) => {
+      const output = data.toString();
+      sendLog(`ComfyUI Error: ${output.trim()}`);
+    });
+
+    process.on("error", (error) => {
+      clearTimeout(startupTimeout);
+      sendLog(`Startup failed: ${error.message}`);
+      reject(error);
+    });
+
+    // Detach process to run in background
+    process.unref();
+  });
+}
+
+// Update configuration, add ComfyUI models
+async function updateConfigWithComfyUI() {
+  try {
+    // Call backend API to update configuration
+    const response = await fetch(
+      "http://127.0.0.1:57988/api/comfyui/update_config",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log(
+        "ComfyUI configuration updated successfully:",
+        result.message
+      );
+    } else {
+      const error = await response.text();
+      console.error("Configuration update failed:", error);
+      throw new Error(`Configuration update failed: ${error}`);
+    }
+  } catch (error) {
+    console.error("Configuration update failed:", error);
+    throw error;
+  }
+}
+
+// Find ComfyUI main directory (may be in subdirectory after extraction)
+function findComfyUIMainDir(comfyUIDir) {
+  const possibleDirs = ["ComfyUI-master", "ComfyUI-main"];
+
+  for (const dir of possibleDirs) {
+    const dirPath = path.join(comfyUIDir, dir);
+    if (fs.existsSync(dirPath)) {
+      return dirPath;
+    }
+  }
+
+  return null;
+}
+
+// Start ComfyUI from source code
+async function startComfyUIFromSource(comfyUIMainDir, sendLog) {
+  return new Promise((resolve, reject) => {
+    sendLog(`Starting ComfyUI from source: ${comfyUIMainDir}`);
+
+    // Check if main.py file exists
+    const mainPyPath = path.join(comfyUIMainDir, "main.py");
+    if (!fs.existsSync(mainPyPath)) {
+      reject(new Error("main.py file not found"));
+      return;
+    }
+
+    // Use Python to start ComfyUI
+    const pythonCmd = process.platform === "win32" ? "python" : "python3";
+    const process = spawn(
+      pythonCmd,
+      ["main.py", "--listen", "127.0.0.1", "--port", "8188"],
+      {
+        cwd: comfyUIMainDir,
+        detached: true,
+        stdio: ["ignore", "pipe", "pipe"],
+      }
+    );
+
+    let startupTimeout = setTimeout(() => {
+      sendLog("ComfyUI startup timeout, but process is running in background");
+      resolve();
+    }, 60000); // 60 second timeout, as first startup may need to download models
+
+    process.stdout.on("data", (data) => {
+      const output = data.toString();
+      sendLog(`ComfyUI: ${output.trim()}`);
+
+      // Check if startup is successful
+      if (
+        output.includes("Starting server") ||
+        output.includes("127.0.0.1:8188") ||
+        output.includes("To see the GUI go to")
+      ) {
+        clearTimeout(startupTimeout);
+        sendLog("ComfyUI service started successfully!");
+        resolve();
+      }
+    });
+
+    process.stderr.on("data", (data) => {
+      const output = data.toString();
+      sendLog(`ComfyUI Error: ${output.trim()}`);
+    });
+
+    process.on("error", (error) => {
+      clearTimeout(startupTimeout);
+      sendLog(`Startup failed: ${error.message}`);
+      reject(error);
+    });
+
+    // Detach process to run in background
+    process.unref();
+  });
 }
