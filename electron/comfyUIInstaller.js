@@ -424,6 +424,95 @@ function findRunScript(comfyUIDir) {
 }
 
 /**
+ * Detect if NVIDIA GPU is available and has drivers
+ * @returns {Promise<boolean>} - True if NVIDIA GPU is available
+ */
+async function detectNvidiaGPU() {
+  return new Promise((resolve) => {
+    try {
+      // Try to run nvidia-smi to check for NVIDIA GPU
+      const { spawn } = require('child_process')
+      const nvidiaSmi = spawn(
+        'nvidia-smi',
+        ['--query-gpu=name', '--format=csv,noheader'],
+        {
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      )
+
+      let hasOutput = false
+
+      nvidiaSmi.stdout.on('data', (data) => {
+        const output = data.toString().trim()
+        if (output && !output.includes('No devices were found')) {
+          hasOutput = true
+        }
+      })
+
+      nvidiaSmi.on('close', (code) => {
+        resolve(hasOutput && code === 0)
+      })
+
+      nvidiaSmi.on('error', () => {
+        resolve(false)
+      })
+
+      // Timeout after 3 seconds
+      setTimeout(() => {
+        nvidiaSmi.kill()
+        resolve(false)
+      }, 3000)
+    } catch (error) {
+      resolve(false)
+    }
+  })
+}
+
+/**
+ * Get preferred ComfyUI startup script based on GPU availability
+ * @param {string} comfyUIMainDir - ComfyUI main directory
+ * @returns {Promise<{script: string, mode: string}>}
+ */
+async function getPreferredStartupScript(comfyUIMainDir) {
+  // Detect GPU support
+  const hasNvidiaGPU = await detectNvidiaGPU()
+  console.log(`🦄 NVIDIA GPU detected: ${hasNvidiaGPU}`)
+
+  // Define script priority based on GPU availability
+  const preferredScripts = hasNvidiaGPU
+    ? [
+        'run_nvidia_gpu.bat',
+        'run_nvidia_gpu_fast_fp16_accumulation.bat',
+        'run_cpu.bat',
+      ]
+    : [
+        'run_cpu.bat',
+        'run_nvidia_gpu.bat',
+        'run_nvidia_gpu_fast_fp16_accumulation.bat',
+      ]
+
+  // Find the first available script
+  for (const script of preferredScripts) {
+    const scriptPath = path.join(comfyUIMainDir, script)
+    if (fs.existsSync(scriptPath)) {
+      const mode = script.includes('cpu') ? 'CPU' : 'GPU'
+      console.log(`🦄 Selected startup script: ${script} (${mode} mode)`)
+      return { script: scriptPath, mode }
+    }
+  }
+
+  // Fallback to any available script
+  const runScript = findRunScript(comfyUIMainDir)
+  if (runScript) {
+    const mode = runScript.includes('cpu') ? 'CPU' : 'GPU'
+    console.log(`🦄 Fallback to: ${path.basename(runScript)} (${mode} mode)`)
+    return { script: runScript, mode }
+  }
+
+  throw new Error('No startup script found')
+}
+
+/**
  * Start ComfyUI
  * @param {string} scriptPath - Script path
  * @param {Function} sendLog - Log callback
@@ -546,23 +635,47 @@ async function startComfyUIProcess() {
 
     console.log('🦄 Starting ComfyUI process...')
 
-    // Only use bat script
-    const runScript = findRunScript(comfyUIMainDir)
-    if (!runScript) {
-      return {
-        success: false,
-        message:
-          'No run script (bat file) found. ComfyUI requires a bat script to start.',
+    // Get preferred startup script
+    const { script, mode } = await getPreferredStartupScript(comfyUIMainDir)
+
+    console.log(`🦄 Startup mode: ${mode}`)
+
+    let command, args, cwd, spawnOptions
+
+    if (script) {
+      console.log(`🦄 Using startup script: ${script}`)
+
+      // On Windows, use cmd.exe to execute bat files
+      const isWindows = process.platform === 'win32'
+      if (isWindows) {
+        command = 'cmd.exe'
+        args = ['/c', script]
+
+        // Windows-specific spawn options for silent execution
+        spawnOptions = {
+          cwd: path.dirname(script),
+          detached: true,
+          stdio: ['ignore', 'pipe', 'pipe'],
+          windowsHide: true, // Hide CMD window
+          shell: false, // Don't use shell to avoid extra window
+        }
+      } else {
+        command = script
+        args = []
+        spawnOptions = {
+          cwd: path.dirname(script),
+          detached: true,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
       }
+      cwd = path.dirname(script)
+    } else {
+      throw new Error('No startup script found')
     }
 
-    console.log(`🦄 Using run script: ${runScript}`)
+    console.log(`🦄 Executing command: ${command} ${args.join(' ')}`)
 
-    comfyUIProcess = spawn(runScript, [], {
-      cwd: path.dirname(runScript),
-      detached: true,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
+    comfyUIProcess = spawn(command, args, spawnOptions)
 
     comfyUIProcessPid = comfyUIProcess.pid
     console.log(`🦄 ComfyUI process started with PID: ${comfyUIProcessPid}`)
@@ -589,6 +702,7 @@ async function startComfyUIProcess() {
 
     comfyUIProcess.on('error', (error) => {
       console.error(`🦄 ComfyUI process error: ${error.message}`)
+      console.error(`🦄 Error details:`, error)
       comfyUIProcess = null
       comfyUIProcessPid = null
     })
@@ -596,7 +710,25 @@ async function startComfyUIProcess() {
     // Detach process to run independently
     comfyUIProcess.unref()
 
-    return { success: true, message: 'ComfyUI process started successfully' }
+    // Wait a moment to see if the process starts successfully
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+
+    // Check if process is still running after 3 seconds
+    if (comfyUIProcess && !comfyUIProcess.killed) {
+      console.log(`🦄 ComfyUI process appears to be running successfully`)
+      return {
+        success: true,
+        message: `ComfyUI started successfully in ${mode} mode`,
+        mode: mode,
+      }
+    } else {
+      console.log(`🦄 ComfyUI process failed to start or exited immediately`)
+      return {
+        success: false,
+        message:
+          'ComfyUI process failed to start or exited immediately. Check the logs for details.',
+      }
+    }
   } catch (error) {
     console.error('🦄 Failed to start ComfyUI process:', error)
     comfyUIProcess = null
@@ -620,18 +752,71 @@ async function stopComfyUIProcess() {
 
     console.log(`🦄 Stopping ComfyUI process (PID: ${comfyUIProcessPid})...`)
 
-    // Try graceful shutdown first
-    comfyUIProcess.kill('SIGTERM')
+    const isWindows = process.platform === 'win32'
 
-    // Wait a bit for graceful shutdown
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    if (isWindows) {
+      // On Windows, use taskkill for more reliable process termination
+      try {
+        const { spawn } = require('child_process')
 
-    // Force kill if still running
-    if (comfyUIProcess && !comfyUIProcess.killed) {
-      console.log('🦄 Force killing ComfyUI process...')
-      comfyUIProcess.kill('SIGKILL')
+        // First try graceful termination
+        console.log('🦄 Attempting graceful shutdown...')
+        const gracefulKill = spawn(
+          'taskkill',
+          ['/pid', comfyUIProcessPid.toString(), '/t'],
+          {
+            stdio: 'ignore',
+            windowsHide: true,
+          }
+        )
+
+        await new Promise((resolve) => {
+          gracefulKill.on('close', resolve)
+          setTimeout(resolve, 3000) // 3 second timeout
+        })
+
+        // Check if process is still running
+        if (comfyUIProcess && !comfyUIProcess.killed) {
+          console.log('🦄 Graceful shutdown failed, force killing...')
+          const forceKill = spawn(
+            'taskkill',
+            ['/pid', comfyUIProcessPid.toString(), '/t', '/f'],
+            {
+              stdio: 'ignore',
+              windowsHide: true,
+            }
+          )
+
+          await new Promise((resolve) => {
+            forceKill.on('close', resolve)
+            setTimeout(resolve, 2000) // 2 second timeout
+          })
+        }
+      } catch (killError) {
+        console.log(
+          '🦄 taskkill failed, using Node.js kill:',
+          killError.message
+        )
+        // Fallback to Node.js kill
+        comfyUIProcess.kill('SIGTERM')
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+
+        if (comfyUIProcess && !comfyUIProcess.killed) {
+          comfyUIProcess.kill('SIGKILL')
+        }
+      }
+    } else {
+      // Unix-like systems
+      comfyUIProcess.kill('SIGTERM')
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+
+      if (comfyUIProcess && !comfyUIProcess.killed) {
+        console.log('🦄 Force killing ComfyUI process...')
+        comfyUIProcess.kill('SIGKILL')
+      }
     }
 
+    // Clean up references
     comfyUIProcess = null
     comfyUIProcessPid = null
 
@@ -639,6 +824,11 @@ async function stopComfyUIProcess() {
     return { success: true, message: 'ComfyUI process stopped successfully' }
   } catch (error) {
     console.error('🦄 Failed to stop ComfyUI process:', error)
+
+    // Force cleanup even if stop failed
+    comfyUIProcess = null
+    comfyUIProcessPid = null
+
     return {
       success: false,
       message: `Failed to stop ComfyUI: ${error.message}`,
@@ -938,4 +1128,6 @@ module.exports = {
   stopComfyUIProcess,
   isComfyUIProcessRunning,
   getComfyUIProcessStatus,
+  detectNvidiaGPU,
+  getPreferredStartupScript,
 }
