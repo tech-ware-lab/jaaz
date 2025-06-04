@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -23,32 +24,12 @@ import {
   SunIcon,
   XIcon,
 } from "lucide-react";
-import { Badge } from "./components/ui/badge";
-import { Textarea } from "./components/ui/textarea";
 import { nanoid } from "nanoid";
-import { Markdown } from "./components/Markdown";
 import { toast } from "sonner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./components/ui/select";
-import { useNavigate } from "react-router-dom";
+import { Markdown } from "./Markdown";
+import InstallComfyUIDialog from "./InstallComfyUIDialog";
 import MultiChoicePrompt from "./MultiChoicePrompt";
 import SingleChoicePrompt from "./SingleChoicePrompt";
-import Spinner from "./components/ui/Spinner";
-import { useTheme } from "./components/theme-provider";
-import { PLATFORMS_CONFIG } from "./platformsConfig";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "./components/ui/dialog";
 
 const FOOTER_HEIGHT = 100; // Keep this as minimum height
 const MAX_INPUT_HEIGHT = 300; // Add this for maximum input height
@@ -81,7 +62,6 @@ const ChatInterface = ({
     url: string
   }>()
   const [showInstallDialog, setShowInstallDialog] = useState(false);
-  const [isInstalling, setIsInstalling] = useState(false);
 
   const [modelList, setModelList] = useState<
     {
@@ -204,7 +184,7 @@ const ChatInterface = ({
                     lastMessage.content.at(-1) &&
                     lastMessage.content.at(-1)!.type === 'text'
                   ) {
-                    ;(lastMessage.content.at(-1) as { text: string }).text +=
+                    ; (lastMessage.content.at(-1) as { text: string }).text +=
                       data.text
                   }
                   // TODO: handle other response type
@@ -338,24 +318,9 @@ const ChatInterface = ({
     }).then((resp) => resp.json())
   }
 
-  const handleInstallComfyUI = async () => {
-    setIsInstalling(true);
-    try {
-      const result = await window.electronAPI.installComfyUI();
-      if (result.success) {
-        toast.success("ComfyUI installation successful!");
-        setShowInstallDialog(false);
-        // Reload model list
-        window.location.reload();
-      } else {
-        toast.error(`Installation failed: ${result.error}`);
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      toast.error(`Installation failed: ${errorMessage}`);
-    } finally {
-      setIsInstalling(false);
-    }
+  const handleInstallSuccess = () => {
+    // Reload model list
+    window.location.reload();
   };
 
   const onUploadImage = () => {
@@ -391,47 +356,11 @@ const ChatInterface = ({
   return (
     <div className="flex flex-col h-screen relative">
       {/* Install ComfyUI Dialog */}
-      <Dialog open={showInstallDialog} onOpenChange={setShowInstallDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>🎨 Install Flux Image Generation Model</DialogTitle>
-            <DialogDescription>
-              No image generation models detected.
-              <br />
-              To use AI image generation features, you can install ComfyUI and Flux models.
-              <br />
-              This will:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Download and install ComfyUI (~2000MB)</li>
-                <li>Configure Flux image generation models</li>
-                <li>Start local image generation service</li>
-              </ul>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowInstallDialog(false)}
-              disabled={isInstalling}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleInstallComfyUI}
-              disabled={isInstalling}
-            >
-              {isInstalling ? (
-                <>
-                  <Spinner />
-                  Installing...
-                </>
-              ) : (
-                "Install Flux Image Model"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <InstallComfyUIDialog
+        open={showInstallDialog}
+        onOpenChange={setShowInstallDialog}
+        onInstallSuccess={handleInstallSuccess}
+      />
 
       {/* Chat messages */}
       <div
@@ -521,11 +450,10 @@ const ChatInterface = ({
             {/* Regular message content */}
             {typeof message.content == 'string' && message.role !== 'tool' && (
               <div
-                className={`${
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto'
-                    : 'text-gray-800 dark:text-gray-200 text-left items-start'
-                } space-y-3 flex flex-col w-fit`}
+                className={`${message.role === 'user'
+                  ? 'bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto'
+                  : 'text-gray-800 dark:text-gray-200 text-left items-start'
+                  } space-y-3 flex flex-col w-fit`}
               >
                 <Markdown>{message.content}</Markdown>
               </div>
@@ -543,11 +471,10 @@ const ChatInterface = ({
                   return (
                     <div
                       key={i}
-                      className={`${
-                        message.role === 'user'
-                          ? 'bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto'
-                          : 'text-gray-800 dark:text-gray-200 text-left items-start'
-                      } space-y-3 flex flex-col w-fit`}
+                      className={`${message.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto'
+                        : 'text-gray-800 dark:text-gray-200 text-left items-start'
+                        } space-y-3 flex flex-col w-fit`}
                     >
                       <Markdown>{content.text}</Markdown>
                     </div>
