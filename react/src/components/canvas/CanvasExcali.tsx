@@ -1,4 +1,5 @@
 import { saveCanvas } from '@/api/canvas'
+import useDebounce from '@/hooks/use-debounce'
 import { useTheme } from '@/hooks/use-theme'
 import { CanvasData } from '@/types/types'
 import { Excalidraw } from '@excalidraw/excalidraw'
@@ -18,9 +19,8 @@ import {
   ExcalidrawInitialDataState,
 } from '@excalidraw/excalidraw/types'
 import { ValueOf } from '@excalidraw/excalidraw/utility-types'
-import { useMutation } from '@tanstack/react-query'
 import { nanoid } from 'nanoid'
-import { useCallback, useEffect, useRef } from 'react'
+import { memo, useCallback, useEffect, useRef } from 'react'
 
 type LastImagePosition = {
   x: number
@@ -41,9 +41,6 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
 }) => {
   const excalidrawAPI = useRef<ExcalidrawImperativeAPI | null>(null)
 
-  const { mutate: saveCanvasMutation } = useMutation({
-    mutationFn: (data: CanvasData) => saveCanvas(canvasId, data),
-  })
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastSaveRef = useRef<{
     elements: Readonly<OrderedExcalidrawElement[]>
@@ -51,41 +48,24 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     files: BinaryFiles
   } | null>(null)
 
-  const handleChange = useCallback(
+  const handleChange = useDebounce(
     (
       elements: Readonly<OrderedExcalidrawElement[]>,
       appState: AppState,
       files: BinaryFiles
     ) => {
-      if (
-        lastSaveRef.current &&
-        JSON.stringify(lastSaveRef.current.elements) ===
-          JSON.stringify(elements) &&
-        JSON.stringify(lastSaveRef.current.appState) ===
-          JSON.stringify(appState) &&
-        JSON.stringify(lastSaveRef.current.files) === JSON.stringify(files)
-      ) {
-        return
+      const data: CanvasData = {
+        elements,
+        appState: {
+          ...appState,
+          collaborators: undefined!,
+        },
+        files,
       }
-
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current)
-      }
-
-      saveTimeoutRef.current = setTimeout(() => {
-        const data: CanvasData = {
-          elements,
-          appState: {
-            ...appState,
-            collaborators: undefined!,
-          },
-          files,
-        }
-        lastSaveRef.current = { elements, appState, files }
-        saveCanvasMutation(data)
-      }, 1000)
+      lastSaveRef.current = { elements, appState, files }
+      saveCanvas(canvasId, data)
     },
-    [saveCanvasMutation]
+    1000
   )
 
   useEffect(() => {
@@ -103,6 +83,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   )
   const { theme } = useTheme()
 
+  // TODO: Move to Backend
   const addImageToExcalidraw = useCallback(
     async (imageData: {
       url: string
@@ -237,4 +218,4 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     />
   )
 }
-export default CanvasExcali
+export default memo(CanvasExcali)
