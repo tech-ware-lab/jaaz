@@ -1,11 +1,14 @@
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { useTheme } from '@/hooks/use-theme'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { Toaster } from 'sonner'
 
 import { routeTree } from './route-tree.gen'
 
 import '@/assets/style/App.css'
+import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
+import { ConfigsProvider } from '@/contexts/configs'
 
 const router = createRouter({ routeTree })
 
@@ -15,13 +18,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
+const queryClient = new QueryClient()
+
 function App() {
   const { theme } = useTheme()
+
   return (
     <ThemeProvider defaultTheme={theme} storageKey="vite-ui-theme">
-      <div className="app-container">
-        <RouterProvider router={router} />
-      </div>
+      <QueryClientProvider client={queryClient}>
+        <ConfigsProvider>
+          <div className="app-container">
+            <RouterProvider router={router} />
+
+            {/* Install ComfyUI Dialog */}
+            <InstallComfyUIDialog />
+          </div>
+        </ConfigsProvider>
+      </QueryClientProvider>
       <Toaster />
     </ThemeProvider>
   )

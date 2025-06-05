@@ -1,0 +1,113 @@
+import { getCanvas, renameCanvas } from '@/api/canvas'
+import CanvasExcali from '@/components/canvas/CanvasExcali'
+import CanvasHeader from '@/components/canvas/CanvasHeader'
+import ChatInterface from '@/components/chat/Chat'
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable'
+import { Session } from '@/types/types'
+import { useQuery } from '@tanstack/react-query'
+import { createFileRoute, useParams, useSearch } from '@tanstack/react-router'
+import { Loader2 } from 'lucide-react'
+import { nanoid } from 'nanoid'
+import { useEffect, useState } from 'react'
+
+export const Route = createFileRoute('/canvas/$id')({
+  component: Canvas,
+})
+
+function Canvas() {
+  const [canvasName, setCanvasName] = useState('')
+  const [session, setSession] = useState<Session | null>(null)
+  const [sessionList, setSessionList] = useState<Session[]>([])
+
+  const { id } = useParams({ from: '/canvas/$id' })
+  const search = useSearch({ from: '/canvas/$id' }) as { sessionId: string }
+
+  const { data: canvas, isLoading } = useQuery({
+    queryKey: ['canvas', id],
+    queryFn: () => getCanvas(id),
+  })
+
+  useEffect(() => {
+    if (canvas) {
+      setCanvasName(canvas.name)
+      setSessionList(canvas.sessions)
+      if (canvas.sessions.length > 0) {
+        if (search.sessionId) {
+          setSession(
+            canvas.sessions.find((s) => s.id === search.sessionId) || null
+          )
+        } else {
+          setSession(canvas.sessions[0])
+        }
+      }
+    }
+  }, [canvas, search.sessionId])
+
+  const handleNameSave = async () => {
+    await renameCanvas(id, canvasName)
+  }
+
+  const handleNewChat = () => {
+    const newSession: Session = {
+      id: nanoid(),
+      title: 'New Chat',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      model: session?.model || 'gpt-4o',
+      provider: session?.provider || 'openai',
+    }
+    setSession(newSession)
+    setSessionList((prev) => [...prev, newSession])
+  }
+
+  return (
+    <div className="flex flex-col w-screen h-screen">
+      <CanvasHeader
+        canvasName={canvasName}
+        canvasId={id}
+        onNameChange={setCanvasName}
+        onNameSave={handleNameSave}
+      />
+      <ResizablePanelGroup
+        direction="horizontal"
+        className="w-screen h-screen"
+        autoSaveId="jaaz-chat-panel"
+      >
+        <ResizablePanel defaultSize={80}>
+          <div className="w-full h-full">
+            {isLoading ? (
+              <div className="flex-1 flex-grow px-4 bg-accent w-[24%] absolute right-0">
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                </div>
+              </div>
+            ) : (
+              <CanvasExcali canvasId={id} initialData={canvas?.data} />
+            )}
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle />
+
+        <ResizablePanel defaultSize={20} maxSize={35} minSize={20}>
+          <div className="flex-1 flex-grow bg-accent/50 w-full">
+            <ChatInterface
+              session={session}
+              sessionList={sessionList}
+              onClickNewChat={handleNewChat}
+              onSessionChange={(sessionId) => {
+                setSession(
+                  canvas?.sessions.find((s) => s.id === sessionId) || null
+                )
+              }}
+            />
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
+  )
+}
