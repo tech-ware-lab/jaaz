@@ -2,6 +2,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PROVIDER_NAME_MAPPING } from '@/constants'
 import { LLMConfig } from '@/types/types'
+import AddModelsList from './AddModelsList'
 
 interface CommonSettingProps {
   providerKey: string
@@ -20,10 +21,20 @@ export default function CommonSetting({
     icon: 'https://openai.com/favicon.ico'
   }
 
+  // Check if this is a custom provider (not in PROVIDER_NAME_MAPPING)
+  const isCustomProvider = !(providerKey in PROVIDER_NAME_MAPPING)
+
   const handleChange = (field: keyof LLMConfig, value: string | number) => {
     onConfigChange(providerKey, {
       ...config,
       [field]: value,
+    })
+  }
+
+  const handleModelsChange = (models: Record<string, { type?: 'text' | 'image' | 'video' }>) => {
+    onConfigChange(providerKey, {
+      ...config,
+      models,
     })
   }
 
@@ -42,6 +53,7 @@ export default function CommonSetting({
         <p className="font-bold text-2xl w-fit">
           {provider.name}
         </p>
+        {isCustomProvider && <span>✨ Custom Provider</span>}
         {isImageProvider && <span>🎨 Image Generation</span>}
       </div>
 
@@ -72,6 +84,17 @@ export default function CommonSetting({
           Your API key will be stored securely
         </p>
       </div>
+
+      {/* Models Configuration - only for custom providers */}
+      {isCustomProvider && (
+        <div className="space-y-2">
+          <AddModelsList
+            models={config.models || {}}
+            onChange={handleModelsChange}
+            label="Models"
+          />
+        </div>
+      )}
 
       {/* Max Tokens Input - only for text providers */}
       {hasMaxTokens && (
