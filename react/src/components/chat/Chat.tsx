@@ -1,21 +1,20 @@
 import { sendMessages } from '@/api/chat'
+import Blur from '@/components/common/Blur'
 import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import Spinner from '@/components/ui/Spinner'
 import { Message, Session, ToolCall } from '@/types/types'
 import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
+import { motion } from 'motion/react'
 import { nanoid } from 'nanoid'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import Blur from '../common/Blur'
-import { ScrollArea } from '../ui/scroll-area'
+import ShinyText from '../ui/shiny-text'
 import ChatTextarea from './ChatTextarea'
 import { Markdown } from './Markdown'
 import MultiChoicePrompt from './MultiChoicePrompt'
 import SessionSelector from './SessionSelector'
 import SingleChoicePrompt from './SingleChoicePrompt'
-
-const FOOTER_HEIGHT = 100 // Keep this as minimum height
-const MAX_INPUT_HEIGHT = 300 // Add this for maximum input height
 
 type ChatInterfaceProps = {
   session: Session | null
@@ -32,8 +31,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [prompt, setPrompt] = useState('')
-  const [fileId, setFileId] = useState<string | null>(null)
-  const [disableStop, setDisableStop] = useState(false)
   const [pending, setPending] = useState(false)
 
   const sessionId = session?.id
@@ -208,83 +205,104 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </header>
 
       <ScrollArea className="h-full">
-        <div className="flex-1 px-4 space-y-6 pb-80 pt-15">
-          {/* Messages */}
-          {messages.map((message, idx) => (
-            <div key={`${idx}`}>
-              {/* Regular message content */}
-              {typeof message.content == 'string' &&
-                message.role !== 'tool' && (
-                  <div
-                    className={`${
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-lg px-4 py-3 text-left ml-auto'
-                        : 'text-gray-800 dark:text-gray-200 text-left items-start'
-                    } space-y-3 flex flex-col w-fit`}
-                  >
-                    <Markdown>{message.content}</Markdown>
-                  </div>
-                )}
-              {typeof message.content == 'string' &&
-                message.role == 'tool' &&
-                expandingToolCalls.includes(message.tool_call_id) && (
-                  <div>
-                    <Markdown>{message.content}</Markdown>
-                  </div>
-                )}
-              {Array.isArray(message.content) &&
-                message.content.map((content, i) => {
-                  if (content.type == 'text') {
+        {messages.length > 0 ? (
+          <div className="flex-1 px-4 space-y-6 pb-80 pt-15">
+            {/* Messages */}
+            {messages.map((message, idx) => (
+              <div key={`${idx}`}>
+                {/* Regular message content */}
+                {typeof message.content == 'string' &&
+                  message.role !== 'tool' && (
+                    <div
+                      className={`${
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground rounded-lg px-4 py-3 text-left ml-auto'
+                          : 'text-gray-800 dark:text-gray-200 text-left items-start'
+                      } space-y-3 flex flex-col w-fit`}
+                    >
+                      <Markdown>{message.content}</Markdown>
+                    </div>
+                  )}
+                {typeof message.content == 'string' &&
+                  message.role == 'tool' &&
+                  expandingToolCalls.includes(message.tool_call_id) && (
+                    <div>
+                      <Markdown>{message.content}</Markdown>
+                    </div>
+                  )}
+                {Array.isArray(message.content) &&
+                  message.content.map((content, i) => {
+                    if (content.type == 'text') {
+                      return (
+                        <div
+                          key={i}
+                          className={`${
+                            message.role === 'user'
+                              ? 'bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto'
+                              : 'text-gray-800 dark:text-gray-200 text-left items-start'
+                          } space-y-3 flex flex-col w-fit`}
+                        >
+                          <Markdown>{content.text}</Markdown>
+                        </div>
+                      )
+                    } else if (content.type == 'image_url') {
+                      return (
+                        <div key={i}>
+                          <img src={content.image_url.url} alt="Image" />
+                        </div>
+                      )
+                    }
+                  })}
+                {message.role === 'assistant' &&
+                  message.tool_calls &&
+                  message.tool_calls.at(-1)?.function.name != 'finish' &&
+                  message.tool_calls.map((toolCall, i) => {
                     return (
-                      <div
-                        key={i}
-                        className={`${
-                          message.role === 'user'
-                            ? 'bg-primary text-primary-foreground rounded-2xl p-3 text-left ml-auto'
-                            : 'text-gray-800 dark:text-gray-200 text-left items-start'
-                        } space-y-3 flex flex-col w-fit`}
-                      >
-                        <Markdown>{content.text}</Markdown>
-                      </div>
+                      <ToolCallTag
+                        key={toolCall.id}
+                        toolCall={toolCall}
+                        isExpanded={expandingToolCalls.includes(toolCall.id)}
+                        onToggleExpand={() => {
+                          if (expandingToolCalls.includes(toolCall.id)) {
+                            setExpandingToolCalls((prev) =>
+                              prev.filter((id) => id !== toolCall.id)
+                            )
+                          } else {
+                            setExpandingToolCalls((prev) => [
+                              ...prev,
+                              toolCall.id,
+                            ])
+                          }
+                        }}
+                      />
                     )
-                  } else if (content.type == 'image_url') {
-                    return (
-                      <div key={i}>
-                        <img src={content.image_url.url} alt="Image" />
-                      </div>
-                    )
-                  }
-                })}
-              {message.role === 'assistant' &&
-                message.tool_calls &&
-                message.tool_calls.at(-1)?.function.name != 'finish' &&
-                message.tool_calls.map((toolCall, i) => {
-                  return (
-                    <ToolCallTag
-                      key={toolCall.id}
-                      toolCall={toolCall}
-                      isExpanded={expandingToolCalls.includes(toolCall.id)}
-                      onToggleExpand={() => {
-                        if (expandingToolCalls.includes(toolCall.id)) {
-                          setExpandingToolCalls((prev) =>
-                            prev.filter((id) => id !== toolCall.id)
-                          )
-                        } else {
-                          setExpandingToolCalls((prev) => [
-                            ...prev,
-                            toolCall.id,
-                          ])
-                        }
-                      }}
-                    />
-                  )
-                })}
-            </div>
-          ))}
-          {pending && messages.at(-1)?.role == 'user' && (
-            <div className="flex items-start text-left">{<Spinner />}</div>
-          )}
-        </div>
+                  })}
+              </div>
+            ))}
+            {pending && messages.at(-1)?.role == 'user' && (
+              <div className="flex items-start text-left">{<Spinner />}</div>
+            )}
+          </div>
+        ) : (
+          <motion.div className="flex flex-col h-full p-4 items-start justify-start pt-16 select-none">
+            <motion.span
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-muted-foreground text-3xl"
+            >
+              <ShinyText text="Hello, Jaaz!" />
+            </motion.span>
+            <motion.span
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-muted-foreground text-2xl"
+            >
+              <ShinyText text="How can I help you today?" />
+            </motion.span>
+          </motion.div>
+        )}
       </ScrollArea>
 
       <div className="p-2 gap-2 sticky bottom-0 bg-background/10">

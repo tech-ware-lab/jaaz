@@ -11,6 +11,7 @@ import { Session } from '@/types/types'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, useParams, useSearch } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
+import { nanoid } from 'nanoid'
 import { useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/canvas/$id')({
@@ -20,6 +21,7 @@ export const Route = createFileRoute('/canvas/$id')({
 function Canvas() {
   const [canvasName, setCanvasName] = useState('')
   const [session, setSession] = useState<Session | null>(null)
+  const [sessionList, setSessionList] = useState<Session[]>([])
 
   const { id } = useParams({ from: '/canvas/$id' })
   const search = useSearch({ from: '/canvas/$id' }) as { sessionId: string }
@@ -32,6 +34,7 @@ function Canvas() {
   useEffect(() => {
     if (canvas) {
       setCanvasName(canvas.name)
+      setSessionList(canvas.sessions)
       if (canvas.sessions.length > 0) {
         if (search.sessionId) {
           setSession(
@@ -46,6 +49,19 @@ function Canvas() {
 
   const handleNameSave = async () => {
     await renameCanvas(id, canvasName)
+  }
+
+  const handleNewChat = () => {
+    const newSession: Session = {
+      id: nanoid(),
+      title: 'New Chat',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      model: session?.model || 'gpt-4o',
+      provider: session?.provider || 'openai',
+    }
+    setSession(newSession)
+    setSessionList((prev) => [...prev, newSession])
   }
 
   return (
@@ -81,10 +97,8 @@ function Canvas() {
           <div className="flex-1 flex-grow bg-accent/50 w-full">
             <ChatInterface
               session={session}
-              sessionList={canvas?.sessions || []}
-              onClickNewChat={() => {
-                // setSessionId(nanoid())
-              }}
+              sessionList={sessionList}
+              onClickNewChat={handleNewChat}
               onSessionChange={(sessionId) => {
                 setSession(
                   canvas?.sessions.find((s) => s.id === sessionId) || null
