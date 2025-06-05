@@ -41,13 +41,6 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
 }) => {
   const excalidrawAPI = useRef<ExcalidrawImperativeAPI | null>(null)
 
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const lastSaveRef = useRef<{
-    elements: Readonly<OrderedExcalidrawElement[]>
-    appState: AppState
-    files: BinaryFiles
-  } | null>(null)
-
   const handleChange = useDebounce(
     (
       elements: Readonly<OrderedExcalidrawElement[]>,
@@ -62,19 +55,11 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
         },
         files,
       }
-      lastSaveRef.current = { elements, appState, files }
+
       saveCanvas(canvasId, data)
     },
     1000
   )
-
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current)
-      }
-    }
-  }, [])
 
   const lastImagePosition = useRef<LastImagePosition | null>(
     localStorage.getItem('excalidraw-last-image-position')
