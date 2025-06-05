@@ -9,25 +9,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Plus, X } from 'lucide-react'
 import { LLMConfig } from '@/types/types'
+import AddModelsList from './AddModelsList'
 
 interface AddProviderDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSave: (providerKey: string, config: LLMConfig) => void
-}
-
-type ModelItem = {
-  name: string
-  type: 'text' | 'image' | 'video'
 }
 
 export default function AddProviderDialog({
@@ -38,44 +26,15 @@ export default function AddProviderDialog({
   const [providerName, setProviderName] = useState('')
   const [apiUrl, setApiUrl] = useState('')
   const [apiKey, setApiKey] = useState('')
-  const [models, setModels] = useState<ModelItem[]>([{ name: '', type: 'text' }])
-
-  const handleAddModel = () => {
-    setModels([...models, { name: '', type: 'text' }])
-  }
-
-  const handleRemoveModel = (index: number) => {
-    if (models.length > 1) {
-      setModels(models.filter((_, i) => i !== index))
-    }
-  }
-
-  const handleModelChange = (index: number, field: keyof ModelItem, value: string) => {
-    const newModels = [...models]
-    if (field === 'type') {
-      newModels[index][field] = value as 'text' | 'image' | 'video'
-    } else {
-      newModels[index][field] = value
-    }
-    setModels(newModels)
-  }
+  const [models, setModels] = useState<Record<string, { type?: 'text' | 'image' | 'video' }>>({})
 
   const handleSave = () => {
     if (!providerName.trim() || !apiUrl.trim()) {
       return
     }
 
-    // Filter out empty model names
-    const validModels = models.filter(model => model.name.trim())
-
-    // Create models object with specified types
-    const modelsConfig: Record<string, { type?: 'text' | 'image' | 'video' }> = {}
-    validModels.forEach(model => {
-      modelsConfig[model.name] = { type: model.type }
-    })
-
     const config: LLMConfig = {
-      models: modelsConfig,
+      models,
       url: apiUrl,
       api_key: apiKey,
       max_tokens: 8192
@@ -90,7 +49,7 @@ export default function AddProviderDialog({
     setProviderName('')
     setApiUrl('')
     setApiKey('')
-    setModels([{ name: '', type: 'text' }])
+    setModels({})
     onOpenChange(false)
   }
 
@@ -99,7 +58,7 @@ export default function AddProviderDialog({
     setProviderName('')
     setApiUrl('')
     setApiKey('')
-    setModels([{ name: '', type: 'text' }])
+    setModels({})
     onOpenChange(false)
   }
 
@@ -146,58 +105,11 @@ export default function AddProviderDialog({
           </div>
 
           {/* Models */}
-          <div className="space-y-2">
-            <Label>Models</Label>
-
-            <div className="space-y-2">
-              {models.map((model, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Input
-                    placeholder="Enter model name"
-                    value={model.name}
-                    onChange={(e) => handleModelChange(index, 'name', e.target.value)}
-                    className="flex-1"
-                  />
-                  <Select
-                    value={model.type}
-                    onValueChange={(value) => handleModelChange(index, 'type', value)}
-                  >
-                    <SelectTrigger className="w-24">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="text">text</SelectItem>
-                      <SelectItem value="image">image</SelectItem>
-                      <SelectItem value="video">video</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {models.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveModel(index)}
-                      className="h-10 w-10 p-0"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddModel}
-                className="h-8"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Model
-              </Button>
-            </div>
-          </div>
+          <AddModelsList
+            models={models}
+            onChange={setModels}
+            label="Models"
+          />
         </div>
 
         <DialogFooter>
