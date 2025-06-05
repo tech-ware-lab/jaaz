@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import aiosqlite
 from .config_service import USER_DATA_DIR
+from .migrations.manager import MigrationManager
+
 DB_PATH = os.path.join(USER_DATA_DIR, "localmanus.db")
 
 # Database version
@@ -14,6 +16,7 @@ class DatabaseService:
     def __init__(self):
         self.db_path = DB_PATH
         self._ensure_db_directory()
+        self._migration_manager = MigrationManager()
         self._init_db()
 
     def _ensure_db_directory(self):
@@ -35,103 +38,12 @@ class DatabaseService:
             current_version = cursor.fetchone()
             
             if current_version is None:
-                # First time setup
-                conn.execute("INSERT INTO db_version (version) VALUES (?)", (CURRENT_VERSION,))
-                self._create_initial_schema(conn)
+                # First time setup - start from version 0
+                conn.execute("INSERT INTO db_version (version) VALUES (0)")
+                self._migration_manager.migrate(conn, 0, CURRENT_VERSION)
             elif current_version[0] < CURRENT_VERSION:
                 # Need to migrate
-                self._migrate_db(conn, current_version[0], CURRENT_VERSION)
-
-    def _create_initial_schema(self, conn: sqlite3.Connection):
-        """Create the initial database schema"""
-        # Create canvases table
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS canvases (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                data TEXT,
-                description TEXT DEFAULT '',
-                thumbnail TEXT DEFAULT '',
-                created_at TEXT DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')),
-                updated_at TEXT DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'))
-            )
-        """)
-
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_canvases_updated_at ON canvases(updated_at DESC, id DESC)
-        """)
-
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS chat_sessions (
-                id TEXT PRIMARY KEY,
-                canvas_id TEXT,
-                created_at TEXT DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')),
-                updated_at TEXT DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')),
-                title TEXT,
-                model TEXT,
-                provider TEXT,
-                FOREIGN KEY (canvas_id) REFERENCES canvases(id)
-            )
-        """)
-
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_chat_sessions_updated_at ON chat_sessions(updated_at DESC, id DESC)
-        """)
-
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS chat_messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id TEXT,
-                role TEXT,
-                message TEXT,
-                created_at TEXT DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')),
-                updated_at TEXT DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')),
-                FOREIGN KEY (session_id) REFERENCES chat_sessions(id)
-            )
-        """)
-
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id_id ON chat_messages(session_id, id);
-        """)
-
-    def _migrate_db(self, conn: sqlite3.Connection, from_version: int, to_version: int):
-        """Handle database migrations"""
-        if from_version < 2:
-            # 创建 canvases 表
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS canvases (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    data TEXT,
-                    description TEXT DEFAULT '',
-                    thumbnail TEXT DEFAULT '',
-                    created_at TEXT DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')),
-                    updated_at TEXT DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'))
-                )
-            """)
-            
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_canvases_updated_at ON canvases(updated_at DESC, id DESC)
-            """)
-
-            # Add canvas_id column to chat_sessions
-            conn.execute("ALTER TABLE chat_sessions ADD COLUMN canvas_id TEXT REFERENCES canvases(id)")
-            
-            # Create default canvas
-            conn.execute("""
-                INSERT INTO canvases (id, name)
-                VALUES ('default', 'Default Canvas')
-            """)
-            
-            # Associate all existing sessions with default canvas
-            conn.execute("""
-                UPDATE chat_sessions
-                SET canvas_id = 'default'
-                WHERE canvas_id IS NULL
-            """)
-        
-        # Update version
-        conn.execute("UPDATE db_version SET version = ?", (to_version,))
+                self._migration_manager.migrate(conn, current_version[0], CURRENT_VERSION)
 
     async def create_canvas(self, id: str, name: str):
         """Create a new canvas"""
