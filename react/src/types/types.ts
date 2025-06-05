@@ -1,3 +1,6 @@
+import { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types'
+import { AppState, BinaryFiles } from '@excalidraw/excalidraw/types'
+
 export type ToolCall = {
   id: string
   type: 'function'
@@ -51,4 +54,25 @@ export type LLMConfig = {
   url: string
   api_key: string
   max_tokens?: number
+}
+
+export type CanvasData = {
+  elements: Readonly<OrderedExcalidrawElement[]>
+  appState: AppState
+  files: BinaryFiles
+}
+
+export type Session = {
+  created_at: string
+  id: string
+  model: string
+  provider: string
+  title: string
+  updated_at: string
+}
+
+export type Model = {
+  provider: string
+  model: string
+  url: string
 }

@@ -1,0 +1,71 @@
+import { listModels } from '@/api/model'
+import useConfigsStore from '@/stores/configs'
+import { useQuery } from '@tanstack/react-query'
+import { createContext, useContext, useEffect } from 'react'
+
+export const ConfigsContext = createContext<{
+  configsStore: typeof useConfigsStore
+} | null>(null)
+
+export const ConfigsProvider = ({
+  children,
+}: {
+  children: React.ReactNode
+}) => {
+  const configsStore = useConfigsStore()
+  const { setTextModels, setImageModels, setTextModel, setImageModel } =
+    configsStore
+
+  const { data: modelList } = useQuery({
+    queryKey: ['list_models'],
+    queryFn: () => listModels(),
+  })
+
+  useEffect(() => {
+    if (!modelList) return
+    if (modelList.length > 0) {
+      const textModel = localStorage.getItem('text_model')
+      if (
+        textModel &&
+        modelList.find((m) => m.provider + ':' + m.model == textModel)
+      ) {
+        setTextModel(
+          modelList.find((m) => m.provider + ':' + m.model == textModel)
+        )
+      } else {
+        setTextModel(modelList.find((m) => m.type == 'text'))
+      }
+      const imageModel = localStorage.getItem('image_model')
+      if (
+        imageModel &&
+        modelList.find((m) => m.provider + ':' + m.model == imageModel)
+      ) {
+        setImageModel(
+          modelList.find((m) => m.provider + ':' + m.model == imageModel)
+        )
+      } else {
+        setImageModel(modelList.find((m) => m.type == 'image'))
+      }
+
+      const textModels = modelList?.filter((m) => m.type == 'text')
+      const imageModels = modelList?.filter((m) => m.type == 'image')
+
+      setTextModels(textModels || [])
+      setImageModels(imageModels || [])
+    }
+  }, [modelList, setImageModel, setTextModel, setTextModels, setImageModels])
+
+  return (
+    <ConfigsContext.Provider value={{ configsStore: useConfigsStore }}>
+      {children}
+    </ConfigsContext.Provider>
+  )
+}
+
+export const useConfigs = () => {
+  const configsStore = useContext(ConfigsContext)
+  if (!configsStore) {
+    throw new Error('useConfigs must be used within a ConfigsProvider')
+  }
+  return configsStore
+}
