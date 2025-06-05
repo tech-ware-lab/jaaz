@@ -9,6 +9,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Plus, X } from 'lucide-react'
 import { LLMConfig } from '@/types/types'
 
@@ -16,6 +23,11 @@ interface AddProviderDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSave: (providerKey: string, config: LLMConfig) => void
+}
+
+type ModelItem = {
+  name: string
+  type: 'text' | 'image' | 'video'
 }
 
 export default function AddProviderDialog({
@@ -26,10 +38,10 @@ export default function AddProviderDialog({
   const [providerName, setProviderName] = useState('')
   const [apiUrl, setApiUrl] = useState('')
   const [apiKey, setApiKey] = useState('')
-  const [models, setModels] = useState<string[]>([''])
+  const [models, setModels] = useState<ModelItem[]>([{ name: '', type: 'text' }])
 
   const handleAddModel = () => {
-    setModels([...models, ''])
+    setModels([...models, { name: '', type: 'text' }])
   }
 
   const handleRemoveModel = (index: number) => {
@@ -38,9 +50,13 @@ export default function AddProviderDialog({
     }
   }
 
-  const handleModelChange = (index: number, value: string) => {
+  const handleModelChange = (index: number, field: keyof ModelItem, value: string) => {
     const newModels = [...models]
-    newModels[index] = value
+    if (field === 'type') {
+      newModels[index][field] = value as 'text' | 'image' | 'video'
+    } else {
+      newModels[index][field] = value
+    }
     setModels(newModels)
   }
 
@@ -50,12 +66,12 @@ export default function AddProviderDialog({
     }
 
     // Filter out empty model names
-    const validModels = models.filter(model => model.trim())
+    const validModels = models.filter(model => model.name.trim())
 
-    // Create models object with default text type
+    // Create models object with specified types
     const modelsConfig: Record<string, { type?: 'text' | 'image' | 'video' }> = {}
     validModels.forEach(model => {
-      modelsConfig[model] = { type: 'text' }
+      modelsConfig[model.name] = { type: model.type }
     })
 
     const config: LLMConfig = {
@@ -74,7 +90,7 @@ export default function AddProviderDialog({
     setProviderName('')
     setApiUrl('')
     setApiKey('')
-    setModels([''])
+    setModels([{ name: '', type: 'text' }])
     onOpenChange(false)
   }
 
@@ -83,7 +99,7 @@ export default function AddProviderDialog({
     setProviderName('')
     setApiUrl('')
     setApiKey('')
-    setModels([''])
+    setModels([{ name: '', type: 'text' }])
     onOpenChange(false)
   }
 
@@ -131,29 +147,30 @@ export default function AddProviderDialog({
 
           {/* Models */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Models</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddModel}
-                className="h-8"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            </div>
+            <Label>Models</Label>
 
             <div className="space-y-2">
               {models.map((model, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <Input
                     placeholder="Enter model name"
-                    value={model}
-                    onChange={(e) => handleModelChange(index, e.target.value)}
+                    value={model.name}
+                    onChange={(e) => handleModelChange(index, 'name', e.target.value)}
                     className="flex-1"
                   />
+                  <Select
+                    value={model.type}
+                    onValueChange={(value) => handleModelChange(index, 'type', value)}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text">text</SelectItem>
+                      <SelectItem value="image">image</SelectItem>
+                      <SelectItem value="video">video</SelectItem>
+                    </SelectContent>
+                  </Select>
                   {models.length > 1 && (
                     <Button
                       type="button"
@@ -167,6 +184,18 @@ export default function AddProviderDialog({
                   )}
                 </div>
               ))}
+            </div>
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddModel}
+                className="h-8"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Model
+              </Button>
             </div>
           </div>
         </div>

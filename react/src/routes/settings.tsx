@@ -28,8 +28,19 @@ export default function Settings() {
       try {
         const response = await fetch('/api/config')
         const config: { [key: string]: LLMConfig } = await response.json()
-        setConfig((curConfig) => {
+
+        setConfig(() => {
           const res: { [key: string]: LLMConfig } = {}
+
+          // First, add custom providers that are not in DEFAULT_CONFIG
+          for (const provider in config) {
+            if (!(provider in DEFAULT_CONFIG) && typeof config[provider] === 'object') {
+              console.log('Adding custom provider:', provider, config[provider])
+              res[provider] = config[provider]
+            }
+          }
+
+          // Then, add providers from DEFAULT_CONFIG
           for (const provider in DEFAULT_CONFIG) {
             if (config[provider] && typeof config[provider] === 'object') {
               res[provider] = {
@@ -40,6 +51,7 @@ export default function Settings() {
               res[provider] = DEFAULT_CONFIG[provider]
             }
           }
+
           return res
         })
 
@@ -85,8 +97,8 @@ export default function Settings() {
 
   const handleAddProvider = (providerKey: string, newConfig: LLMConfig) => {
     setConfig(prev => ({
-      ...prev,
-      [providerKey]: newConfig
+      [providerKey]: newConfig,
+      ...prev
     }))
   }
 
