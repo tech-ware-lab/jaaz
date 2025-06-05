@@ -7,6 +7,7 @@ const { createWriteStream } = require('fs')
 const _7z = require('7zip-min')
 const got = require('got')
 const { pipeline } = require('stream/promises')
+const crypto = require('crypto')
 
 // Check if running in worker process
 const isWorkerProcess =
@@ -146,6 +147,7 @@ async function getLatestComfyUIRelease() {
               downloadUrl: fallbackAsset.browser_download_url,
               fileName: fallbackAsset.name,
               size: fallbackAsset.size,
+              digest: fallbackAsset.digest,
             })
             return
           }
@@ -155,6 +157,7 @@ async function getLatestComfyUIRelease() {
             downloadUrl: windowsPortableAsset.browser_download_url,
             fileName: windowsPortableAsset.name,
             size: windowsPortableAsset.size,
+            digest: windowsPortableAsset.digest,
           })
         } catch (error) {
           reject(
@@ -290,6 +293,56 @@ function sendCancelled(message) {
     }
   }
   console.log(`[ComfyUI Install Cancelled] ${cancelMessage}`)
+}
+
+/**
+ * Calculate SHA256 hash of a file
+ * @param {string} filePath - Path to the file
+ * @returns {Promise<string>} - Promise resolving to SHA256 hash in hex format
+ */
+async function calculateFileHash(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256')
+    const stream = fs.createReadStream(filePath)
+
+    stream.on('data', (data) => {
+      hash.update(data)
+    })
+
+    stream.on('end', () => {
+      resolve(hash.digest('hex'))
+    })
+
+    stream.on('error', (error) => {
+      reject(new Error(`Failed to calculate file hash: ${error.message}`))
+    })
+  })
+}
+
+/**
+ * Verify file integrity using SHA256 hash
+ * @param {string} filePath - Path to the file
+ * @param {string} expectedDigest - Expected digest in format "sha256:hash" or just "hash"
+ * @returns {Promise<boolean>} - Promise resolving to true if hash matches
+ */
+async function verifyFileIntegrity(filePath, expectedDigest) {
+  if (!expectedDigest) {
+    return false // Can't verify without expected hash
+  }
+
+  try {
+    const fileHash = await calculateFileHash(filePath)
+
+    // Extract hash from digest (handle "sha256:hash" format)
+    const expectedHash = expectedDigest.startsWith('sha256:')
+      ? expectedDigest.substring(7)
+      : expectedDigest
+
+    return fileHash.toLowerCase() === expectedHash.toLowerCase()
+  } catch (error) {
+    console.error('Error verifying file integrity:', error)
+    return false
+  }
 }
 
 /**
@@ -614,17 +667,36 @@ async function installComfyUI() {
     if (fs.existsSync(zipPath)) {
       sendLog('Found existing installation package, checking integrity...')
       try {
-        const stats = fs.statSync(zipPath)
-        if (stats.size > 1000000) {
-          // At least 1MB, simple integrity check
-          sendLog('Installation package is complete, skipping download')
-          shouldDownload = false
+        // Try SHA256 verification first if digest is available
+        if (releaseInfo.digest) {
+          sendLog('Verifying file integrity using SHA256...')
+          const isValid = await verifyFileIntegrity(zipPath, releaseInfo.digest)
+          if (isValid) {
+            sendLog('File integrity verified successfully, skipping download')
+            shouldDownload = false
+          } else {
+            sendLog('File integrity verification failed, re-downloading')
+            fs.unlinkSync(zipPath)
+          }
         } else {
-          sendLog('Installation package is incomplete, re-downloading')
-          fs.unlinkSync(zipPath)
+          // Fallback to size check for older releases without digest
+          sendLog('No SHA256 digest available, using size check...')
+          const stats = fs.statSync(zipPath)
+          if (stats.size > 1000000) {
+            // At least 1MB, simple integrity check
+            sendLog(
+              'Installation package appears complete based on size, skipping download'
+            )
+            shouldDownload = false
+          } else {
+            sendLog('Installation package is incomplete, re-downloading')
+            fs.unlinkSync(zipPath)
+          }
         }
       } catch (error) {
-        sendLog('Error checking installation package, re-downloading')
+        sendLog(
+          `Error checking installation package: ${error.message}, re-downloading`
+        )
         shouldDownload = true
       }
     }
@@ -810,4 +882,6 @@ module.exports = {
   downloadFile,
   findComfyUIMainDir,
   updateConfigWithComfyUI,
+  calculateFileHash,
+  verifyFileIntegrity,
 }
