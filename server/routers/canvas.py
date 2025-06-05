@@ -37,3 +37,8 @@ async def rename_canvas(id: str, request: Request):
     name = data.get('name')
     await db_service.rename_canvas(id, name)
     return {"id": id }
+
+@router.delete("/{id}/delete")
+async def delete_canvas(id: str):
+    await db_service.delete_canvas(id)
+    return {"id": id }
