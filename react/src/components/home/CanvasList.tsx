@@ -1,10 +1,11 @@
 import { listCanvases } from '@/api/canvas'
+import CanvasCard from '@/components/home/CanvasCard'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 
 const CanvasList: React.FC = () => {
-  const { data: canvases } = useQuery({
+  const { data: canvases, refetch } = useQuery({
     queryKey: ['canvases'],
     queryFn: listCanvases,
   })
@@ -29,29 +30,14 @@ const CanvasList: React.FC = () => {
 
       <AnimatePresence>
         <div className="grid grid-cols-4 gap-4 w-full pb-10">
-          {canvases?.map((canvas) => (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+          {canvases?.map((canvas, index) => (
+            <CanvasCard
               key={canvas.id}
-              className="border border-primary/20 rounded-xl p-3 flex flex-col gap-2 cursor-pointer hover:border-primary/40 transition-all duration-300 hover:shadow-md hover:bg-primary/5 active:scale-99"
-              onClick={() => handleCanvasClick(canvas.id)}
-            >
-              {canvas.thumbnail ? (
-                <img
-                  src={canvas.thumbnail}
-                  alt={canvas.name}
-                  className="w-full h-40 object-cover rounded-lg"
-                />
-              ) : (
-                <div className="w-full h-40 bg-primary/20 rounded-lg" />
-              )}
-              <div className="flex flex-col">
-                <h3 className="text-lg font-bold">{canvas.name}</h3>
-                <p className="text-sm text-gray-500">{canvas.created_at}</p>
-              </div>
-            </motion.div>
+              index={index}
+              canvas={canvas}
+              handleCanvasClick={handleCanvasClick}
+              handleDeleteCanvas={() => refetch()}
+            />
           ))}
         </div>
       </AnimatePresence>
