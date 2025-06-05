@@ -6,7 +6,7 @@ import { useMutation } from '@tanstack/react-query'
 import { ArrowUp, Loader2, PlusIcon, XIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Textarea, { TextAreaRef } from 'rc-textarea'
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import ModelSelector from './ModelSelector'
 
@@ -48,12 +48,17 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     },
   })
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      uploadImageMutation(file)
-    }
-  }
+  const handleImagesUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files
+      if (files) {
+        for (const file of files) {
+          uploadImageMutation(file)
+        }
+      }
+    },
+    [uploadImageMutation]
+  )
 
   const handleSendPrompt = () => {
     if (pending) return
@@ -172,7 +177,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             ref={imageInputRef}
             type="file"
             accept="image/*"
-            onChange={handleImageUpload}
+            multiple
+            onChange={handleImagesUpload}
             hidden
           />
           <Button
