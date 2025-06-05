@@ -7,7 +7,8 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 
 <img width="900" alt="Screenshot 2025-06-02 at 3 51 56 AM" src="https://github.com/user-attachments/assets/5d8efe74-99b0-41bc-aa3e-6f7b92b69c36" />
 
-<img width="900" alt="Screenshot 2025-06-02 at 3 58 24 AM" src="https://github.com/user-attachments/assets/e4ca2740-c3a0-4d3b-be38-32d66fb419cc" />
+
+<img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/6001af3a-2e2d-4bce-8112-7ee81cc75670" />
 
 ## ✨ Key Features
 
@@ -35,7 +36,8 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 
 3. Start chatting with agent to generate stories or storyboards!
 
-<img width="1727" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/6001af3a-2e2d-4bce-8112-7ee81cc75670" />
+
+<img width="900" alt="Screenshot 2025-06-02 at 3 58 24 AM" src="https://github.com/user-attachments/assets/e4ca2740-c3a0-4d3b-be38-32d66fb419cc" />
 
 
 ## Manual Install (For Linux or local builds)
