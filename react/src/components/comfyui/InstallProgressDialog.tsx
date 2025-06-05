@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 interface InstallProgressDialogProps {
   open: boolean;
@@ -34,6 +34,24 @@ const InstallProgressDialog = ({ open, onOpenChange, onInstallComplete }: Instal
   const [hasError, setHasError] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isCancelled, setIsCancelled] = useState(false);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when logs change
+  useEffect(() => {
+    if (logContainerRef.current) {
+      // Find the scrollable viewport within ScrollArea
+      const scrollableElement = logContainerRef.current.closest('[data-radix-scroll-area-viewport]') as HTMLElement;
+      if (scrollableElement) {
+        scrollableElement.scrollTop = scrollableElement.scrollHeight;
+      } else {
+        // Fallback: try to scroll the parent element
+        const parent = logContainerRef.current.parentElement;
+        if (parent) {
+          parent.scrollTop = parent.scrollHeight;
+        }
+      }
+    }
+  }, [logs]);
 
   useEffect(() => {
     if (!open) {
@@ -157,11 +175,11 @@ const InstallProgressDialog = ({ open, onOpenChange, onInstallComplete }: Instal
           <div className="space-y-2">
             <div className="text-sm font-medium">Installation Log:</div>
             <ScrollArea className="h-48 w-full border rounded-md p-3">
-              <div className="space-y-1 font-mono text-xs">
+              <div className="space-y-1 font-mono text-xs" ref={logContainerRef}>
                 {logs.map((log, index) => (
                   <div
                     key={index}
-                    className={`${log.toLowerCase().includes('error') || log.toLowerCase().includes('failed')
+                    className={`break-all whitespace-pre-wrap ${log.toLowerCase().includes('error') || log.toLowerCase().includes('failed')
                       ? 'text-red-600 dark:text-red-400'
                       : log.toLowerCase().includes('success') || log.toLowerCase().includes('completed')
                         ? 'text-green-600 dark:text-green-400'
