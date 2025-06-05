@@ -14,7 +14,11 @@ export default function CommonSetting({
   config,
   onConfigChange
 }: CommonSettingProps) {
-  const provider = PROVIDER_NAME_MAPPING[providerKey]
+  const provider = PROVIDER_NAME_MAPPING[providerKey] || {
+    name: providerKey.charAt(0).toUpperCase() + providerKey.slice(1).replace(/_/g, ' '),
+    // TODO: replace icon
+    icon: 'https://openai.com/favicon.ico'
+  }
 
   const handleChange = (field: keyof LLMConfig, value: string | number) => {
     onConfigChange(providerKey, {

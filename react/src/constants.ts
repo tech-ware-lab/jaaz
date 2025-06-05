@@ -25,8 +25,8 @@ export const PROVIDER_NAME_MAPPING: {
     icon: 'https://www.wavespeed.ai/favicon.ico',
   },
   comfyui: {
-    name: 'ComfyUI (Local)',
-    icon: 'https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/web/favicon.ico',
+    name: 'ComfyUI',
+    icon: 'https://framerusercontent.com/images/3cNQMWKzIhIrQ5KErBm7dSmbd2w.png',
   },
 }
 export const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {

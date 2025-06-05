@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DEFAULT_CONFIG } from '@/constants'
 import { LLMConfig } from '@/types/types'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ArrowLeftIcon, Save } from 'lucide-react'
+import { ArrowLeftIcon, Save, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import CommonSetting from '@/components/settings/CommonSetting'
 import ComfyuiSetting from '@/components/settings/ComfyuiSetting'
+import AddProviderDialog from '@/components/settings/AddProviderDialog'
 
 export const Route = createFileRoute('/settings')({
   component: Settings,
@@ -18,6 +19,7 @@ export default function Settings() {
   }>(DEFAULT_CONFIG)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [isAddProviderDialogOpen, setIsAddProviderDialogOpen] = useState(false)
 
   const navigate = useNavigate()
 
@@ -81,6 +83,13 @@ export default function Settings() {
     }))
   }
 
+  const handleAddProvider = (providerKey: string, newConfig: LLMConfig) => {
+    setConfig(prev => ({
+      ...prev,
+      [providerKey]: newConfig
+    }))
+  }
+
   const handleSave = async () => {
     try {
       setErrorMessage('')
@@ -118,11 +127,22 @@ export default function Settings() {
       >
         <ArrowLeftIcon />
       </Button>
+
       <Card className="w-full max-w-[800px] shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
             Settings
           </CardTitle>
+          <div className="pt-4">
+            <Button
+              onClick={() => setIsAddProviderDialogOpen(true)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Provider
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6 pb-26">
           {isLoading && (
@@ -163,6 +183,12 @@ export default function Settings() {
           )}
         </CardContent>
       </Card>
+
+      <AddProviderDialog
+        open={isAddProviderDialogOpen}
+        onOpenChange={setIsAddProviderDialogOpen}
+        onSave={handleAddProvider}
+      />
     </div>
   )
 }
