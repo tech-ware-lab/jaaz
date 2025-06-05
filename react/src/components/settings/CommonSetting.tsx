@@ -1,19 +1,23 @@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 import { PROVIDER_NAME_MAPPING } from '@/constants'
 import { LLMConfig } from '@/types/types'
 import AddModelsList from './AddModelsList'
+import { Trash2 } from 'lucide-react'
 
 interface CommonSettingProps {
   providerKey: string
   config: LLMConfig
   onConfigChange: (key: string, newConfig: LLMConfig) => void
+  onDeleteProvider?: (providerKey: string) => void
 }
 
 export default function CommonSetting({
   providerKey,
   config,
-  onConfigChange
+  onConfigChange,
+  onDeleteProvider
 }: CommonSettingProps) {
   const provider = PROVIDER_NAME_MAPPING[providerKey] || {
     name: providerKey.charAt(0).toUpperCase() + providerKey.slice(1).replace(/_/g, ' '),
@@ -38,6 +42,12 @@ export default function CommonSetting({
     })
   }
 
+  const handleDelete = () => {
+    if (onDeleteProvider && isCustomProvider) {
+      onDeleteProvider(providerKey)
+    }
+  }
+
   const isImageProvider = providerKey === 'replicate' || providerKey === 'huggingface'
   const hasMaxTokens = !isImageProvider
 
@@ -55,6 +65,21 @@ export default function CommonSetting({
         </p>
         {isCustomProvider && <span>✨ Custom Provider</span>}
         {isImageProvider && <span>🎨 Image Generation</span>}
+
+        {/* Delete Button - only for custom providers */}
+        {isCustomProvider && onDeleteProvider && (
+          <div className="ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDelete}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Delete
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* API URL Input */}

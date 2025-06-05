@@ -102,6 +102,14 @@ export default function Settings() {
     }))
   }
 
+  const handleDeleteProvider = (providerKey: string) => {
+    setConfig(prev => {
+      const newConfig = { ...prev }
+      delete newConfig[providerKey]
+      return newConfig
+    })
+  }
+
   const handleSave = async () => {
     try {
       setErrorMessage('')
@@ -175,6 +183,7 @@ export default function Settings() {
                   providerKey={key}
                   config={config[key]}
                   onConfigChange={handleConfigChange}
+                  onDeleteProvider={handleDeleteProvider}
                 />
               )}
 
