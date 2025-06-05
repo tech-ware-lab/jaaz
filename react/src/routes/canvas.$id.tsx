@@ -42,7 +42,7 @@ function Canvas() {
         }
       }
     }
-  }, [canvas])
+  }, [canvas, search.sessionId])
 
   const handleNameSave = async () => {
     await renameCanvas(id, canvasName)

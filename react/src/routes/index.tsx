@@ -6,9 +6,9 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion } from 'motion/react'
+import { nanoid } from 'nanoid'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { v4 as uuidv4 } from 'uuid'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -63,9 +63,9 @@ function Home() {
             onSendMessages={(messages, configs) => {
               createCanvasMutation({
                 name: 'New Canvas',
-                canvas_id: uuidv4(),
+                canvas_id: nanoid(),
                 messages: messages,
-                session_id: uuidv4(),
+                session_id: nanoid(),
                 text_model: configs.textModel,
                 image_model: configs.imageModel,
               })
