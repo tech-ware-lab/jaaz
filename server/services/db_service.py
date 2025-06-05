@@ -242,6 +242,7 @@ class DatabaseService:
             if row:
                 return {
                     'data': json.loads(row['data']) if row['data'] else {},
+                    'name': row['name'],
                     'sessions': sessions
                 }
             return None
@@ -250,6 +251,12 @@ class DatabaseService:
         """Delete canvas and related data"""
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("DELETE FROM canvases WHERE id = ?", (id,))
+            await db.commit()
+
+    async def rename_canvas(self, id: str, name: str):
+        """Rename canvas"""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("UPDATE canvases SET name = ? WHERE id = ?", (name, id))
             await db.commit()
 
 # Create a singleton instance

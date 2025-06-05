@@ -1,17 +1,16 @@
-import { getCanvas } from '@/api/canvas'
+import { getCanvas, renameCanvas } from '@/api/canvas'
 import CanvasExcali from '@/components/canvas/CanvasExcali'
+import CanvasHeader from '@/components/canvas/CanvasHeader'
 import ChatInterface from '@/components/chat/Chat'
-import LeftSidebar from '@/components/sidebar/LeftSidebar'
-import { Button } from '@/components/ui/button'
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
+import { Session } from '@/types/types'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, useParams } from '@tanstack/react-router'
-import { Loader2, MessageCircleIcon } from 'lucide-react'
-import { nanoid } from 'nanoid'
+import { createFileRoute, useParams, useSearch } from '@tanstack/react-router'
+import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/canvas/$id')({
@@ -19,11 +18,11 @@ export const Route = createFileRoute('/canvas/$id')({
 })
 
 function Canvas() {
-  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(false)
-  const [sessionId, setSessionId] = useState<string>('')
-  const [curFile, setCurFile] = useState('')
+  const [canvasName, setCanvasName] = useState('')
+  const [session, setSession] = useState<Session | null>(null)
 
   const { id } = useParams({ from: '/canvas/$id' })
+  const search = useSearch({ from: '/canvas/$id' }) as { sessionId: string }
 
   const { data: canvas, isLoading } = useQuery({
     queryKey: ['canvas', id],
@@ -32,13 +31,36 @@ function Canvas() {
 
   useEffect(() => {
     if (canvas) {
-      setSessionId(canvas.sessions[0].id)
+      setCanvasName(canvas.name)
+      if (canvas.sessions.length > 0) {
+        if (search.sessionId) {
+          setSession(
+            canvas.sessions.find((s) => s.id === search.sessionId) || null
+          )
+        } else {
+          setSession(canvas.sessions[0])
+        }
+      }
     }
   }, [canvas])
 
+  const handleNameSave = async () => {
+    await renameCanvas(id, canvasName)
+  }
+
   return (
-    <div className="flex w-screen h-screen">
-      <ResizablePanelGroup direction="horizontal" className="w-screen h-screen">
+    <div className="flex flex-col w-screen h-screen">
+      <CanvasHeader
+        canvasName={canvasName}
+        canvasId={id}
+        onNameChange={setCanvasName}
+        onNameSave={handleNameSave}
+      />
+      <ResizablePanelGroup
+        direction="horizontal"
+        className="w-screen h-screen"
+        autoSaveId="jaaz-chat-panel"
+      >
         <ResizablePanel defaultSize={80}>
           <div className="w-full h-full">
             {isLoading ? (
@@ -56,37 +78,22 @@ function Canvas() {
         <ResizableHandle />
 
         <ResizablePanel defaultSize={20} maxSize={35} minSize={15}>
-          <div className="flex-1 flex-grow px-4 bg-accent w-full">
+          <div className="flex-1 flex-grow bg-accent/50 w-full">
             <ChatInterface
-              sessionId={sessionId}
+              session={session}
+              sessionList={canvas?.sessions || []}
               onClickNewChat={() => {
-                setSessionId(nanoid())
+                // setSessionId(nanoid())
+              }}
+              onSessionChange={(sessionId) => {
+                setSession(
+                  canvas?.sessions.find((s) => s.id === sessionId) || null
+                )
               }}
             />
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
-      {isLeftSidebarOpen && (
-        <div className="fixed left-0 top-0 w-[20%] bg-sidebar h-screen">
-          <LeftSidebar
-            sessionId={sessionId}
-            setSessionId={setSessionId}
-            curFile={curFile}
-            setCurFile={setCurFile}
-            onClose={() => setIsLeftSidebarOpen(false)}
-          />
-        </div>
-      )}
-      {!isLeftSidebarOpen && (
-        <div className="fixed left-[60px] top-[16px]">
-          <Button
-            onClick={() => setIsLeftSidebarOpen(true)}
-            variant={'secondary'}
-          >
-            <MessageCircleIcon />
-          </Button>
-        </div>
-      )}
     </div>
   )
 }

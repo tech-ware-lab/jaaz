@@ -30,3 +30,10 @@ async def save_canvas(id: str, request: Request):
     data_str = json.dumps(data)
     await db_service.save_canvas_data(id, data_str)
     return {"id": id }
+
+@router.post("/{id}/rename")
+async def rename_canvas(id: str, request: Request):
+    data = await request.json()
+    name = data.get('name')
+    await db_service.rename_canvas(id, name)
+    return {"id": id }

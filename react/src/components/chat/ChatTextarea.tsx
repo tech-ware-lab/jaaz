@@ -1,31 +1,14 @@
-import { listModels } from '@/api/model'
 import { uploadImage } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { Message, Model } from '@/types/types'
+import { useMutation } from '@tanstack/react-query'
 import { ArrowUp, Loader2, PlusIcon, XIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Textarea, { TextAreaRef } from 'rc-textarea'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select'
-
-type Model = {
-  provider: string
-  model: string
-  url: string
-}
-
-type Message = {
-  role: 'user' | 'assistant'
-  content: string
-}
+import ModelSelector from './ModelSelector'
 
 type ChatTextareaProps = {
   value: string
@@ -71,41 +54,6 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       uploadImageMutation(file)
     }
   }
-
-  const { data: modelList } = useQuery({
-    queryKey: ['modelList'],
-    queryFn: listModels,
-  })
-
-  useEffect(() => {
-    if (modelList && modelList.length > 0) {
-      const textModel = localStorage.getItem('text_model')
-      if (
-        textModel &&
-        modelList.find((m) => m.provider + ':' + m.model == textModel)
-      ) {
-        setTextModel(
-          modelList.find((m) => m.provider + ':' + m.model == textModel)
-        )
-      } else {
-        setTextModel(modelList.find((m) => m.type == 'text'))
-      }
-      const imageModel = localStorage.getItem('image_model')
-      if (
-        imageModel &&
-        modelList.find((m) => m.provider + ':' + m.model == imageModel)
-      ) {
-        setImageModel(
-          modelList.find((m) => m.provider + ':' + m.model == imageModel)
-        )
-      } else {
-        setImageModel(modelList.find((m) => m.type == 'image'))
-      }
-    }
-  }, [modelList])
-
-  const textModels = modelList?.filter((m) => m.type == 'text') ?? []
-  const imageModels = modelList?.filter((m) => m.type == 'image') ?? []
 
   const handleSendPrompt = () => {
     if (pending) return
@@ -219,7 +167,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       />
 
       <div className="flex items-center justify-between gap-2 w-full">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 max-w-[calc(100%-50px)]">
           <input
             ref={imageInputRef}
             type="file"
@@ -235,57 +183,16 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             <PlusIcon className="size-4" />
           </Button>
 
-          <Select
-            value={textModel?.provider + ':' + textModel?.model}
-            onValueChange={(value) => {
-              localStorage.setItem('text_model', value)
-              setTextModel(
-                modelList?.find((m) => m.provider + ':' + m.model == value)
-              )
-            }}
-          >
-            <SelectTrigger className="w-fit">
-              <SelectValue placeholder="Theme" />
-            </SelectTrigger>
-            <SelectContent>
-              {textModels.map((model) => (
-                <SelectItem
-                  key={model.provider + ':' + model.model}
-                  value={model.provider + ':' + model.model}
-                >
-                  {model.model}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={imageModel?.provider + ':' + imageModel?.model}
-            onValueChange={(value) => {
-              localStorage.setItem('image_model', value)
-              setImageModel(
-                modelList?.find((m) => m.provider + ':' + m.model == value)
-              )
-            }}
-          >
-            <SelectTrigger className="w-fit">
-              <span>🎨</span>
-              <SelectValue placeholder="Theme" />
-            </SelectTrigger>
-            <SelectContent>
-              {imageModels.map((model) => (
-                <SelectItem
-                  key={model.provider + ':' + model.model}
-                  value={model.provider + ':' + model.model}
-                >
-                  {model.model}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ModelSelector
+            imageModel={imageModel}
+            textModel={textModel}
+            setImageModel={setImageModel}
+            setTextModel={setTextModel}
+          />
         </div>
 
         <Button
+          className="shrink-0"
           variant="default"
           size="icon"
           onClick={handleSendPrompt}
