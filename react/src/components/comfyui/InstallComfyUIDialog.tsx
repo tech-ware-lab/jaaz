@@ -6,60 +6,79 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import Spinner from '@/components/ui/Spinner';
-import { toast } from "sonner";
-import { useState } from 'react';
-import InstallProgressDialog from './InstallProgressDialog';
+} from '@/components/ui/dialog'
+import Spinner from '@/components/ui/Spinner'
+import { useConfigs } from '@/contexts/configs'
+import { useCallback, useState } from 'react'
+import { toast } from 'sonner'
+import InstallProgressDialog from './InstallProgressDialog'
 
 interface InstallComfyUIDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onInstallSuccess?: () => void;
+  onOpenChange?: (open: boolean) => void
+  onInstallSuccess?: () => void
 }
 
-const InstallComfyUIDialog = ({ open, onOpenChange, onInstallSuccess }: InstallComfyUIDialogProps) => {
-  const [isInstalling, setIsInstalling] = useState(false);
-  const [showProgressDialog, setShowProgressDialog] = useState(false);
+const InstallComfyUIDialog = ({
+  onOpenChange,
+  onInstallSuccess,
+}: InstallComfyUIDialogProps) => {
+  const [isInstalling, setIsInstalling] = useState(false)
+  const [showProgressDialog, setShowProgressDialog] = useState(false)
+
+  const { configsStore } = useConfigs()
+  const { showInstallDialog: open, setShowInstallDialog } =
+    configsStore.getState()
 
   const handleInstallComfyUI = async () => {
-    setIsInstalling(true);
-    setShowProgressDialog(true);
-    onOpenChange(false); // Close the initial dialog
+    setIsInstalling(true)
+    setShowProgressDialog(true)
+    handleOpenChange(false) // Close the initial dialog
 
     try {
-      const result = await window.electronAPI.installComfyUI();
+      const result = await window.electronAPI.installComfyUI()
       if (result.success) {
-        toast.success("ComfyUI installation successful!");
+        toast.success('ComfyUI installation successful!')
       } else {
-        toast.error(`Installation failed: ${result.error}`);
-        setShowProgressDialog(false);
+        toast.error(`Installation failed: ${result.error}`)
+        setShowProgressDialog(false)
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      toast.error(`Installation failed: ${errorMessage}`);
-      setShowProgressDialog(false);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
+      toast.error(`Installation failed: ${errorMessage}`)
+      setShowProgressDialog(false)
     } finally {
-      setIsInstalling(false);
+      setIsInstalling(false)
     }
-  };
+  }
 
   const handleInstallComplete = () => {
-    setShowProgressDialog(false);
-    setIsInstalling(false);
-    onInstallSuccess?.();
-  };
+    setShowProgressDialog(false)
+    setIsInstalling(false)
+    onInstallSuccess?.()
+
+    window.location.reload()
+  }
+
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      setShowInstallDialog(open)
+      onOpenChange?.(open)
+    },
+    [onOpenChange, setShowInstallDialog]
+  )
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>🎨 Install Flux Image Generation Model</DialogTitle>
             <DialogDescription>
               No image generation models detected.
               <br />
-              To use AI image generation features, you can install ComfyUI and Flux models.
+              To use AI image generation features, you can install ComfyUI and
+              Flux models.
             </DialogDescription>
             <div className="text-sm text-muted-foreground mt-2">
               This will:
@@ -73,22 +92,19 @@ const InstallComfyUIDialog = ({ open, onOpenChange, onInstallSuccess }: InstallC
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleOpenChange(false)}
               disabled={isInstalling}
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleInstallComfyUI}
-              disabled={isInstalling}
-            >
+            <Button onClick={handleInstallComfyUI} disabled={isInstalling}>
               {isInstalling ? (
                 <>
                   <Spinner />
                   Installing...
                 </>
               ) : (
-                "Install Flux Image Model"
+                'Install Flux Image Model'
               )}
             </Button>
           </DialogFooter>
@@ -101,7 +117,7 @@ const InstallComfyUIDialog = ({ open, onOpenChange, onInstallSuccess }: InstallC
         onInstallComplete={handleInstallComplete}
       />
     </>
-  );
-};
+  )
+}
 
-export default InstallComfyUIDialog;
+export default InstallComfyUIDialog

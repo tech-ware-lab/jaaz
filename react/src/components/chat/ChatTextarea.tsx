@@ -1,5 +1,6 @@
 import { uploadImage } from '@/api/upload'
 import { Button } from '@/components/ui/button'
+import { useConfigs } from '@/contexts/configs'
 import { cn } from '@/lib/utils'
 import { Message, Model } from '@/types/types'
 import { useMutation } from '@tanstack/react-query'
@@ -33,11 +34,13 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   onChange,
   onSendMessages,
 }) => {
+  const { configsStore } = useConfigs()
+  const { textModel, imageModel, imageModels, setShowInstallDialog } =
+    configsStore.getState()
+
   const textareaRef = useRef<TextAreaRef>(null)
   const [imageIds, setImageIds] = useState<string[]>([])
   const [isFocused, setIsFocused] = useState(false)
-  const [textModel, setTextModel] = useState<Model>()
-  const [imageModel, setImageModel] = useState<Model>()
 
   const imageInputRef = useRef<HTMLInputElement>(null)
 
@@ -60,14 +63,17 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     [uploadImageMutation]
   )
 
-  const handleSendPrompt = () => {
+  const handleSendPrompt = useCallback(() => {
     if (pending) return
     if (!textModel) {
-      toast.error('Please select a text model')
+      toast.error(
+        "Please select a text model! Go to Settings to set your API keys if you haven't done so."
+      )
       return
     }
-    if (!imageModel) {
-      toast.error('Please select an image model')
+    // Check if there are image models, if not, prompt to install ComfyUI
+    if (!imageModel || imageModels.length === 0) {
+      setShowInstallDialog(true)
       return
     }
     if (value.length === 0 || value.trim() === '') {
@@ -92,7 +98,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       textModel: textModel,
       imageModel: imageModel,
     })
-  }
+  }, [pending, textModel, imageModel, imageModels, value, onSendMessages])
 
   // TODO: Add Drag and Drop for images
 
@@ -189,12 +195,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             <PlusIcon className="size-4" />
           </Button>
 
-          <ModelSelector
-            imageModel={imageModel}
-            textModel={textModel}
-            setImageModel={setImageModel}
-            setTextModel={setTextModel}
-          />
+          <ModelSelector />
         </div>
 
         <Button

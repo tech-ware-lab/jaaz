@@ -7,6 +7,8 @@ import { Toaster } from 'sonner'
 import { routeTree } from './route-tree.gen'
 
 import '@/assets/style/App.css'
+import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
+import { ConfigsProvider } from '@/contexts/configs'
 
 const router = createRouter({ routeTree })
 
@@ -20,12 +22,18 @@ const queryClient = new QueryClient()
 
 function App() {
   const { theme } = useTheme()
+
   return (
     <ThemeProvider defaultTheme={theme} storageKey="vite-ui-theme">
       <QueryClientProvider client={queryClient}>
-        <div className="app-container">
-          <RouterProvider router={router} />
-        </div>
+        <ConfigsProvider>
+          <div className="app-container">
+            <RouterProvider router={router} />
+
+            {/* Install ComfyUI Dialog */}
+            <InstallComfyUIDialog />
+          </div>
+        </ConfigsProvider>
       </QueryClientProvider>
       <Toaster />
     </ThemeProvider>
