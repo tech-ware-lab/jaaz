@@ -5,6 +5,8 @@ const https = require('https')
 const { spawn } = require('child_process')
 const { createWriteStream } = require('fs')
 const _7z = require('7zip-min')
+const got = require('got')
+const { pipeline } = require('stream/promises')
 
 // Check if running in worker process
 const isWorkerProcess =
@@ -291,150 +293,206 @@ function sendCancelled(message) {
 }
 
 /**
- * Helper function to download files
+ * Helper function to download files with resume support and retry mechanism using Got
  * @param {string} url - Download URL
  * @param {string} filePath - Local file path
  * @param {Function} onProgress - Progress callback
+ * @param {Object} options - Download options
  * @returns {Promise<void>}
  */
-async function downloadFile(url, filePath, onProgress) {
-  return new Promise((resolve, reject) => {
-    // Check cancellation before starting
-    if (isInstallationCancelled()) {
-      reject(new Error('Installation cancelled'))
-      return
+async function downloadFile(url, filePath, onProgress, options = {}) {
+  const { maxRetries = 5, timeout = 60000, retryDelay = 2000 } = options
+
+  // Check if file already exists for resume
+  let resumeSize = 0
+  if (fs.existsSync(filePath)) {
+    try {
+      const stats = fs.statSync(filePath)
+      resumeSize = stats.size
+      sendLog(
+        `Resuming download from ${Math.round(resumeSize / 1024 / 1024)}MB`
+      )
+    } catch (error) {
+      sendLog('Could not get existing file size, starting fresh download')
+      resumeSize = 0
     }
+  }
 
-    const file = createWriteStream(filePath)
-
-    const downloadFromUrl = (downloadUrl, maxRedirects = 5) => {
-      if (maxRedirects <= 0) {
-        reject(new Error('Too many redirects'))
-        return
-      }
-
-      // Check cancellation before each request
-      if (isInstallationCancelled()) {
-        file.close()
-        fs.unlink(filePath, () => {}) // Delete incomplete file
-        reject(new Error('Installation cancelled'))
-        return
-      }
-
-      const req = https.get(downloadUrl, (response) => {
-        // Store current request for cancellation
-        currentDownloadRequest = req
-
-        // Handle redirects (301, 302, 303, 307, 308)
-        if (
-          response.statusCode >= 300 &&
-          response.statusCode < 400 &&
-          response.headers.location
-        ) {
-          console.log(`Redirecting to: ${response.headers.location}`)
-
-          // Handle relative URLs
-          let redirectUrl = response.headers.location
-          if (redirectUrl.startsWith('/')) {
-            // Relative URL - construct full URL
-            const url = new URL(downloadUrl)
-            redirectUrl = `${url.protocol}//${url.host}${redirectUrl}`
-          } else if (!redirectUrl.startsWith('http')) {
-            // Relative path - construct full URL
-            const url = new URL(downloadUrl)
-            redirectUrl = new URL(redirectUrl, url).href
-          }
-
-          downloadFromUrl(redirectUrl, maxRedirects - 1)
-          return
-        }
-
-        if (response.statusCode !== 200) {
-          reject(new Error(`Download failed: HTTP ${response.statusCode}`))
-          return
-        }
-
-        const totalSize = parseInt(response.headers['content-length'] || '0')
-        let downloadedSize = 0
-        let lastDataTime = Date.now()
-
-        // Set up idle timeout to detect stalled downloads
-        const idleTimeout = setInterval(() => {
-          const now = Date.now()
-          // If no data received for 60 seconds, consider it stalled
-          if (now - lastDataTime > 60000) {
-            clearInterval(idleTimeout)
-            response.destroy()
-            file.close()
-            fs.unlink(filePath, () => {}) // Delete incomplete file
-            reject(
-              new Error('Download stalled - no data received for 60 seconds')
-            )
-          }
-        }, 5000) // Check every 5 seconds
-
-        response.on('data', (chunk) => {
-          // Check cancellation during download
-          if (isInstallationCancelled()) {
-            clearInterval(idleTimeout)
-            response.destroy()
-            file.close()
-            fs.unlink(filePath, () => {}) // Delete incomplete file
-            reject(new Error('Installation cancelled'))
-            return
-          }
-
-          // Update last data received time
-          lastDataTime = Date.now()
-
-          downloadedSize += chunk.length
-          if (totalSize > 0) {
-            const progress = downloadedSize / totalSize
-            onProgress(progress)
-          }
-        })
-
-        response.pipe(file)
-
-        file.on('finish', () => {
-          clearInterval(idleTimeout)
-          file.close()
-          currentDownloadRequest = null
-          resolve()
-        })
-
-        file.on('error', (error) => {
-          clearInterval(idleTimeout)
-          fs.unlink(filePath, () => {}) // Delete incomplete file
-          reject(error)
-        })
-
-        // Handle response errors
-        response.on('error', (error) => {
-          clearInterval(idleTimeout)
-          file.close()
-          fs.unlink(filePath, () => {}) // Delete incomplete file
-          reject(error)
-        })
-      })
-
-      req.on('error', (error) => {
-        reject(error)
-      })
-
-      // Set connection timeout (30 seconds to establish connection)
-      req.setTimeout(30000, () => {
-        req.destroy()
-        reject(
-          new Error(
-            'Connection timeout - failed to establish connection within 30 seconds'
-          )
+  const downloadOptions = {
+    retry: {
+      limit: maxRetries,
+      methods: ['GET'],
+      statusCodes: [408, 413, 429, 500, 502, 503, 504, 521, 522, 524],
+      errorCodes: [
+        'ETIMEDOUT',
+        'ECONNRESET',
+        'EADDRINUSE',
+        'ECONNREFUSED',
+        'EPIPE',
+        'ENOTFOUND',
+        'ENETUNREACH',
+        'EAI_AGAIN',
+      ],
+      calculateDelay: ({ attemptCount }) => {
+        const delay = retryDelay * Math.pow(2, attemptCount - 1)
+        sendLog(
+          `Retry attempt ${attemptCount}/${maxRetries + 1}, waiting ${
+            delay / 1000
+          }s...`
         )
-      })
+        return delay
+      },
+    },
+    timeout: {
+      request: timeout,
+    },
+    headers: {
+      'User-Agent': 'Jaaz-App/1.0.0',
+    },
+  }
+
+  // Add range header for resume
+  if (resumeSize > 0) {
+    downloadOptions.headers.Range = `bytes=${resumeSize}-`
+  }
+
+  try {
+    // Create write stream (append mode for resume)
+    const writeStream = createWriteStream(filePath, {
+      flags: resumeSize > 0 ? 'a' : 'w',
+    })
+
+    let totalSize = 0
+    let downloadedSize = resumeSize
+    let lastProgressUpdate = Date.now()
+
+    // Create download stream using Got v11 syntax
+    const downloadStream = got.stream(url, downloadOptions)
+
+    // Store current request for cancellation
+    currentDownloadRequest = downloadStream
+
+    // Handle response to get total size
+    downloadStream.on('response', (response) => {
+      // Check cancellation
+      if (isInstallationCancelled()) {
+        downloadStream.destroy()
+        writeStream.destroy()
+        return
+      }
+
+      if (response.headers['content-length']) {
+        const contentLength = parseInt(response.headers['content-length'])
+        if (response.statusCode === 206) {
+          // Partial content - get total size from content-range header
+          const contentRange = response.headers['content-range']
+          if (contentRange) {
+            const match = contentRange.match(/bytes \d+-\d+\/(\d+)/)
+            if (match) {
+              totalSize = parseInt(match[1])
+            }
+          }
+        } else {
+          totalSize = contentLength
+        }
+      }
+
+      sendLog(`Total file size: ${Math.round(totalSize / 1024 / 1024)}MB`)
+
+      if (response.statusCode === 206) {
+        sendLog('Server supports resume, continuing download')
+      } else if (resumeSize > 0) {
+        sendLog('Server does not support resume, restarting download')
+        // Close and recreate write stream for fresh start
+        writeStream.destroy()
+        downloadedSize = 0
+        try {
+          fs.unlinkSync(filePath)
+        } catch (error) {
+          // Ignore if file doesn't exist
+        }
+      }
+    })
+
+    // Handle download progress
+    downloadStream.on('data', (chunk) => {
+      // Check cancellation
+      if (isInstallationCancelled()) {
+        downloadStream.destroy()
+        writeStream.destroy()
+        return
+      }
+
+      downloadedSize += chunk.length
+
+      // Throttle progress updates
+      const now = Date.now()
+      if (
+        totalSize > 0 &&
+        (now - lastProgressUpdate > 500 || downloadedSize >= totalSize)
+      ) {
+        const progress = downloadedSize / totalSize
+        onProgress(progress)
+        lastProgressUpdate = now
+      }
+    })
+
+    // Handle errors
+    downloadStream.on('error', (error) => {
+      writeStream.destroy()
+      currentDownloadRequest = null
+      throw error
+    })
+
+    // Handle stream end
+    downloadStream.on('end', () => {
+      currentDownloadRequest = null
+    })
+
+    // Use pipeline for proper error handling and cleanup
+    await pipeline(downloadStream, writeStream)
+
+    // Verify file size if known
+    if (totalSize > 0) {
+      const stats = fs.statSync(filePath)
+      if (stats.size !== totalSize) {
+        throw new Error(
+          `File size mismatch: expected ${totalSize}, got ${stats.size}`
+        )
+      }
     }
 
-    downloadFromUrl(url)
-  })
+    sendLog('Download completed successfully')
+  } catch (error) {
+    // Clean up current request reference
+    currentDownloadRequest = null
+
+    // Check if it's a cancellation
+    if (isInstallationCancelled()) {
+      throw new Error('Installation cancelled')
+    }
+
+    // Clean up partial file on error (but keep it for resume on network errors)
+    const isNetworkError =
+      error.code &&
+      [
+        'ETIMEDOUT',
+        'ECONNRESET',
+        'ECONNREFUSED',
+        'ENOTFOUND',
+        'ENETUNREACH',
+      ].includes(error.code)
+
+    if (!isNetworkError && fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath)
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
+    }
+
+    throw new Error(`Download failed: ${error.message}`)
+  }
 }
 
 /**
