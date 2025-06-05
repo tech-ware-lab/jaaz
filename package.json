@@ -1,6 +1,6 @@
 {
   "name": "jaaz",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "AI design agent local desktop app",
   "author": "weixuanfu",
   "main": "electron/main.js",
@@ -14,7 +14,10 @@
     "build:electron": "electron-builder",
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux"
+    "build:linux": "electron-builder --linux",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:watch": "vitest --watch"
   },
   "publish": "always",
   "build": {
@@ -75,9 +78,12 @@
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
     "electron": "^35.1.0",
-    "electron-builder": "^24.0.0"
+    "electron-builder": "^24.0.0",
+    "vitest": "^3.2.1"
   },
   "dependencies": {
+    "7zip-min": "^2.1.0",
+    "got": "11.8.6",
     "playwright": "^1.52.0",
     "playwright-extra": "^4.3.6",
     "playwright-extra-plugin-stealth": "^0.0.1"

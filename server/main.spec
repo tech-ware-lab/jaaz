@@ -1,12 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
-
+import certifi
+import os
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=[(certifi.where(), 'certifi')],
+    hiddenimports=['certifi'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

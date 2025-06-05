@@ -24,6 +24,10 @@ export const PROVIDER_NAME_MAPPING: {
     name: 'WaveSpeedAi',
     icon: 'https://www.wavespeed.ai/favicon.ico',
   },
+  comfyui: {
+    name: 'ComfyUI (Local)',
+    icon: 'https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/web/favicon.ico',
+  },
 }
 export const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
   anthropic: {
@@ -61,6 +65,15 @@ export const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
       'wavespeed-ai/flux-dev': { type: 'image' },
     },
     url: 'https://api.wavespeed.ai/',
+    api_key: '',
+  },
+  comfyui: {
+    models: {
+      'flux-dev': { type: 'image' },
+      'flux-schnell': { type: 'image' },
+      sdxl: { type: 'image' },
+    },
+    url: 'http://127.0.0.1:8188',
     api_key: '',
   },
   // huggingface: {
