@@ -1,0 +1,22 @@
+{
+  "title": "Canvas",
+  "rename": "Rename Canvas",
+  "delete": "Delete Canvas",
+  "share": "Share Canvas",
+  "export": "Export Canvas",
+  "import": "Import Canvas",
+  "messages": {
+    "canvasRenamed": "Canvas renamed successfully",
+    "canvasDeleted": "Canvas deleted successfully",
+    "canvasExported": "Canvas exported successfully",
+    "canvasImported": "Canvas imported successfully",
+    "failedToRename": "Failed to rename canvas",
+    "failedToDelete": "Failed to delete canvas"
+  },
+  "deleteDialog": {
+    "title": "Delete Canvas",
+    "description": "Are you sure you want to delete this Canvas? This action cannot be undone.",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  }
+}
