@@ -293,6 +293,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             onChange={setPrompt}
             onSendMessages={(data, configs) => {
               setMessages(data)
+              setPrompt('')
 
               sendMessages({
                 sessionId: sessionId!,
