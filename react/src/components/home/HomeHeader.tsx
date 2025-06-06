@@ -1,8 +1,13 @@
 import ThemeButton from '@/components/theme/ThemeButton'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher'
+import { SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
+import { Button } from '../ui/button'
+import { useNavigate } from '@tanstack/react-router'
 
 function HomeHeader() {
+  const navigate = useNavigate()
+
   return (
     <motion.div
       className="sticky top-0 z-0 flex w-full h-12 bg-background px-4 justify-between items-center select-none"
@@ -21,6 +26,13 @@ function HomeHeader() {
       </div>
       <div className="flex items-center gap-2">
         <LanguageSwitcher />
+        <Button
+          size={'sm'}
+          variant="ghost"
+          onClick={() => navigate({ to: '/settings' })}
+        >
+          <SettingsIcon size={30} />
+        </Button>
         <ThemeButton />
       </div>
     </motion.div>

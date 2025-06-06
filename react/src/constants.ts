@@ -64,7 +64,7 @@ export const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
     models: {
       'wavespeed-ai/flux-dev': { type: 'image' },
     },
-    url: 'https://api.wavespeed.ai/',
+    url: 'https://api.wavespeed.ai/api/v3/',
     api_key: '',
   },
   comfyui: {
