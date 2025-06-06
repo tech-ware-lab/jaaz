@@ -1,7 +1,6 @@
 import { cn } from '@/lib/utils'
 import * as Dialog from '@radix-ui/react-dialog'
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useRef } from 'react'
 
 type CommonDialogProps = {
   open: boolean
@@ -14,8 +13,6 @@ const CommonDialogContent: React.FC<CommonDialogProps> = ({
   children,
   className,
 }) => {
-  const ref = useRef<HTMLDialogElement>(null)
-
   const openState = {
     opacity: 1,
     filter: 'blur(0px)',
@@ -45,14 +42,6 @@ const CommonDialogContent: React.FC<CommonDialogProps> = ({
       ease: [0.67, 0.17, 0.62, 0.64],
     },
   }
-
-  useEffect(() => {
-    if (!ref.current) return
-
-    ref.current.showModal()
-
-    return () => ref.current?.close()
-  }, [ref])
 
   return (
     <AnimatePresence>
