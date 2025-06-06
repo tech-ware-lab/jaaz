@@ -1,4 +1,5 @@
 import ThemeButton from '@/components/theme/ThemeButton'
+import LanguageSwitcher from '@/components/common/LanguageSwitcher'
 import { motion } from 'motion/react'
 
 function HomeHeader() {
@@ -18,7 +19,10 @@ function HomeHeader() {
         />
         <p className="text-xl font-bold">Jaaz</p>
       </div>
-      <ThemeButton />
+      <div className="flex items-center gap-2">
+        <LanguageSwitcher />
+        <ThemeButton />
+      </div>
     </motion.div>
   )
 }
