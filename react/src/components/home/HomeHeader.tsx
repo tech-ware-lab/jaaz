@@ -25,7 +25,6 @@ function HomeHeader() {
         <p className="text-xl font-bold">Jaaz</p>
       </div>
       <div className="flex items-center gap-2">
-        <LanguageSwitcher />
         <Button
           size={'sm'}
           variant="ghost"
@@ -33,6 +32,7 @@ function HomeHeader() {
         >
           <SettingsIcon size={30} />
         </Button>
+        <LanguageSwitcher />
         <ThemeButton />
       </div>
     </motion.div>
