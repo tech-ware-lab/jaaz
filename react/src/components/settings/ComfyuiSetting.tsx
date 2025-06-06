@@ -257,17 +257,17 @@ export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettin
   }
 
   const getComfyUIStatusText = () => {
-    if (!comfyUIEnabled) return t('settings.comfyui.status.disabled')
+    if (!comfyUIEnabled) return t('settings:comfyui.status.disabled')
 
     switch (comfyUIStatus) {
       case 'running':
-        return t('settings.comfyui.status.running')
+        return t('settings:comfyui.status.running')
       case 'installed':
-        return t('settings.comfyui.status.installed')
+        return t('settings:comfyui.status.installed')
       case 'not-installed':
-        return t('settings.comfyui.status.notInstalled')
+        return t('settings:comfyui.status.notInstalled')
       default:
-        return t('settings.comfyui.status.checking')
+        return t('settings:comfyui.status.checking')
     }
   }
 
@@ -284,7 +284,7 @@ export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettin
           {provider.name}
         </p>
         <div className="flex items-center gap-2">
-          <span>{t('settings.comfyui.localImageGeneration')}</span>
+          <span>{t('settings:comfyui.localImageGeneration')}</span>
           {getComfyUIStatusIcon()}
           <span className="text-sm text-muted-foreground">
             {getComfyUIStatusText()}
@@ -300,7 +300,7 @@ export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettin
           onCheckedChange={handleComfyUIToggle}
         />
         <Label htmlFor="comfyui-enable" className="text-sm font-medium">
-          {t('settings.comfyui.enable')}
+          {t('settings:comfyui.enable')}
         </Label>
         {/* Debug button for verification */}
         <Button
@@ -309,7 +309,7 @@ export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettin
           size="sm"
           className="ml-4"
         >
-          {t('settings.comfyui.debugStatus')}
+          {t('settings:comfyui.debugStatus')}
         </Button>
       </div>
 
@@ -318,9 +318,9 @@ export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettin
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-yellow-800">{t('settings.comfyui.notInstalledTitle')}</h4>
+              <h4 className="font-medium text-yellow-800">{t('settings:comfyui.notInstalledTitle')}</h4>
               <p className="text-sm text-yellow-700 mt-1">
-                {t('settings.comfyui.notInstalledDescription')}
+                {t('settings:comfyui.notInstalledDescription')}
               </p>
             </div>
             <Button
@@ -330,7 +330,7 @@ export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettin
               className="border-yellow-300 text-yellow-700 hover:bg-yellow-100"
             >
               <Download className="w-4 h-4 mr-2" />
-              {t('settings.comfyui.installButton')}
+              {t('settings:comfyui.installButton')}
             </Button>
           </div>
         </div>
