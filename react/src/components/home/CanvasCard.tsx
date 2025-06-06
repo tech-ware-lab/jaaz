@@ -27,9 +27,9 @@ const CanvasCard: React.FC<CanvasCardProps> = ({
     try {
       await deleteCanvas(canvas.id)
       handleDeleteCanvas()
-      toast.success(t('canvas.messages.canvasDeleted'))
+      toast.success(t('canvas:messages.canvasDeleted'))
     } catch (error) {
-      toast.error(t('canvas.messages.failedToDelete'))
+      toast.error(t('canvas:messages.failedToDelete'))
     }
     setShowDeleteDialog(false)
   }

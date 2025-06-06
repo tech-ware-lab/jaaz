@@ -41,19 +41,19 @@ const CanvasDeleteDialog: React.FC<CanvasDeleteDialogProps> = ({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('canvas.deleteDialog.title')}</DialogTitle>
+          <DialogTitle>{t('canvas:deleteDialog.title')}</DialogTitle>
         </DialogHeader>
 
         <DialogDescription>
-          {t('canvas.deleteDialog.description')}
+          {t('canvas:deleteDialog.description')}
         </DialogDescription>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setShow(false)}>
-            {t('canvas.deleteDialog.cancel')}
+            {t('canvas:deleteDialog.cancel')}
           </Button>
           <Button variant="destructive" onClick={() => handleDeleteCanvas()}>
-            {t('canvas.deleteDialog.delete')}
+            {t('canvas:deleteDialog.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>
