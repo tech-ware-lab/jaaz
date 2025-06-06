@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, X } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 export type ModelItem = {
   name: string
@@ -18,11 +18,17 @@ export type ModelItem = {
 
 interface ModelsListProps {
   models: Record<string, { type?: 'text' | 'image' | 'video' }>
-  onChange: (models: Record<string, { type?: 'text' | 'image' | 'video' }>) => void
+  onChange: (
+    models: Record<string, { type?: 'text' | 'image' | 'video' }>
+  ) => void
   label?: string
 }
 
-export default function AddModelsList({ models, onChange, label = 'Models' }: ModelsListProps) {
+export default function AddModelsList({
+  models,
+  onChange,
+  label = 'Models',
+}: ModelsListProps) {
   const [modelItems, setModelItems] = useState<ModelItem[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
 
@@ -31,28 +37,41 @@ export default function AddModelsList({ models, onChange, label = 'Models' }: Mo
     if (!isInitialized) {
       const items = Object.entries(models).map(([name, config]) => ({
         name,
-        type: (config.type || 'text') as 'text' | 'image' | 'video'
+        type: (config.type || 'text') as 'text' | 'image' | 'video',
       }))
       setModelItems(items.length > 0 ? items : [{ name: '', type: 'text' }])
       setIsInitialized(true)
     }
   }, [models, isInitialized])
 
-  const notifyChange = useCallback((items: ModelItem[]) => {
-    // Filter out empty model names and convert back to object format
-    const validModels = items.filter(model => model.name.trim())
-    const modelsConfig: Record<string, { type?: 'text' | 'image' | 'video' }> = {}
+  const notifyChange = useCallback(
+    (items: ModelItem[]) => {
+      // Filter out empty model names and convert back to object format
+      const validModels = items.filter((model) => model.name.trim())
+      const modelsConfig: Record<
+        string,
+        { type?: 'text' | 'image' | 'video' }
+      > = {}
 
-    validModels.forEach(model => {
-      modelsConfig[model.name] = { type: model.type }
-    })
+      validModels.forEach((model) => {
+        modelsConfig[model.name] = { type: model.type }
+      })
 
-    onChange(modelsConfig)
-  }, [onChange])
+      onChange(modelsConfig)
+    },
+    [onChange]
+  )
 
   const handleAddModel = () => {
-    const newItems = [...modelItems, { name: '', type: 'text' as const }]
-    setModelItems(newItems)
+    const userInput = prompt('Enter a model name', 'openai/gpt-4o')
+    if (userInput) {
+      const newItems = [
+        ...modelItems,
+        { name: userInput, type: 'text' as const },
+      ]
+      setModelItems(newItems)
+      notifyChange(newItems)
+    }
   }
 
   const handleRemoveModel = (index: number) => {
@@ -63,7 +82,11 @@ export default function AddModelsList({ models, onChange, label = 'Models' }: Mo
     }
   }
 
-  const handleModelChange = (index: number, field: keyof ModelItem, value: string) => {
+  const handleModelChange = (
+    index: number,
+    field: keyof ModelItem,
+    value: string
+  ) => {
     const newItems = [...modelItems]
     if (field === 'type') {
       newItems[index][field] = value as 'text' | 'image' | 'video'
@@ -76,56 +99,52 @@ export default function AddModelsList({ models, onChange, label = 'Models' }: Mo
 
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
-
-      <div className="space-y-2">
-        {modelItems.map((model, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <Input
-              placeholder="Enter model name"
-              value={model.name}
-              onChange={(e) => handleModelChange(index, 'name', e.target.value)}
-              className="flex-1"
-            />
-            <Select
-              value={model.type}
-              onValueChange={(value) => handleModelChange(index, 'type', value)}
-            >
-              <SelectTrigger className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="text">text</SelectItem>
-                <SelectItem value="image">image</SelectItem>
-                <SelectItem value="video">video</SelectItem>
-              </SelectContent>
-            </Select>
-            {modelItems.length > 1 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleRemoveModel(index)}
-                className="h-10 w-10 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div>
+      <div className="flex items-center justify-between">
+        <Label>{label}</Label>
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={handleAddModel}
-          className="h-8"
         >
           <Plus className="h-4 w-4 mr-1" />
           Add Model
         </Button>
+      </div>
+      <div className="space-y-2">
+        {modelItems.map((model, index) => (
+          <div key={index} className="flex items-center justify-between">
+            <p className="w-[50%]">{model.name}</p>
+            <div className="flex items-center gap-2">
+              <Select
+                value={model.type}
+                onValueChange={(value) =>
+                  handleModelChange(index, 'type', value)
+                }
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="text">text</SelectItem>
+                  <SelectItem value="image">image</SelectItem>
+                  <SelectItem value="video">video</SelectItem>
+                </SelectContent>
+              </Select>
+              {modelItems.length > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRemoveModel(index)}
+                  className="h-10 w-10 p-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

@@ -34,7 +34,10 @@ export default function Settings() {
 
           // First, add custom providers that are not in DEFAULT_CONFIG
           for (const provider in config) {
-            if (!(provider in DEFAULT_CONFIG) && typeof config[provider] === 'object') {
+            if (
+              !(provider in DEFAULT_CONFIG) &&
+              typeof config[provider] === 'object'
+            ) {
               console.log('Adding custom provider:', provider, config[provider])
               res[provider] = config[provider]
             }
@@ -57,20 +60,25 @@ export default function Settings() {
 
         // TODO: move to other place
         // Auto-start ComfyUI process if enabled and installed
-        const isComfyUIEnabled = config.comfyui && Object.keys(config.comfyui.models || {}).length > 0
+        const isComfyUIEnabled =
+          config.comfyui && Object.keys(config.comfyui.models || {}).length > 0
         if (isComfyUIEnabled && window.electronAPI?.checkComfyUIInstalled) {
           try {
             const installed = await window.electronAPI.checkComfyUIInstalled()
             if (installed) {
               // Check if process is already running
-              const processStatus = await window.electronAPI.getComfyUIProcessStatus?.()
+              const processStatus =
+                await window.electronAPI.getComfyUIProcessStatus?.()
               if (!processStatus?.running) {
                 // Start ComfyUI process
                 const result = await window.electronAPI.startComfyUIProcess?.()
                 if (result?.success) {
                   console.log('ComfyUI process auto-started successfully')
                 } else {
-                  console.log('Failed to auto-start ComfyUI process:', result?.message)
+                  console.log(
+                    'Failed to auto-start ComfyUI process:',
+                    result?.message
+                  )
                 }
               }
             }
@@ -89,21 +97,21 @@ export default function Settings() {
   }, [])
 
   const handleConfigChange = (key: string, newConfig: LLMConfig) => {
-    setConfig(prev => ({
+    setConfig((prev) => ({
       ...prev,
-      [key]: newConfig
+      [key]: newConfig,
     }))
   }
 
   const handleAddProvider = (providerKey: string, newConfig: LLMConfig) => {
-    setConfig(prev => ({
+    setConfig((prev) => ({
       [providerKey]: newConfig,
-      ...prev
+      ...prev,
     }))
   }
 
   const handleDeleteProvider = (providerKey: string) => {
-    setConfig(prev => {
+    setConfig((prev) => {
       const newConfig = { ...prev }
       delete newConfig[providerKey]
       return newConfig
@@ -156,7 +164,6 @@ export default function Settings() {
           <div className="pt-4">
             <Button
               onClick={() => setIsAddProviderDialogOpen(true)}
-              variant="outline"
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
@@ -171,27 +178,28 @@ export default function Settings() {
             </div>
           )}
 
-          {!isLoading && Object.keys(config).map((key, index) => (
-            <div key={key}>
-              {key === 'comfyui' ? (
-                <ComfyuiSetting
-                  config={config[key]}
-                  onConfigChange={handleConfigChange}
-                />
-              ) : (
-                <CommonSetting
-                  providerKey={key}
-                  config={config[key]}
-                  onConfigChange={handleConfigChange}
-                  onDeleteProvider={handleDeleteProvider}
-                />
-              )}
+          {!isLoading &&
+            Object.keys(config).map((key, index) => (
+              <div key={key}>
+                {key === 'comfyui' ? (
+                  <ComfyuiSetting
+                    config={config[key]}
+                    onConfigChange={handleConfigChange}
+                  />
+                ) : (
+                  <CommonSetting
+                    providerKey={key}
+                    config={config[key]}
+                    onConfigChange={handleConfigChange}
+                    onDeleteProvider={handleDeleteProvider}
+                  />
+                )}
 
-              {index !== Object.keys(config).length - 1 && (
-                <div className="my-6 border-t bg-border" />
-              )}
-            </div>
-          ))}
+                {index !== Object.keys(config).length - 1 && (
+                  <div className="my-6 border-t bg-border" />
+                )}
+              </div>
+            ))}
 
           <div className="flex justify-center fixed bottom-4 left-1/2 -translate-x-1/2">
             <Button onClick={handleSave} className="w-[400px]" size={'lg'}>

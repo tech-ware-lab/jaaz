@@ -94,6 +94,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         content: value,
       },
     ])
+    setImageIds([])
 
     onSendMessages(newMessage, {
       textModel: textModel,
