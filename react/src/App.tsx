@@ -8,6 +8,7 @@ import { routeTree } from './route-tree.gen'
 
 import '@/assets/style/App.css'
 import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
+import UpdateNotificationDialog from '@/components/common/UpdateNotificationDialog'
 import { ConfigsProvider } from '@/contexts/configs'
 import '@/i18n'
 
@@ -33,6 +34,9 @@ function App() {
 
             {/* Install ComfyUI Dialog */}
             <InstallComfyUIDialog />
+
+            {/* Update Notification Dialog */}
+            <UpdateNotificationDialog />
           </div>
         </ConfigsProvider>
       </QueryClientProvider>
