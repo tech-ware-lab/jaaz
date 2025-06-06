@@ -39,7 +39,7 @@ export default function AddModelsList({
         name,
         type: (config.type || 'text') as 'text' | 'image' | 'video',
       }))
-      setModelItems(items.length > 0 ? items : [{ name: '', type: 'text' }])
+      setModelItems(items.length > 0 ? items : [])
       setIsInitialized(true)
     }
   }, [models, isInitialized])

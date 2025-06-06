@@ -168,3 +168,6 @@ export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
     prompt_user_single_choice: 'Prompt Single-Choice',
     finish: 'Finish',
   }
+
+export const LOGO_URL =
+  'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/unicorn.png'

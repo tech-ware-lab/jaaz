@@ -4,6 +4,7 @@ import { SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Button } from '../ui/button'
 import { useNavigate } from '@tanstack/react-router'
+import { LOGO_URL } from '@/constants'
 
 function HomeHeader() {
   const navigate = useNavigate()
@@ -16,12 +17,7 @@ function HomeHeader() {
       transition={{ duration: 0.3 }}
     >
       <div className="flex items-center gap-2">
-        <img
-          src="/unicorn.png"
-          alt="logo"
-          className="size-8"
-          draggable={false}
-        />
+        <img src={LOGO_URL} alt="logo" className="size-8" draggable={false} />
         <p className="text-xl font-bold">Jaaz</p>
       </div>
       <div className="flex items-center gap-2">
