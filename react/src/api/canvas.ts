@@ -1,6 +1,6 @@
 import { CanvasData, Message, Session } from '@/types/types'
 
-type ListCanvasesResponse = {
+export type ListCanvasesResponse = {
   id: string
   name: string
   description?: string
@@ -58,6 +58,13 @@ export async function renameCanvas(id: string, name: string): Promise<void> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
+  })
+  return await response.json()
+}
+
+export async function deleteCanvas(id: string): Promise<void> {
+  const response = await fetch(`/api/canvas/${id}/delete`, {
+    method: 'DELETE',
   })
   return await response.json()
 }
