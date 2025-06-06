@@ -17,12 +17,14 @@ export default function CommonSetting({
   providerKey,
   config,
   onConfigChange,
-  onDeleteProvider
+  onDeleteProvider,
 }: CommonSettingProps) {
   const provider = PROVIDER_NAME_MAPPING[providerKey] || {
-    name: providerKey.charAt(0).toUpperCase() + providerKey.slice(1).replace(/_/g, ' '),
+    name:
+      providerKey.charAt(0).toUpperCase() +
+      providerKey.slice(1).replace(/_/g, ' '),
     // TODO: replace icon
-    icon: 'https://openai.com/favicon.ico'
+    icon: 'https://openai.com/favicon.ico',
   }
 
   // Check if this is a custom provider (not in PROVIDER_NAME_MAPPING)
@@ -35,7 +37,9 @@ export default function CommonSetting({
     })
   }
 
-  const handleModelsChange = (models: Record<string, { type?: 'text' | 'image' | 'video' }>) => {
+  const handleModelsChange = (
+    models: Record<string, { type?: 'text' | 'image' | 'video' }>
+  ) => {
     onConfigChange(providerKey, {
       ...config,
       models,
@@ -48,7 +52,8 @@ export default function CommonSetting({
     }
   }
 
-  const isImageProvider = providerKey === 'replicate' || providerKey === 'huggingface'
+  const isImageProvider =
+    providerKey === 'replicate' || providerKey === 'huggingface'
   const hasMaxTokens = !isImageProvider
 
   return (
@@ -60,9 +65,7 @@ export default function CommonSetting({
           alt={provider.name}
           className="w-10 h-10 rounded-full"
         />
-        <p className="font-bold text-2xl w-fit">
-          {provider.name}
-        </p>
+        <p className="font-bold text-2xl w-fit">{provider.name}</p>
         {isCustomProvider && <span>✨ Custom Provider</span>}
         {isImageProvider && <span>🎨 Image Generation</span>}
 
@@ -111,7 +114,7 @@ export default function CommonSetting({
       </div>
 
       {/* Models Configuration - only for custom providers */}
-      {isCustomProvider && (
+      {providerKey !== 'ollama' && (
         <div className="space-y-2">
           <AddModelsList
             models={config.models || {}}
@@ -130,7 +133,9 @@ export default function CommonSetting({
             type="number"
             placeholder="Enter your max tokens"
             value={config.max_tokens ?? 8192}
-            onChange={(e) => handleChange('max_tokens', parseInt(e.target.value))}
+            onChange={(e) =>
+              handleChange('max_tokens', parseInt(e.target.value))
+            }
             className="w-full"
           />
           <p className="text-xs text-gray-500">
