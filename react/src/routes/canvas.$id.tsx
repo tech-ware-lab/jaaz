@@ -13,6 +13,7 @@ import { createFileRoute, useParams, useSearch } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export const Route = createFileRoute('/canvas/$id')({
   component: Canvas,
@@ -22,6 +23,7 @@ function Canvas() {
   const [canvasName, setCanvasName] = useState('')
   const [session, setSession] = useState<Session | null>(null)
   const [sessionList, setSessionList] = useState<Session[]>([])
+  const { t } = useTranslation('chat')
 
   const { id } = useParams({ from: '/canvas/$id' })
   const search = useSearch({ from: '/canvas/$id' }) as { sessionId: string }
@@ -54,7 +56,7 @@ function Canvas() {
   const handleNewChat = () => {
     const newSession: Session = {
       id: nanoid(),
-      title: 'New Chat',
+      title: t('newChat'),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       model: session?.model || 'gpt-4o',

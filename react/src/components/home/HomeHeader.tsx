@@ -1,4 +1,5 @@
 import ThemeButton from '@/components/theme/ThemeButton'
+import LanguageSwitcher from '@/components/common/LanguageSwitcher'
 import { SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Button } from '../ui/button'
@@ -31,6 +32,7 @@ function HomeHeader() {
         >
           <SettingsIcon size={30} />
         </Button>
+        <LanguageSwitcher />
         <ThemeButton />
       </div>
     </motion.div>

@@ -9,6 +9,7 @@ import { motion } from 'motion/react'
 import { nanoid } from 'nanoid'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -17,6 +18,8 @@ export const Route = createFileRoute('/')({
 function Home() {
   const [prompt, setPrompt] = useState('')
   const navigate = useNavigate()
+  const { t } = useTranslation('home')
+  const { t: tCommon } = useTranslation('common')
 
   const { mutate: createCanvasMutation, isPending } = useMutation({
     mutationFn: createCanvas,
@@ -24,7 +27,7 @@ function Home() {
       navigate({ to: '/canvas/$id', params: { id: data.id } })
     },
     onError: (error) => {
-      toast.error('Failed to create canvas', {
+      toast.error(tCommon('messages.error'), {
         description: error.message,
       })
     },
@@ -42,7 +45,7 @@ function Home() {
             transition={{ duration: 0.5 }}
           >
             <h1 className="text-5xl font-bold mb-2 mt-8 text-center">
-              Hello, Jaaz!
+              {t('title')}
             </h1>
           </motion.div>
           <motion.div
@@ -51,7 +54,7 @@ function Home() {
             transition={{ duration: 0.5 }}
           >
             <p className="text-xl text-gray-500 mb-8 text-center">
-              Ready to turn your ideas into art?
+              {t('subtitle')}
             </p>
           </motion.div>
 
@@ -62,7 +65,7 @@ function Home() {
             messages={[]}
             onSendMessages={(messages, configs) => {
               createCanvasMutation({
-                name: 'New Canvas',
+                name: t('newCanvas'),
                 canvas_id: nanoid(),
                 messages: messages,
                 session_id: nanoid(),

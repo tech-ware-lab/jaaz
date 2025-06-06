@@ -8,6 +8,7 @@ import { ArrowUp, Loader2, PlusIcon, XIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Textarea, { TextAreaRef } from 'rc-textarea'
 import { useCallback, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import ModelSelector from './ModelSelector'
 
@@ -34,6 +35,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   onChange,
   onSendMessages,
 }) => {
+  const { t } = useTranslation('chat')
   const { configsStore } = useConfigs()
   const { textModel, imageModel, imageModels, setShowInstallDialog } =
     configsStore.getState()
@@ -66,9 +68,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const handleSendPrompt = useCallback(() => {
     if (pending) return
     if (!textModel) {
-      toast.error(
-        "Please select a text model! Go to Settings to set your API keys if you haven't done so."
-      )
+      toast.error(t('textarea.selectModel'))
       return
     }
     // Check if there are image models, if not, prompt to install ComfyUI
@@ -77,7 +77,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       return
     }
     if (value.length === 0 || value.trim() === '') {
-      toast.error('Please enter a prompt')
+      toast.error(t('textarea.enterPrompt'))
       return
     }
 
@@ -164,7 +164,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       <Textarea
         ref={textareaRef}
         className="w-full h-full border-none outline-none resize-none"
-        placeholder="Enter your design requirements"
+        placeholder={t('textarea.placeholder')}
         value={value}
         autoSize
         onChange={(e) => onChange(e.target.value)}

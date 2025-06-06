@@ -5,6 +5,7 @@ import { DEFAULT_CONFIG, PROVIDER_NAME_MAPPING } from '@/constants'
 import { LLMConfig } from '@/types/types'
 import { CheckCircle, AlertCircle, Download } from 'lucide-react'
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
 
 interface ComfyuiSettingProps {
@@ -13,6 +14,7 @@ interface ComfyuiSettingProps {
 }
 
 export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettingProps) {
+  const { t } = useTranslation('settings')
   const [showInstallDialog, setShowInstallDialog] = useState(false)
   const [comfyUIStatus, setComfyUIStatus] = useState<'unknown' | 'installed' | 'not-installed' | 'running'>('unknown')
   const [comfyUIEnabled, setComfyUIEnabled] = useState(false)
@@ -255,17 +257,17 @@ export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettin
   }
 
   const getComfyUIStatusText = () => {
-    if (!comfyUIEnabled) return 'Disabled'
+    if (!comfyUIEnabled) return t('comfyui.status.disabled')
 
     switch (comfyUIStatus) {
       case 'running':
-        return 'Running'
+        return t('comfyui.status.running')
       case 'installed':
-        return 'Installed (Not Running)'
+        return t('comfyui.status.installed')
       case 'not-installed':
-        return 'Not Installed'
+        return t('comfyui.status.notInstalled')
       default:
-        return 'Checking...'
+        return t('comfyui.status.checking')
     }
   }
 
@@ -282,7 +284,7 @@ export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettin
           {provider.name}
         </p>
         <div className="flex items-center gap-2">
-          <span>🎨 Local Image Generation</span>
+          <span>{t('comfyui.localImageGeneration')}</span>
           {getComfyUIStatusIcon()}
           <span className="text-sm text-muted-foreground">
             {getComfyUIStatusText()}
@@ -298,7 +300,7 @@ export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettin
           onCheckedChange={handleComfyUIToggle}
         />
         <Label htmlFor="comfyui-enable" className="text-sm font-medium">
-          Enable ComfyUI Local Image Generation
+          {t('comfyui.enable')}
         </Label>
         {/* Debug button for verification */}
         <Button
@@ -307,7 +309,7 @@ export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettin
           size="sm"
           className="ml-4"
         >
-          🔍 Debug Status
+          {t('comfyui.debugStatus')}
         </Button>
       </div>
 
@@ -316,9 +318,9 @@ export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettin
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-yellow-800">ComfyUI Not Installed</h4>
+              <h4 className="font-medium text-yellow-800">{t('comfyui.notInstalledTitle')}</h4>
               <p className="text-sm text-yellow-700 mt-1">
-                Install ComfyUI to enable local image generation with Flux models
+                {t('comfyui.notInstalledDescription')}
               </p>
             </div>
             <Button
@@ -328,14 +330,13 @@ export default function ComfyuiSetting({ config, onConfigChange }: ComfyuiSettin
               className="border-yellow-300 text-yellow-700 hover:bg-yellow-100"
             >
               <Download className="w-4 h-4 mr-2" />
-              Install ComfyUI
+              {t('comfyui.installButton')}
             </Button>
           </div>
         </div>
       )}
 
       <InstallComfyUIDialog
-        open={showInstallDialog}
         onOpenChange={setShowInstallDialog}
         onInstallSuccess={handleInstallSuccess}
       />

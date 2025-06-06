@@ -8,6 +8,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
 
 type CanvasDeleteDialogProps = {
@@ -25,6 +26,8 @@ const CanvasDeleteDialog: React.FC<CanvasDeleteDialogProps> = ({
   setShow,
   handleDeleteCanvas,
 }) => {
+  const { t } = useTranslation('canvas')
+
   return (
     <Dialog open={show} onOpenChange={setShow}>
       <DialogTrigger asChild>
@@ -38,20 +41,19 @@ const CanvasDeleteDialog: React.FC<CanvasDeleteDialogProps> = ({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Canvas</DialogTitle>
+          <DialogTitle>{t('deleteDialog.title')}</DialogTitle>
         </DialogHeader>
 
         <DialogDescription>
-          Are you sure you want to delete this Canvas? This action cannot be
-          undone.
+          {t('deleteDialog.description')}
         </DialogDescription>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setShow(false)}>
-            Cancel
+            {t('deleteDialog.cancel')}
           </Button>
           <Button variant="destructive" onClick={() => handleDeleteCanvas()}>
-            Delete
+            {t('deleteDialog.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>
