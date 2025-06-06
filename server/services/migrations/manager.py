@@ -41,13 +41,14 @@ class MigrationManager:
                 print(f"Applying migration {migration.version}: {migration.description}")
                 migration.up(conn)
                 conn.execute("UPDATE db_version SET version = ?", (migration.version,))
-        else:
-            # Rollback migrations
-            print('🦄 Rolling back migrations', from_version, '->', to_version)
-            migrations_to_rollback = self.get_migrations_to_rollback(from_version, to_version)
-            print('🦄 Migrations to rollback', migrations_to_rollback)
-            for migration_class in migrations_to_rollback:
-                migration = migration_class()
-                print(f"Rolling back migration {migration.version}: {migration.description}")
-                migration.down(conn)
-                conn.execute("UPDATE db_version SET version = ?", (migration.version - 1,)) 
+        # Do not do rollback migrations
+        # else:
+        #     # Rollback migrations
+        #     print('🦄 Rolling back migrations', from_version, '->', to_version)
+        #     migrations_to_rollback = self.get_migrations_to_rollback(from_version, to_version)
+        #     print('🦄 Migrations to rollback', migrations_to_rollback)
+        #     for migration_class in migrations_to_rollback:
+        #         migration = migration_class()
+        #         print(f"Rolling back migration {migration.version}: {migration.description}")
+        #         migration.down(conn)
+        #         conn.execute("UPDATE db_version SET version = ?", (migration.version - 1,)) 

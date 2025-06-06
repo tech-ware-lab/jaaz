@@ -21,6 +21,7 @@ import {
 import { ValueOf } from '@excalidraw/excalidraw/utility-types'
 import { nanoid } from 'nanoid'
 import { memo, useCallback, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
 type LastImagePosition = {
   x: number
@@ -40,6 +41,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   initialData,
 }) => {
   const excalidrawAPI = useRef<ExcalidrawImperativeAPI | null>(null)
+  const { i18n } = useTranslation()
 
   const handleChange = useDebounce(
     (
@@ -188,6 +190,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   return (
     <Excalidraw
       theme={theme as Theme}
+      langCode={i18n.language}
       excalidrawAPI={(api) => (excalidrawAPI.current = api)}
       onChange={handleChange}
       initialData={() => {

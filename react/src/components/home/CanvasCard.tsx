@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
 import CanvasDeleteDialog from './CanvasDeleteDialog'
 
@@ -19,15 +20,16 @@ const CanvasCard: React.FC<CanvasCardProps> = ({
   handleCanvasClick,
   handleDeleteCanvas,
 }) => {
+  const { t } = useTranslation('canvas')
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const handleDelete = async () => {
     try {
       await deleteCanvas(canvas.id)
       handleDeleteCanvas()
-      toast.success('Canvas deleted successfully')
+      toast.success(t('messages.canvasDeleted'))
     } catch (error) {
-      toast.error('Failed to delete canvas')
+      toast.error(t('messages.failedToDelete'))
     }
     setShowDeleteDialog(false)
   }

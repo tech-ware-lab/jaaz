@@ -1,0 +1,54 @@
+{
+  "title": "Settings",
+  "messages": {
+    "settingsSaved": "Settings saved successfully",
+    "settingsReset": "Settings reset to default",
+    "failedToSave": "Failed to save settings",
+    "failedToLoad": "Failed to load configuration"
+  },
+  "models": {
+    "title": "Models",
+    "placeholder": "Enter model name",
+    "addModel": "Add Model",
+    "types": {
+      "text": "text",
+      "image": "image",
+      "video": "video"
+    }
+  },
+  "provider": {
+    "addProvider": "Add Provider",
+    "providerName": "Provider Name",
+    "providerNamePlaceholder": "Enter provider name",
+    "apiUrl": "API URL",
+    "apiUrlPlaceholder": "Enter API URL",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "Enter API key",
+    "apiKeyDescription": "Your API key will be stored securely",
+    "maxTokens": "Max Tokens",
+    "maxTokensPlaceholder": "Enter your max tokens",
+    "maxTokensDescription": "The maximum number of tokens in the response",
+    "customProvider": "✨ Custom Provider",
+    "imageGeneration": "🎨 Image Generation",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "comfyui": {
+    "title": "ComfyUI",
+    "localImageGeneration": "🎨 Local Image Generation",
+    "enable": "Enable ComfyUI Local Image Generation",
+    "debugStatus": "🔍 Debug Status",
+    "status": {
+      "disabled": "Disabled",
+      "running": "Running",
+      "installed": "Installed (Not Running)",
+      "notInstalled": "Not Installed",
+      "checking": "Checking..."
+    },
+    "notInstalledTitle": "ComfyUI Not Installed",
+    "notInstalledDescription": "Install ComfyUI to enable local image generation with Flux models",
+    "installButton": "Install ComfyUI"
+  },
+  "saveSettings": "Save Settings"
+}
