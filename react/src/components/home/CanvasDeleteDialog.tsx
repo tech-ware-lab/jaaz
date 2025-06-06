@@ -1,6 +1,7 @@
+import CommonDialogContent from '@/components/common/DialogContent'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -9,7 +10,6 @@ import {
 } from '@/components/ui/dialog'
 import { Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Button } from '../ui/button'
 
 type CanvasDeleteDialogProps = {
   show: boolean
@@ -39,7 +39,8 @@ const CanvasDeleteDialog: React.FC<CanvasDeleteDialogProps> = ({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent>
+
+      <CommonDialogContent open={show}>
         <DialogHeader>
           <DialogTitle>{t('canvas:deleteDialog.title')}</DialogTitle>
         </DialogHeader>
@@ -56,7 +57,7 @@ const CanvasDeleteDialog: React.FC<CanvasDeleteDialogProps> = ({
             {t('canvas:deleteDialog.delete')}
           </Button>
         </DialogFooter>
-      </DialogContent>
+      </CommonDialogContent>
     </Dialog>
   )
 }
