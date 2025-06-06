@@ -46,6 +46,36 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
 
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const isAtBottomRef = useRef(false)
+
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      setTimeout(() => {
+        scrollRef.current!.scrollTo({
+          top: scrollRef.current!.scrollHeight,
+          behavior: 'smooth',
+        })
+      }, 200)
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (scrollRef.current) {
+        isAtBottomRef.current =
+          scrollRef.current.scrollHeight - scrollRef.current.scrollTop <=
+          scrollRef.current.clientHeight
+      }
+    }
+    const scrollEl = scrollRef.current
+    scrollEl?.addEventListener('scroll', handleScroll)
+
+    return () => {
+      scrollEl?.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+
   const initChat = useCallback(async () => {
     if (!sessionId) {
       return
@@ -95,6 +125,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           })
         } else if (data.type == 'done') {
           setPending(false)
+          scrollToBottom()
         } else if (data.type == 'info') {
           toast.info(data.info, {
             closeButton: true,
@@ -110,6 +141,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               },
             })
           )
+          scrollToBottom()
         } else {
           setMessages((prev) => {
             if (data.type == 'delta') {
@@ -178,6 +210,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               console.log('👇all_messages', data.messages)
               return data.messages
             }
+
+            scrollToBottom()
+
             return prev
           })
         }
@@ -185,7 +220,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         console.error('Error parsing JSON:', error)
       }
     }
-  }, [sessionId])
+
+    scrollToBottom()
+  }, [sessionId, scrollToBottom])
 
   useEffect(() => {
     initChat()
@@ -220,8 +257,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           `/canvas/${canvasId}?sessionId=${sessionId}`
         )
       }
+
+      scrollToBottom()
     },
-    [canvasId, sessionId, searchSessionId]
+    [canvasId, sessionId, searchSessionId, scrollToBottom]
   )
 
   return (
@@ -239,9 +278,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <Blur className="absolute top-0 left-0 right-0 h-full" />
         </header>
 
-        <ScrollArea className="h-full">
+        <ScrollArea className="h-[calc(100vh-45px)]" viewportRef={scrollRef}>
           {messages.length > 0 ? (
-            <div className="flex-1 px-4 space-y-6 pb-80 pt-15">
+            <div className="flex-1 px-4 space-y-6 pb-50 pt-15">
               {/* Messages */}
               {messages.map((message, idx) => (
                 <div key={`${idx}`}>
