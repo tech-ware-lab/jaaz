@@ -1,28 +1,36 @@
 import { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types'
 import { AppState, BinaryFiles } from '@excalidraw/excalidraw/types'
 
+export type ToolCallFunctionName =
+  | 'generate_image'
+  | 'prompt_user_multi_choice'
+  | 'prompt_user_single_choice'
+  | 'finish'
+
 export type ToolCall = {
   id: string
   type: 'function'
   function: {
-    name: string
+    name: ToolCallFunctionName
     arguments: string
   }
 }
+export type MessageContentType = MessageContent[] | string
 export type MessageContent =
   | { text: string; type: 'text' }
   | { image_url: { url: string }; type: 'image_url' }
-type ToolResultMessage = {
+
+export type ToolResultMessage = {
   role: 'tool'
   tool_call_id: string
   content: string
 }
-type AssistantMessage = {
+export type AssistantMessage = {
   role: 'assistant'
   tool_calls?: ToolCall[]
   content?: MessageContent[] | string
 }
-type UserMessage = {
+export type UserMessage = {
   role: 'user'
   content: MessageContent[] | string
 }
