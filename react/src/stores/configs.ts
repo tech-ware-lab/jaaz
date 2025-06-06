@@ -14,6 +14,9 @@ type ConfigsStore = {
 
   showInstallDialog: boolean
   setShowInstallDialog: (show: boolean) => void
+
+  showUpdateDialog: boolean
+  setShowUpdateDialog: (show: boolean) => void
 }
 
 const useConfigsStore = create<ConfigsStore>((set) => ({
@@ -29,6 +32,9 @@ const useConfigsStore = create<ConfigsStore>((set) => ({
 
   showInstallDialog: false,
   setShowInstallDialog: (show) => set({ showInstallDialog: show }),
+
+  showUpdateDialog: false,
+  setShowUpdateDialog: (show) => set({ showUpdateDialog: show }),
 }))
 
 export default useConfigsStore
