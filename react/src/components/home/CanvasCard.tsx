@@ -20,16 +20,16 @@ const CanvasCard: React.FC<CanvasCardProps> = ({
   handleCanvasClick,
   handleDeleteCanvas,
 }) => {
-  const { t } = useTranslation('canvas')
+  const { t } = useTranslation()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const handleDelete = async () => {
     try {
       await deleteCanvas(canvas.id)
       handleDeleteCanvas()
-      toast.success(t('messages.canvasDeleted'))
+      toast.success(t('canvas.messages.canvasDeleted'))
     } catch (error) {
-      toast.error(t('messages.failedToDelete'))
+      toast.error(t('canvas.messages.failedToDelete'))
     }
     setShowDeleteDialog(false)
   }

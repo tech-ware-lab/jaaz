@@ -11,11 +11,11 @@ import { Languages } from 'lucide-react'
 
 const LanguageSwitcher = () => {
   const { changeLanguage, currentLanguage } = useLanguage()
-  const { t } = useTranslation('common')
+  const { t } = useTranslation()
 
   const languages = [
-    { code: 'en', name: t('languages.en') },
-    { code: 'zh-CN', name: t('languages.zh-CN') },
+    { code: 'en', name: t('common.languages.en') },
+    { code: 'zh-CN', name: t('common.languages.zh-CN') },
   ]
 
   return (
