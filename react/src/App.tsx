@@ -35,7 +35,7 @@ function App() {
           </div>
         </ConfigsProvider>
       </QueryClientProvider>
-      <Toaster />
+      <Toaster position="bottom-center" />
     </ThemeProvider>
   )
 }
