@@ -26,7 +26,7 @@ const CanvasList: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {t('home.allProjects')}
+          {t('home:allProjects')}
         </motion.span>
       )}
 

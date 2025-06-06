@@ -194,7 +194,7 @@ function SnapshotToolbar() {
           opacity: showCheckMark ? 1 : 0,
         }}
       >
-        {t('canvas.saved')}
+        {t('canvas:saved')}
       </span>
       <button
         onClick={() => {
@@ -202,15 +202,15 @@ function SnapshotToolbar() {
           setShowCheckMark(true);
         }}
       >
-        {t('canvas.saveSnapshot')}
+        {t('canvas:saveSnapshot')}
       </button>
-      <button onClick={load}>{t('canvas.loadSnapshot')}</button>
+      <button onClick={load}>{t('canvas:loadSnapshot')}</button>
     </div>
   );
 }
 function CustomPageMenu() {
   const { t } = useTranslation()
-  const [pageName, setPageName] = useState(t('canvas.untitled'));
+  const [pageName, setPageName] = useState(t('canvas:untitled'));
   const [openWorkspace, setOpenWorkspace] = useState(false);
   const [curFile, setCurFile] = useState("");
   const editor = useEditor();
@@ -243,7 +243,7 @@ function CustomPageMenu() {
               }
             })
             .catch((err) => {
-              toast.error(t('canvas.messages.failedToCreateFile'));
+              toast.error(t('canvas:messages.failedToCreateFile'));
             });
         }}
       >
@@ -261,7 +261,7 @@ function CustomPageMenu() {
       </Button>
       <input
         type="text"
-        placeholder={t('canvas.untitled')}
+        placeholder={t('canvas:untitled')}
         className="border-none outline-none"
         value={pageName}
         onChange={(e) => setPageName(e.target.value)}

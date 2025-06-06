@@ -55,7 +55,7 @@ function MyComponent() {
 // }
 
 const { t } = useTranslation()
-return <button>{t('common.buttons.save')}</button>
+return <button>{t('common:buttons.save')}</button>
 ```
 
 ### 3. 使用插值
@@ -67,7 +67,7 @@ return <button>{t('common.buttons.save')}</button>
 // }
 
 const { t } = useTranslation()
-return <div>{t('common.welcome', { name: 'Jaaz' })}</div>
+return <div>{t('common:welcome', { name: 'Jaaz' })}</div>
 ```
 
 ### 4. 语言切换

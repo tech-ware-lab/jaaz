@@ -68,16 +68,16 @@ export default function AddProviderDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{t('settings.provider.addProvider')}</DialogTitle>
+          <DialogTitle>{t('settings:provider.addProvider')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Provider Name */}
           <div className="space-y-2">
-            <Label htmlFor="provider-name">{t('settings.provider.providerName')}</Label>
+            <Label htmlFor="provider-name">{t('settings:provider.providerName')}</Label>
             <Input
               id="provider-name"
-              placeholder={t('settings.provider.providerNamePlaceholder')}
+              placeholder={t('settings:provider.providerNamePlaceholder')}
               value={providerName}
               onChange={(e) => setProviderName(e.target.value)}
             />
@@ -85,10 +85,10 @@ export default function AddProviderDialog({
 
           {/* API URL */}
           <div className="space-y-2">
-            <Label htmlFor="api-url">{t('settings.provider.apiUrl')}</Label>
+            <Label htmlFor="api-url">{t('settings:provider.apiUrl')}</Label>
             <Input
               id="api-url"
-              placeholder={t('settings.provider.apiUrlPlaceholder')}
+              placeholder={t('settings:provider.apiUrlPlaceholder')}
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
             />
@@ -96,11 +96,11 @@ export default function AddProviderDialog({
 
           {/* API Key */}
           <div className="space-y-2">
-            <Label htmlFor="api-key">{t('settings.provider.apiKey')}</Label>
+            <Label htmlFor="api-key">{t('settings:provider.apiKey')}</Label>
             <Input
               id="api-key"
               type="password"
-              placeholder={t('settings.provider.apiKeyPlaceholder')}
+              placeholder={t('settings:provider.apiKeyPlaceholder')}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
             />
@@ -110,19 +110,19 @@ export default function AddProviderDialog({
           <AddModelsList
             models={models}
             onChange={setModels}
-            label={t('settings.models.title')}
+            label={t('settings:models.title')}
           />
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel}>
-            {t('settings.provider.cancel')}
+            {t('settings:provider.cancel')}
           </Button>
           <Button
             onClick={handleSave}
             disabled={!providerName.trim() || !apiUrl.trim()}
           >
-            {t('settings.provider.save')}
+            {t('settings:provider.save')}
           </Button>
         </DialogFooter>
       </DialogContent>
