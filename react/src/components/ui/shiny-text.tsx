@@ -18,9 +18,22 @@ const ShinyText: React.FC<ShinyTextProps> = ({
   return (
     <div
       className={`shiny-text ${disabled ? 'disabled' : ''} ${className}`}
-      style={{ animationDuration }}
+      style={{
+        position: 'relative',
+        display: 'inline-block',
+        animationDuration,
+      }}
     >
       {text}
+      {!disabled && (
+        <span
+          className="shine"
+          aria-hidden="true"
+          style={{ animationDuration }}
+        >
+          {text}
+        </span>
+      )}
     </div>
   )
 }

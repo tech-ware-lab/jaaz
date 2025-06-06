@@ -1,8 +1,8 @@
 import { sendMessages } from '@/api/chat'
 import Blur from '@/components/common/Blur'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import Spinner from '@/components/ui/Spinner'
-import { Message, Session } from '@/types/types'
+import { Message, Model, PendingType, Session } from '@/types/types'
+import { useSearch } from '@tanstack/react-router'
 import { motion } from 'motion/react'
 import { nanoid } from 'nanoid'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -14,10 +14,12 @@ import MessageRegular from './Message/Regular'
 import ToolCallContent from './Message/ToolCallContent'
 import ToolCallTag from './Message/ToolCallTag'
 import SessionSelector from './SessionSelector'
+import ChatSpinner from './Spinner'
 
 import 'react-photo-view/dist/react-photo-view.css'
 
 type ChatInterfaceProps = {
+  canvasId: string
   session: Session | null
   sessionList: Session[]
   onClickNewChat: () => void
@@ -25,6 +27,7 @@ type ChatInterfaceProps = {
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
+  canvasId,
   session,
   sessionList,
   onClickNewChat,
@@ -32,9 +35,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [prompt, setPrompt] = useState('')
-  const [pending, setPending] = useState(false)
+  const [pending, setPending] = useState<PendingType>(false)
 
   const sessionId = session?.id
+
+  const search = useSearch({ from: '/canvas/$id' }) as { sessionId: string }
+  const searchSessionId = search.sessionId || ''
 
   const webSocketRef = useRef<WebSocket | null>(null)
   const sessionIdRef = useRef<string>(session?.id || nanoid())
@@ -75,6 +81,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       try {
         const data = JSON.parse(event.data)
         if (data.type == 'log') {
+          setPending('text')
           console.log(data)
         }
         if (data.type == 'error') {
@@ -95,6 +102,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           })
         } else if (data.type == 'image_generated') {
           console.log('⭐️dispatching image_generated', data)
+          setPending('image')
           window.dispatchEvent(
             new CustomEvent('image_generated', {
               detail: {
@@ -133,6 +141,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             } else if (data.type == 'tool_call') {
               console.log('👇tool_call event get', data)
               setExpandingToolCalls((prev) => [...prev, data.id])
+              setPending('tool')
               return prev.concat({
                 role: 'assistant',
                 tool_calls: [
@@ -190,6 +199,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const onSelectSession = (sessionId: string) => {
     onSessionChange(sessionId)
   }
+
+  const onSendMessages = useCallback(
+    (data: Message[], configs: { textModel: Model; imageModel: Model }) => {
+      setMessages(data)
+      setPrompt('')
+
+      sendMessages({
+        sessionId: sessionId!,
+        canvasId: canvasId,
+        newMessages: data,
+        textModel: configs.textModel,
+        imageModel: configs.imageModel,
+      })
+
+      if (searchSessionId !== sessionId) {
+        window.history.pushState(
+          {},
+          '',
+          `/canvas/${canvasId}?sessionId=${sessionId}`
+        )
+      }
+    },
+    [canvasId, sessionId, searchSessionId]
+  )
 
   return (
     <PhotoProvider>
@@ -261,9 +294,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     })}
                 </div>
               ))}
-              {pending && messages.at(-1)?.role == 'user' && (
-                <div className="flex items-start text-left">{<Spinner />}</div>
-              )}
+              {pending && <ChatSpinner pending={pending} />}
             </div>
           ) : (
             <motion.div className="flex flex-col h-full p-4 items-start justify-start pt-16 select-none">
@@ -291,18 +322,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <ChatTextarea
             value={prompt}
             onChange={setPrompt}
-            onSendMessages={(data, configs) => {
-              setMessages(data)
-              setPrompt('')
-
-              sendMessages({
-                sessionId: sessionId!,
-                newMessages: data,
-                textModel: configs.textModel,
-                imageModel: configs.imageModel,
-              })
-            }}
-            pending={pending}
+            onSendMessages={onSendMessages}
+            pending={!!pending}
             messages={messages}
           />
         </div>

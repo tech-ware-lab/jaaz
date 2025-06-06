@@ -8,6 +8,7 @@ export const getChatSession = async (sessionId: string) => {
 
 export const sendMessages = async (payload: {
   sessionId: string
+  canvasId: string
   newMessages: Message[]
   textModel: Model
   imageModel: Model
@@ -19,6 +20,7 @@ export const sendMessages = async (payload: {
     },
     body: JSON.stringify({
       messages: payload.newMessages,
+      canvas_id: payload.canvasId,
       session_id: payload.sessionId,
       text_model: payload.textModel,
       image_model: payload.imageModel,

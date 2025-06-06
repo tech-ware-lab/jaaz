@@ -131,12 +131,12 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
     img: ({ node, children, ...props }) => {
       return (
         <PhotoView src={props.src}>
-          <p className="group relative overflow-hidden rounded-md my-2 last:mb-0">
+          <span className="group block relative overflow-hidden rounded-md my-2 last:mb-0">
             <img
               className="cursor-pointer group-hover:scale-105 transition-transform duration-300"
               {...props}
             />
-          </p>
+          </span>
         </PhotoView>
       )
     },
