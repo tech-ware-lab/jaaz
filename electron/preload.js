@@ -31,4 +31,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   stopComfyUIProcess: () => ipcRenderer.invoke('stop-comfyui-process'),
   getComfyUIProcessStatus: () =>
     ipcRenderer.invoke('get-comfyui-process-status'),
+  // Add auto-updater methods
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  restartAndInstall: () => ipcRenderer.invoke('restart-and-install'),
+  // Listen for update events
+  onUpdateDownloaded: (callback) => {
+    ipcRenderer.on('update-downloaded', (event, info) => callback(info))
+  },
+  removeUpdateDownloadedListener: () => {
+    ipcRenderer.removeAllListeners('update-downloaded')
+  },
 })
