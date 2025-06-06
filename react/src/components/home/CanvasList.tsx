@@ -3,8 +3,10 @@ import CanvasCard from '@/components/home/CanvasCard'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 
 const CanvasList: React.FC = () => {
+  const { t } = useTranslation('home')
   const { data: canvases, refetch } = useQuery({
     queryKey: ['canvases'],
     queryFn: listCanvases,
@@ -24,7 +26,7 @@ const CanvasList: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          All Projects
+          {t('allProjects')}
         </motion.span>
       )}
 
