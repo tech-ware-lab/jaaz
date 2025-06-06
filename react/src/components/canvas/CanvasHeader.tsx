@@ -21,7 +21,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
   onNameChange,
   onNameSave,
 }) => {
-  const { t } = useTranslation('canvas')
+  const { t } = useTranslation()
   const [isLogoHovered, setIsLogoHovered] = useState(false)
 
   const navigate = useNavigate()
@@ -55,7 +55,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
             Jaaz
           </motion.span>
           <motion.span className="flex items-center" layout aria-hidden>
-            {t('back')}
+            {t('canvas.back')}
           </motion.span>
         </motion.div>
       </motion.div>

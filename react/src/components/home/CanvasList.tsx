@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 
 const CanvasList: React.FC = () => {
-  const { t } = useTranslation('home')
+  const { t } = useTranslation()
   const { data: canvases, refetch } = useQuery({
     queryKey: ['canvases'],
     queryFn: listCanvases,
@@ -26,7 +26,7 @@ const CanvasList: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {t('allProjects')}
+          {t('home.allProjects')}
         </motion.span>
       )}
 

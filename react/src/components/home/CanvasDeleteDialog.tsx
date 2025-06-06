@@ -26,7 +26,7 @@ const CanvasDeleteDialog: React.FC<CanvasDeleteDialogProps> = ({
   setShow,
   handleDeleteCanvas,
 }) => {
-  const { t } = useTranslation('canvas')
+  const { t } = useTranslation()
 
   return (
     <Dialog open={show} onOpenChange={setShow}>
@@ -41,19 +41,19 @@ const CanvasDeleteDialog: React.FC<CanvasDeleteDialogProps> = ({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('deleteDialog.title')}</DialogTitle>
+          <DialogTitle>{t('canvas.deleteDialog.title')}</DialogTitle>
         </DialogHeader>
 
         <DialogDescription>
-          {t('deleteDialog.description')}
+          {t('canvas.deleteDialog.description')}
         </DialogDescription>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setShow(false)}>
-            {t('deleteDialog.cancel')}
+            {t('canvas.deleteDialog.cancel')}
           </Button>
           <Button variant="destructive" onClick={() => handleDeleteCanvas()}>
-            {t('deleteDialog.delete')}
+            {t('canvas.deleteDialog.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>
