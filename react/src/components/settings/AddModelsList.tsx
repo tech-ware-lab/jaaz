@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Plus, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export type ModelItem = {
   name: string
@@ -22,7 +23,8 @@ interface ModelsListProps {
   label?: string
 }
 
-export default function AddModelsList({ models, onChange, label = 'Models' }: ModelsListProps) {
+export default function AddModelsList({ models, onChange, label }: ModelsListProps) {
+  const { t } = useTranslation('settings')
   const [modelItems, setModelItems] = useState<ModelItem[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
 
@@ -82,7 +84,7 @@ export default function AddModelsList({ models, onChange, label = 'Models' }: Mo
         {modelItems.map((model, index) => (
           <div key={index} className="flex items-center gap-2">
             <Input
-              placeholder="Enter model name"
+              placeholder={t('models.placeholder')}
               value={model.name}
               onChange={(e) => handleModelChange(index, 'name', e.target.value)}
               className="flex-1"
@@ -124,7 +126,7 @@ export default function AddModelsList({ models, onChange, label = 'Models' }: Mo
           className="h-8"
         >
           <Plus className="h-4 w-4 mr-1" />
-          Add Model
+          {t('models.addModel')}
         </Button>
       </div>
     </div>
