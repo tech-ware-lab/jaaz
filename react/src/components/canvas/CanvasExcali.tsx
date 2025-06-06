@@ -1,19 +1,27 @@
+import { saveCanvas } from '@/api/canvas'
+import useDebounce from '@/hooks/use-debounce'
 import { useTheme } from '@/hooks/use-theme'
+import { CanvasData } from '@/types/types'
 import { Excalidraw } from '@excalidraw/excalidraw'
+import { IMAGE_MIME_TYPES } from '@excalidraw/excalidraw/constants'
 import {
   ExcalidrawImageElement,
   FileId,
+  OrderedExcalidrawElement,
   Theme,
 } from '@excalidraw/excalidraw/element/types'
 import '@excalidraw/excalidraw/index.css'
 import {
   AppState,
+  BinaryFiles,
   DataURL,
   ExcalidrawImperativeAPI,
+  ExcalidrawInitialDataState,
 } from '@excalidraw/excalidraw/types'
-import debounce from 'lodash.debounce' // or use your own debounce
+import { ValueOf } from '@excalidraw/excalidraw/utility-types'
 import { nanoid } from 'nanoid'
-import { useCallback, useEffect, useRef } from 'react'
+import { memo, useCallback, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
 type LastImagePosition = {
   x: number
@@ -22,35 +30,51 @@ type LastImagePosition = {
   height: number
   col: number // col index
 }
-export default function CanvasExcali() {
-  const excalidrawAPI = useRef<ExcalidrawImperativeAPI | null>(null)
-  const saveScene = (elements: any[], appState: AppState, files: any[]) => {
-    const data = {
-      elements,
-      appState: {
-        ...appState,
-        collaborators: undefined, // avoid circular refs
-      },
-      files,
-    }
-    localStorage.setItem('excalidraw-scene', JSON.stringify(data))
-  }
 
-  const debouncedSave = useCallback(
-    debounce(saveScene, 500), // wait 500ms after changes stop
-    []
+type CanvasExcaliProps = {
+  canvasId: string
+  initialData?: ExcalidrawInitialDataState
+}
+
+const CanvasExcali: React.FC<CanvasExcaliProps> = ({
+  canvasId,
+  initialData,
+}) => {
+  const excalidrawAPI = useRef<ExcalidrawImperativeAPI | null>(null)
+  const { i18n } = useTranslation()
+
+  const handleChange = useDebounce(
+    (
+      elements: Readonly<OrderedExcalidrawElement[]>,
+      appState: AppState,
+      files: BinaryFiles
+    ) => {
+      const data: CanvasData = {
+        elements,
+        appState: {
+          ...appState,
+          collaborators: undefined!,
+        },
+        files,
+      }
+
+      saveCanvas(canvasId, data)
+    },
+    1000
   )
+
   const lastImagePosition = useRef<LastImagePosition | null>(
     localStorage.getItem('excalidraw-last-image-position')
       ? JSON.parse(localStorage.getItem('excalidraw-last-image-position')!)
       : null
   )
   const { theme } = useTheme()
-  console.log('👇theme', theme)
-  useEffect(() => {
-    const addImageToExcalidraw = async (imageData: {
+
+  // TODO: Move to Backend
+  const addImageToExcalidraw = useCallback(
+    async (imageData: {
       url: string
-      mime_type: string
+      mime_type: ValueOf<typeof IMAGE_MIME_TYPES>
       width: number
       height: number
     }) => {
@@ -117,6 +141,13 @@ export default function CanvasExcali() {
         version: 1,
         versionNonce: Math.floor(Math.random() * 100000),
         isDeleted: false,
+        index: null,
+        updated: 0,
+        link: null,
+        locked: false,
+        status: 'saved',
+        scale: [1, 1],
+        crop: null,
       }
       const currentElements = excalidrawAPI.current?.getSceneElements()
       console.log('👇 adding to currentElements', currentElements)
@@ -137,30 +168,42 @@ export default function CanvasExcali() {
         'excalidraw-last-image-position',
         JSON.stringify(lastImagePosition.current)
       )
-    }
+    },
+    [excalidrawAPI]
+  )
 
-    const handleImageGenerated = (e: Event) => {
+  const handleImageGenerated = useCallback(
+    (e: Event) => {
       const event = e as CustomEvent
       console.log('👇image_generated', event.detail)
       addImageToExcalidraw(event.detail.image_data)
-    }
+    },
+    [addImageToExcalidraw]
+  )
 
+  useEffect(() => {
     window.addEventListener('image_generated', handleImageGenerated)
     return () =>
       window.removeEventListener('image_generated', handleImageGenerated)
-  }, [])
+  }, [handleImageGenerated])
 
   return (
     <Excalidraw
       theme={theme as Theme}
+      langCode={i18n.language}
       excalidrawAPI={(api) => (excalidrawAPI.current = api)}
-      onChange={(elements, appState, files) =>
-        debouncedSave(elements, appState, files)
-      }
+      onChange={handleChange}
       initialData={() => {
-        const saved = localStorage.getItem('excalidraw-scene')
-        return saved ? JSON.parse(saved) : undefined
+        const data = initialData
+        if (data?.appState) {
+          data.appState = {
+            ...data.appState,
+            collaborators: undefined!,
+          }
+        }
+        return data || null
       }}
     />
   )
 }
+export default memo(CanvasExcali)

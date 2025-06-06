@@ -248,7 +248,7 @@ async def generate_wavespeed_image(prompt: str, model: str, api_key: str, url: s
                 "size": kwargs.get("size", "1024*1024"),
                 "strength": kwargs.get("strength", 0.8),
             }
-        endpoint = f"{url.rstrip('/')}/api/v3/{model}"
+        endpoint = f"{url.rstrip('/')}/{model}"
         async with session.post(endpoint, json=payload, headers=headers) as response:
             response_json = await response.json()
             if response.status != 200 or response_json.get("code") != 200:

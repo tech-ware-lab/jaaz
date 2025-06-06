@@ -1,0 +1,28 @@
+{
+  "title": "画布",
+  "rename": "重命名画布",
+  "delete": "删除画布",
+  "share": "分享画布",
+  "export": "导出画布",
+  "import": "导入画布",
+  "untitled": "无标题",
+  "back": "返回",
+  "saveSnapshot": "保存快照",
+  "loadSnapshot": "加载快照",
+  "saved": "已保存 ✅",
+  "messages": {
+    "canvasRenamed": "画布重命名成功",
+    "canvasDeleted": "画布删除成功",
+    "canvasExported": "画布导出成功",
+    "canvasImported": "画布导入成功",
+    "failedToRename": "重命名画布失败",
+    "failedToDelete": "删除画布失败",
+    "failedToCreateFile": "创建文件失败"
+  },
+  "deleteDialog": {
+    "title": "删除画布",
+    "description": "确定要删除此画布吗？此操作无法撤销。",
+    "cancel": "取消",
+    "delete": "删除"
+  }
+}

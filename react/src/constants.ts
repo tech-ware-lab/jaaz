@@ -1,4 +1,4 @@
-import type { LLMConfig } from '@/types/types'
+import type { LLMConfig, ToolCallFunctionName } from '@/types/types'
 
 export const PROVIDER_NAME_MAPPING: {
   [key: string]: { name: string; icon: string }
@@ -25,8 +25,8 @@ export const PROVIDER_NAME_MAPPING: {
     icon: 'https://www.wavespeed.ai/favicon.ico',
   },
   comfyui: {
-    name: 'ComfyUI (Local)',
-    icon: 'https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/web/favicon.ico',
+    name: 'ComfyUI',
+    icon: 'https://framerusercontent.com/images/3cNQMWKzIhIrQ5KErBm7dSmbd2w.png',
   },
 }
 export const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
@@ -64,7 +64,7 @@ export const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
     models: {
       'wavespeed-ai/flux-dev': { type: 'image' },
     },
-    url: 'https://api.wavespeed.ai/',
+    url: 'https://api.wavespeed.ai/api/v3/',
     api_key: '',
   },
   comfyui: {
@@ -159,3 +159,15 @@ export const PLATFORMS_CONFIG = [
     checked: true,
   },
 ]
+
+// Tool call name mapping
+export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
+  {
+    generate_image: 'Generate Image',
+    prompt_user_multi_choice: 'Prompt Multi-Choice',
+    prompt_user_single_choice: 'Prompt Single-Choice',
+    finish: 'Finish',
+  }
+
+export const LOGO_URL =
+  'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/unicorn.png'
