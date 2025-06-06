@@ -34,7 +34,7 @@ function Canvas() {
   })
 
   useEffect(() => {
-    if (canvas) {
+    if (canvas && !canvasName && sessionList.length === 0) {
       setCanvasName(canvas.name)
       setSessionList(canvas.sessions)
       if (canvas.sessions.length > 0) {
@@ -47,7 +47,7 @@ function Canvas() {
         }
       }
     }
-  }, [canvas, search.sessionId])
+  }, [canvas, search.sessionId, canvasName, sessionList])
 
   const handleNameSave = async () => {
     await renameCanvas(id, canvasName)
@@ -64,6 +64,11 @@ function Canvas() {
     }
     setSession(newSession)
     setSessionList((prev) => [...prev, newSession])
+  }
+
+  const handleSessionChange = (sessionId: string) => {
+    setSession(canvas?.sessions.find((s) => s.id === sessionId) || null)
+    window.history.pushState({}, '', `/canvas/${id}?sessionId=${sessionId}`)
   }
 
   return (
@@ -98,14 +103,11 @@ function Canvas() {
         <ResizablePanel defaultSize={20} maxSize={35} minSize={20}>
           <div className="flex-1 flex-grow bg-accent/50 w-full">
             <ChatInterface
+              canvasId={id}
               session={session}
               sessionList={sessionList}
               onClickNewChat={handleNewChat}
-              onSessionChange={(sessionId) => {
-                setSession(
-                  canvas?.sessions.find((s) => s.id === sessionId) || null
-                )
-              }}
+              onSessionChange={handleSessionChange}
             />
           </div>
         </ResizablePanel>

@@ -36,6 +36,8 @@ export type UserMessage = {
 }
 export type Message = UserMessage | AssistantMessage | ToolResultMessage
 
+export type PendingType = 'text' | 'image' | 'tool' | false
+
 export interface ChatSession {
   id: string
   model: string
