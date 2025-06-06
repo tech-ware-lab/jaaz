@@ -69,7 +69,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const handleSendPrompt = useCallback(() => {
     if (pending) return
     if (!textModel) {
-      toast.error(t('chat.textarea.selectModel'))
+      toast.error(t('chat:textarea.selectModel'))
       return
     }
     // Check if there are image models, if not, prompt to install ComfyUI
@@ -78,7 +78,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       return
     }
     if (value.length === 0 || value.trim() === '') {
-      toast.error(t('chat.textarea.enterPrompt'))
+      toast.error(t('chat:textarea.enterPrompt'))
       return
     }
 
@@ -208,7 +208,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       <Textarea
         ref={textareaRef}
         className="w-full h-full border-none outline-none resize-none"
-        placeholder={t('chat.textarea.placeholder')}
+        placeholder={t('chat:textarea.placeholder')}
         value={value}
         autoSize
         onChange={(e) => onChange(e.target.value)}

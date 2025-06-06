@@ -56,7 +56,7 @@ function Canvas() {
   const handleNewChat = () => {
     const newSession: Session = {
       id: nanoid(),
-      title: t('chat.newChat'),
+      title: t('chat:newChat'),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       model: session?.model || 'gpt-4o',

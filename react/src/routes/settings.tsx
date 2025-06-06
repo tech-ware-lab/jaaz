@@ -90,7 +90,7 @@ export default function Settings() {
         }
       } catch (error) {
         console.error('Error loading configuration:', error)
-        setErrorMessage(t('settings.messages.failedToLoad'))
+        setErrorMessage(t('settings:messages.failedToLoad'))
       } finally {
         setIsLoading(false)
       }
@@ -145,7 +145,7 @@ export default function Settings() {
       }
     } catch (error) {
       console.error('Error saving settings:', error)
-      setErrorMessage(t('settings.messages.failedToSave'))
+      setErrorMessage(t('settings:messages.failedToSave'))
     }
   }
 
@@ -162,7 +162,7 @@ export default function Settings() {
       <Card className="w-full max-w-[800px] shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            {t('settings.title')}
+            {t('settings:title')}
           </CardTitle>
           <div className="pt-4">
             <Button
@@ -170,7 +170,7 @@ export default function Settings() {
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              {t('settings.provider.addProvider')}
+              {t('settings:provider.addProvider')}
             </Button>
           </div>
         </CardHeader>
@@ -206,7 +206,7 @@ export default function Settings() {
 
           <div className="flex justify-center fixed bottom-4 left-1/2 -translate-x-1/2">
             <Button onClick={handleSave} className="w-[400px]" size={'lg'}>
-              <Save className="mr-2 h-4 w-4" /> {t('settings.saveSettings')}
+              <Save className="mr-2 h-4 w-4" /> {t('settings:saveSettings')}
             </Button>
           </div>
 

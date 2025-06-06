@@ -81,7 +81,7 @@ export default function CommonSetting({
               className="text-red-600 hover:text-red-700 hover:bg-red-50"
             >
               <Trash2 className="h-4 w-4 mr-1" />
-              {t('settings.provider.delete')}
+              {t('settings:provider.delete')}
             </Button>
           </div>
         )}
@@ -89,10 +89,10 @@ export default function CommonSetting({
 
       {/* API URL Input */}
       <div className="space-y-2">
-        <Label htmlFor={`${providerKey}-url`}>{t('settings.provider.apiUrl')}</Label>
+        <Label htmlFor={`${providerKey}-url`}>{t('settings:provider.apiUrl')}</Label>
         <Input
           id={`${providerKey}-url`}
-          placeholder={t('settings.provider.apiUrlPlaceholder')}
+          placeholder={t('settings:provider.apiUrlPlaceholder')}
           value={config.url ?? ''}
           onChange={(e) => handleChange('url', e.target.value)}
           className="w-full"
@@ -101,17 +101,17 @@ export default function CommonSetting({
 
       {/* API Key Input */}
       <div className="space-y-2">
-        <Label htmlFor={`${providerKey}-apiKey`}>{t('settings.provider.apiKey')}</Label>
+        <Label htmlFor={`${providerKey}-apiKey`}>{t('settings:provider.apiKey')}</Label>
         <Input
           id={`${providerKey}-apiKey`}
           type="password"
-          placeholder={t('settings.provider.apiKeyPlaceholder')}
+          placeholder={t('settings:provider.apiKeyPlaceholder')}
           value={config.api_key ?? ''}
           onChange={(e) => handleChange('api_key', e.target.value)}
           className="w-full"
         />
         <p className="text-xs text-gray-500">
-          {t('settings.provider.apiKeyDescription')}
+          {t('settings:provider.apiKeyDescription')}
         </p>
       </div>
 
@@ -121,7 +121,7 @@ export default function CommonSetting({
           <AddModelsList
             models={config.models || {}}
             onChange={handleModelsChange}
-            label={t('settings.models.title')}
+            label={t('settings:models.title')}
           />
         </div>
       )}
@@ -133,7 +133,7 @@ export default function CommonSetting({
           <Input
             id={`${providerKey}-maxTokens`}
             type="number"
-            placeholder={t('settings.provider.maxTokensPlaceholder')}
+            placeholder={t('settings:provider.maxTokensPlaceholder')}
             value={config.max_tokens ?? 8192}
             onChange={(e) =>
               handleChange('max_tokens', parseInt(e.target.value))
@@ -141,7 +141,7 @@ export default function CommonSetting({
             className="w-full"
           />
           <p className="text-xs text-gray-500">
-            {t('settings.provider.maxTokensDescription')}
+            {t('settings:provider.maxTokensDescription')}
           </p>
         </div>
       )}

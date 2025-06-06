@@ -55,7 +55,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
             Jaaz
           </motion.span>
           <motion.span className="flex items-center" layout aria-hidden>
-            {t('canvas.back')}
+            {t('canvas:back')}
           </motion.span>
         </motion.div>
       </motion.div>
