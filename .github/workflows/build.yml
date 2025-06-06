@@ -3,9 +3,9 @@ name: Build and Package Desktop App
 
 on:
   push:
-    branches: [main, mcp, art]
+    branches: [main, dev, art]
   pull_request:
-    branches: [main, mcp, art]
+    branches: [main, dev, art]
 
 jobs:
   build:
@@ -21,12 +21,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
+          python-version: '3.12'
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "20"
+          node-version: '20'
 
       - name: Install Python dependencies
         run: |
