@@ -287,7 +287,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           )}
         </ScrollArea>
 
-        <div className="p-2 gap-2 sticky bottom-0 bg-background/10">
+        <div className="p-2 gap-2 sticky bottom-0">
           <ChatTextarea
             value={prompt}
             onChange={setPrompt}
@@ -304,11 +304,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             }}
             pending={pending}
             messages={messages}
-          />
-
-          <Blur
-            className="absolute bottom-0 left-0 right-0 h-[calc(100%+20px)]"
-            direction="b-t"
           />
         </div>
       </div>
