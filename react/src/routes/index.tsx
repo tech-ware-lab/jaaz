@@ -18,8 +18,7 @@ export const Route = createFileRoute('/')({
 function Home() {
   const [prompt, setPrompt] = useState('')
   const navigate = useNavigate()
-  const { t } = useTranslation('home')
-  const { t: tCommon } = useTranslation('common')
+  const { t } = useTranslation()
 
   const { mutate: createCanvasMutation, isPending } = useMutation({
     mutationFn: createCanvas,
@@ -27,7 +26,7 @@ function Home() {
       navigate({ to: '/canvas/$id', params: { id: data.id } })
     },
     onError: (error) => {
-      toast.error(tCommon('messages.error'), {
+      toast.error(t('common.messages.error'), {
         description: error.message,
       })
     },
@@ -45,7 +44,7 @@ function Home() {
             transition={{ duration: 0.5 }}
           >
             <h1 className="text-5xl font-bold mb-2 mt-8 text-center">
-              {t('title')}
+              {t('home.title')}
             </h1>
           </motion.div>
           <motion.div
@@ -54,7 +53,7 @@ function Home() {
             transition={{ duration: 0.5 }}
           >
             <p className="text-xl text-gray-500 mb-8 text-center">
-              {t('subtitle')}
+              {t('home.subtitle')}
             </p>
           </motion.div>
 
@@ -65,7 +64,7 @@ function Home() {
             messages={[]}
             onSendMessages={(messages, configs) => {
               createCanvasMutation({
-                name: t('newCanvas'),
+                name: t('home.newCanvas'),
                 canvas_id: nanoid(),
                 messages: messages,
                 session_id: nanoid(),

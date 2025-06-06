@@ -9,11 +9,11 @@ import canvasEn from './locales/en/canvas.json'
 import chatEn from './locales/en/chat.json'
 import settingsEn from './locales/en/settings.json'
 
-import commonZh from './locales/zh-cn/common.json'
-import homeZh from './locales/zh-cn/home.json'
-import canvasZh from './locales/zh-cn/canvas.json'
-import chatZh from './locales/zh-cn/chat.json'
-import settingsZh from './locales/zh-cn/settings.json'
+import commonZh from './locales/zh-CN/common.json'
+import homeZh from './locales/zh-CN/home.json'
+import canvasZh from './locales/zh-CN/canvas.json'
+import chatZh from './locales/zh-CN/chat.json'
+import settingsZh from './locales/zh-CN/settings.json'
 
 const resources = {
   en: {
