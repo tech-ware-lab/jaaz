@@ -4,6 +4,7 @@ import { useConfigs } from '@/contexts/configs'
 import { cn } from '@/lib/utils'
 import { Message, Model } from '@/types/types'
 import { useMutation } from '@tanstack/react-query'
+import { useDrop } from 'ahooks'
 import { ArrowUp, Loader2, PlusIcon, XIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Textarea, { TextAreaRef } from 'rc-textarea'
@@ -101,12 +102,37 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     })
   }, [pending, textModel, imageModel, imageModels, value, onSendMessages])
 
-  // TODO: Add Drag and Drop for images
+  // Drop Area
+  const dropAreaRef = useRef<HTMLDivElement>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
+
+  const handleFilesDrop = useCallback(
+    (files: File[]) => {
+      for (const file of files) {
+        uploadImageMutation(file)
+      }
+    },
+    [uploadImageMutation]
+  )
+
+  useDrop(dropAreaRef, {
+    onDragOver() {
+      setIsDragOver(true)
+    },
+    onDragLeave() {
+      setIsDragOver(false)
+    },
+    onDrop() {
+      setIsDragOver(false)
+    },
+    onFiles: handleFilesDrop,
+  })
 
   return (
     <motion.div
+      ref={dropAreaRef}
       className={cn(
-        'w-full flex flex-col items-center border border-primary/20 rounded-2xl p-3 hover:border-primary/40 transition-all duration-300 cursor-text gap-5',
+        'w-full flex flex-col items-center border border-primary/20 rounded-2xl p-3 hover:border-primary/40 transition-all duration-300 cursor-text gap-5 bg-background/80 backdrop-blur-xl relative',
         isFocused && 'border-primary/40',
         className
       )}
@@ -120,6 +146,24 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       transition={{ duration: 0.3, ease: 'linear' }}
       onClick={() => textareaRef.current?.focus()}
     >
+      <AnimatePresence>
+        {isDragOver && (
+          <motion.div
+            className="absolute top-0 left-0 right-0 bottom-0 bg-background/50 backdrop-blur-xl rounded-2xl z-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+          >
+            <div className="flex items-center justify-center h-full">
+              <p className="text-sm text-muted-foreground">
+                Drop images here to upload
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {imageIds.length > 0 && (
           <motion.div
