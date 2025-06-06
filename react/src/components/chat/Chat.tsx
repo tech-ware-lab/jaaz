@@ -1,8 +1,8 @@
 import { sendMessages } from '@/api/chat'
 import Blur from '@/components/common/Blur'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import Spinner from '@/components/ui/Spinner'
-import { Message, Session } from '@/types/types'
+import { Message, Model, PendingType, Session } from '@/types/types'
+import { useSearch } from '@tanstack/react-router'
 import { motion } from 'motion/react'
 import { nanoid } from 'nanoid'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -14,10 +14,12 @@ import MessageRegular from './Message/Regular'
 import ToolCallContent from './Message/ToolCallContent'
 import ToolCallTag from './Message/ToolCallTag'
 import SessionSelector from './SessionSelector'
+import ChatSpinner from './Spinner'
 
 import 'react-photo-view/dist/react-photo-view.css'
 
 type ChatInterfaceProps = {
+  canvasId: string
   session: Session | null
   sessionList: Session[]
   onClickNewChat: () => void
@@ -25,6 +27,7 @@ type ChatInterfaceProps = {
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
+  canvasId,
   session,
   sessionList,
   onClickNewChat,
@@ -32,13 +35,46 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [prompt, setPrompt] = useState('')
-  const [pending, setPending] = useState(false)
+  const [pending, setPending] = useState<PendingType>(false)
 
   const sessionId = session?.id
+
+  const search = useSearch({ from: '/canvas/$id' }) as { sessionId: string }
+  const searchSessionId = search.sessionId || ''
 
   const webSocketRef = useRef<WebSocket | null>(null)
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
+
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const isAtBottomRef = useRef(false)
+
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      setTimeout(() => {
+        scrollRef.current!.scrollTo({
+          top: scrollRef.current!.scrollHeight,
+          behavior: 'smooth',
+        })
+      }, 200)
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (scrollRef.current) {
+        isAtBottomRef.current =
+          scrollRef.current.scrollHeight - scrollRef.current.scrollTop <=
+          scrollRef.current.clientHeight
+      }
+    }
+    const scrollEl = scrollRef.current
+    scrollEl?.addEventListener('scroll', handleScroll)
+
+    return () => {
+      scrollEl?.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
 
   const initChat = useCallback(async () => {
     if (!sessionId) {
@@ -75,6 +111,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       try {
         const data = JSON.parse(event.data)
         if (data.type == 'log') {
+          setPending('text')
           console.log(data)
         }
         if (data.type == 'error') {
@@ -88,6 +125,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           })
         } else if (data.type == 'done') {
           setPending(false)
+          scrollToBottom()
         } else if (data.type == 'info') {
           toast.info(data.info, {
             closeButton: true,
@@ -95,6 +133,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           })
         } else if (data.type == 'image_generated') {
           console.log('⭐️dispatching image_generated', data)
+          setPending('image')
           window.dispatchEvent(
             new CustomEvent('image_generated', {
               detail: {
@@ -102,6 +141,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               },
             })
           )
+          scrollToBottom()
         } else {
           setMessages((prev) => {
             if (data.type == 'delta') {
@@ -133,6 +173,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             } else if (data.type == 'tool_call') {
               console.log('👇tool_call event get', data)
               setExpandingToolCalls((prev) => [...prev, data.id])
+              setPending('tool')
               return prev.concat({
                 role: 'assistant',
                 tool_calls: [
@@ -169,6 +210,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               console.log('👇all_messages', data.messages)
               return data.messages
             }
+
+            scrollToBottom()
+
             return prev
           })
         }
@@ -176,7 +220,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         console.error('Error parsing JSON:', error)
       }
     }
-  }, [sessionId])
+
+    scrollToBottom()
+  }, [sessionId, scrollToBottom])
 
   useEffect(() => {
     initChat()
@@ -190,6 +236,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const onSelectSession = (sessionId: string) => {
     onSessionChange(sessionId)
   }
+
+  const onSendMessages = useCallback(
+    (data: Message[], configs: { textModel: Model; imageModel: Model }) => {
+      setMessages(data)
+      setPrompt('')
+
+      sendMessages({
+        sessionId: sessionId!,
+        canvasId: canvasId,
+        newMessages: data,
+        textModel: configs.textModel,
+        imageModel: configs.imageModel,
+      })
+
+      if (searchSessionId !== sessionId) {
+        window.history.pushState(
+          {},
+          '',
+          `/canvas/${canvasId}?sessionId=${sessionId}`
+        )
+      }
+
+      scrollToBottom()
+    },
+    [canvasId, sessionId, searchSessionId, scrollToBottom]
+  )
 
   return (
     <PhotoProvider>
@@ -206,9 +278,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <Blur className="absolute top-0 left-0 right-0 h-full" />
         </header>
 
-        <ScrollArea className="h-full">
+        <ScrollArea className="h-[calc(100vh-45px)]" viewportRef={scrollRef}>
           {messages.length > 0 ? (
-            <div className="flex-1 px-4 space-y-6 pb-80 pt-15">
+            <div className="flex-1 px-4 space-y-6 pb-50 pt-15">
               {/* Messages */}
               {messages.map((message, idx) => (
                 <div key={`${idx}`}>
@@ -261,9 +333,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     })}
                 </div>
               ))}
-              {pending && messages.at(-1)?.role == 'user' && (
-                <div className="flex items-start text-left">{<Spinner />}</div>
-              )}
+              {pending && <ChatSpinner pending={pending} />}
             </div>
           ) : (
             <motion.div className="flex flex-col h-full p-4 items-start justify-start pt-16 select-none">
@@ -291,18 +361,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <ChatTextarea
             value={prompt}
             onChange={setPrompt}
-            onSendMessages={(data, configs) => {
-              setMessages(data)
-              setPrompt('')
-
-              sendMessages({
-                sessionId: sessionId!,
-                newMessages: data,
-                textModel: configs.textModel,
-                imageModel: configs.imageModel,
-              })
-            }}
-            pending={pending}
+            onSendMessages={onSendMessages}
+            pending={!!pending}
             messages={messages}
           />
         </div>
