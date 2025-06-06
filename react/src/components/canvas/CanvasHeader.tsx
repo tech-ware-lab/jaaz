@@ -7,6 +7,7 @@ import { motion } from 'motion/react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
+import { LOGO_URL } from '@/constants'
 
 type CanvasHeaderProps = {
   canvasName: string
@@ -39,12 +40,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
         onHoverEnd={() => setIsLogoHovered(false)}
         onClick={() => navigate({ to: '/' })}
       >
-        <img
-          src="/unicorn.png"
-          alt="logo"
-          className="size-8"
-          draggable={false}
-        />
+        <img src={LOGO_URL} alt="logo" className="size-8" draggable={false} />
         <motion.div
           className="flex relative gap-10 flex-col overflow-hidden items-start h-7 text-xl font-bold"
           style={{

@@ -89,7 +89,9 @@ export default function CommonSetting({
 
       {/* API URL Input */}
       <div className="space-y-2">
-        <Label htmlFor={`${providerKey}-url`}>{t('settings:provider.apiUrl')}</Label>
+        <Label htmlFor={`${providerKey}-url`}>
+          {t('settings:provider.apiUrl')}
+        </Label>
         <Input
           id={`${providerKey}-url`}
           placeholder={t('settings:provider.apiUrlPlaceholder')}
@@ -101,7 +103,9 @@ export default function CommonSetting({
 
       {/* API Key Input */}
       <div className="space-y-2">
-        <Label htmlFor={`${providerKey}-apiKey`}>{t('settings:provider.apiKey')}</Label>
+        <Label htmlFor={`${providerKey}-apiKey`}>
+          {t('settings:provider.apiKey')}
+        </Label>
         <Input
           id={`${providerKey}-apiKey`}
           type="password"
@@ -129,7 +133,9 @@ export default function CommonSetting({
       {/* Max Tokens Input - only for text providers */}
       {hasMaxTokens && (
         <div className="space-y-2">
-          <Label htmlFor={`${providerKey}-maxTokens`}>{t('provider.maxTokens')}</Label>
+          <Label htmlFor={`${providerKey}-maxTokens`}>
+            {t('settings:provider.maxTokens')}
+          </Label>
           <Input
             id={`${providerKey}-maxTokens`}
             type="number"
