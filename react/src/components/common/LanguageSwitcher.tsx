@@ -11,7 +11,7 @@ import { Languages } from 'lucide-react'
 
 const LanguageSwitcher = () => {
   const { changeLanguage, currentLanguage } = useLanguage()
-  const { t } = useTranslation('settings')
+  const { t } = useTranslation('common')
 
   const languages = [
     { code: 'en', name: t('languages.en') },
