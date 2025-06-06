@@ -14,10 +14,11 @@ import {
 } from "tldraw";
 
 import "tldraw/tldraw.css";
-import { Button } from "./components/ui/button";
+import { Button } from "@/components/ui/button";
 import { ChevronDownIcon, FolderIcon, PlusIcon } from "lucide-react";
-import LeftSidebar from "./LeftSidebar";
+import LeftSidebar from "@/components/sidebar/LeftSidebar";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 // import _jsonSnapshot from "./snapshot.json";
 
@@ -25,9 +26,9 @@ import { toast } from "sonner";
 
 // const jsonSnapshot = _jsonSnapshot as any as TLEditorSnapshot;
 
-function debounce(func: Function, wait: number) {
+function debounce(func: (...args: unknown[]) => void, wait: number) {
   let timeout: NodeJS.Timeout;
-  return function executedFunction(...args: any[]) {
+  return function executedFunction(...args: unknown[]) {
     const later = () => {
       clearTimeout(timeout);
       func(...args);
@@ -130,6 +131,7 @@ function AutoSaveWrapper() {
   );
 }
 function SnapshotToolbar() {
+  const { t } = useTranslation('canvas')
   const editor = useEditor();
 
   useEffect(() => {
@@ -192,7 +194,7 @@ function SnapshotToolbar() {
           opacity: showCheckMark ? 1 : 0,
         }}
       >
-        Saved ✅
+        {t('saved')}
       </span>
       <button
         onClick={() => {
@@ -200,14 +202,15 @@ function SnapshotToolbar() {
           setShowCheckMark(true);
         }}
       >
-        Save Snapshot
+        {t('saveSnapshot')}
       </button>
-      <button onClick={load}>Load Snapshot</button>
+      <button onClick={load}>{t('loadSnapshot')}</button>
     </div>
   );
 }
 function CustomPageMenu() {
-  const [pageName, setPageName] = useState("Untitled");
+  const { t } = useTranslation('canvas')
+  const [pageName, setPageName] = useState(t('untitled'));
   const [openWorkspace, setOpenWorkspace] = useState(false);
   const [curFile, setCurFile] = useState("");
   const editor = useEditor();
@@ -240,7 +243,7 @@ function CustomPageMenu() {
               }
             })
             .catch((err) => {
-              toast.error("Failed to create file");
+              toast.error(t('messages.failedToCreateFile'));
             });
         }}
       >
@@ -258,7 +261,7 @@ function CustomPageMenu() {
       </Button>
       <input
         type="text"
-        placeholder="Untitled"
+        placeholder={t('untitled')}
         className="border-none outline-none"
         value={pageName}
         onChange={(e) => setPageName(e.target.value)}
@@ -267,7 +270,7 @@ function CustomPageMenu() {
         <div className="absolute z-40000 left-0 top-0 w-[300px] h-full">
           <LeftSidebar
             sessionId={""}
-            setSessionId={() => {}}
+            setSessionId={() => { }}
             curFile={curFile}
             setCurFile={setCurFile}
             onClose={() => {

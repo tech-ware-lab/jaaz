@@ -5,13 +5,19 @@
   "share": "Share Canvas",
   "export": "Export Canvas",
   "import": "Import Canvas",
+  "untitled": "Untitled",
+  "back": "Back",
+  "saveSnapshot": "Save Snapshot",
+  "loadSnapshot": "Load Snapshot",
+  "saved": "Saved ✅",
   "messages": {
     "canvasRenamed": "Canvas renamed successfully",
     "canvasDeleted": "Canvas deleted successfully",
     "canvasExported": "Canvas exported successfully",
     "canvasImported": "Canvas imported successfully",
     "failedToRename": "Failed to rename canvas",
-    "failedToDelete": "Failed to delete canvas"
+    "failedToDelete": "Failed to delete canvas",
+    "failedToCreateFile": "Failed to create file"
   },
   "deleteDialog": {
     "title": "Delete Canvas",

@@ -5,6 +5,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
 
 type CanvasHeaderProps = {
@@ -20,6 +21,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
   onNameChange,
   onNameSave,
 }) => {
+  const { t } = useTranslation('canvas')
   const [isLogoHovered, setIsLogoHovered] = useState(false)
 
   const navigate = useNavigate()
@@ -53,7 +55,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
             Jaaz
           </motion.span>
           <motion.span className="flex items-center" layout aria-hidden>
-            Back
+            {t('back')}
           </motion.span>
         </motion.div>
       </motion.div>
