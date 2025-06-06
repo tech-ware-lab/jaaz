@@ -1,15 +1,15 @@
-import { useState } from 'react'
+import CommonDialogContent from '@/components/common/DialogContent'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog,
-  DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { LLMConfig } from '@/types/types'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import AddModelsList from './AddModelsList'
 
@@ -22,13 +22,15 @@ interface AddProviderDialogProps {
 export default function AddProviderDialog({
   open,
   onOpenChange,
-  onSave
+  onSave,
 }: AddProviderDialogProps) {
   const { t } = useTranslation()
   const [providerName, setProviderName] = useState('')
   const [apiUrl, setApiUrl] = useState('')
   const [apiKey, setApiKey] = useState('')
-  const [models, setModels] = useState<Record<string, { type?: 'text' | 'image' | 'video' }>>({})
+  const [models, setModels] = useState<
+    Record<string, { type?: 'text' | 'image' | 'video' }>
+  >({})
 
   const handleSave = () => {
     if (!providerName.trim() || !apiUrl.trim()) {
@@ -39,7 +41,7 @@ export default function AddProviderDialog({
       models,
       url: apiUrl,
       api_key: apiKey,
-      max_tokens: 8192
+      max_tokens: 8192,
     }
 
     // Use provider name as key (convert to lowercase and replace spaces with underscores)
@@ -66,7 +68,7 @@ export default function AddProviderDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <CommonDialogContent open={open}>
         <DialogHeader>
           <DialogTitle>{t('settings:provider.addProvider')}</DialogTitle>
         </DialogHeader>
@@ -74,7 +76,9 @@ export default function AddProviderDialog({
         <div className="space-y-4 py-4">
           {/* Provider Name */}
           <div className="space-y-2">
-            <Label htmlFor="provider-name">{t('settings:provider.providerName')}</Label>
+            <Label htmlFor="provider-name">
+              {t('settings:provider.providerName')}
+            </Label>
             <Input
               id="provider-name"
               placeholder={t('settings:provider.providerNamePlaceholder')}
@@ -125,7 +129,7 @@ export default function AddProviderDialog({
             {t('settings:provider.save')}
           </Button>
         </DialogFooter>
-      </DialogContent>
+      </CommonDialogContent>
     </Dialog>
   )
 }
