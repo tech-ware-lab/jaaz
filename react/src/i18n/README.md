@@ -33,16 +33,11 @@ src/i18n/
 import { useTranslation } from 'react-i18next'
 
 function MyComponent() {
-  // 使用特定命名空间
-  const { t } = useTranslation('home')
-
-  // 使用多个命名空间
-  const { t: tCommon } = useTranslation('common')
+  const { t } = useTranslation()
 
   return (
     <div>
       <h1>{t('title')}</h1>
-      <button>{tCommon('buttons.save')}</button>
     </div>
   )
 }
@@ -59,8 +54,8 @@ function MyComponent() {
 //   }
 // }
 
-const { t } = useTranslation('common')
-return <button>{t('buttons.save')}</button>
+const { t } = useTranslation()
+return <button>{t('common.buttons.save')}</button>
 ```
 
 ### 3. 使用插值
@@ -71,8 +66,8 @@ return <button>{t('buttons.save')}</button>
 //   "welcome": "欢迎, {{name}}!"
 // }
 
-const { t } = useTranslation('common')
-return <div>{t('welcome', { name: 'Jaaz' })}</div>
+const { t } = useTranslation()
+return <div>{t('common.welcome', { name: 'Jaaz' })}</div>
 ```
 
 ### 4. 语言切换

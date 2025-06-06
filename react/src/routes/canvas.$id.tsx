@@ -23,7 +23,7 @@ function Canvas() {
   const [canvasName, setCanvasName] = useState('')
   const [session, setSession] = useState<Session | null>(null)
   const [sessionList, setSessionList] = useState<Session[]>([])
-  const { t } = useTranslation('chat')
+  const { t } = useTranslation()
 
   const { id } = useParams({ from: '/canvas/$id' })
   const search = useSearch({ from: '/canvas/$id' }) as { sessionId: string }
@@ -56,7 +56,7 @@ function Canvas() {
   const handleNewChat = () => {
     const newSession: Session = {
       id: nanoid(),
-      title: t('newChat'),
+      title: t('chat.newChat'),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       model: session?.model || 'gpt-4o',
