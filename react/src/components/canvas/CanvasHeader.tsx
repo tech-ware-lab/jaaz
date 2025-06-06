@@ -1,3 +1,4 @@
+import LanguageSwitcher from '@/components/common/LanguageSwitcher'
 import ThemeButton from '@/components/theme/ThemeButton'
 import { Input } from '@/components/ui/input'
 import { useNavigate } from '@tanstack/react-router'
@@ -74,6 +75,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
         >
           <SettingsIcon size={30} />
         </Button>
+        <LanguageSwitcher />
         <ThemeButton />
       </div>
     </motion.div>

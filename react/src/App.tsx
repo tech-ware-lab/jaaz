@@ -9,6 +9,7 @@ import { routeTree } from './route-tree.gen'
 import '@/assets/style/App.css'
 import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
 import { ConfigsProvider } from '@/contexts/configs'
+import '@/i18n'
 
 const router = createRouter({ routeTree })
 
