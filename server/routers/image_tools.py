@@ -56,6 +56,14 @@ async def get_file(file_id: str):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_path)
 
+@router.post("/comfyui/object_info")
+async def get_object_info(data: dict):
+    url = data.get('url', '')
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required")
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{url}/api/object_info") as response:
+            return await response.json()
 
 async def generate_image(args_json: dict, ctx: dict):
     session_id = ctx.get('session_id', '')
@@ -208,8 +216,10 @@ def get_asset_path(filename):
 
 asset_dir = get_asset_path('flux_comfy_workflow.json')
 flux_comfy_workflow = None 
+basic_comfy_t2i_workflow = get_asset_path('default_comfy_t2i_workflow.json')
 try:
     flux_comfy_workflow = json.load(open(asset_dir, 'r'))
+    basic_comfy_t2i_workflow = json.load(open(basic_comfy_t2i_workflow, 'r'))
 except Exception as e:
     traceback.print_exc()
 
@@ -220,8 +230,10 @@ async def generate_image_comfyui(args_json: dict, ctx: dict):
     api_url = app_config.get('comfyui', {}).get('url', '')
     api_url = 'http://127.0.0.1:8188'
     prompt = args_json.get('prompt', '')
-    flux_comfy_workflow['6']['inputs']['text'] = prompt
-    execution = await execute(flux_comfy_workflow, '127.0.0.1', 8188, ctx=ctx)
+    # flux_comfy_workflow['6']['inputs']['text'] = prompt
+    basic_comfy_t2i_workflow['6']['inputs']['text'] = prompt
+    execution = await execute(basic_comfy_t2i_workflow, '127.0.0.1', 8188, ctx=ctx)
+    print('🦄image execution outputs', execution.outputs)
     url = execution.outputs[0]
     # get image dimensions
     image_id = 'im_' + generate(size=8)
@@ -286,12 +298,12 @@ async def generate_wavespeed_image(prompt: str, model: str, api_key: str, url: s
 
 async def get_image_info_and_save(url, file_path_without_extension):
     # Fetch the image asynchronously
-    async with httpx.AsyncClient(timeout=20) as client:
-        response = await client.get(url)
-    response.raise_for_status()  # Raise an error for bad responses
-
-    # Open the image
-    image = Image.open(BytesIO(response.content))
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            # Read the image content as bytes
+            image_content = await response.read()
+            # Open the image
+            image = Image.open(BytesIO(image_content))
 
     # Get MIME type
     mime_type = Image.MIME.get(image.format if image.format else 'PNG')
@@ -305,7 +317,7 @@ async def get_image_info_and_save(url, file_path_without_extension):
 
     # Save the image to a local file with the correct extension asynchronously
     async with aiofiles.open(file_path, 'wb') as out_file:
-        await out_file.write(response.content)
+        await out_file.write(image_content)
     print('🦄image saved to file_path', file_path)
 
     return mime_type, width, height, extension
