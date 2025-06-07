@@ -36,5 +36,13 @@
     "canvas": "Canvas",
     "settings": "Settings",
     "back": "Back"
+  },
+  "update": {
+    "title": "🎉 New Version Available",
+    "description": "New version v{{version}} is available. Would you like to install it now?",
+    "installNote": "Click \"Install Update\" to restart the app and install the new version.",
+    "laterButton": "Remind Later",
+    "installButton": "Install Update",
+    "installing": "Installing..."
   }
 }

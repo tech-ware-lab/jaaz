@@ -1,7 +1,7 @@
+import CommonDialogContent from '@/components/common/DialogContent'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -71,7 +71,7 @@ const InstallComfyUIDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent>
+        <CommonDialogContent open={open}>
           <DialogHeader>
             <DialogTitle>🎨 Install Flux Image Generation Model</DialogTitle>
             <DialogDescription>
@@ -108,7 +108,7 @@ const InstallComfyUIDialog = ({
               )}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </CommonDialogContent>
       </Dialog>
 
       <InstallProgressDialog
