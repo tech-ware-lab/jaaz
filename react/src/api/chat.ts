@@ -29,3 +29,10 @@ export const sendMessages = async (payload: {
   const data = await response.json()
   return data as Message[]
 }
+
+export const cancelChat = async (sessionId: string) => {
+  const response = await fetch(`/api/cancel/${sessionId}`, {
+    method: 'POST',
+  })
+  return await response.json()
+}
