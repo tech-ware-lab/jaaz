@@ -56,6 +56,14 @@ async def get_file(file_id: str):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_path)
 
+@router.post("/comfyui/object_info")
+async def get_object_info(data: dict):
+    url = data.get('url', '')
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required")
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{url}/api/object_info") as response:
+            return await response.json()
 
 async def generate_image(args_json: dict, ctx: dict):
     session_id = ctx.get('session_id', '')

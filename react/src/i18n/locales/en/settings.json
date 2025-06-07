@@ -37,7 +37,7 @@
   "comfyui": {
     "title": "ComfyUI",
     "localImageGeneration": "🎨 Local Image Generation",
-    "enable": "Enable ComfyUI Local Image Generation",
+    "enable": "Enable",
     "debugStatus": "🔍 Debug Status",
     "status": {
       "disabled": "Disabled",
