@@ -8,8 +8,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion } from 'motion/react'
 import { nanoid } from 'nanoid'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/')({
   component: Home,

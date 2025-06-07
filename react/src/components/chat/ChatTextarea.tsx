@@ -1,3 +1,4 @@
+import { cancelChat } from '@/api/chat'
 import { uploadImage } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
@@ -5,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { Message, Model } from '@/types/types'
 import { useMutation } from '@tanstack/react-query'
 import { useDrop } from 'ahooks'
-import { ArrowUp, Loader2, PlusIcon, XIcon } from 'lucide-react'
+import { ArrowUp, Loader2, PlusIcon, Square, XIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Textarea, { TextAreaRef } from 'rc-textarea'
 import { useCallback, useRef, useState } from 'react'
@@ -18,6 +19,7 @@ type ChatTextareaProps = {
   pending: boolean
   className?: string
   messages: Message[]
+  sessionId?: string
   onChange: (value: string) => void
   onSendMessages: (
     data: Message[],
@@ -26,6 +28,7 @@ type ChatTextareaProps = {
       imageModel: Model
     }
   ) => void
+  onCancelChat?: () => void
 }
 
 const ChatTextarea: React.FC<ChatTextareaProps> = ({
@@ -33,8 +36,10 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   pending,
   className,
   messages,
+  sessionId,
   onChange,
   onSendMessages,
+  onCancelChat,
 }) => {
   const { t } = useTranslation()
   const { configsStore } = useConfigs()
@@ -66,6 +71,14 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     [uploadImageMutation]
   )
 
+  const handleCancelChat = useCallback(async () => {
+    if (sessionId) {
+      await cancelChat(sessionId)
+    }
+    onCancelChat?.()
+  }, [sessionId, onCancelChat])
+
+  // Send Prompt
   const handleSendPrompt = useCallback(() => {
     if (pending) return
     if (!textModel) {
@@ -243,19 +256,27 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           <ModelSelector />
         </div>
 
-        <Button
-          className="shrink-0"
-          variant="default"
-          size="icon"
-          onClick={handleSendPrompt}
-          disabled={!textModel || !imageModel || value.length === 0 || pending}
-        >
-          {pending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
+        {pending ? (
+          <Button
+            className="shrink-0 relative"
+            variant="default"
+            size="icon"
+            onClick={handleCancelChat}
+          >
+            <Loader2 className="size-5.5 animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            <Square className="size-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          </Button>
+        ) : (
+          <Button
+            className="shrink-0"
+            variant="default"
+            size="icon"
+            onClick={handleSendPrompt}
+            disabled={!textModel || !imageModel || value.length === 0}
+          >
             <ArrowUp className="size-4" />
-          )}
-        </Button>
+          </Button>
+        )}
       </div>
     </motion.div>
   )

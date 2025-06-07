@@ -263,6 +263,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     [canvasId, sessionId, searchSessionId, scrollToBottom]
   )
 
+  const handleCancelChat = useCallback(() => {
+    setPending(false)
+  }, [])
+
   return (
     <PhotoProvider>
       <div className="flex flex-col h-screen relative">
@@ -360,10 +364,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div className="p-2 gap-2 sticky bottom-0">
           <ChatTextarea
             value={prompt}
-            onChange={setPrompt}
-            onSendMessages={onSendMessages}
+            sessionId={sessionId!}
             pending={!!pending}
             messages={messages}
+            onChange={setPrompt}
+            onSendMessages={onSendMessages}
+            onCancelChat={handleCancelChat}
           />
         </div>
       </div>
