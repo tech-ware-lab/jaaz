@@ -207,9 +207,16 @@ def get_asset_path(filename):
     return os.path.join(base_path, 'asset', filename)
 
 asset_dir = get_asset_path('flux_comfy_workflow.json')
-flux_comfy_workflow = json.load(open(asset_dir, 'r'))
+flux_comfy_workflow = None 
+try:
+    flux_comfy_workflow = json.load(open(asset_dir, 'r'))
+except Exception as e:
+    traceback.print_exc()
+
 from routers.comfyui_execution import execute
 async def generate_image_comfyui(args_json: dict, ctx: dict):
+    if not flux_comfy_workflow:
+        raise Exception('Flux workflow json not found')
     api_url = app_config.get('comfyui', {}).get('url', '')
     api_url = 'http://127.0.0.1:8188'
     prompt = args_json.get('prompt', '')
