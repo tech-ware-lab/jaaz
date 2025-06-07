@@ -5,5 +5,8 @@
     "placeholder": "Enter your design requirements",
     "selectModel": "Please select a text model! Go to Settings to set your API keys if you haven't done so.",
     "enterPrompt": "Please enter a prompt"
+  },
+  "messages": {
+    "imagePositioning": "Go to image"
   }
 }
