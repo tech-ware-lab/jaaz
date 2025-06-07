@@ -4,6 +4,7 @@
   "delete": "Delete Canvas",
   "share": "Share Canvas",
   "export": "Export Canvas",
+  "exportImages": "Export Images",
   "import": "Import Canvas",
   "untitled": "Untitled",
   "back": "Back",
@@ -17,7 +18,10 @@
     "canvasImported": "Canvas imported successfully",
     "failedToRename": "Failed to rename canvas",
     "failedToDelete": "Failed to delete canvas",
-    "failedToCreateFile": "Failed to create file"
+    "failedToCreateFile": "Failed to create file",
+    "noImagesSelected": "No images selected",
+    "exportingImages": "Exporting images...",
+    "failedToExportImages": "Failed to export images"
   },
   "deleteDialog": {
     "title": "Delete Canvas",

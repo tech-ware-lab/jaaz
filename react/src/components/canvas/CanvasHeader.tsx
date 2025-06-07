@@ -8,6 +8,7 @@ import { motion } from 'motion/react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
+import CanvasExport from './CanvasExport'
 
 type CanvasHeaderProps = {
   canvasName: string
@@ -67,6 +68,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
+        <CanvasExport />
         <Button
           size={'sm'}
           variant="ghost"
