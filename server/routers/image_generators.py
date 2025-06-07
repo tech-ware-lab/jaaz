@@ -1,24 +1,16 @@
 import base64
 import json
 import sys
-from fastapi.responses import FileResponse
-import requests
-from common import DEFAULT_PORT
 from services.config_service import app_config
 import traceback
-import time
 from services.config_service import USER_DATA_DIR, FILES_DIR
-from routers.websocket import send_to_websocket
 from PIL import Image
 from io import BytesIO
 import os
 from nanoid import generate
-from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 import httpx
 import aiofiles
-from mimetypes import guess_type
 import aiohttp
-import asyncio
 from typing import Optional
 
 async def get_image_info_and_save(url, file_path_without_extension):
