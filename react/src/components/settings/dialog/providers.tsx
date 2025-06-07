@@ -1,0 +1,264 @@
+import AddProviderDialog from '@/components/settings/AddProviderDialog'
+import ComfyuiSetting from '@/components/settings/ComfyuiSetting'
+import CommonSetting from '@/components/settings/CommonSetting'
+import { Button } from '@/components/ui/button'
+import { DEFAULT_PROVIDERS_CONFIG } from '@/constants'
+import useConfigsStore from '@/stores/configs'
+import { LLMConfig } from '@/types/types'
+import { Save } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
+
+const SettingProviders = () => {
+  const { t } = useTranslation()
+  const { providers, setProviders } = useConfigsStore()
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isAddProviderDialogOpen, setIsAddProviderDialogOpen] = useState(false)
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await fetch('/api/config')
+        const config: { [key: string]: LLMConfig } = await response.json()
+
+        const res: { [key: string]: LLMConfig } = {}
+
+        // First, add custom providers that are not in DEFAULT_PROVIDERS_CONFIG
+        for (const provider in config) {
+          if (
+            !(provider in DEFAULT_PROVIDERS_CONFIG) &&
+            typeof config[provider] === 'object'
+          ) {
+            console.log('Adding custom provider:', provider, config[provider])
+            res[provider] = config[provider]
+          }
+        }
+
+        // Then, add providers from DEFAULT_PROVIDERS_CONFIG
+        for (const provider in DEFAULT_PROVIDERS_CONFIG) {
+          if (config[provider] && typeof config[provider] === 'object') {
+            res[provider] = {
+              ...DEFAULT_PROVIDERS_CONFIG[provider],
+              ...config[provider],
+            }
+          } else {
+            res[provider] = DEFAULT_PROVIDERS_CONFIG[provider]
+          }
+        }
+
+        setProviders(res)
+
+        // TODO: move to other place
+        // Auto-start ComfyUI process if enabled and installed
+        const isComfyUIEnabled =
+          config.comfyui && Object.keys(config.comfyui.models || {}).length > 0
+        if (isComfyUIEnabled && window.electronAPI?.checkComfyUIInstalled) {
+          try {
+            const installed = await window.electronAPI.checkComfyUIInstalled()
+            if (installed) {
+              // Check if process is already running
+              const processStatus =
+                await window.electronAPI.getComfyUIProcessStatus?.()
+              if (!processStatus?.running) {
+                // Start ComfyUI process
+                const result = await window.electronAPI.startComfyUIProcess?.()
+                if (result?.success) {
+                  console.log('ComfyUI process auto-started successfully')
+                } else {
+                  console.log(
+                    'Failed to auto-start ComfyUI process:',
+                    result?.message
+                  )
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error auto-starting ComfyUI process:', error)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading configuration:', error)
+        setErrorMessage(t('settings:messages.failedToLoad'))
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadConfig()
+  }, [])
+
+  const handleConfigChange = (key: string, newConfig: LLMConfig) => {
+    setProviders({
+      ...providers,
+      [key]: newConfig,
+    })
+  }
+
+  const handleAddProvider = (providerKey: string, newConfig: LLMConfig) => {
+    setProviders({
+      ...providers,
+      [providerKey]: newConfig,
+    })
+  }
+
+  const handleDeleteProvider = (providerKey: string) => {
+    delete providers[providerKey]
+    setProviders({
+      ...providers,
+    })
+  }
+
+  const handleSave = async () => {
+    try {
+      setErrorMessage('')
+
+      const response = await fetch('/api/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(providers),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save configuration')
+      }
+
+      const result = await response.json()
+      if (result.status === 'success') {
+        toast.success(result.message)
+      } else {
+        throw new Error(result.message || 'Failed to save configuration')
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error)
+      setErrorMessage(t('settings:messages.failedToSave'))
+    }
+  }
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await fetch('/api/config')
+        const config: { [key: string]: LLMConfig } = await response.json()
+
+        const res: { [key: string]: LLMConfig } = {}
+
+        // First, add custom providers that are not in DEFAULT_PROVIDERS_CONFIG
+        for (const provider in config) {
+          if (
+            !(provider in DEFAULT_PROVIDERS_CONFIG) &&
+            typeof config[provider] === 'object'
+          ) {
+            console.log('Adding custom provider:', provider, config[provider])
+            res[provider] = config[provider]
+          }
+        }
+
+        // Then, add providers from DEFAULT_PROVIDERS_CONFIG
+        for (const provider in DEFAULT_PROVIDERS_CONFIG) {
+          if (config[provider] && typeof config[provider] === 'object') {
+            res[provider] = {
+              ...DEFAULT_PROVIDERS_CONFIG[provider],
+              ...config[provider],
+            }
+          } else {
+            res[provider] = DEFAULT_PROVIDERS_CONFIG[provider]
+          }
+        }
+
+        setProviders(res)
+
+        // TODO: move to other place
+        // Auto-start ComfyUI process if enabled and installed
+        const isComfyUIEnabled =
+          config.comfyui && Object.keys(config.comfyui.models || {}).length > 0
+        if (isComfyUIEnabled && window.electronAPI?.checkComfyUIInstalled) {
+          try {
+            const installed = await window.electronAPI.checkComfyUIInstalled()
+            if (installed) {
+              // Check if process is already running
+              const processStatus =
+                await window.electronAPI.getComfyUIProcessStatus?.()
+              if (!processStatus?.running) {
+                // Start ComfyUI process
+                const result = await window.electronAPI.startComfyUIProcess?.()
+                if (result?.success) {
+                  toast.success(result.message)
+                  console.log('ComfyUI process auto-started successfully')
+                } else {
+                  console.log(
+                    'Failed to auto-start ComfyUI process:',
+                    result?.message
+                  )
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error auto-starting ComfyUI process:', error)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading configuration:', error)
+        setErrorMessage(t('settings:messages.failedToLoad'))
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadConfig()
+  }, [])
+
+  return (
+    <div className="flex flex-col items-center justify-center p-4 relative w-full">
+      {isLoading && (
+        <div className="flex justify-center items-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-zinc-500"></div>
+        </div>
+      )}
+
+      {!isLoading &&
+        Object.keys(providers).map((key, index) => (
+          <div key={key} className="w-full">
+            {key === 'comfyui' ? (
+              <ComfyuiSetting
+                config={providers[key]}
+                onConfigChange={handleConfigChange}
+              />
+            ) : (
+              <CommonSetting
+                providerKey={key}
+                config={providers[key]}
+                onConfigChange={handleConfigChange}
+                onDeleteProvider={handleDeleteProvider}
+              />
+            )}
+
+            {index !== Object.keys(providers).length - 1 && (
+              <div className="my-6 border-t bg-border" />
+            )}
+          </div>
+        ))}
+
+      <div className="flex justify-center fixed bottom-15 right-2">
+        <Button onClick={handleSave} className=" " size={'lg'}>
+          <Save className="mr-2 h-4 w-4" /> {t('settings:saveSettings')}
+        </Button>
+      </div>
+
+      {errorMessage && (
+        <div className="text-red-500 text-center mb-4">{errorMessage}</div>
+      )}
+
+      <AddProviderDialog
+        open={isAddProviderDialogOpen}
+        onOpenChange={setIsAddProviderDialogOpen}
+        onSave={handleAddProvider}
+      />
+    </div>
+  )
+}
+
+export default SettingProviders

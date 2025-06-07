@@ -2,6 +2,7 @@ import LanguageSwitcher from '@/components/common/LanguageSwitcher'
 import ThemeButton from '@/components/theme/ThemeButton'
 import { Input } from '@/components/ui/input'
 import { LOGO_URL } from '@/constants'
+import { useConfigs } from '@/contexts/configs'
 import { useNavigate } from '@tanstack/react-router'
 import { ChevronLeft, SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
@@ -27,6 +28,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
   const [isLogoHovered, setIsLogoHovered] = useState(false)
 
   const navigate = useNavigate()
+  const { setShowSettingsDialog } = useConfigs()
 
   return (
     <motion.div
@@ -72,7 +74,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
         <Button
           size={'sm'}
           variant="ghost"
-          onClick={() => navigate({ to: '/settings' })}
+          onClick={() => setShowSettingsDialog(true)}
         >
           <SettingsIcon size={30} />
         </Button>
