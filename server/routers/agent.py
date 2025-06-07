@@ -485,7 +485,7 @@ async def get_models():
         for model_name in models:
             if provider == 'ollama':
                 continue
-            if provider != 'huggingface' and config[provider].get('api_key', '') == '':
+            if provider != 'comfyui' and config[provider].get('api_key', '') == '':
                 continue
             model = models[model_name]
             res.append({
