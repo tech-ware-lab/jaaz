@@ -1,4 +1,5 @@
-import { Model } from '@/types/types'
+import { DEFAULT_PROVIDERS_CONFIG } from '@/constants'
+import { LLMConfig, Model } from '@/types/types'
 import { create } from 'zustand'
 
 type ConfigsStore = {
@@ -17,6 +18,14 @@ type ConfigsStore = {
 
   showUpdateDialog: boolean
   setShowUpdateDialog: (show: boolean) => void
+
+  showSettingsDialog: boolean
+  setShowSettingsDialog: (show: boolean) => void
+
+  providers: {
+    [key: string]: LLMConfig
+  }
+  setProviders: (providers: { [key: string]: LLMConfig }) => void
 }
 
 const useConfigsStore = create<ConfigsStore>((set) => ({
@@ -35,6 +44,12 @@ const useConfigsStore = create<ConfigsStore>((set) => ({
 
   showUpdateDialog: false,
   setShowUpdateDialog: (show) => set({ showUpdateDialog: show }),
+
+  showSettingsDialog: false,
+  setShowSettingsDialog: (show) => set({ showSettingsDialog: show }),
+
+  providers: DEFAULT_PROVIDERS_CONFIG,
+  setProviders: (providers) => set({ providers }),
 }))
 
 export default useConfigsStore

@@ -8,7 +8,6 @@ import {
 import { useConfigs } from '@/contexts/configs'
 
 const ModelSelector: React.FC = () => {
-  const { configsStore } = useConfigs()
   const {
     textModel,
     imageModel,
@@ -16,7 +15,7 @@ const ModelSelector: React.FC = () => {
     setImageModel,
     textModels,
     imageModels,
-  } = configsStore.getState()
+  } = useConfigs()
 
   return (
     <>
