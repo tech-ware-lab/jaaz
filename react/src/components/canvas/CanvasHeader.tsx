@@ -1,13 +1,13 @@
 import LanguageSwitcher from '@/components/common/LanguageSwitcher'
 import ThemeButton from '@/components/theme/ThemeButton'
 import { Input } from '@/components/ui/input'
+import { LOGO_URL } from '@/constants'
 import { useNavigate } from '@tanstack/react-router'
-import { SettingsIcon } from 'lucide-react'
+import { ChevronLeft, SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
-import { LOGO_URL } from '@/constants'
 
 type CanvasHeaderProps = {
   canvasName: string
@@ -35,11 +35,12 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
       transition={{ duration: 0.3 }}
     >
       <motion.div
-        className="flex items-center gap-2 cursor-pointer"
+        className="flex items-center gap-2 cursor-pointer group"
         onHoverStart={() => setIsLogoHovered(true)}
         onHoverEnd={() => setIsLogoHovered(false)}
         onClick={() => navigate({ to: '/' })}
       >
+        <ChevronLeft className="size-5 group-hover:-translate-x-0.5 transition-transform duration-300" />
         <img src={LOGO_URL} alt="logo" className="size-8" draggable={false} />
         <motion.div
           className="flex relative gap-10 flex-col overflow-hidden items-start h-7 text-xl font-bold"

@@ -1,5 +1,6 @@
 import { Session } from '@/types/types'
 import { PlusIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
 import {
   Select,
@@ -22,6 +23,8 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
   onSelectSession,
   onClickNewChat,
 }) => {
+  const { t } = useTranslation()
+
   return (
     <div className="flex items-center gap-2 w-full">
       <Select
@@ -30,7 +33,7 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
           onSelectSession(value)
         }}
       >
-        <SelectTrigger className="w-full bg-background">
+        <SelectTrigger className="flex-1 min-w-0 bg-background">
           <SelectValue placeholder="Theme" />
         </SelectTrigger>
         <SelectContent>
@@ -42,8 +45,13 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
         </SelectContent>
       </Select>
 
-      <Button variant={'outline'} size={'icon'} onClick={onClickNewChat}>
+      <Button
+        variant={'outline'}
+        onClick={onClickNewChat}
+        className="shrink-0 gap-1"
+      >
         <PlusIcon />
+        <span className="text-sm">{t('chat:newChat')}</span>
       </Button>
     </div>
   )
