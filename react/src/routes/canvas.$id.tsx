@@ -86,7 +86,7 @@ function Canvas() {
           className="w-screen h-screen"
           autoSaveId="jaaz-chat-panel"
         >
-          <ResizablePanel defaultSize={80}>
+          <ResizablePanel className="relative" defaultSize={80}>
             <div className="w-full h-full">
               {isLoading ? (
                 <div className="flex-1 flex-grow px-4 bg-accent w-[24%] absolute right-0">
@@ -95,7 +95,9 @@ function Canvas() {
                   </div>
                 </div>
               ) : (
-                <CanvasExcali canvasId={id} initialData={canvas?.data} />
+                <>
+                  <CanvasExcali canvasId={id} initialData={canvas?.data} />
+                </>
               )}
             </div>
           </ResizablePanel>

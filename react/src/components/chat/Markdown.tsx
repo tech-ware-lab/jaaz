@@ -1,4 +1,7 @@
+import { Button } from '@/components/ui/button'
+import { useCanvas } from '@/contexts/canvas'
 import { memo } from 'react'
+import { useTranslation } from 'react-i18next'
 import ReactMarkdown, { Components } from 'react-markdown'
 import { PhotoView } from 'react-photo-view'
 import remarkGfm from 'remark-gfm'
@@ -8,6 +11,19 @@ type MarkdownProps = {
 }
 
 const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
+  const { excalidrawAPI } = useCanvas()
+  const files = excalidrawAPI?.getFiles()
+  const filesArray = Object.keys(files || {}).map((key) => ({
+    id: key,
+    url: files![key].dataURL,
+  }))
+
+  const { t } = useTranslation()
+
+  const handleImagePositioning = (id: string) => {
+    excalidrawAPI?.scrollToContent(id, { animate: true })
+  }
+
   const components: Components = {
     code: ({ node, className, children, ref, ...props }) => {
       const match = /language-(\w+)/.exec(className || '')
@@ -129,6 +145,7 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
       )
     },
     img: ({ node, children, ...props }) => {
+      const id = filesArray.find((file) => props.src?.includes(file.url))?.id
       return (
         <PhotoView src={props.src}>
           <span className="group block relative overflow-hidden rounded-md my-2 last:mb-0">
@@ -136,6 +153,19 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
               className="cursor-pointer group-hover:scale-105 transition-transform duration-300"
               {...props}
             />
+
+            {id && (
+              <Button
+                variant="secondary"
+                className="group-hover:opacity-100 opacity-0 absolute top-2 right-2 z-10"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleImagePositioning(id)
+                }}
+              >
+                {t('chat:messages:imagePositioning')}
+              </Button>
+            )}
           </span>
         </PhotoView>
       )

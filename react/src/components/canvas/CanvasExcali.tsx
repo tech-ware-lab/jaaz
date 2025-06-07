@@ -23,6 +23,8 @@ import { nanoid } from 'nanoid'
 import { memo, useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import '@/assets/style/canvas.css'
+
 type LastImagePosition = {
   x: number
   y: number
