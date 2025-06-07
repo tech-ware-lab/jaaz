@@ -40,42 +40,46 @@ async def get_image_info_and_save(url, file_path_without_extension):
     return mime_type, width, height, extension
 
 async def generate_image_replicate(prompt, model, aspect_ratio, input_image_b64: Optional[str] = None):
-    api_key = app_config.get('replicate', {}).get('api_key', '')
-    if not api_key:
-        raise ValueError("Image generation failed: Replicate API key is not set")
-    url = f"https://api.replicate.com/v1/models/{model}/predictions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-        "Prefer": "wait"
-    }
-    data = {
-        "input": {
-            "prompt": prompt,
-            "aspect_ratio": aspect_ratio,
+    try:
+        api_key = app_config.get('replicate', {}).get('api_key', '')
+        if not api_key:
+            raise ValueError("Image generation failed: Replicate API key is not set")
+        url = f"https://api.replicate.com/v1/models/{model}/predictions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Prefer": "wait"
         }
-    }
-    if input_image_b64:
-        data['input']['input_image'] = input_image_b64
-        model = 'black-forest-labs/flux-kontext-pro'
-    async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.post(url, headers=headers, json=data)
-    res = response.json()
-    print('🦄image generation response', res)
-    output = res.get('output', '')
-    image_id = 'im_' + generate(size=8)
-    # image_id = int(time.time() * 1000)
-    if output == '':
-        if res.get('detail', '') != '':
-            raise Exception(f'Replicate image generation failed: {res.get("detail", "")}')
-        else:
-            raise Exception('Replicate image generation failed: no output url found')
-    print('🦄image generation image_id', image_id)
-    # get image dimensions
-    mime_type, width, height, extension = await get_image_info_and_save(output, os.path.join(FILES_DIR, f'{image_id}'))
-    filename = f'{image_id}.{extension}'
-    return mime_type, width, height, filename
-
+        data = {
+            "input": {
+                "prompt": prompt,
+                "aspect_ratio": aspect_ratio,
+            }
+        }
+        if input_image_b64:
+            data['input']['input_image'] = input_image_b64
+            model = 'black-forest-labs/flux-kontext-pro'
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers, json=data) as response:
+                res = await response.json()
+        print('🦄image generation response', res)
+        output = res.get('output', '')
+        image_id = 'im_' + generate(size=8)
+        # image_id = int(time.time() * 1000)
+        if output == '':
+            if res.get('detail', '') != '':
+                raise Exception(f'Replicate image generation failed: {res.get("detail", "")}')
+            else:
+                raise Exception('Replicate image generation failed: no output url found')
+        print('🦄image generation image_id', image_id)
+        # get image dimensions
+        mime_type, width, height, extension = await get_image_info_and_save(output, os.path.join(FILES_DIR, f'{image_id}'))
+        filename = f'{image_id}.{extension}'
+        return mime_type, width, height, filename
+    except Exception as e:
+        print('Error generating image with replicate', e)
+        traceback.print_exc()
+        raise e
 
 def get_asset_path(filename):
     # To get the correct path for pyinstaller bundled application
