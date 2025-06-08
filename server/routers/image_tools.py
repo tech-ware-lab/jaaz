@@ -79,12 +79,14 @@ async def generate_image_tool(
     prompt: str,
     aspect_ratio: str,
     config: RunnableConfig,
+    input_image: Optional[str] = None,
 ) -> str:
     """Generate an image using text prompt or optionally pass an image for reference or for editing
 
     Args:
         prompt: Required. The prompt for image generation. If you want to edit an image, please describe what you want to edit in the prompt.
         aspect_ratio: Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4
+        input_image: Optional; Image to use as reference. Pass image_id here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc.
     """
     print('🛠️',prompt, aspect_ratio)
     ctx = config.get('configurable', {})
@@ -95,7 +97,6 @@ async def generate_image_tool(
         'prompt': prompt,
         'aspect_ratio': aspect_ratio,
     }
-    input_image = None
     image_model = ctx.get('model_info', {}).get('image', {})
     if image_model is None:
         raise ValueError("Image model is not selected")
@@ -103,7 +104,6 @@ async def generate_image_tool(
     provider = image_model.get('provider', 'replicate')
 
     try:
-        # 处理其他提供商的图像生成
         if input_image:
             image_path = os.path.join(FILES_DIR, f'{input_image}')
             async with aiofiles.open(image_path, 'rb') as f:
@@ -137,7 +137,7 @@ async def generate_image_tool(
                 'height': height,
             }
         })
-        return f"image generated successfully ![image_id: {filename}](/api/file/{filename})"
+        return f"image generated successfully ![image_id: {filename}](http://localhost:{DEFAULT_PORT}/api/file/{filename})"
 
     except Exception as e:
         print(f"Error generating image: {str(e)}")
