@@ -18,3 +18,4 @@ certifi
 websocket-client # needed for comfyui execution
 rich # needed for comfyui execution
 typer # needed for comfyui execution
+langgraph

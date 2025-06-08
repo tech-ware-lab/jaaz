@@ -167,7 +167,7 @@ async def generate_image(args_json: dict, ctx: dict):
             })
             return [{
                 'role': 'tool',
-                'content': f'Image generation successful: ![image_id: {filename}](http://127.0.0.1:{DEFAULT_PORT}/api/file/{filename})',
+                'content': f'Image generation successful: ![image width: {width} height: {height} image_id: {filename}](http://127.0.0.1:{DEFAULT_PORT}/api/file/{filename})',
             }]
 
     except Exception as e:
