@@ -46,6 +46,11 @@ async def serve_react_app():
 
 
 if __name__ == "__main__":
+    # bypas localhost request for proxy, fix ollama proxy issue
+    _bypass = {"127.0.0.1", "localhost", "::1"}
+    current = set(os.environ.get("no_proxy", "").split(",")) | set(os.environ.get("NO_PROXY", "").split(","))
+    os.environ["no_proxy"] = os.environ["NO_PROXY"] = ",".join(sorted(_bypass | current - {""}))
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=57988, help='Port to run the server on')
     args = parser.parse_args()
