@@ -7,9 +7,8 @@ import { LLMConfig } from '@/types/types'
 import { AlertCircle, CheckCircle, Download } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '../ui/checkbox'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface ComfyuiSettingProps {
   config: LLMConfig
