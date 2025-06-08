@@ -18,6 +18,12 @@ from starlette.websockets import WebSocketDisconnect
 from services.db_service import db_service
 from routers.image_tools import generate_image, generate_image_tool
 from routers.websocket import active_websockets, send_to_websocket
+from langchain_core.messages import AIMessageChunk, ToolCall, convert_to_openai_messages, ToolMessage
+from langchain_core.runnables import RunnableConfig
+from langgraph.prebuilt import create_react_agent
+from langgraph.prebuilt.chat_agent_executor import AgentState
+from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 
 llm_config = config_service.get_config()
 
@@ -43,242 +49,6 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...))
         if session_id in active_websockets:
             del active_websockets[session_id]
 
-async def finish_chat(args_json: dict, ctx: dict):
-    return []
-
-# class ToolCall:
-#     def __init__(self, id: str, name: str, arguments: str):
-#         self.id = id
-#         self.name = name
-#         self.arguments = arguments
-
-SYSTEM_TOOLS_MAPPING = {
-    'finish': finish_chat,
-    'generate_image': generate_image
-}
-SYSTEM_TOOLS = [
-        {
-            "type": "function",
-            "function": {
-                "name": "finish",
-                "description": "You MUST call this tool when you think the task is finished or you think you can't do anything more. Otherwise, you will be continuously asked to do more about this task indefinitely. Calling this tool will end your turn on this task and hand it over to the user for further instructions.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                    }
-                },
-            }
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "generate_image",
-                "description": "Generate an image using text prompt or optionally pass an image for reference or for editing",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "prompt": {
-                            "type": "string",
-                            "description": "Required. The prompt for image generation. If you want to edit an image, please describe what you want to edit in the prompt."
-                        },
-                        "aspect_ratio": {
-                            "type": "string",
-                            "description": "Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4"
-                        } ,
-                        "input_image": {
-                            "type": "string",
-                            "description": "Optional. Image to use as reference. Pass image_id here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc."
-                        }
-                    }
-                },
-            }
-        }
-    ]
-
-
-async def chat_openai(messages: list, session_id: str, text_model: dict, image_model: dict, is_agent_loop_prompt = False) -> list:
-    model = text_model.get('model')
-    provider = text_model.get('provider')
-    url = text_model.get('url')
-    if provider == 'ollama' and not url.endswith('/v1'):
-        # openai compatible url
-        url = url.rstrip("/") + "/v1"
-    
-    if model is None:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail="model is required"
-        )
-    if provider is None:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail="provider is required"
-        )
-    if session_id is None:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail="session_id is required"
-        )
-    await send_to_websocket(session_id, {
-        'type': 'log',
-        'messages': messages
-    })
-    payload = {
-        "model": model,
-        "messages": messages,
-        "tools": SYSTEM_TOOLS + openai_client.tools,
-        "stream": True
-    }
-    url = url.rstrip("/") + "/chat/completions"
-    print('start chat session', model, provider, url)
-    async with aiohttp.ClientSession() as session:
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {app_config.get(provider, {}).get("api_key", "")}'
-        }
-        async with session.post(url, json=payload, headers=headers) as response:
-            combine = ''
-            cur_tool_calls:list[ToolCall] = []
-            content_combine = ''
-            if is_agent_loop_prompt:
-                messages.pop() # hide the agent loop prompt
-            async for line in response.content:
-                if session_id in stream_tasks and stream_tasks[session_id].cancelled():
-                    print(f"🛑Session {session_id} cancelled during stream")
-                    break
-                if line:
-                    # Parse the JSON response
-                    try:
-                        # Decode bytes to string and strip whitespace
-                        line_str = line.decode('utf-8').strip()
-                        if not line_str:  # Skip empty lines
-                            continue
-                        # print('👇raw line:', line_str)
-                        # Handle SSE updates
-                        if line_str.startswith('data: {'):
-                            line_str = line_str[6:]  # Remove "data: " prefix
-                            chunk = json.loads(line_str) # Parse the JSON
-                            # print('👇 chunk:', chunk)
-                            # Extract content from the choices array
-                            if 'choices' in chunk and len(chunk['choices']) > 0:
-                                delta = chunk['choices'][0].get('delta', {})
-                                # print('👇delta', delta)
-                                content = delta.get('content', '')
-                                # text delta
-                                if content:
-                                    content_combine += content
-                                    await send_to_websocket(session_id, {
-                                        'type': 'delta',
-                                        'text': content
-                                    })
-                                # tool calls
-                                tool_calls = delta.get('tool_calls', [])
-                                for tool_call in tool_calls:
-                                    tool_call_id = tool_call.get('id')
-                                    tool_call_name = tool_call.get('function', {}).get('name')
-                                    
-                                    if tool_call_id and tool_call_name:
-                                        # tool call start
-                                        
-                                        tool_call_args_str = tool_call.get('function', {}).get('arguments', '')
-                                        cur_tool_calls.append(ToolCall(tool_call_id, tool_call_name, tool_call_args_str))
-                                        print('🦄tool_call', tool_call_id, tool_call_name, tool_call_args_str)
-                                        await send_to_websocket(session_id, {
-                                            'type': 'tool_call',
-                                            'id': tool_call_id,
-                                            'name': tool_call_name,
-                                            'arguments': tool_call_args_str if tool_call_args_str else '{}'
-                                        })
-                                    elif tool_call.get('function', {}).get('arguments', '') and len(cur_tool_calls) > 0:
-                                        delta = tool_call.get('function', {}).get('arguments', '')
-                                        cur_tool_calls[-1].arguments += delta
-                                        await send_to_websocket(session_id, {
-                                            'type': 'tool_call_arguments',
-                                            'id': cur_tool_calls[-1].id,
-                                            'text': delta # delta
-                                        })
-                            elif chunk.get('error'):
-                                raise Exception(chunk.get('error').get('message'))
-
-                        # Handle [DONE] marker in SSE
-                        elif line_str == 'data: [DONE]':
-                            continue
-                        else:
-                            combine += line_str
-                            
-
-                    except Exception as e:
-                        traceback.print_exc()
-            # print('👇combine', combine)
-            # print('👇content_combine', content_combine)
-            if content_combine != '':
-                msg = {
-                    'role': 'assistant',
-                    'content': [{
-                        'type': 'text',
-                        'text': content_combine
-                    }]
-                }
-                messages.append(msg)
-                await db_service.create_message(session_id, 'assistant', json.dumps(msg))
-            else:
-                pass
-            if len(cur_tool_calls) > 0:
-                for tool_call in cur_tool_calls:
-                    # append tool call to messages of assistant
-                    print('🕹️tool_call', tool_call.id, tool_call.name, 'arguments', tool_call.arguments)
-                    msg = {
-                        'role': 'assistant',
-                        'tool_calls': [{
-                        'type': 'function',
-                        'id': tool_call.id,
-                        'function': {
-                            'name': tool_call.name,
-                            'arguments': tool_call.arguments if tool_call.arguments else '{}'
-                            }
-                        }]
-                    }
-                    messages.append(msg)
-                    await db_service.create_message(session_id, 'assistant', json.dumps(msg))
-                    # tool call args complete, execute tool call
-                    model_info = {
-                        'image': image_model
-                    }
-                    tool_result = await execute_tool(tool_call.id, tool_call.name, tool_call.arguments, session_id, model_info=model_info)
-                    # append tool call result to messages of user
-                    if tool_result is not None:
-                        for r in tool_result:
-                            messages.append(r)
-                            await db_service.create_message(session_id, 'tool', json.dumps(r))
-                    await send_to_websocket(session_id, {
-                        'type': 'all_messages',
-                        'messages': messages
-                    })
-            # Has Error
-            if combine != '':
-                    data = None
-                    try:
-                        data = json.loads(combine)
-                    except Exception as e:
-                        pass
-                    if data and data.get('error') and data.get('error').get('message'):
-                        # if data['error'].get('code') == 'rate_limit_error':
-                        #     print('👇rate_limit_error, sleeping 10 seconds')
-                        #     await send_to_websocket(session_id, {
-                        #         'type': 'info', 
-                        #         'info': f'Hit rate limit, waiting 10 seconds before continue. {data.get("error").get("message")} Please wait for 10 seconds...'
-                        #     })
-                        #     await asyncio.sleep(10)
-                        # else:
-                        raise Exception(data.get('error').get('message'))
-                    else:
-                        # alert info
-                        await send_to_websocket(session_id, {
-                            'type': 'info', 
-                            'info': combine
-                        })
-    return messages
-
 def detect_image_type_from_base64(b64_data: str) -> str:
     # Only take the base64 part, not the "data:image/...," prefix
     if b64_data.startswith("data:"):
@@ -297,75 +67,6 @@ def detect_image_type_from_base64(b64_data: str) -> str:
         return "image/webp"
     else:
         return "application/octet-stream"
-
-async def execute_tool(tool_call_id: str, tool_name: str, args_str: str, session_id: str, model_info: dict = {}):
-    res = []
-    try:
-        args_json = {}
-        try:
-            args_json = json.loads(args_str)
-        except Exception as e:
-            pass
-        print('🦄executing tool', tool_name, args_json,)
-        if tool_name in SYSTEM_TOOLS_MAPPING:
-            ctx = {
-                'session_id': session_id,
-                'model_info': model_info,
-                'tool_call_id': tool_call_id,
-            }
-            res = await SYSTEM_TOOLS_MAPPING[tool_name](args_json, ctx)
-            for r in res:
-                r['tool_call_id'] = tool_call_id
-            return res
-        mcp_client = mcp_tool_to_server_mapping[tool_name]
-        if mcp_client.session is None:
-            raise Exception(f"MCP client not found for tool {tool_name}")
-        result = await mcp_client.session.call_tool(tool_name, args_json)
-        content_dict = [content.model_dump() for content in result.content]
-        await send_to_websocket(session_id, {
-            'type': 'tool_call_result',
-            'id': tool_call_id,
-            'content': content_dict
-        })
-
-        text_contents = [c.text if c.type == 'text' else "Image result, view user attached image below for detailed result" if c.type == 'image' else json.dumps(c.model_dump()) for c in result.content ]
-        text_contents = ''.join(text_contents)
-        print('👇tool result text_content length', len(text_contents))
-        if len(text_contents) > 10000:
-            text_contents = text_contents[:10000] + "...Content truncated to 10000 characters due to length limit"
-
-        res.append({
-            'role': 'tool',
-            'tool_call_id': tool_call_id,
-            'content': text_contents # here only accept text string in anthropic, otherwise will throw error
-        })
-        for content in result.content:
-            if content.type == 'image':
-                image_type = detect_image_type_from_base64(content.data)
-                res.append({
-                    'role': 'user',
-                    # 'is_tool': True,
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{image_type};base64,{content.data}",
-                            },
-                        },
-                    ],
-                })
-        return res
-
-    except Exception as e:
-        print(f"Error calling tool {tool_name}: {e}")
-        traceback.print_exc()
-        await send_to_websocket(session_id, {
-            'type': 'error',
-            'error': f'Error calling tool {tool_name} with inputs {args_str[:100]} - {e}'
-        })
-        raise e
-    return res
-
 
 router = APIRouter(prefix="/api")
 @router.post("/chat")
@@ -405,12 +106,6 @@ async def chat(request: Request):
 
     return {"status": "done"}
 
-from langchain_core.messages import AIMessageChunk, ToolCall, convert_to_openai_messages, ToolMessage
-from langchain_core.runnables import RunnableConfig
-from langgraph.prebuilt import create_react_agent
-from langgraph.prebuilt.chat_agent_executor import AgentState
-from langchain_ollama import ChatOllama
-from langchain_openai import ChatOpenAI
 async def langraph_agent(messages, session_id, text_model, image_model):
         model = text_model.get('model')
         provider = text_model.get('provider')
@@ -462,9 +157,9 @@ async def langraph_agent(messages, session_id, text_model, image_model):
                 })
                 for new_message in oai_messages:
                     await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
-
             else:
                 ai_message_chunk: AIMessageChunk = chunk[1][0]  # Access the AIMessageChunk
+                print('👇ai_message_chunk', ai_message_chunk)
                 content = ai_message_chunk.content  # Get the content from the AIMessageChunk
                 if isinstance(ai_message_chunk, ToolMessage):
                     print('👇tool_call_results', ai_message_chunk.content)
