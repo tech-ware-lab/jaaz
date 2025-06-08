@@ -39,7 +39,9 @@ const SettingSidebar: React.FC<SettingSidebar> = ({ current, setCurrent }) => {
     <Sidebar className="h-full rounded-l-lg overflow-hidden">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t('settings:title')}</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-lg font-bold select-none mb-2">
+            {t('settings:title')}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
