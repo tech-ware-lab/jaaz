@@ -405,23 +405,27 @@ from langchain_core.messages import AnyMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt import create_react_agent
 from langgraph.prebuilt.chat_agent_executor import AgentState
+from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 async def langraph_agent(messages, session_id, text_model, image_model):
         model = text_model.get('model')
         provider = text_model.get('provider')
         url = text_model.get('url')
         api_key = app_config.get(provider, {}).get("api_key", "")
+        print('👇model', model, provider, url, api_key)
         if provider == 'ollama':
-            if not url.endswith('/v1'):
-                url = url.rstrip("/") + "/v1"
-            api_key = 'ollama'
-            print('👇ollama', url, api_key)
-        model = ChatOpenAI(
-            model=model,
-            api_key=api_key,
-            base_url=url,
-            temperature=0,
-            max_tokens=2048
+            model = ChatOllama(
+                model=model,
+                base_url=url,
+            )
+        else:
+            model = ChatOpenAI(
+                model=model,
+                api_key=api_key,
+                timeout=1000,
+                base_url=url,
+                temperature=0,
+                max_tokens=2048
         )
         model_info = {
                         'image': image_model
@@ -440,6 +444,7 @@ async def langraph_agent(messages, session_id, text_model, image_model):
             config=ctx,
             stream_mode=["messages", "custom"]
         ):
+            print('👇chunk', chunk)
             ai_message_chunk = chunk[1][0]  # Access the AIMessageChunk
             content = ai_message_chunk.content  # Get the content from the AIMessageChunk
             print(ai_message_chunk)
