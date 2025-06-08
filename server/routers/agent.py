@@ -386,6 +386,7 @@ async def chat(request: Request):
     if len(messages) == 1:
         # create new session
         prompt = messages[0].get('content', '')
+        # TODO: Better way to determin when to create new chat session. 
         await db_service.create_chat_session(session_id, text_model.get('model'), text_model.get('provider'), canvas_id, (prompt[:200] if isinstance(prompt, str) else ''))
     
     await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1])) if len(messages) > 0 else None
@@ -404,7 +405,7 @@ async def chat(request: Request):
 
     return {"status": "done"}
 
-from langchain_core.messages import AIMessageChunk, ToolCall, ToolCallChunk
+from langchain_core.messages import AIMessageChunk, ToolCall, convert_to_openai_messages, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt import create_react_agent
 from langgraph.prebuilt.chat_agent_executor import AgentState
@@ -445,43 +446,58 @@ async def langraph_agent(messages, session_id, text_model, image_model):
         async for chunk in agent.astream(
             {"messages": messages},
             config=ctx,
-            stream_mode=["messages", "custom"]
+            stream_mode=["updates", "messages", "custom"]
         ):
+            chunk_type = chunk[0]
             
-            ai_message_chunk: AIMessageChunk = chunk[1][0]  # Access the AIMessageChunk
-            content = ai_message_chunk.content  # Get the content from the AIMessageChunk
-            if content:
-                print('👇content', content)
+            if chunk_type == 'updates':
+                all_messages = chunk[1].get('agent', chunk[1].get('tools')).get('messages', [])
+                oai_messages = convert_to_openai_messages(all_messages)
+                # new_message = oai_messages[-1]
+                
+                messages.extend(oai_messages)
                 await send_to_websocket(session_id, {
-                                'type': 'delta',
-                                'text': content
+                    'type': 'all_messages',
+                    'messages': messages
+                })
+                for new_message in oai_messages:
+                    await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
+
+            else:
+                ai_message_chunk: AIMessageChunk = chunk[1][0]  # Access the AIMessageChunk
+                content = ai_message_chunk.content  # Get the content from the AIMessageChunk
+                if isinstance(ai_message_chunk, ToolMessage):
+                    print('👇tool_call_results', ai_message_chunk.content)
+                elif content:
+                    await send_to_websocket(session_id, {
+                                    'type': 'delta',
+                                    'text': content
+                                })
+                elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
+                    for index, tool_call in enumerate(ai_message_chunk.tool_calls):
+                        if tool_call.get('name'):
+                            tool_calls.append(tool_call)
+                            print('😘tool_call', tool_call, tool_call.get('name'), tool_call.get('id'))
+                            await send_to_websocket(session_id, {
+                                'type': 'tool_call',
+                                'id': tool_call.get('id'),
+                                'name': tool_call.get('name'),
+                                'arguments': '{}'
                             })
-            if hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
-                print('🛠️🛠️tool_calls', ai_message_chunk.tool_calls)
-                for index, tool_call in enumerate(ai_message_chunk.tool_calls):
-                    if tool_call.get('name'):
-                        tool_calls.append(tool_call)
-                        print('😘tool_call', tool_call, tool_call.get('name'), tool_call.get('id'))
-                        await send_to_websocket(session_id, {
-                            'type': 'tool_call',
-                            'id': tool_call.get('id'),
-                            'name': tool_call.get('name'),
-                            'arguments': '{}'
-                        })
-            
-            if hasattr(ai_message_chunk, 'tool_call_chunks'):
-                tool_call_chunks = ai_message_chunk.tool_call_chunks
-                print('👇tool_call_chunks', tool_call_chunks)
-                for tool_call_chunk in tool_call_chunks:
-                    index: int = tool_call_chunk['index']
-                    if index < len(tool_calls):
-                        for_tool_call: ToolCall = tool_calls[index]
-                        print('🦄sending tool_call_arguments', 'id', for_tool_call, 'text', tool_call_chunk.get('args'))
-                        await send_to_websocket(session_id, {
-                            'type': 'tool_call_arguments',
-                            'id': for_tool_call.get('id'),
-                            'text': tool_call_chunk.get('args')
-                        })
+                elif hasattr(ai_message_chunk, 'tool_call_chunks'):
+                    tool_call_chunks = ai_message_chunk.tool_call_chunks
+                    for tool_call_chunk in tool_call_chunks:
+                        index: int = tool_call_chunk['index']
+                        if index < len(tool_calls):
+                            for_tool_call: ToolCall = tool_calls[index]
+                            print('🦄sending tool_call_arguments', 'id', for_tool_call, 'text', tool_call_chunk.get('args'))
+                            await send_to_websocket(session_id, {
+                                'type': 'tool_call_arguments',
+                                'id': for_tool_call.get('id'),
+                                'text': tool_call_chunk.get('args')
+                            })
+                else:
+                    print('👇no tool_call_chunks', chunk)
 
 
 @router.post("/cancel/{session_id}")

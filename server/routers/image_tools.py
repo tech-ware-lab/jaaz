@@ -90,7 +90,6 @@ async def generate_image_tool(
     """
     print('🛠️',prompt, aspect_ratio)
     ctx = config.get('configurable', {})
-    print('🛠️ctx',ctx)
     session_id = ctx.get('session_id', '')
     print('🛠️session_id',session_id)
     args_json = {
