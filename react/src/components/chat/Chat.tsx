@@ -145,7 +145,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         } else {
           setMessages((prev) => {
             if (data.type == 'delta') {
-              if (prev.at(-1)?.role == 'assistant') {
+              if (
+                prev.at(-1)?.role == 'assistant' &&
+                prev.at(-1)?.content != null
+              ) {
                 const lastMessage = structuredClone(prev.at(-1))
                 if (lastMessage) {
                   if (typeof lastMessage.content == 'string') {
