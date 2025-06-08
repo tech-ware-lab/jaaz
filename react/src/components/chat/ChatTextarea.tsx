@@ -46,7 +46,13 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     useConfigs()
 
   const textareaRef = useRef<TextAreaRef>(null)
-  const [imageIds, setImageIds] = useState<string[]>([])
+  const [images, setImages] = useState<
+    {
+      file_id: string
+      width: number
+      height: number
+    }[]
+  >([])
   const [isFocused, setIsFocused] = useState(false)
 
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -54,7 +60,15 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const { mutate: uploadImageMutation } = useMutation({
     mutationFn: (file: File) => uploadImage(file, ''),
     onSuccess: (data) => {
-      setImageIds((prev) => [...prev, data.file_id])
+      console.log('🦄uploadImageMutation onSuccess', data)
+      setImages((prev) => [
+        ...prev,
+        {
+          file_id: data.file_id,
+          width: data.width,
+          height: data.height,
+        },
+      ])
     },
   })
 
@@ -94,9 +108,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       return
     }
 
-    if (imageIds.length > 0) {
-      imageIds.forEach((imageId) => {
-        value += `\n\n ![Attached image filename: ${imageId}](/api/file/${imageId})`
+    if (images.length > 0) {
+      images.forEach((image) => {
+        value += `\n\n ![Attached image - width: ${image.width} height: ${image.height} filename: ${image.file_id}](/api/file/${image.file_id})`
       })
     }
 
@@ -106,7 +120,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         content: value,
       },
     ])
-    setImageIds([])
+    setImages([])
 
     onSendMessages(newMessage, {
       textModel: textModel,
@@ -177,7 +191,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       </AnimatePresence>
 
       <AnimatePresence>
-        {imageIds.length > 0 && (
+        {images.length > 0 && (
           <motion.div
             className="flex items-center gap-2 w-full"
             initial={{ opacity: 0, height: 0 }}
@@ -185,9 +199,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            {imageIds.map((imageId) => (
+            {images.map((image) => (
               <motion.div
-                key={imageId}
+                key={image.file_id}
                 className="relative size-10"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -195,8 +209,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
               >
                 <img
-                  key={imageId}
-                  src={`/api/file/${imageId}`}
+                  key={image.file_id}
+                  src={`/api/file/${image.file_id}`}
                   alt="Uploaded image"
                   className="w-full h-full object-cover rounded-md"
                   draggable={false}
@@ -206,7 +220,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
                   size="icon"
                   className="absolute -top-1 -right-1 size-4"
                   onClick={() =>
-                    setImageIds((prev) => prev.filter((id) => id !== imageId))
+                    setImages((prev) =>
+                      prev.filter((i) => i.file_id !== image.file_id)
+                    )
                   }
                 >
                   <XIcon className="size-3" />
