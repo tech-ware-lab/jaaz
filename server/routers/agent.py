@@ -398,6 +398,9 @@ async def chat(request: Request):
         print(f"🛑Session {session_id} cancelled during stream")
     finally:
         stream_tasks.pop(session_id, None)
+        await send_to_websocket(session_id, {
+            'type': 'done'
+        })
 
     return {"status": "done"}
 
