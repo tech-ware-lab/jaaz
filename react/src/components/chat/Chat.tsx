@@ -110,10 +110,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        if (data.type == 'log') {
-          setPending('text')
-          console.log(data)
-        }
         if (data.type == 'error') {
           setPending(false)
           toast.error('Error: ' + data.error, {
@@ -245,6 +241,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     (data: Message[], configs: { textModel: Model; imageModel: Model }) => {
       setMessages(data)
       setPrompt('')
+      setPending('text')
 
       sendMessages({
         sessionId: sessionId!,
