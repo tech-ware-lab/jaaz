@@ -389,43 +389,8 @@ async def chat(request: Request):
         await db_service.create_chat_session(session_id, text_model.get('model'), text_model.get('provider'), canvas_id, (prompt[:200] if isinstance(prompt, str) else ''))
     
     await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1])) if len(messages) > 0 else None
-    # Create and store the chat task
-    async def chat_loop():
-        cur_messages = messages
-        while True:
-            try:
-                if cur_messages[-1].get('role') == 'assistant' and cur_messages[-1].get('tool_calls') and \
-                cur_messages[-1]['tool_calls'][-1].get('function', {}).get('name') == 'finish':
-                    print('✅finish!')
-                    cur_messages.pop()
-                    await send_to_websocket(session_id, {
-                        'type': 'all_messages', 
-                        'messages': cur_messages
-                    })
-                    break
 
-                else:
-                    is_loop_prompt = False
-                    if cur_messages[-1].get('role') == 'assistant':
-                        is_loop_prompt = True
-                        cur_messages.append({
-                            'role': 'user',
-                            'content': 'If you think you have finished the task or you think you can\'t do anything more, or you need to ask for more information from the user, please call the "finish" tool to end your turn and wait for more instructions from the user.'
-                        })
-                    cur_messages = await chat_openai(cur_messages, session_id, text_model=text_model, image_model=image_model, is_agent_loop_prompt=is_loop_prompt)
-            except Exception as e:
-                print(f"Error in chat_loop: {e}")
-                traceback.print_exc()
-                await send_to_websocket(session_id, {
-                    'type': 'error',
-                    'error': str(e)
-                })
-                break
-        await send_to_websocket(session_id, {
-            'type': 'done'
-        })
-
-    task = asyncio.create_task(chat_loop())
+    task = asyncio.create_task(langraph_agent(messages, session_id, text_model, image_model))
     stream_tasks[session_id] = task
     try:
         await task
@@ -435,6 +400,53 @@ async def chat(request: Request):
         stream_tasks.pop(session_id, None)
 
     return {"status": "done"}
+
+from langchain_core.messages import AnyMessage
+from langchain_core.runnables import RunnableConfig
+from langgraph.prebuilt import create_react_agent
+from langgraph.prebuilt.chat_agent_executor import AgentState
+from langchain_openai import ChatOpenAI
+async def langraph_agent(messages, session_id, text_model, image_model):
+        model = text_model.get('model')
+        provider = text_model.get('provider')
+        url = text_model.get('url')
+        api_key = app_config.get(provider, {}).get("api_key", "")
+        if provider == 'ollama':
+            if not url.endswith('/v1'):
+                url = url.rstrip("/") + "/v1"
+            api_key = 'ollama'
+            print('👇ollama', url, api_key)
+        model = ChatOpenAI(
+            model=model,
+            api_key=api_key,
+            base_url=url,
+            temperature=0,
+            max_tokens=2048
+        )
+        model_info = {
+                        'image': image_model
+                    }
+        agent = create_react_agent(
+            model=model,
+            tools=[],
+            prompt='You are a profession design agent, specializing in visual design.'
+        )
+        ctx = {
+                'session_id': session_id,
+                'model_info': model_info,
+            }
+        async for chunk in agent.astream(
+            {"messages": messages},
+            config=ctx,
+            stream_mode=["messages", "custom"]
+        ):
+            ai_message_chunk = chunk[1][0]  # Access the AIMessageChunk
+            content = ai_message_chunk.content  # Get the content from the AIMessageChunk
+            print(ai_message_chunk)
+            await send_to_websocket(session_id, {
+                                        'type': 'delta',
+                                        'text': content
+                                    })
 
 @router.post("/cancel/{session_id}")
 async def cancel_chat(session_id: str):
