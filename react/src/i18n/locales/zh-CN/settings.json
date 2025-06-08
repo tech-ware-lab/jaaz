@@ -17,6 +17,7 @@
     }
   },
   "provider": {
+    "title": "提供商",
     "addProvider": "添加提供商",
     "providerName": "提供商名称",
     "providerNamePlaceholder": "输入提供商名称",
@@ -37,7 +38,7 @@
   "comfyui": {
     "title": "ComfyUI",
     "localImageGeneration": "🎨 本地图像生成",
-    "enable": "启用 ComfyUI 本地图像生成",
+    "enable": "启用",
     "debugStatus": "🔍 调试状态",
     "status": {
       "disabled": "已禁用",
@@ -50,5 +51,6 @@
     "notInstalledDescription": "安装 ComfyUI 以启用 Flux 模型的本地图像生成",
     "installButton": "安装 ComfyUI"
   },
-  "saveSettings": "保存设置"
+  "saveSettings": "保存设置",
+  "close": "关闭"
 }

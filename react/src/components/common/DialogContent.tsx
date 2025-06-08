@@ -6,12 +6,14 @@ type CommonDialogProps = {
   open: boolean
   children: React.ReactNode
   className?: string
+  transformPerspective?: number
 }
 
 const CommonDialogContent: React.FC<CommonDialogProps> = ({
   open,
   children,
   className,
+  transformPerspective = 500,
 }) => {
   const openState = {
     opacity: 1,
@@ -36,7 +38,6 @@ const CommonDialogContent: React.FC<CommonDialogProps> = ({
     z: -100,
     rotateY: 5,
     rotateX: 25,
-    transformPerspective: 500,
     transition: {
       duration: 0.3,
       ease: [0.67, 0.17, 0.62, 0.64],
@@ -65,7 +66,7 @@ const CommonDialogContent: React.FC<CommonDialogProps> = ({
                 initial={initialState}
                 animate={openState}
                 exit={initialState}
-                style={{ transformPerspective: 500 }}
+                style={{ transformPerspective }}
               >
                 {children}
               </motion.div>

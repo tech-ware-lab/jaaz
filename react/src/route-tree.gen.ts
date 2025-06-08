@@ -11,17 +11,10 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as SettingsImport } from './routes/settings'
 import { Route as IndexImport } from './routes/index'
 import { Route as CanvasIdImport } from './routes/canvas.$id'
 
 // Create/Update Routes
-
-const SettingsRoute = SettingsImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRoute,
-} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
@@ -46,13 +39,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsImport
-      parentRoute: typeof rootRoute
-    }
     '/canvas/$id': {
       id: '/canvas/$id'
       path: '/canvas/$id'
@@ -67,41 +53,36 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
   '/canvas/$id': typeof CanvasIdRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
   '/canvas/$id': typeof CanvasIdRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
   '/canvas/$id': typeof CanvasIdRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/canvas/$id'
+  fullPaths: '/' | '/canvas/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/canvas/$id'
-  id: '__root__' | '/' | '/settings' | '/canvas/$id'
+  to: '/' | '/canvas/$id'
+  id: '__root__' | '/' | '/canvas/$id'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  SettingsRoute: typeof SettingsRoute
   CanvasIdRoute: typeof CanvasIdRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  SettingsRoute: SettingsRoute,
   CanvasIdRoute: CanvasIdRoute,
 }
 
@@ -116,15 +97,11 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/settings",
         "/canvas/$id"
       ]
     },
     "/": {
       "filePath": "index.tsx"
-    },
-    "/settings": {
-      "filePath": "settings.tsx"
     },
     "/canvas/$id": {
       "filePath": "canvas.$id.tsx"
