@@ -38,7 +38,7 @@
   "comfyui": {
     "title": "ComfyUI",
     "localImageGeneration": "🎨 本地图像生成",
-    "enable": "启用 ComfyUI 本地图像生成",
+    "enable": "启用",
     "debugStatus": "🔍 调试状态",
     "status": {
       "disabled": "已禁用",
