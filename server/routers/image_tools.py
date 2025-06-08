@@ -32,17 +32,26 @@ async def upload_image(session_id: str = Form(...), file: UploadFile = File(...)
     file_id = generate_file_id()
     filename = file.filename or ''
 
+    # Read the file content
+    content = await file.read()
+
+    # Open the image from bytes to get its dimensions
+    with Image.open(BytesIO(content)) as img:
+        width, height = img.size
+
     # Determine the file extension
     mime_type, _ = guess_type(filename)
     extension = mime_type.split('/')[-1] if mime_type else ''  # default to 'bin' if unknown
 
     file_path = os.path.join(FILES_DIR, f'{file_id}.{extension}')
     async with aiofiles.open(file_path, 'wb') as f:
-        content = await file.read()  # Read the file content
         await f.write(content)
+    
     print('🦄upload_image file_path', file_path)
     return {
         'file_id': f'{file_id}.{extension}',
+        'width': width,
+        'height': height,
     }
 
 @router.get("/file/{file_id}")
