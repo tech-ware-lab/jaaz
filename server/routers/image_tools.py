@@ -126,7 +126,7 @@ async def generate_image_tool(
             elif provider == 'comfyui':
                 mime_type, width, height, filename = await generate_image_comfyui(args_json, ctx)
             elif provider == 'wavespeed':
-                mime_type, width, height, filename = await generate_image_wavespeed(prompt, input_image)
+                mime_type, width, height, filename = await generate_image_wavespeed(prompt, model, input_image)
         
         await send_to_websocket(session_id, {
             'type': 'image_generated',
