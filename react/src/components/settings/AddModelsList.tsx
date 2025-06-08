@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Plus, Trash2 } from 'lucide-react'
+import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog'
 
 export type ModelItem = {
   name: string
@@ -31,6 +32,8 @@ export default function AddModelsList({
 }: ModelsListProps) {
   const [modelItems, setModelItems] = useState<ModelItem[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
+  const [newModelName, setNewModelName] = useState('')
+  const [openAddModelDialog, setOpenAddModelDialog] = useState(false)
 
   // Initialize state only once when models prop changes from outside
   useEffect(() => {
@@ -63,14 +66,15 @@ export default function AddModelsList({
   )
 
   const handleAddModel = () => {
-    const userInput = prompt('Enter a model name', 'openai/gpt-4o')
-    if (userInput) {
+    if (newModelName) {
       const newItems = [
         ...modelItems,
-        { name: userInput, type: 'text' as const },
+        { name: newModelName, type: 'text' as const },
       ]
       setModelItems(newItems)
       notifyChange(newItems)
+      setNewModelName('')
+      setOpenAddModelDialog(false)
     }
   }
 
@@ -101,16 +105,35 @@ export default function AddModelsList({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <Label>{label}</Label>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={handleAddModel}
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Add Model
-        </Button>
+        <Dialog open={openAddModelDialog} onOpenChange={setOpenAddModelDialog}>
+          <DialogTrigger asChild>
+            <Button variant="secondary" size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Add Model
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <div className="space-y-5">
+              <Label>Model Name</Label>
+              <Input
+                type="text"
+                placeholder="openai/gpt-4o"
+                value={newModelName}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAddModel()
+                  }
+                }}
+                onChange={(e) => setNewModelName(e.target.value)}
+              />
+              <Button type="button" onClick={handleAddModel} className="w-full">
+                Add Model
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
+
       <div className="space-y-2">
         {modelItems.map((model, index) => (
           <div key={index} className="flex items-center justify-between">

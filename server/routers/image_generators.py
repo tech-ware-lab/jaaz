@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 import sys
@@ -130,3 +131,59 @@ async def generate_image_comfyui(args_json: dict, ctx: dict):
     mime_type, width, height, extension = await get_image_info_and_save(url, os.path.join(FILES_DIR, f'{image_id}'))
     filename = f'{image_id}.{extension}'
     return mime_type, width, height, filename
+
+async def generate_image_wavespeed(prompt: str, model, input_image: Optional[str] = None, **kwargs):
+    api_key = app_config.get('wavespeed', {}).get('api_key', '')
+    url = app_config.get('wavespeed', {}).get('url', '')
+
+    async with aiohttp.ClientSession() as session:
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+        if input_image:
+            model = 'wavespeed-ai/flux-kontext-pro/multi'
+            payload = {
+                "prompt": prompt,
+                "images": [input_image],
+                "guidance_scale": kwargs.get("guidance_scale", 3.5),
+                "num_images": kwargs.get("num_images", 1),
+                "safety_tolerance": str(kwargs.get("safety_tolerance", "2"))
+            }
+        else:
+            payload = {
+                "enable_base64_output": False,
+                "enable_safety_checker": False,
+                "guidance_scale": kwargs.get("guidance_scale", 3.5),
+                "num_images": kwargs.get("num_images", 1),
+                "num_inference_steps": kwargs.get("num_inference_steps", 28),
+                "prompt": prompt,
+                "seed": -1,
+                "size": kwargs.get("size", "1024*1024"),
+                "strength": kwargs.get("strength", 0.8),
+            }
+        endpoint = f"{url.rstrip('/')}/{model}"
+        async with session.post(endpoint, json=payload, headers=headers) as response:
+            response_json = await response.json()
+            if response.status != 200 or response_json.get("code") != 200:
+                raise Exception(f"WaveSpeed API error: {response_json}")
+            result_url = response_json["data"]["urls"]["get"]
+            # 轮询获取图片结果
+            for _ in range(60):  # 最多等60秒
+                await asyncio.sleep(1)
+                async with session.get(result_url, headers=headers) as result_resp:
+                    result_data = await result_resp.json()
+                    print("WaveSpeed polling result:", result_data)
+                    data = result_data.get("data", {})
+                    outputs = data.get("outputs", [])
+                    status = data.get("status")
+                    if status in ("succeeded", "completed") and outputs:
+                        image_url = outputs[0]
+                        image_id = 'im_' + generate(size=8)
+                        mime_type, width, height, extension = await get_image_info_and_save(image_url, os.path.join(FILES_DIR, f'{image_id}'))
+                        filename = f'{image_id}.{extension}'
+                        return mime_type, width, height, filename
+                        
+                    if status == "failed":
+                        raise Exception(f"WaveSpeed generation failed: {result_data}")
+            raise Exception("WaveSpeed image generation timeout")

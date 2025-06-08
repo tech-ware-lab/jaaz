@@ -110,10 +110,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        if (data.type == 'log') {
-          setPending('text')
-          console.log(data)
-        }
         if (data.type == 'error') {
           setPending(false)
           toast.error('Error: ' + data.error, {
@@ -145,7 +141,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         } else {
           setMessages((prev) => {
             if (data.type == 'delta') {
-              if (prev.at(-1)?.role == 'assistant') {
+              if (
+                prev.at(-1)?.role == 'assistant' &&
+                prev.at(-1)?.content != null
+              ) {
                 const lastMessage = structuredClone(prev.at(-1))
                 if (lastMessage) {
                   if (typeof lastMessage.content == 'string') {
@@ -176,6 +175,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               setPending('tool')
               return prev.concat({
                 role: 'assistant',
+                content: '',
                 tool_calls: [
                   {
                     type: 'function',
@@ -241,6 +241,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     (data: Message[], configs: { textModel: Model; imageModel: Model }) => {
       setMessages(data)
       setPrompt('')
+      setPending('text')
 
       sendMessages({
         sessionId: sessionId!,
