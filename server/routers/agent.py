@@ -112,6 +112,8 @@ async def langraph_agent(messages, session_id, text_model, image_model):
         url = text_model.get('url')
         api_key = app_config.get(provider, {}).get("api_key", "")
         print('👇model', model, provider, url, api_key)
+        # TODO: Verify if max token is working
+        max_tokens = text_model.get('max_tokens', 8148)
         if provider == 'ollama':
             model = ChatOllama(
                 model=model,
@@ -124,8 +126,8 @@ async def langraph_agent(messages, session_id, text_model, image_model):
                 timeout=1000,
                 base_url=url,
                 temperature=0,
-                max_tokens=2048
-        )
+                max_tokens=max_tokens
+            )
         agent = create_react_agent(
             model=model,
             tools=[generate_image_tool],
