@@ -42,9 +42,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   onCancelChat,
 }) => {
   const { t } = useTranslation()
-  const { configsStore } = useConfigs()
   const { textModel, imageModel, imageModels, setShowInstallDialog } =
-    configsStore.getState()
+    useConfigs()
 
   const textareaRef = useRef<TextAreaRef>(null)
   const [imageIds, setImageIds] = useState<string[]>([])

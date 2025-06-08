@@ -1,13 +1,13 @@
-import ThemeButton from '@/components/theme/ThemeButton'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher'
+import ThemeButton from '@/components/theme/ThemeButton'
+import { Button } from '@/components/ui/button'
+import { LOGO_URL } from '@/constants'
+import { useConfigs } from '@/contexts/configs'
 import { SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
-import { Button } from '../ui/button'
-import { useNavigate } from '@tanstack/react-router'
-import { LOGO_URL } from '@/constants'
 
 function HomeHeader() {
-  const navigate = useNavigate()
+  const { setShowSettingsDialog } = useConfigs()
 
   return (
     <motion.div
@@ -24,7 +24,7 @@ function HomeHeader() {
         <Button
           size={'sm'}
           variant="ghost"
-          onClick={() => navigate({ to: '/settings' })}
+          onClick={() => setShowSettingsDialog(true)}
         >
           <SettingsIcon size={30} />
         </Button>

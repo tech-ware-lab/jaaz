@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
-  DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -9,6 +8,7 @@ import {
 import { useConfigs } from '@/contexts/configs'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import CommonDialogContent from './DialogContent'
 
 interface UpdateInfo {
   version: string
@@ -21,8 +21,7 @@ interface UpdateInfo {
 // show the update notification dialog when there is a new version available
 const UpdateNotificationDialog = () => {
   const { t } = useTranslation()
-  const { configsStore } = useConfigs()
-  const { showUpdateDialog, setShowUpdateDialog } = configsStore.getState()
+  const { showUpdateDialog, setShowUpdateDialog } = useConfigs()
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
   const [isInstalling, setIsInstalling] = useState(false)
 
@@ -48,7 +47,7 @@ const UpdateNotificationDialog = () => {
       files: [],
       path: '/mock/path',
       sha512: 'mock-sha512',
-      releaseDate: new Date().toISOString()
+      releaseDate: new Date().toISOString(),
     }
     setUpdateInfo(mockUpdateInfo)
     setShowUpdateDialog(true)
@@ -59,7 +58,9 @@ const UpdateNotificationDialog = () => {
     if (process.env.NODE_ENV === 'development') {
       // @ts-expect-error - Adding test function to window for development
       window.testUpdateDialog = handleTestUpdateDialog
-      console.log('🔧 Development mode: Use window.testUpdateDialog() to test update dialog')
+      console.log(
+        '🔧 Development mode: Use window.testUpdateDialog() to test update dialog'
+      )
     }
   }, [])
 
@@ -88,13 +89,15 @@ const UpdateNotificationDialog = () => {
 
   return (
     <Dialog open={showUpdateDialog} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <CommonDialogContent open={showUpdateDialog}>
         <DialogHeader>
           <DialogTitle>{t('common:update.title')}</DialogTitle>
         </DialogHeader>
 
         <div className="text-sm text-muted-foreground">
-          <p>{t('common:update.description', { version: updateInfo.version })}</p>
+          <p>
+            {t('common:update.description', { version: updateInfo.version })}
+          </p>
           <p className="mt-2">{t('common:update.installNote')}</p>
         </div>
 
@@ -106,16 +109,13 @@ const UpdateNotificationDialog = () => {
           >
             {t('common:update.laterButton')}
           </Button>
-          <Button
-            onClick={handleInstallUpdate}
-            disabled={isInstalling}
-          >
+          <Button onClick={handleInstallUpdate} disabled={isInstalling}>
             {isInstalling
               ? t('common:update.installing')
               : t('common:update.installButton')}
           </Button>
         </DialogFooter>
-      </DialogContent>
+      </CommonDialogContent>
     </Dialog>
   )
 }

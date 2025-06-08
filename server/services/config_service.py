@@ -2,7 +2,7 @@ import os
 import traceback
 import toml
 
-DEFAULT_CONFIG =  {}
+DEFAULT_PROVIDERS_CONFIG =  {}
 USER_DATA_DIR = os.getenv("USER_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(__file__)), "user_data"))
 FILES_DIR = os.path.join(USER_DATA_DIR, "files")
 
@@ -27,12 +27,12 @@ class ConfigService:
             app_config = config
             return config
         except Exception as e:
-            return DEFAULT_CONFIG
+            return DEFAULT_PROVIDERS_CONFIG
 
     async def update_config(self, data):
         try:
             # if not os.path.exists(self.config_file):
-            #     config = DEFAULT_CONFIG
+            #     config = DEFAULT_PROVIDERS_CONFIG
             # else:
             #     with open(self.config_file, 'r') as f:
             #         config = toml.load(f)

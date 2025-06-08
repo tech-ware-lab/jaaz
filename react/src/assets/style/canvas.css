@@ -1,0 +1,20 @@
+.ToolIcon__keybinding {
+  display: none !important;
+}
+
+.excalidraw
+  .dropdown-menu
+  .dropdown-menu-item[data-testid='toolbar-embeddable'] {
+  display: none !important;
+}
+
+.excalidraw
+  .dropdown-menu
+  .dropdown-menu-item[data-testid='toolbar-laser']
+  + div {
+  display: none !important;
+}
+
+.excalidraw .layer-ui__wrapper__top-right {
+  display: none !important;
+}

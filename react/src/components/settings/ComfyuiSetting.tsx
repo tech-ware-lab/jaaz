@@ -1,10 +1,11 @@
+import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { DEFAULT_CONFIG, PROVIDER_NAME_MAPPING } from '@/constants'
+import { DEFAULT_PROVIDERS_CONFIG, PROVIDER_NAME_MAPPING } from '@/constants'
 import { LLMConfig } from '@/types/types'
-import { CheckCircle, AlertCircle, Download } from 'lucide-react'
-import { useEffect, useState, useCallback } from 'react'
+import { AlertCircle, CheckCircle, Download } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
 import { Input } from '@/components/ui/input'
@@ -173,7 +174,7 @@ export default function ComfyuiSetting({
     setComfyUIEnabled(true)
     onConfigChange('comfyui', {
       ...config,
-      models: DEFAULT_CONFIG.comfyui.models,
+      models: DEFAULT_PROVIDERS_CONFIG.comfyui.models,
     })
 
     // Start ComfyUI process since user just installed it
@@ -200,7 +201,7 @@ export default function ComfyuiSetting({
       // Restore default models when enabling
       onConfigChange('comfyui', {
         ...config,
-        models: DEFAULT_CONFIG.comfyui.models,
+        models: DEFAULT_PROVIDERS_CONFIG.comfyui.models,
       })
 
       // Check if ComfyUI is installed first
