@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { DEFAULT_PROVIDERS_CONFIG } from '@/constants'
 import useConfigsStore from '@/stores/configs'
 import { LLMConfig } from '@/types/types'
-import { Save } from 'lucide-react'
+import { Plus, Save } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -212,7 +212,7 @@ const SettingProviders = () => {
   }, [])
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 relative w-full">
+    <div className="flex flex-col items-center justify-center p-4 relative w-full sm:pb-0 pb-10">
       {isLoading && (
         <div className="flex justify-center items-center h-32">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-zinc-500"></div>
@@ -242,9 +242,17 @@ const SettingProviders = () => {
           </div>
         ))}
 
-      <div className="flex justify-center fixed bottom-15 right-2">
-        <Button onClick={handleSave} className=" " size={'lg'}>
+      <div className="flex justify-center fixed sm:bottom-2 sm:left-[calc(var(--sidebar-width)+0.45rem)] sm:translate-x-0 -translate-x-1/2 bottom-15 left-1/2 gap-1.5">
+        <Button onClick={handleSave}>
           <Save className="mr-2 h-4 w-4" /> {t('settings:saveSettings')}
+        </Button>
+
+        <Button
+          variant="outline"
+          onClick={() => setIsAddProviderDialogOpen(true)}
+        >
+          <Plus className="h-4 w-4" />
+          {t('settings:provider.addProvider')}
         </Button>
       </div>
 
