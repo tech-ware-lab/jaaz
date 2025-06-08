@@ -7,6 +7,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
+import { CanvasProvider } from '@/contexts/canvas'
 import { Session } from '@/types/types'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, useParams, useSearch } from '@tanstack/react-router'
@@ -72,46 +73,50 @@ function Canvas() {
   }
 
   return (
-    <div className="flex flex-col w-screen h-screen">
-      <CanvasHeader
-        canvasName={canvasName}
-        canvasId={id}
-        onNameChange={setCanvasName}
-        onNameSave={handleNameSave}
-      />
-      <ResizablePanelGroup
-        direction="horizontal"
-        className="w-screen h-screen"
-        autoSaveId="jaaz-chat-panel"
-      >
-        <ResizablePanel defaultSize={80}>
-          <div className="w-full h-full">
-            {isLoading ? (
-              <div className="flex-1 flex-grow px-4 bg-accent w-[24%] absolute right-0">
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+    <CanvasProvider>
+      <div className="flex flex-col w-screen h-screen">
+        <CanvasHeader
+          canvasName={canvasName}
+          canvasId={id}
+          onNameChange={setCanvasName}
+          onNameSave={handleNameSave}
+        />
+        <ResizablePanelGroup
+          direction="horizontal"
+          className="w-screen h-screen"
+          autoSaveId="jaaz-chat-panel"
+        >
+          <ResizablePanel className="relative" defaultSize={80}>
+            <div className="w-full h-full">
+              {isLoading ? (
+                <div className="flex-1 flex-grow px-4 bg-accent w-[24%] absolute right-0">
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <CanvasExcali canvasId={id} initialData={canvas?.data} />
-            )}
-          </div>
-        </ResizablePanel>
+              ) : (
+                <>
+                  <CanvasExcali canvasId={id} initialData={canvas?.data} />
+                </>
+              )}
+            </div>
+          </ResizablePanel>
 
-        <ResizableHandle />
+          <ResizableHandle />
 
-        <ResizablePanel defaultSize={25} maxSize={35} minSize={25}>
-          <div className="flex-1 flex-grow bg-accent/50 w-full">
-            <ChatInterface
-              canvasId={id}
-              session={session}
-              sessionList={sessionList}
-              onClickNewChat={handleNewChat}
-              onSessionChange={handleSessionChange}
-            />
-          </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
-    </div>
+          <ResizablePanel defaultSize={25} maxSize={35} minSize={25}>
+            <div className="flex-1 flex-grow bg-accent/50 w-full">
+              <ChatInterface
+                canvasId={id}
+                session={session}
+                sessionList={sessionList}
+                onClickNewChat={handleNewChat}
+                onSessionChange={handleSessionChange}
+              />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
+    </CanvasProvider>
   )
 }

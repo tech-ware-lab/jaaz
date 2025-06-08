@@ -29,7 +29,7 @@ export const PROVIDER_NAME_MAPPING: {
     icon: 'https://framerusercontent.com/images/3cNQMWKzIhIrQ5KErBm7dSmbd2w.png',
   },
 }
-export const DEFAULT_CONFIG: { [key: string]: LLMConfig } = {
+export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
   anthropic: {
     models: {
       'claude-3-7-sonnet-latest': { type: 'text' },

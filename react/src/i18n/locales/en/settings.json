@@ -17,6 +17,7 @@
     }
   },
   "provider": {
+    "title": "Providers",
     "addProvider": "Add Provider",
     "providerName": "Provider Name",
     "providerNamePlaceholder": "Enter provider name",
@@ -50,5 +51,6 @@
     "notInstalledDescription": "Install ComfyUI to enable local image generation with Flux models",
     "installButton": "Install ComfyUI"
   },
-  "saveSettings": "Save Settings"
+  "saveSettings": "Save Settings",
+  "close": "Close"
 }
