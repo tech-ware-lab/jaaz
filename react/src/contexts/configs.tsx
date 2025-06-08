@@ -63,9 +63,9 @@ export const ConfigsProvider = ({
 }
 
 export const useConfigs = () => {
-  const configsStore = useContext(ConfigsContext)
-  if (!configsStore) {
+  const context = useContext(ConfigsContext)
+  if (!context) {
     throw new Error('useConfigs must be used within a ConfigsProvider')
   }
-  return configsStore
+  return context.configsStore()
 }

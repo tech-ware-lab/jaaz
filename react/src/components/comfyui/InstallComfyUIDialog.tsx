@@ -25,9 +25,7 @@ const InstallComfyUIDialog = ({
   const [isInstalling, setIsInstalling] = useState(false)
   const [showProgressDialog, setShowProgressDialog] = useState(false)
 
-  const { configsStore } = useConfigs()
-  const { showInstallDialog: open, setShowInstallDialog } =
-    configsStore.getState()
+  const { showInstallDialog: open, setShowInstallDialog } = useConfigs()
 
   const handleInstallComfyUI = async () => {
     setIsInstalling(true)

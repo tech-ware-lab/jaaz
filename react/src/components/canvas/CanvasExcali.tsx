@@ -1,4 +1,5 @@
 import { saveCanvas } from '@/api/canvas'
+import { useCanvas } from '@/contexts/canvas'
 import useDebounce from '@/hooks/use-debounce'
 import { useTheme } from '@/hooks/use-theme'
 import { CanvasData } from '@/types/types'
@@ -15,13 +16,14 @@ import {
   AppState,
   BinaryFiles,
   DataURL,
-  ExcalidrawImperativeAPI,
   ExcalidrawInitialDataState,
 } from '@excalidraw/excalidraw/types'
 import { ValueOf } from '@excalidraw/excalidraw/utility-types'
 import { nanoid } from 'nanoid'
 import { memo, useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+
+import '@/assets/style/canvas.css'
 
 type LastImagePosition = {
   x: number
@@ -40,7 +42,8 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   canvasId,
   initialData,
 }) => {
-  const excalidrawAPI = useRef<ExcalidrawImperativeAPI | null>(null)
+  const { excalidrawAPI, setExcalidrawAPI } = useCanvas()
+
   const { i18n } = useTranslation()
 
   const handleChange = useDebounce(
@@ -82,13 +85,11 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
 
       const imageDataUrl = imageData.url
 
-      if (!excalidrawAPI) return
-
       // Convert base64 data URL to File
       const fileid = nanoid() as FileId
 
       // Add file to Excalidraw
-      excalidrawAPI.current?.addFiles([
+      excalidrawAPI.addFiles([
         {
           mimeType: imageData.mime_type,
           id: fileid,
@@ -149,9 +150,9 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
         scale: [1, 1],
         crop: null,
       }
-      const currentElements = excalidrawAPI.current?.getSceneElements()
+      const currentElements = excalidrawAPI.getSceneElements()
       console.log('👇 adding to currentElements', currentElements)
-      excalidrawAPI.current?.updateScene({
+      excalidrawAPI.updateScene({
         elements: [...(currentElements || []), imageElement],
       })
 
@@ -191,7 +192,9 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     <Excalidraw
       theme={theme as Theme}
       langCode={i18n.language}
-      excalidrawAPI={(api) => (excalidrawAPI.current = api)}
+      excalidrawAPI={(api) => {
+        setExcalidrawAPI(api)
+      }}
       onChange={handleChange}
       initialData={() => {
         const data = initialData

@@ -1,6 +1,6 @@
 import { Message, MessageContent } from '@/types/types'
-import { PhotoView } from 'react-photo-view'
 import { Markdown } from '../Markdown'
+import MessageImage from './Image'
 
 type MessageRegularProps = {
   message: Message
@@ -25,15 +25,7 @@ const MessageRegular: React.FC<MessageRegularProps> = ({
       <Markdown>{isStrContent ? content : content.text}</Markdown>
     </div>
   ) : (
-    <div>
-      <PhotoView src={content.image_url.url}>
-        <img
-          className="hover:scale-105 transition-transform duration-300"
-          src={content.image_url.url}
-          alt="Image"
-        />
-      </PhotoView>
-    </div>
+    <MessageImage content={content} />
   )
 }
 
