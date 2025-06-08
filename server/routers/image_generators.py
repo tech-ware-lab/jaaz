@@ -132,10 +132,9 @@ async def generate_image_comfyui(args_json: dict, ctx: dict):
     filename = f'{image_id}.{extension}'
     return mime_type, width, height, filename
 
-async def generate_image_wavespeed(prompt: str, input_image: Optional[str] = None, **kwargs):
+async def generate_image_wavespeed(prompt: str, model, input_image: Optional[str] = None, **kwargs):
     api_key = app_config.get('wavespeed', {}).get('api_key', '')
     url = app_config.get('wavespeed', {}).get('url', '')
-    model = 'waveapeed-ai/flux-kontext-max/multi'
 
     async with aiohttp.ClientSession() as session:
         headers = {
@@ -143,6 +142,7 @@ async def generate_image_wavespeed(prompt: str, input_image: Optional[str] = Non
             'Content-Type': 'application/json'
         }
         if input_image:
+            model = 'wavespeed-ai/flux-kontext-pro/multi'
             payload = {
                 "prompt": prompt,
                 "images": [input_image],
@@ -180,8 +180,8 @@ async def generate_image_wavespeed(prompt: str, input_image: Optional[str] = Non
                     if status in ("succeeded", "completed") and outputs:
                         image_url = outputs[0]
                         image_id = 'im_' + generate(size=8)
-                        mime_type, width, height, extension = await get_image_info_and_save(image_url, os.path.join(FILES_DIR, f'{generate(size=8)}'))
-                        filename = f'{generate(size=8)}.{extension}'
+                        mime_type, width, height, extension = await get_image_info_and_save(image_url, os.path.join(FILES_DIR, f'{image_id}'))
+                        filename = f'{image_id}.{extension}'
                         return mime_type, width, height, filename
                         
                     if status == "failed":
