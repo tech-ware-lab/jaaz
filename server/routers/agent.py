@@ -16,7 +16,7 @@ from services.mcp import MCPClient
 from services.config_service import config_service, app_config, USER_DATA_DIR
 from starlette.websockets import WebSocketDisconnect
 from services.db_service import db_service
-from routers.image_tools import generate_image
+from routers.image_tools import generate_image, generate_image_tool
 from routers.websocket import active_websockets, send_to_websocket
 
 llm_config = config_service.get_config()
@@ -46,11 +46,11 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...))
 async def finish_chat(args_json: dict, ctx: dict):
     return []
 
-class ToolCall:
-    def __init__(self, id: str, name: str, arguments: str):
-        self.id = id
-        self.name = name
-        self.arguments = arguments
+# class ToolCall:
+#     def __init__(self, id: str, name: str, arguments: str):
+#         self.id = id
+#         self.name = name
+#         self.arguments = arguments
 
 SYSTEM_TOOLS_MAPPING = {
     'finish': finish_chat,
@@ -401,7 +401,7 @@ async def chat(request: Request):
 
     return {"status": "done"}
 
-from langchain_core.messages import AnyMessage
+from langchain_core.messages import AIMessageChunk, ToolCall, ToolCallChunk
 from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt import create_react_agent
 from langgraph.prebuilt.chat_agent_executor import AgentState
@@ -427,31 +427,59 @@ async def langraph_agent(messages, session_id, text_model, image_model):
                 temperature=0,
                 max_tokens=2048
         )
-        model_info = {
-                        'image': image_model
-                    }
         agent = create_react_agent(
             model=model,
-            tools=[],
+            tools=[generate_image_tool],
             prompt='You are a profession design agent, specializing in visual design.'
         )
         ctx = {
                 'session_id': session_id,
-                'model_info': model_info,
+                'model_info': {
+                        'image': image_model
+                    },
             }
+        tool_calls: list[ToolCall] = []
         async for chunk in agent.astream(
             {"messages": messages},
             config=ctx,
             stream_mode=["messages", "custom"]
         ):
-            print('👇chunk', chunk)
-            ai_message_chunk = chunk[1][0]  # Access the AIMessageChunk
+            
+            ai_message_chunk: AIMessageChunk = chunk[1][0]  # Access the AIMessageChunk
             content = ai_message_chunk.content  # Get the content from the AIMessageChunk
-            print(ai_message_chunk)
-            await send_to_websocket(session_id, {
-                                        'type': 'delta',
-                                        'text': content
-                                    })
+            if content:
+                print('👇content', content)
+                await send_to_websocket(session_id, {
+                                'type': 'delta',
+                                'text': content
+                            })
+            if hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
+                print('🛠️🛠️tool_calls', ai_message_chunk.tool_calls)
+                for index, tool_call in enumerate(ai_message_chunk.tool_calls):
+                    if tool_call.get('name'):
+                        tool_calls.append(tool_call)
+                        print('😘tool_call', tool_call, tool_call.get('name'), tool_call.get('id'))
+                        await send_to_websocket(session_id, {
+                            'type': 'tool_call',
+                            'id': tool_call.get('id'),
+                            'name': tool_call.get('name'),
+                            'arguments': '{}'
+                        })
+            
+            if hasattr(ai_message_chunk, 'tool_call_chunks'):
+                tool_call_chunks = ai_message_chunk.tool_call_chunks
+                print('👇tool_call_chunks', tool_call_chunks)
+                for tool_call_chunk in tool_call_chunks:
+                    index: int = tool_call_chunk['index']
+                    if index < len(tool_calls):
+                        for_tool_call: ToolCall = tool_calls[index]
+                        print('🦄sending tool_call_arguments', 'id', for_tool_call, 'text', tool_call_chunk.get('args'))
+                        await send_to_websocket(session_id, {
+                            'type': 'tool_call_arguments',
+                            'id': for_tool_call.get('id'),
+                            'text': tool_call_chunk.get('args')
+                        })
+
 
 @router.post("/cancel/{session_id}")
 async def cancel_chat(session_id: str):
