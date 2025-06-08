@@ -7,6 +7,9 @@ import { LLMConfig } from '@/types/types'
 import { AlertCircle, CheckCircle, Download } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '../ui/checkbox'
 
 interface ComfyuiSettingProps {
   config: LLMConfig
@@ -23,14 +26,34 @@ export default function ComfyuiSetting({
     'unknown' | 'installed' | 'not-installed' | 'running'
   >('unknown')
   const [comfyUIEnabled, setComfyUIEnabled] = useState(false)
-
   const provider = PROVIDER_NAME_MAPPING.comfyui
+  const comfyUrl = config.url
+  const [comfyuiModels, setComfyuiModels] = useState<string[]>([])
 
   // Check if ComfyUI is enabled based on config
   useEffect(() => {
     const isEnabled = config && Object.keys(config.models || {}).length > 0
     setComfyUIEnabled(isEnabled)
   }, [config])
+
+  useEffect(() => {
+    fetch(`/api/comfyui/object_info`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url: comfyUrl }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0]) {
+          const modelList =
+            data?.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0]
+          console.log('🦄 ComfyUI models:', modelList)
+          setComfyuiModels(modelList)
+        }
+      })
+  }, [config.url])
 
   // Check ComfyUI status
   const checkComfyUIStatus = useCallback(async () => {
@@ -53,7 +76,7 @@ export default function ComfyuiSetting({
       // If process is not running, check if ComfyUI is responding via HTTP
       try {
         console.log('🦄 Checking ComfyUI HTTP response...')
-        const response = await fetch('http://127.0.0.1:8188/system_stats', {
+        const response = await fetch(`${comfyUrl}/system_stats`, {
           method: 'GET',
           signal: AbortSignal.timeout(3000), // 3 second timeout
         })
@@ -106,7 +129,7 @@ export default function ComfyuiSetting({
 
     // 2. Check HTTP response
     try {
-      const response = await fetch('http://127.0.0.1:8188/system_stats', {
+      const response = await fetch(`${comfyUrl}/system_stats`, {
         method: 'GET',
         signal: AbortSignal.timeout(5000),
       })
@@ -135,7 +158,7 @@ export default function ComfyuiSetting({
 
     // 4. Try to access ComfyUI web interface
     console.log(
-      '🦄 4. You can manually check by opening: http://127.0.0.1:8188 in your browser'
+      `🦄 4. You can manually check by opening: ${comfyUrl} in your browser`
     )
     console.log('🦄 === End Verification ===')
   }
@@ -322,6 +345,14 @@ export default function ComfyuiSetting({
         <Label htmlFor="comfyui-enable" className="text-sm font-medium">
           {t('settings:comfyui.enable')}
         </Label>
+        <Input
+          id="comfyui-url"
+          placeholder="http://127.0.0.1:8188"
+          value={config.url}
+          onChange={(e) =>
+            onConfigChange('comfyui', { ...config, url: e.target.value })
+          }
+        />
         {/* Debug button for verification */}
         <Button
           onClick={verifyComfyUIStatus}
@@ -332,6 +363,39 @@ export default function ComfyuiSetting({
           {t('settings:comfyui.debugStatus')}
         </Button>
       </div>
+      {comfyuiModels.length > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          {comfyuiModels.map((model) => (
+            <div key={model} className="flex items-center gap-2">
+              <Checkbox
+                id={model}
+                checked={!!config.models[model]}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    onConfigChange('comfyui', {
+                      ...config,
+                      models: {
+                        ...config.models,
+                        [model]: {
+                          type: 'image',
+                        },
+                      },
+                    })
+                  } else {
+                    const newModels = { ...config.models }
+                    delete newModels[model]
+                    onConfigChange('comfyui', {
+                      ...config,
+                      models: newModels,
+                    })
+                  }
+                }}
+              />
+              <Label htmlFor={model}>{model}</Label>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ComfyUI Installation Notice */}
       {comfyUIEnabled && comfyUIStatus === 'not-installed' && (
