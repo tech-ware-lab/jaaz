@@ -179,6 +179,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               setPending('tool')
               return prev.concat({
                 role: 'assistant',
+                content: '',
                 tool_calls: [
                   {
                     type: 'function',
