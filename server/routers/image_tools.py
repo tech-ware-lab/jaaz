@@ -16,8 +16,8 @@ import aiofiles
 from mimetypes import guess_type
 import aiohttp
 import asyncio
-from typing import Optional
-
+from typing import Optional, Annotated, List
+from langchain_core.tools import tool
 router = APIRouter(prefix="/api")
 
 os.makedirs(FILES_DIR, exist_ok=True)
@@ -70,6 +70,27 @@ async def get_object_info(data: dict):
     async with aiohttp.ClientSession() as session:
         async with session.get(f"{url}/api/object_info") as response:
             return await response.json()
+
+from pydantic import BaseModel, Field
+from langchain_core.runnables import RunnableConfig
+
+@tool("generate_image", parse_docstring=True)
+def generate_image_tool(
+    prompt: str,
+    aspect_ratio: str,
+    config: RunnableConfig,
+) -> str:
+    """Generate an image using text prompt or optionally pass an image for reference or for editing
+
+    Args:
+        prompt: Required. The prompt for image generation. If you want to edit an image, please describe what you want to edit in the prompt.
+        aspect_ratio: Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4
+    """
+    print('🛠️',prompt, aspect_ratio)
+    return "image generated successfully ![image_id: abc.png](/api/file/abc.png)"
+
+print('🛠️',generate_image_tool.args_schema.model_json_schema())
+
 
 async def generate_image(args_json: dict, ctx: dict):
     session_id = ctx.get('session_id', '')
