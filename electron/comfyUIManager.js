@@ -18,6 +18,33 @@ if (!isWorkerProcess) {
 let comfyUIProcess = null
 let comfyUIProcessPid = null
 
+// Setup cleanup handlers for main process exit
+if (!isWorkerProcess) {
+  const setupCleanupHandlers = () => {
+    const cleanup = async () => {
+      if (comfyUIProcess && !comfyUIProcess.killed) {
+        console.log('🦄 Main process exiting, cleaning up ComfyUI process...')
+        await stopComfyUIProcess()
+      }
+    }
+
+    // Handle different exit scenarios
+    process.on('exit', cleanup)
+    process.on('SIGINT', cleanup)
+    process.on('SIGTERM', cleanup)
+    process.on('uncaughtException', cleanup)
+
+    // Handle Electron app events if available
+    if (app) {
+      app.on('before-quit', cleanup)
+      app.on('window-all-closed', cleanup)
+    }
+  }
+
+  // Setup cleanup handlers when this module is loaded
+  setupCleanupHandlers()
+}
+
 /**
  * Get user data directory
  * @returns {string} - User data directory path
@@ -180,6 +207,41 @@ function isComfyUIInstalled() {
 }
 
 /**
+ * Parse bat file to extract Python command
+ * @param {string} batFilePath - Path to the bat file
+ * @returns {Object} - {pythonPath, args, workingDir}
+ */
+function parseBatFile(batFilePath) {
+  try {
+    const batContent = fs.readFileSync(batFilePath, 'utf8')
+    const workingDir = path.dirname(batFilePath)
+
+    // Find the python command line (skip pause and empty lines)
+    const pythonLine = batContent
+      .split('\n')
+      .map((line) => line.trim())
+      .find((line) => line.includes('python.exe') && line.includes('main.py'))
+
+    if (!pythonLine) return null
+
+    // Split command and convert relative paths to absolute
+    const parts = pythonLine.split(' ')
+    const pythonPath = path.join(workingDir, parts[0].replace(/\.\\/g, ''))
+    const args = parts.slice(1).map((arg) => {
+      if (arg.includes('\\') && !arg.startsWith('-')) {
+        return path.join(workingDir, arg.replace(/\\/g, path.sep))
+      }
+      return arg
+    })
+
+    return { pythonPath, args, workingDir }
+  } catch (error) {
+    console.error('Failed to parse bat file:', error)
+    return null
+  }
+}
+
+/**
  * Start ComfyUI process
  * @returns {Promise<{success: boolean, message?: string}>}
  */
@@ -211,27 +273,59 @@ async function startComfyUIProcess() {
     if (script) {
       console.log(`🦄 Using startup script: ${script}`)
 
-      // On Windows, use cmd.exe to execute bat files
       const isWindows = process.platform === 'win32'
-      if (isWindows) {
-        command = 'cmd.exe'
-        args = ['/c', script]
 
-        // Windows-specific spawn options for silent execution
-        spawnOptions = {
-          cwd: path.dirname(script),
-          detached: true,
-          stdio: ['ignore', 'pipe', 'pipe'],
-          windowsHide: true, // Hide CMD window
-          shell: false, // Don't use shell to avoid extra window
+      if (isWindows && script.endsWith('.bat')) {
+        // Parse bat file to extract the actual command
+        const parsedCommand = parseBatFile(script)
+
+        if (parsedCommand) {
+          console.log(
+            `🦄 Parsed command from bat file: ${
+              parsedCommand.pythonPath
+            } ${parsedCommand.args.join(' ')}`
+          )
+
+          // Run the Python command directly
+          command = parsedCommand.pythonPath
+          args = parsedCommand.args
+
+          spawnOptions = {
+            cwd: parsedCommand.workingDir,
+            detached: false, // Keep attached to parent process
+            stdio: ['ignore', 'pipe', 'pipe'],
+            windowsHide: true, // Hide any potential windows
+            shell: false, // Don't use shell to avoid window
+            env: { ...process.env, PYTHONUNBUFFERED: '1' },
+          }
+        } else {
+          // Fallback to running bat file if parsing fails
+          console.log(
+            `🦄 Failed to parse bat file, falling back to direct execution`
+          )
+          command = 'cmd.exe'
+          args = ['/C', 'start', '/b', script]
+
+          spawnOptions = {
+            cwd: path.dirname(script),
+            detached: false, // Keep attached to parent process
+            stdio: ['ignore', 'pipe', 'pipe'],
+            windowsHide: true,
+            shell: false,
+            windowsVerbatimArguments: false,
+            env: { ...process.env, PYTHONUNBUFFERED: '1' },
+          }
         }
       } else {
+        // Non-Windows or non-bat files
         command = script
         args = []
         spawnOptions = {
           cwd: path.dirname(script),
-          detached: true,
+          detached: false, // Keep attached to parent process
           stdio: ['ignore', 'pipe', 'pipe'],
+          shell: false,
+          env: { ...process.env, PYTHONUNBUFFERED: '1' },
         }
       }
     } else {
@@ -272,8 +366,7 @@ async function startComfyUIProcess() {
       comfyUIProcessPid = null
     })
 
-    // Detach process to run independently
-    comfyUIProcess.unref()
+    // Keep process attached to main process for proper cleanup
 
     // Wait a moment to see if the process starts successfully
     await new Promise((resolve) => setTimeout(resolve, 3000))

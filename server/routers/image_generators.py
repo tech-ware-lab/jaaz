@@ -1,3 +1,4 @@
+from routers.comfyui_execution import execute
 import asyncio
 import base64
 import json
@@ -13,10 +14,12 @@ import httpx
 import aiofiles
 import aiohttp
 from typing import Optional
+from utils.ssl_config import create_aiohttp_session
+
 
 async def get_image_info_and_save(url, file_path_without_extension):
     # Fetch the image asynchronously
-    async with aiohttp.ClientSession() as session:
+    async with create_aiohttp_session() as session:
         async with session.get(url) as response:
             # Read the image content as bytes
             image_content = await response.read()
@@ -40,11 +43,13 @@ async def get_image_info_and_save(url, file_path_without_extension):
 
     return mime_type, width, height, extension
 
+
 async def generate_image_replicate(prompt, model, aspect_ratio, input_image_b64: Optional[str] = None):
     try:
         api_key = app_config.get('replicate', {}).get('api_key', '')
         if not api_key:
-            raise ValueError("Image generation failed: Replicate API key is not set")
+            raise ValueError(
+                "Image generation failed: Replicate API key is not set")
         url = f"https://api.replicate.com/v1/models/{model}/predictions"
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -60,7 +65,7 @@ async def generate_image_replicate(prompt, model, aspect_ratio, input_image_b64:
         if input_image_b64:
             data['input']['input_image'] = input_image_b64
             model = 'black-forest-labs/flux-kontext-pro'
-        async with aiohttp.ClientSession() as session:
+        async with create_aiohttp_session() as session:
             async with session.post(url, headers=headers, json=data) as response:
                 res = await response.json()
         print('🦄image generation response', res)
@@ -69,9 +74,11 @@ async def generate_image_replicate(prompt, model, aspect_ratio, input_image_b64:
         # image_id = int(time.time() * 1000)
         if output == '':
             if res.get('detail', '') != '':
-                raise Exception(f'Replicate image generation failed: {res.get("detail", "")}')
+                raise Exception(
+                    f'Replicate image generation failed: {res.get("detail", "")}')
             else:
-                raise Exception('Replicate image generation failed: no output url found')
+                raise Exception(
+                    'Replicate image generation failed: no output url found')
         print('🦄image generation image_id', image_id)
         # get image dimensions
         mime_type, width, height, extension = await get_image_info_and_save(output, os.path.join(FILES_DIR, f'{image_id}'))
@@ -81,6 +88,7 @@ async def generate_image_replicate(prompt, model, aspect_ratio, input_image_b64:
         print('Error generating image with replicate', e)
         traceback.print_exc()
         raise e
+
 
 def get_asset_path(filename):
     # To get the correct path for pyinstaller bundled application
@@ -93,8 +101,9 @@ def get_asset_path(filename):
 
     return os.path.join(base_path, 'asset', filename)
 
+
 asset_dir = get_asset_path('flux_comfy_workflow.json')
-flux_comfy_workflow = None 
+flux_comfy_workflow = None
 basic_comfy_t2i_workflow = get_asset_path('default_comfy_t2i_workflow.json')
 try:
     flux_comfy_workflow = json.load(open(asset_dir, 'r'))
@@ -102,7 +111,7 @@ try:
 except Exception as e:
     traceback.print_exc()
 
-from routers.comfyui_execution import execute
+
 async def generate_image_comfyui(args_json: dict, ctx: dict):
     if not flux_comfy_workflow:
         raise Exception('Flux workflow json not found')
@@ -132,11 +141,12 @@ async def generate_image_comfyui(args_json: dict, ctx: dict):
     filename = f'{image_id}.{extension}'
     return mime_type, width, height, filename
 
+
 async def generate_image_wavespeed(prompt: str, model, input_image: Optional[str] = None, **kwargs):
     api_key = app_config.get('wavespeed', {}).get('api_key', '')
     url = app_config.get('wavespeed', {}).get('url', '')
 
-    async with aiohttp.ClientSession() as session:
+    async with create_aiohttp_session() as session:
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
@@ -183,7 +193,8 @@ async def generate_image_wavespeed(prompt: str, model, input_image: Optional[str
                         mime_type, width, height, extension = await get_image_info_and_save(image_url, os.path.join(FILES_DIR, f'{image_id}'))
                         filename = f'{image_id}.{extension}'
                         return mime_type, width, height, filename
-                        
+
                     if status == "failed":
-                        raise Exception(f"WaveSpeed generation failed: {result_data}")
+                        raise Exception(
+                            f"WaveSpeed generation failed: {result_data}")
             raise Exception("WaveSpeed image generation timeout")
