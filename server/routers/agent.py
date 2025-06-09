@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse
 import asyncio
 import aiohttp
 import requests
-from utils.ssl_config import create_aiohttp_session
+from utils.ssl_config import create_aiohttp_session, create_httpx_client
 from services.agent_service import openai_client, anthropic_client, ollama_client
 from services.mcp import MCPClient
 from services.config_service import config_service, app_config, USER_DATA_DIR
@@ -129,13 +129,16 @@ async def langraph_agent(messages, session_id, text_model, image_model):
             base_url=url,
         )
     else:
+        # Create httpx client with SSL configuration for ChatOpenAI
+        http_client = create_httpx_client(timeout=1000)
         model = ChatOpenAI(
             model=model,
             api_key=api_key,
             timeout=1000,
             base_url=url,
             temperature=0,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            http_client=http_client
         )
     agent = create_react_agent(
         model=model,
