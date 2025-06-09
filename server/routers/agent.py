@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 import asyncio
 import aiohttp
 import requests
+from utils.ssl_config import create_aiohttp_session
 from services.agent_service import openai_client, anthropic_client, ollama_client
 from services.mcp import MCPClient
 from services.config_service import config_service, app_config, USER_DATA_DIR
@@ -29,6 +30,7 @@ llm_config = config_service.get_config()
 
 wsrouter = APIRouter()
 stream_tasks = {}
+
 
 @wsrouter.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...)):
@@ -49,6 +51,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...))
         if session_id in active_websockets:
             del active_websockets[session_id]
 
+
 def detect_image_type_from_base64(b64_data: str) -> str:
     # Only take the base64 part, not the "data:image/...," prefix
     if b64_data.startswith("data:"):
@@ -68,7 +71,10 @@ def detect_image_type_from_base64(b64_data: str) -> str:
     else:
         return "application/octet-stream"
 
+
 router = APIRouter(prefix="/api")
+
+
 @router.post("/chat")
 async def chat(request: Request):
     data = await request.json()
@@ -77,7 +83,8 @@ async def chat(request: Request):
     canvas_id = data.get('canvas_id')
     text_model = data.get('text_model')
     image_model = data.get('image_model')
-    print('👇app_config.get("system_prompt", "")', app_config.get('system_prompt', ''))
+    print('👇app_config.get("system_prompt", "")',
+          app_config.get('system_prompt', ''))
     if app_config.get('system_prompt', ''):
         messages.append({
             'role': 'system',
@@ -87,12 +94,13 @@ async def chat(request: Request):
     if len(messages) == 1:
         # create new session
         prompt = messages[0].get('content', '')
-        # TODO: Better way to determin when to create new chat session. 
+        # TODO: Better way to determin when to create new chat session.
         await db_service.create_chat_session(session_id, text_model.get('model'), text_model.get('provider'), canvas_id, (prompt[:200] if isinstance(prompt, str) else ''))
-    
+
     await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1])) if len(messages) > 0 else None
 
-    task = asyncio.create_task(langraph_agent(messages, session_id, text_model, image_model))
+    task = asyncio.create_task(langraph_agent(
+        messages, session_id, text_model, image_model))
     stream_tasks[session_id] = task
     try:
         await task
@@ -106,95 +114,100 @@ async def chat(request: Request):
 
     return {"status": "done"}
 
+
 async def langraph_agent(messages, session_id, text_model, image_model):
-        model = text_model.get('model')
-        provider = text_model.get('provider')
-        url = text_model.get('url')
-        api_key = app_config.get(provider, {}).get("api_key", "")
-        print('👇model', model, provider, url, api_key)
-        # TODO: Verify if max token is working
-        max_tokens = text_model.get('max_tokens', 8148)
-        if provider == 'ollama':
-            model = ChatOllama(
-                model=model,
-                base_url=url,
-            )
-        else:
-            model = ChatOpenAI(
-                model=model,
-                api_key=api_key,
-                timeout=1000,
-                base_url=url,
-                temperature=0,
-                max_tokens=max_tokens
-            )
-        agent = create_react_agent(
+    model = text_model.get('model')
+    provider = text_model.get('provider')
+    url = text_model.get('url')
+    api_key = app_config.get(provider, {}).get("api_key", "")
+    print('👇model', model, provider, url, api_key)
+    # TODO: Verify if max token is working
+    max_tokens = text_model.get('max_tokens', 8148)
+    if provider == 'ollama':
+        model = ChatOllama(
             model=model,
-            tools=[generate_image_tool],
-            prompt='You are a profession design agent, specializing in visual design.'
+            base_url=url,
         )
-        ctx = {
-                'session_id': session_id,
-                'model_info': {
-                        'image': image_model
-                    },
-            }
-        tool_calls: list[ToolCall] = []
-        async for chunk in agent.astream(
-            {"messages": messages},
-            config=ctx,
-            stream_mode=["updates", "messages", "custom"]
-        ):
-            chunk_type = chunk[0]
-            
-            if chunk_type == 'updates':
-                all_messages = chunk[1].get('agent', chunk[1].get('tools')).get('messages', [])
-                oai_messages = convert_to_openai_messages(all_messages)
-                # new_message = oai_messages[-1]
-                
-                messages.extend(oai_messages)
+    else:
+        model = ChatOpenAI(
+            model=model,
+            api_key=api_key,
+            timeout=1000,
+            base_url=url,
+            temperature=0,
+            max_tokens=max_tokens
+        )
+    agent = create_react_agent(
+        model=model,
+        tools=[generate_image_tool],
+        prompt='You are a profession design agent, specializing in visual design.'
+    )
+    ctx = {
+        'session_id': session_id,
+        'model_info': {
+            'image': image_model
+        },
+    }
+    tool_calls: list[ToolCall] = []
+    async for chunk in agent.astream(
+        {"messages": messages},
+        config=ctx,
+        stream_mode=["updates", "messages", "custom"]
+    ):
+        chunk_type = chunk[0]
+
+        if chunk_type == 'updates':
+            all_messages = chunk[1].get(
+                'agent', chunk[1].get('tools')).get('messages', [])
+            oai_messages = convert_to_openai_messages(all_messages)
+            # new_message = oai_messages[-1]
+
+            messages.extend(oai_messages)
+            await send_to_websocket(session_id, {
+                'type': 'all_messages',
+                'messages': messages
+            })
+            for new_message in oai_messages:
+                await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
+        else:
+            # Access the AIMessageChunk
+            ai_message_chunk: AIMessageChunk = chunk[1][0]
+            print('👇ai_message_chunk', ai_message_chunk)
+            content = ai_message_chunk.content  # Get the content from the AIMessageChunk
+            if isinstance(ai_message_chunk, ToolMessage):
+                print('👇tool_call_results', ai_message_chunk.content)
+            elif content:
                 await send_to_websocket(session_id, {
-                    'type': 'all_messages',
-                    'messages': messages
+                    'type': 'delta',
+                    'text': content
                 })
-                for new_message in oai_messages:
-                    await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
+            elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
+                for index, tool_call in enumerate(ai_message_chunk.tool_calls):
+                    if tool_call.get('name'):
+                        tool_calls.append(tool_call)
+                        print('😘tool_call', tool_call, tool_call.get(
+                            'name'), tool_call.get('id'))
+                        await send_to_websocket(session_id, {
+                            'type': 'tool_call',
+                            'id': tool_call.get('id'),
+                            'name': tool_call.get('name'),
+                            'arguments': '{}'
+                        })
+            elif hasattr(ai_message_chunk, 'tool_call_chunks'):
+                tool_call_chunks = ai_message_chunk.tool_call_chunks
+                for tool_call_chunk in tool_call_chunks:
+                    index: int = tool_call_chunk['index']
+                    if index < len(tool_calls):
+                        for_tool_call: ToolCall = tool_calls[index]
+                        print('🦄sending tool_call_arguments', 'id',
+                              for_tool_call, 'text', tool_call_chunk.get('args'))
+                        await send_to_websocket(session_id, {
+                            'type': 'tool_call_arguments',
+                            'id': for_tool_call.get('id'),
+                            'text': tool_call_chunk.get('args')
+                        })
             else:
-                ai_message_chunk: AIMessageChunk = chunk[1][0]  # Access the AIMessageChunk
-                print('👇ai_message_chunk', ai_message_chunk)
-                content = ai_message_chunk.content  # Get the content from the AIMessageChunk
-                if isinstance(ai_message_chunk, ToolMessage):
-                    print('👇tool_call_results', ai_message_chunk.content)
-                elif content:
-                    await send_to_websocket(session_id, {
-                                    'type': 'delta',
-                                    'text': content
-                                })
-                elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
-                    for index, tool_call in enumerate(ai_message_chunk.tool_calls):
-                        if tool_call.get('name'):
-                            tool_calls.append(tool_call)
-                            print('😘tool_call', tool_call, tool_call.get('name'), tool_call.get('id'))
-                            await send_to_websocket(session_id, {
-                                'type': 'tool_call',
-                                'id': tool_call.get('id'),
-                                'name': tool_call.get('name'),
-                                'arguments': '{}'
-                            })
-                elif hasattr(ai_message_chunk, 'tool_call_chunks'):
-                    tool_call_chunks = ai_message_chunk.tool_call_chunks
-                    for tool_call_chunk in tool_call_chunks:
-                        index: int = tool_call_chunk['index']
-                        if index < len(tool_calls):
-                            for_tool_call: ToolCall = tool_calls[index]
-                            print('🦄sending tool_call_arguments', 'id', for_tool_call, 'text', tool_call_chunk.get('args'))
-                            await send_to_websocket(session_id, {
-                                'type': 'tool_call_arguments',
-                                'id': for_tool_call.get('id'),
-                                'text': tool_call_chunk.get('args')
-                            })
-                else:
-                    print('👇no tool_call_chunks', chunk)
+                print('👇no tool_call_chunks', chunk)
 
 
 @router.post("/cancel/{session_id}")
@@ -209,6 +222,7 @@ async def cancel_chat(session_id: str):
 # async def workspace_list():
 #     return [{"name": entry.name, "is_dir": entry.is_dir(), "path": str(entry)} for entry in Path(WORKSPACE_ROOT).iterdir()]
 
+
 @router.get("/workspace_download")
 async def workspace_download(path: str):
     file_path = Path(path)
@@ -216,8 +230,10 @@ async def workspace_download(path: str):
         return FileResponse(file_path)
     return {"error": "File not found"}
 
+
 def get_ollama_model_list():
-    base_url = config_service.get_config().get('ollama', {}).get('url', os.getenv('OLLAMA_HOST', 'http://localhost:11434'))
+    base_url = config_service.get_config().get('ollama', {}).get(
+        'url', os.getenv('OLLAMA_HOST', 'http://localhost:11434'))
     try:
         response = requests.get(f'{base_url}/api/tags', timeout=5)
         response.raise_for_status()
@@ -227,12 +243,14 @@ def get_ollama_model_list():
         print(f"Error querying Ollama: {e}")
         return []
 
+
 @router.get("/list_models")
 async def get_models():
     config = config_service.get_config()
     res = []
     ollama_models = get_ollama_model_list()
-    ollama_url = config_service.get_config().get('ollama', {}).get('url', os.getenv('OLLAMA_HOST', 'http://localhost:11434'))
+    ollama_url = config_service.get_config().get('ollama', {}).get(
+        'url', os.getenv('OLLAMA_HOST', 'http://localhost:11434'))
     print('👇ollama_models', ollama_models)
     for ollama_model in ollama_models:
         res.append({
@@ -261,12 +279,14 @@ mcp_clients: dict[str, MCPClient] = {}
 mcp_clients_status = {}
 mcp_tool_to_server_mapping: dict[str, MCPClient] = {}
 
+
 async def initialize():
     # await initialize_mcp()
     for session_id in active_websockets:
         await send_to_websocket(session_id, {
             'type': 'init_done'
         })
+
 
 async def initialize_mcp():
     print('👇initializing mcp')
@@ -279,13 +299,13 @@ async def initialize_mcp():
     global mcp_clients_status
     global mcp_tool_to_server_mapping
     mcp_clients_json: dict[str, dict] = json_data.get('mcpServers', {})
-    
+
     for server_name, server in list(mcp_clients_json.items()):
         if server.get('command') is None:
             continue
         if server.get('args') is None:
             server['args'] = []
-        
+
         mcp_client = MCPClient()
         mcp_clients_status[server_name] = {
             'status': 'initializing'
@@ -296,7 +316,8 @@ async def initialize_mcp():
                 'status': 'connected',
                 'tools': mcp_client.tools
             }
-            print('👇mcp_client connected', server_name, 'tools', len(mcp_client.tools))
+            print('👇mcp_client connected', server_name,
+                  'tools', len(mcp_client.tools))
             for tool in mcp_client.tools:
                 mcp_tool_to_server_mapping[tool['name']] = mcp_client
                 print('tool', tool)
@@ -327,6 +348,7 @@ async def initialize_mcp():
                 'error': str(e)
             }
 
+
 @router.get("/list_mcp_servers")
 async def list_mcp_servers():
     if mcp_clients is None:
@@ -338,15 +360,18 @@ async def list_mcp_servers():
         json_data = json.load(f)
     mcp_servers = json_data.get('mcpServers', {})
     for server_name, server in mcp_servers.items():
-        mcp_servers[server_name]['tools'] = mcp_clients_status[server_name].get('tools', [])
-        mcp_servers[server_name]['status'] = mcp_clients_status[server_name].get('status', 'error')
+        mcp_servers[server_name]['tools'] = mcp_clients_status[server_name].get(
+            'tools', [])
+        mcp_servers[server_name]['status'] = mcp_clients_status[server_name].get(
+            'status', 'error')
     return mcp_servers
+
 
 @router.get("/list_chat_sessions")
 async def list_chat_sessions():
     return await db_service.list_sessions()
 
+
 @router.get("/chat_session/{session_id}")
 async def get_chat_session(session_id: str):
     return await db_service.get_chat_history(session_id)
-
