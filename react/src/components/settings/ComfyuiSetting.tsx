@@ -77,6 +77,9 @@ export default function ComfyuiSetting({
             data?.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0]
           console.log('ComfyUI models:', modelList)
           setComfyuiModels(modelList)
+
+          // if models are fetched, then ComfyUI is installed and running
+          setIsComfyUIInstalled(true)
         }
       })
       .catch((error) => {
