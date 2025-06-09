@@ -50,34 +50,6 @@ const SettingProviders = () => {
 
         setProviders(res)
 
-        // TODO: move to other place
-        // Auto-start ComfyUI process if enabled and installed
-        const isComfyUIEnabled =
-          config.comfyui && Object.keys(config.comfyui.models || {}).length > 0
-        if (isComfyUIEnabled && window.electronAPI?.checkComfyUIInstalled) {
-          try {
-            const installed = await window.electronAPI.checkComfyUIInstalled()
-            if (installed) {
-              // Check if process is already running
-              const processStatus =
-                await window.electronAPI.getComfyUIProcessStatus?.()
-              if (!processStatus?.running) {
-                // Start ComfyUI process
-                const result = await window.electronAPI.startComfyUIProcess?.()
-                if (result?.success) {
-                  console.log('ComfyUI process auto-started successfully')
-                } else {
-                  console.log(
-                    'Failed to auto-start ComfyUI process:',
-                    result?.message
-                  )
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Error auto-starting ComfyUI process:', error)
-          }
-        }
       } catch (error) {
         console.error('Error loading configuration:', error)
         setErrorMessage(t('settings:messages.failedToLoad'))
@@ -138,78 +110,7 @@ const SettingProviders = () => {
     }
   }
 
-  useEffect(() => {
-    const loadConfig = async () => {
-      try {
-        const response = await fetch('/api/config')
-        const config: { [key: string]: LLMConfig } = await response.json()
 
-        const res: { [key: string]: LLMConfig } = {}
-
-        // First, add custom providers that are not in DEFAULT_PROVIDERS_CONFIG
-        for (const provider in config) {
-          if (
-            !(provider in DEFAULT_PROVIDERS_CONFIG) &&
-            typeof config[provider] === 'object'
-          ) {
-            console.log('Adding custom provider:', provider, config[provider])
-            res[provider] = config[provider]
-          }
-        }
-
-        // Then, add providers from DEFAULT_PROVIDERS_CONFIG
-        for (const provider in DEFAULT_PROVIDERS_CONFIG) {
-          if (config[provider] && typeof config[provider] === 'object') {
-            res[provider] = {
-              ...DEFAULT_PROVIDERS_CONFIG[provider],
-              ...config[provider],
-            }
-          } else {
-            res[provider] = DEFAULT_PROVIDERS_CONFIG[provider]
-          }
-        }
-
-        setProviders(res)
-
-        // TODO: move to other place
-        // Auto-start ComfyUI process if enabled and installed
-        const isComfyUIEnabled =
-          config.comfyui && Object.keys(config.comfyui.models || {}).length > 0
-        if (isComfyUIEnabled && window.electronAPI?.checkComfyUIInstalled) {
-          try {
-            const installed = await window.electronAPI.checkComfyUIInstalled()
-            if (installed) {
-              // Check if process is already running
-              const processStatus =
-                await window.electronAPI.getComfyUIProcessStatus?.()
-              if (!processStatus?.running) {
-                // Start ComfyUI process
-                const result = await window.electronAPI.startComfyUIProcess?.()
-                if (result?.success) {
-                  toast.success(result.message)
-                  console.log('ComfyUI process auto-started successfully')
-                } else {
-                  console.log(
-                    'Failed to auto-start ComfyUI process:',
-                    result?.message
-                  )
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Error auto-starting ComfyUI process:', error)
-          }
-        }
-      } catch (error) {
-        console.error('Error loading configuration:', error)
-        setErrorMessage(t('settings:messages.failedToLoad'))
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadConfig()
-  }, [])
 
   return (
     <div className="flex flex-col items-center justify-center p-4 relative w-full sm:pb-0 pb-10">
