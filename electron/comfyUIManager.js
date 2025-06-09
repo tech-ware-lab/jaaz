@@ -18,6 +18,33 @@ if (!isWorkerProcess) {
 let comfyUIProcess = null
 let comfyUIProcessPid = null
 
+// Setup cleanup handlers for main process exit
+if (!isWorkerProcess) {
+  const setupCleanupHandlers = () => {
+    const cleanup = async () => {
+      if (comfyUIProcess && !comfyUIProcess.killed) {
+        console.log('🦄 Main process exiting, cleaning up ComfyUI process...')
+        await stopComfyUIProcess()
+      }
+    }
+
+    // Handle different exit scenarios
+    process.on('exit', cleanup)
+    process.on('SIGINT', cleanup)
+    process.on('SIGTERM', cleanup)
+    process.on('uncaughtException', cleanup)
+
+    // Handle Electron app events if available
+    if (app) {
+      app.on('before-quit', cleanup)
+      app.on('window-all-closed', cleanup)
+    }
+  }
+
+  // Setup cleanup handlers when this module is loaded
+  setupCleanupHandlers()
+}
+
 /**
  * Get user data directory
  * @returns {string} - User data directory path
@@ -265,7 +292,7 @@ async function startComfyUIProcess() {
 
           spawnOptions = {
             cwd: parsedCommand.workingDir,
-            detached: true,
+            detached: false, // Keep attached to parent process
             stdio: ['ignore', 'pipe', 'pipe'],
             windowsHide: true, // Hide any potential windows
             shell: false, // Don't use shell to avoid window
@@ -281,7 +308,7 @@ async function startComfyUIProcess() {
 
           spawnOptions = {
             cwd: path.dirname(script),
-            detached: true,
+            detached: false, // Keep attached to parent process
             stdio: ['ignore', 'pipe', 'pipe'],
             windowsHide: true,
             shell: false,
@@ -295,7 +322,7 @@ async function startComfyUIProcess() {
         args = []
         spawnOptions = {
           cwd: path.dirname(script),
-          detached: true,
+          detached: false, // Keep attached to parent process
           stdio: ['ignore', 'pipe', 'pipe'],
           shell: false,
           env: { ...process.env, PYTHONUNBUFFERED: '1' },
@@ -339,8 +366,7 @@ async function startComfyUIProcess() {
       comfyUIProcessPid = null
     })
 
-    // Detach process to run independently
-    comfyUIProcess.unref()
+    // Keep process attached to main process for proper cleanup
 
     // Wait a moment to see if the process starts successfully
     await new Promise((resolve) => setTimeout(resolve, 3000))
