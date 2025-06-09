@@ -1,3 +1,23 @@
+"""
+langgraph_service.py
+
+本模块封装了 langgraph_agent 异步函数，用于执行 LangGraph + LangChain 构建的 React 风格语言 Agent。
+功能包括：
+- 初始化对应的语言模型客户端（OpenAI / Ollama 等）
+- 创建并运行带工具链的 React Agent
+- 处理 Agent 流式返回结果（消息、工具调用、工具调用参数）
+- 将更新通过 websocket 推送给前端
+- 持久化聊天记录到数据库
+
+依赖模块：
+- langgraph, langchain_core, langchain_openai, langchain_ollama
+- services.db_service
+- services.config_service
+- services.agent_service
+- routers.websocket
+- routers.image_tools
+"""
+
 import asyncio
 import json
 import traceback
