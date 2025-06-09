@@ -26,6 +26,9 @@ from langgraph.prebuilt.chat_agent_executor import AgentState
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
+#services
+from services.langgraph_service import langgraph_agent
+
 llm_config = config_service.get_config()
 
 wsrouter = APIRouter()
@@ -54,7 +57,6 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...))
 
 router = APIRouter(prefix="/api")
 
-
 @router.post("/chat")
 async def chat(request: Request):
     data = await request.json()
@@ -79,7 +81,7 @@ async def chat(request: Request):
 
     await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1])) if len(messages) > 0 else None
 
-    task = asyncio.create_task(langraph_agent(
+    task = asyncio.create_task(langgraph_agent(
         messages, session_id, text_model, image_model))
     stream_tasks[session_id] = task
     try:
@@ -93,102 +95,6 @@ async def chat(request: Request):
         })
 
     return {"status": "done"}
-
-
-async def langraph_agent(messages, session_id, text_model, image_model):
-    model = text_model.get('model')
-    provider = text_model.get('provider')
-    url = text_model.get('url')
-    api_key = app_config.get(provider, {}).get("api_key", "")
-    print('👇model', model, provider, url, api_key)
-    # TODO: Verify if max token is working
-    max_tokens = text_model.get('max_tokens', 8148)
-    if provider == 'ollama':
-        model = ChatOllama(
-            model=model,
-            base_url=url,
-        )
-    else:
-        model = ChatOpenAI(
-            model=model,
-            api_key=api_key,
-            timeout=1000,
-            base_url=url,
-            temperature=0,
-            max_tokens=max_tokens
-        )
-    agent = create_react_agent(
-        model=model,
-        tools=[generate_image_tool],
-        prompt='You are a profession design agent, specializing in visual design.'
-    )
-    ctx = {
-        'session_id': session_id,
-        'model_info': {
-            'image': image_model
-        },
-    }
-    tool_calls: list[ToolCall] = []
-    async for chunk in agent.astream(
-        {"messages": messages},
-        config=ctx,
-        stream_mode=["updates", "messages", "custom"]
-    ):
-        chunk_type = chunk[0]
-
-        if chunk_type == 'updates':
-            all_messages = chunk[1].get(
-                'agent', chunk[1].get('tools')).get('messages', [])
-            oai_messages = convert_to_openai_messages(all_messages)
-            # new_message = oai_messages[-1]
-
-            messages.extend(oai_messages)
-            await send_to_websocket(session_id, {
-                'type': 'all_messages',
-                'messages': messages
-            })
-            for new_message in oai_messages:
-                await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
-        else:
-            # Access the AIMessageChunk
-            ai_message_chunk: AIMessageChunk = chunk[1][0]
-            print('👇ai_message_chunk', ai_message_chunk)
-            content = ai_message_chunk.content  # Get the content from the AIMessageChunk
-            if isinstance(ai_message_chunk, ToolMessage):
-                print('👇tool_call_results', ai_message_chunk.content)
-            elif content:
-                await send_to_websocket(session_id, {
-                    'type': 'delta',
-                    'text': content
-                })
-            elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
-                for index, tool_call in enumerate(ai_message_chunk.tool_calls):
-                    if tool_call.get('name'):
-                        tool_calls.append(tool_call)
-                        print('😘tool_call', tool_call, tool_call.get(
-                            'name'), tool_call.get('id'))
-                        await send_to_websocket(session_id, {
-                            'type': 'tool_call',
-                            'id': tool_call.get('id'),
-                            'name': tool_call.get('name'),
-                            'arguments': '{}'
-                        })
-            elif hasattr(ai_message_chunk, 'tool_call_chunks'):
-                tool_call_chunks = ai_message_chunk.tool_call_chunks
-                for tool_call_chunk in tool_call_chunks:
-                    index: int = tool_call_chunk['index']
-                    if index < len(tool_calls):
-                        for_tool_call: ToolCall = tool_calls[index]
-                        print('🦄sending tool_call_arguments', 'id',
-                              for_tool_call, 'text', tool_call_chunk.get('args'))
-                        await send_to_websocket(session_id, {
-                            'type': 'tool_call_arguments',
-                            'id': for_tool_call.get('id'),
-                            'text': tool_call_chunk.get('args')
-                        })
-            else:
-                print('👇no tool_call_chunks', chunk)
-
 
 @router.post("/cancel/{session_id}")
 async def cancel_chat(session_id: str):
