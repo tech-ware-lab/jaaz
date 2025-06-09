@@ -28,6 +28,7 @@ from langchain_openai import ChatOpenAI
 
 #services
 from services.langgraph_service import langgraph_agent
+from services.files_service import download_file
 
 llm_config = config_service.get_config()
 
@@ -111,11 +112,7 @@ async def cancel_chat(session_id: str):
 
 @router.get("/workspace_download")
 async def workspace_download(path: str):
-    file_path = Path(path)
-    if file_path.exists() and file_path.is_file():
-        return FileResponse(file_path)
-    return {"error": "File not found"}
-
+    return download_file(path)
 
 def get_ollama_model_list():
     base_url = config_service.get_config().get('ollama', {}).get(
