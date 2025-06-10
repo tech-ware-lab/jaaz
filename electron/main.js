@@ -4,6 +4,7 @@
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const osProxyConfig = require('os-proxy-config')
 
 // Create or append to a log file in the user's home directory
 const logPath = path.join(os.homedir(), 'jaaz-log.txt')
@@ -32,7 +33,14 @@ console.error = (...args) => {
 // Initial log entry
 console.log('🟢 Jaaz Electron app starting...')
 
-const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron')
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  shell,
+  dialog,
+  session,
+} = require('electron')
 const { spawn } = require('child_process')
 
 const { autoUpdater } = require('electron-updater')
@@ -140,16 +148,59 @@ const createWindow = (pyPort) => {
 // 获取 app.asar 内部的根路径
 const appRoot = app.getAppPath()
 
+async function setSessionsProxy(config) {
+  const sessions = [
+    session.defaultSession,
+    session.fromPartition('persist:webview'), // copied from cherrystudio, not sure if needed
+  ]
+  await Promise.all(sessions.map((session) => session.setProxy(config)))
+}
+
+function setEnvironment(url) {
+  process.env.grpc_proxy = url
+  process.env.HTTP_PROXY = url
+  process.env.HTTPS_PROXY = url
+  process.env.http_proxy = url
+  process.env.https_proxy = url
+}
+
+async function setSystemProxy() {
+  try {
+    const currentProxy = await osProxyConfig.getSystemProxy()
+    if (!currentProxy) {
+      return
+    }
+    await setSessionsProxy({ mode: 'system' })
+    const url = currentProxy.proxyUrl.toLowerCase()
+    setEnvironment(url)
+    return {
+      grpc_proxy: url,
+      HTTP_PROXY: url,
+      HTTPS_PROXY: url,
+      http_proxy: url,
+      https_proxy: url,
+    }
+  } catch (error) {
+    console.error('Failed to set system proxy:', error)
+    return {}
+  }
+}
+
 const startPythonApi = async () => {
   // Find an available port
   pyPort = await findAvailablePort(57988)
   console.log('available pyPort:', pyPort)
 
+  // Get system proxy settings
+  const proxyConfig = await setSystemProxy()
+  console.log('System Proxy Config:', proxyConfig)
+
   // 确定UI dist目录
   const env = {
     ...process.env,
+    PYTHONIOENCODING: 'utf-8',
+    ...proxyConfig,
   }
-  env.PYTHONIOENCODING = 'utf-8'
   if (app.isPackaged) {
     env.UI_DIST_DIR = path.join(process.resourcesPath, 'react', 'dist')
     env.USER_DATA_DIR = app.getPath('userData')
