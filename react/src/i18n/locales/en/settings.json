@@ -53,8 +53,20 @@
     "notInstalledTitle": "ComfyUI Not Installed",
     "notInstalledDescription": "Install ComfyUI to enable local image generation with Flux models",
     "installButton": "Install ComfyUI",
-    "startButton": "Start ComfyUI"
+    "startButton": "Start ComfyUI",
+    "uninstallButton": "Uninstall ComfyUI",
+    "confirmUninstall": "Are you sure you want to uninstall ComfyUI? This will completely remove ComfyUI from your system, including all downloaded models and configurations.",
+    "confirmUninstallButton": "Confirm Uninstall",
+    "uninstallProgress": {
+      "title": "Uninstalling ComfyUI",
+      "preparing": "Preparing to uninstall...",
+      "inProgress": "Uninstallation in progress... Please wait.",
+      "logTitle": "Uninstallation Log:",
+      "completed": "Uninstallation completed"
+    },
+    "notInstalled": "ComfyUI is not installed"
   },
   "saveSettings": "Save Settings",
-  "close": "Close"
+  "close": "Close",
+  "cancel": "Cancel"
 }
