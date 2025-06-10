@@ -1,5 +1,5 @@
 import { Message, MessageContent } from '@/types/types'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Markdown } from '../Markdown'
 import MessageImage from './Image'
 import TextFoldTag from './TextFoldTag'
@@ -17,19 +17,35 @@ const MessageRegular: React.FC<MessageRegularProps> = ({
   const isStrContent = typeof content === 'string'
   const isText = isStrContent || (!isStrContent && content.type == 'text')
 
+  const markdownText = isStrContent ? content : (content.type === 'text' ? content.text : '')
+
+  const hasUnclosedThinkTags = (text: string): boolean => {
+    const openTags = (text.match(/<think>/g) || []).length
+    const closeTags = (text.match(/<\/think>/g) || []).length
+    return openTags > closeTags
+  }
+
+  const originalTextWithoutImages = markdownText ? markdownText.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '').trim() : ''
+  const shouldAutoExpand = hasUnclosedThinkTags(originalTextWithoutImages)
+  
+  useEffect(() => {
+    if (shouldAutoExpand) {
+      setIsExpanded(true)
+    } else {
+      setIsExpanded(false)
+    }
+  }, [shouldAutoExpand])
+
   if (!isText) return <MessageImage content={content} />
 
-  const markdownText = isStrContent ? content : content.text
   const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g
   const images = markdownText.match(imageRegex) || []
   
-
   const fixUnclosedThinkTags = (text: string): string => {
     const openTags = (text.match(/<think>/g) || []).length
     const closeTags = (text.match(/<\/think>/g) || []).length
     
     if (openTags > closeTags) {
-
       return text + '</think>'.repeat(openTags - closeTags)
     }
     return text
@@ -73,7 +89,7 @@ const MessageRegular: React.FC<MessageRegularProps> = ({
           : 'text-gray-800 dark:text-gray-200 text-left items-start'
       } space-y-3 flex flex-col`}
     >
-      {images.map((img, index) => (
+      {images.map((img: string, index: number) => (
         <Markdown key={index}>{img}</Markdown>
       ))}
       
