@@ -39,6 +39,14 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 
 <img width="900" alt="Screenshot 2025-06-02 at 3 58 24 AM" src="https://github.com/user-attachments/assets/e4ca2740-c3a0-4d3b-be38-32d66fb419cc" />
 
+## API Providers
+### Deepseek
+
+To use deepseek as a provider, setup as below
+
+<img width="900" alt="Screenshot 2025-06-10 at 12 05 35" src="https://github.com/user-attachments/assets/61cb1b87-065f-4376-b853-b0032d4d3be8" />
+
+
 
 ## Manual Install (For Linux or local builds)
 
