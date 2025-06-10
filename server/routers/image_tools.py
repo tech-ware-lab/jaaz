@@ -22,6 +22,7 @@ import aiohttp
 import asyncio
 from typing import Optional, Annotated, List
 from langchain_core.tools import tool
+from utils.ssl_config import create_aiohttp_session
 import json
 router = APIRouter(prefix="/api")
 
@@ -80,7 +81,7 @@ async def get_object_info(data: dict):
 
     try:
         timeout = aiohttp.ClientTimeout(total=10)  # 10 second timeout
-        async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with create_aiohttp_session(timeout=timeout) as session:
             async with session.get(f"{url}/api/object_info") as response:
                 if response.status == 200:
                     return await response.json()
