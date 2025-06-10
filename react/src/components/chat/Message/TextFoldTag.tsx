@@ -20,12 +20,12 @@ const TextFoldTag: React.FC<TextFoldTagProps> = ({
 }) => {
   const { t } = useTranslation()
   return (
-    <div className="w-full min-w-0 border rounded-lg overflow-hidden mb-4">
+    <div className="w-full min-w-0 border rounded-lg overflow-hidden mb-4 bg-[rgb(254,252,232)] dark:bg-[rgb(50,40,16)]">
       <Button
         variant={'secondary'}
         onClick={onToggleExpand}
         className={cn(
-          'w-full justify-start text-left',
+          'w-full justify-start text-left bg-[rgb(254,249,195)] hover:bg-[rgb(254,252,232)] dark:bg-[rgb(81,66,27)] dark:hover:bg-[rgb(50,40,16)]',
           isExpanded && 'rounded-t-md rounded-b-none'
         )}
       >
