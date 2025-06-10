@@ -113,6 +113,37 @@ async def test_ssl_configuration():
         log_result("SSL Context Creation", False, f"Failed: {str(e)}")
         ssl_context_ok = False
 
+    # Test 2.5: httpx client creation for ChatOpenAI
+    try:
+        from utils.ssl_config import create_httpx_client
+        httpx_client = create_httpx_client()
+
+        # Get SSL verification info safely
+        verify_info = "SSL context configured"
+        try:
+            # Try to access the verify attribute safely
+            if hasattr(httpx_client, '_verify'):
+                verify_info = str(httpx_client._verify)
+            elif hasattr(httpx_client, 'verify'):
+                verify_info = str(httpx_client.verify)
+        except:
+            verify_info = "ggSSL verification enabled"
+
+        log_result(
+            "httpx Client Creation",
+            True,
+            "httpx client with SSL created successfully",
+            {
+                'client_type': str(type(httpx_client)),
+                'verify_info': verify_info
+            }
+        )
+        httpx_client.close()  # Clean up
+        httpx_ok = True
+    except Exception as e:
+        log_result("httpx Client Creation", False, f"Failed: {str(e)}")
+        httpx_ok = False
+
     # Test 3: Basic HTTPS connectivity
     if ssl_context_ok:
         test_urls = [
@@ -156,6 +187,60 @@ async def test_ssl_configuration():
             log_result("Replicate API SSL", False, f"SSL Error: {str(e)}")
         except Exception as e:
             log_result("Replicate API SSL", False,
+                       f"Connection Error: {str(e)}")
+
+    # Test 5: Basic httpx connectivity test
+    if httpx_ok:
+        try:
+            from utils.ssl_config import create_httpx_client
+            with create_httpx_client() as client:
+                # Test basic HTTPS connection first
+                response = client.get('https://httpbin.org/get', timeout=10)
+                success = response.status_code == 200
+                log_result(
+                    "httpx HTTPS Test",
+                    success,
+                    f"httpx SSL connection {'successful' if success else 'failed'} (Status: {response.status_code})",
+                    {'status_code': response.status_code}
+                )
+        except ssl.SSLError as e:
+            log_result("httpx HTTPS Test", False, f"SSL Error: {str(e)}")
+        except Exception as e:
+            log_result("httpx HTTPS Test", False,
+                       f"Connection Error: {str(e)}")
+
+    # Test 6: OpenAI API connectivity using httpx (for ChatOpenAI)
+    if httpx_ok:
+        try:
+            from utils.ssl_config import create_httpx_client
+            with create_httpx_client() as client:
+                # Test OpenAI API endpoint (just check SSL connection, not actual API call)
+                response = client.get('https://api.openai.com', timeout=15)
+                # Accept more status codes as successful SSL connection
+                # 421 = Misdirected Request (HTTP/2 issue, but SSL worked)
+                # 200 = OK, 401 = Unauthorized, 403 = Forbidden, 404 = Not Found
+                success = response.status_code in [200, 401, 403, 404, 421]
+
+                if response.status_code == 421:
+                    message = "SSL verification successful (HTTP/2 misdirected request - normal)"
+                elif response.status_code in [200, 401, 403, 404]:
+                    message = f"SSL verification successful (Status: {response.status_code})"
+                else:
+                    message = f"SSL verification failed (Status: {response.status_code})"
+
+                log_result(
+                    "OpenAI API SSL (httpx)",
+                    success,
+                    message,
+                    {
+                        'status_code': response.status_code,
+                        'note': '421 status is normal for OpenAI API with HTTP/1.1' if response.status_code == 421 else None
+                    }
+                )
+        except ssl.SSLError as e:
+            log_result("OpenAI API SSL (httpx)", False, f"SSL Error: {str(e)}")
+        except Exception as e:
+            log_result("OpenAI API SSL (httpx)", False,
                        f"Connection Error: {str(e)}")
 
     # Generate summary
