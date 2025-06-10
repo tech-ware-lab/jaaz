@@ -13,7 +13,7 @@ const MessageRegular: React.FC<MessageRegularProps> = ({
   message,
   content,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
   const isStrContent = typeof content === 'string'
   const isText = isStrContent || (!isStrContent && content.type == 'text')
 
@@ -22,7 +22,48 @@ const MessageRegular: React.FC<MessageRegularProps> = ({
   const markdownText = isStrContent ? content : content.text
   const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g
   const images = markdownText.match(imageRegex) || []
-  const textContent = markdownText.replace(imageRegex, '').trim()
+  
+
+  const fixUnclosedThinkTags = (text: string): string => {
+    const openTags = (text.match(/<think>/g) || []).length
+    const closeTags = (text.match(/<\/think>/g) || []).length
+    
+    if (openTags > closeTags) {
+
+      return text + '</think>'.repeat(openTags - closeTags)
+    }
+    return text
+  }
+  
+  const thinkRegex = /<think>([\s\S]*?)<\/think>/g
+  const textWithoutImages = fixUnclosedThinkTags(markdownText.replace(imageRegex, '').trim())
+  
+  const parts = []
+  let lastIndex = 0
+  let match
+  
+  while ((match = thinkRegex.exec(textWithoutImages)) !== null) {
+    if (match.index > lastIndex) {
+      const beforeContent = textWithoutImages.slice(lastIndex, match.index).trim()
+      if (beforeContent) {
+        parts.push({ type: 'normal', content: beforeContent })
+      }
+    }
+    
+    parts.push({ type: 'think', content: match[1].trim() })
+    lastIndex = match.index + match[0].length
+  }
+  
+  if (lastIndex < textWithoutImages.length) {
+    const remainingContent = textWithoutImages.slice(lastIndex).trim()
+    if (remainingContent) {
+      parts.push({ type: 'normal', content: remainingContent })
+    }
+  }
+  
+  if (parts.length === 0 && textWithoutImages) {
+    parts.push({ type: 'normal', content: textWithoutImages })
+  }
 
   return (
     <div
@@ -36,18 +77,19 @@ const MessageRegular: React.FC<MessageRegularProps> = ({
         <Markdown key={index}>{img}</Markdown>
       ))}
       
-      {textContent && (
-        message.role === 'assistant' ? (
+      {parts.map((part, index) => (
+        part.type === 'think' ? (
           <TextFoldTag
+            key={index}
             isExpanded={isExpanded}
             onToggleExpand={() => setIsExpanded(!isExpanded)}
           >
-            <Markdown>{textContent}</Markdown>
+            <Markdown>{part.content}</Markdown>
           </TextFoldTag>
         ) : (
-          <Markdown>{textContent}</Markdown>
+          <Markdown key={index}>{part.content}</Markdown>
         )
-      )}
+      ))}
     </div>
   )
 }
