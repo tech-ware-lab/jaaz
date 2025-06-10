@@ -642,6 +642,71 @@ async function updateConfigWithComfyUI() {
 }
 
 /**
+ * Uninstall ComfyUI
+ * @returns {Promise<{success: boolean}>} - Promise resolving to uninstallation result
+ */
+async function uninstallComfyUI() {
+  console.log('🦄 Starting ComfyUI uninstallation...')
+
+  try {
+    // Get user data directory
+    const userDataDir = getUserDataDir()
+    if (!userDataDir) {
+      throw new Error('Unable to get user data directory')
+    }
+
+    const comfyUIDir = path.join(userDataDir, 'comfyui')
+    const tempDir = path.join(userDataDir, 'temp')
+
+    sendLog('Starting ComfyUI uninstallation...')
+    sendProgress(10, 'Checking ComfyUI installation...')
+
+    // Check if ComfyUI directory exists
+    if (!fs.existsSync(comfyUIDir)) {
+      sendLog('ComfyUI directory not found, nothing to uninstall')
+      sendProgress(100, 'ComfyUI is not installed')
+      return { success: true, message: 'ComfyUI is not installed' }
+    }
+
+    sendProgress(30, 'Removing ComfyUI files...')
+    sendLog('Removing ComfyUI installation directory...')
+
+    // Remove ComfyUI directory
+    fs.rmSync(comfyUIDir, { recursive: true, force: true })
+    sendLog('ComfyUI directory removed successfully')
+
+    sendProgress(80, 'Cleaning up temporary files...')
+    sendLog('Cleaning up temporary installation files...')
+
+    // Clean up ComfyUI temp download 7z file
+    if (fs.existsSync(tempDir)) {
+      const tempFiles = fs.readdirSync(tempDir)
+      const comfyUIFiles = tempFiles.filter(
+        (file) => file.includes('ComfyUI') && file.endsWith('.7z')
+      )
+
+      for (const file of comfyUIFiles) {
+        try {
+          fs.unlinkSync(path.join(tempDir, file))
+          sendLog(`Removed temporary file: ${file}`)
+        } catch (error) {
+          sendLog(`Failed to remove temporary file ${file}`)
+        }
+      }
+    }
+
+    sendProgress(100, 'Uninstallation completed!')
+    sendLog('ComfyUI uninstallation completed successfully!')
+
+    return { success: true }
+  } catch (error) {
+    console.error('ComfyUI uninstallation failed:', error)
+    sendError(error.message)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * Install ComfyUI
  * @returns {Promise<{success: boolean}>} - Promise resolving to installation result
  */
@@ -938,6 +1003,39 @@ if (isWorkerProcess) {
           error: error.message || 'Unknown error occurred',
         })
       }
+    } else if (message.type === 'start-uninstall') {
+      try {
+        console.log('🦄 Starting ComfyUI uninstallation in worker process...')
+        const result = await uninstallComfyUI()
+
+        if (result.success) {
+          // Send success result back to main process
+          process.send({
+            type: 'uninstall-complete',
+            success: true,
+            result: result,
+          })
+        } else {
+          // Send error result back to main process
+          process.send({
+            type: 'uninstall-error',
+            success: false,
+            error: result.error || 'Unknown error occurred',
+          })
+        }
+      } catch (error) {
+        console.error(
+          '🦄 ComfyUI uninstallation failed in worker process:',
+          error
+        )
+
+        // Send error result back to main process
+        process.send({
+          type: 'uninstall-error',
+          success: false,
+          error: error.message || 'Unknown error occurred',
+        })
+      }
     } else if (message.type === 'cancel-install') {
       console.log('🦄 Received cancellation request in worker process')
       cancelInstallation()
@@ -968,6 +1066,7 @@ if (isWorkerProcess) {
 
 module.exports = {
   installComfyUI,
+  uninstallComfyUI,
   cancelInstallation,
   resetCancellationState,
   isInstallationCancelled,
