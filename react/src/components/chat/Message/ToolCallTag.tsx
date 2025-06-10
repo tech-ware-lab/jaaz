@@ -35,12 +35,12 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
   }
 
   return (
-    <div className="w-full border rounded-lg overflow-hidden">
+    <div className="w-full border rounded-lg overflow-hidden bg-[rgb(240,253,244)] dark:bg-[rgb(37,61,22)]">
       <Button
         variant={'secondary'}
         onClick={onToggleExpand}
         className={cn(
-          'w-full justify-start text-left',
+          'w-full justify-start text-left bg-[rgb(220,252,231)] hover:bg-[rgb(240,253,244)] dark:bg-[rgb(57,94,34)] dark:hover:bg-[rgb(37,61,22)]',
           isExpanded && 'rounded-t-md rounded-b-none'
         )}
       >
