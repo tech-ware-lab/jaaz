@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pickVideo: () => ipcRenderer.invoke('pick-video'),
   // Add ComfyUI installation methods
   installComfyUI: () => ipcRenderer.invoke('install-comfyui'),
+  uninstallComfyUI: () => ipcRenderer.invoke('uninstall-comfyui'),
   cancelComfyUIInstall: () => ipcRenderer.invoke('cancel-comfyui-install'),
   checkComfyUIInstalled: () => ipcRenderer.invoke('check-comfyui-installed'),
   // Add ComfyUI process management methods
