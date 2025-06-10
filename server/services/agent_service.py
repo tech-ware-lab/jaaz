@@ -2,14 +2,19 @@ from .config_service import config_service
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
 from ollama import Client
+from utils.ssl_config import create_async_httpx_client
 
 llm_config = config_service.get_config()
+
 
 class OpenAILLM:
     tools: list[dict] = []
     max_tokens: int = llm_config.get("openai", {}).get("max_tokens", 6140)
-    client: AsyncOpenAI =  AsyncOpenAI(
+    # Create async httpx client with SSL configuration for AsyncOpenAI
+    http_client = create_async_httpx_client()
+    client: AsyncOpenAI = AsyncOpenAI(
         api_key=llm_config.get("openai", {}).get("api_key", ""),
+        http_client=http_client
     )
     api_key = llm_config.get("openai", {}).get("api_key", "")
     url = llm_config.get("openai", {}).get("url", "https://api.openai.com/v1").rstrip('/')
@@ -32,9 +37,9 @@ class OllamaLLM:
     )
     url = llm_config.get("ollama", {}).get("url", "http://localhost:11434").rstrip('/')
     # client: Client = Client(
-    #     host='http://localhost:11434', 
+    #     host='http://localhost:11434',
     # )
-    
+
 openai_client = OpenAILLM()
 anthropic_client = AnthropicLLM()
 ollama_client = OllamaLLM()
