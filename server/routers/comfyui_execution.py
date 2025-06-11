@@ -15,7 +15,8 @@ import typer
 from rich import print as pprint
 from rich.progress import BarColumn, Column, Progress, Table, TimeElapsedColumn
 from websocket import WebSocket
-from .websocket import send_to_websocket
+
+from services.websocket_service import send_to_websocket
 
 async def check_comfy_server_running(port, host):
     async with httpx.AsyncClient(timeout=10) as client:

@@ -9,7 +9,8 @@ from services.db_service import db_service
 from services.config_service import app_config
 import traceback
 from services.config_service import USER_DATA_DIR, FILES_DIR
-from routers.websocket import send_to_websocket
+from services.websocket_service import send_to_websocket
+
 from PIL import Image
 from io import BytesIO
 import os
