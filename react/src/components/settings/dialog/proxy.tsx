@@ -101,6 +101,12 @@ const SettingProxy = () => {
 
       if (result.status === 'success') {
         toast.success(result.message || 'Proxy settings saved successfully')
+        // Show restart notification
+        setTimeout(() => {
+          toast.info(t('settings:messages.restartRequired'), {
+            duration: 5000
+          })
+        }, 1000)
         setErrorMessage('')
       } else {
         const errorMsg = result.message || 'Failed to save proxy settings'

@@ -4,7 +4,8 @@
     "settingsSaved": "Settings saved successfully",
     "settingsReset": "Settings reset to default",
     "failedToSave": "Failed to save settings",
-    "failedToLoad": "Failed to load configuration"
+    "failedToLoad": "Failed to load configuration",
+    "restartRequired": "Please restart the application for proxy settings to take effect"
   },
   "models": {
     "title": "Models",
