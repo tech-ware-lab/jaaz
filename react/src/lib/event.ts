@@ -6,10 +6,12 @@ import mitt from 'mitt'
 export type TEvents = {
   // ********** Socket events - Start **********
   'Socket::Error': {
+    type: 'error'
     error: string
   }
   'Socket::Done': void
   'Socket::Info': {
+    type: 'info'
     info: string
   }
   'Socket::ImageGenerated': {
