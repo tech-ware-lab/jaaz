@@ -37,7 +37,6 @@
   },
   "proxy": {
     "title": "代理设置",
-    "description": "配置网络代理，用于访问外部API服务。本地模型（Ollama、ComfyUI）不会使用代理。",
     "mode": "代理模式",
     "selectMode": "选择代理模式",
     "modes": {
@@ -47,8 +46,7 @@
     },
     "enable": "启用代理",
     "url": "代理地址",
-    "urlPlaceholder": "http://user:pass@proxy.example.com:8080 或 socks5://127.0.0.1:1080",
-    "urlDescription": "支持多种格式：完整URL、简单格式(host:port)、仅主机名。系统会自动解析并识别代理类型。",
+    "urlPlaceholder": "http://proxy.example.com:8080",
     "testConnection": "测试连接",
     "testing": "测试中...",
     "testSuccess": "代理连接测试成功",
