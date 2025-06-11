@@ -21,7 +21,7 @@ import aiofiles
 from mimetypes import guess_type
 import asyncio
 from typing import Optional, Annotated, List
-from langchain_core.tools import tool
+from langchain_core.tools import tool, InjectedToolCallId
 from utils.http_client import HttpClient
 import json
 router = APIRouter(prefix="/api")
@@ -103,6 +103,7 @@ async def generate_image_tool(
     prompt: str,
     aspect_ratio: str,
     config: RunnableConfig,
+    tool_call_id: Annotated[str, InjectedToolCallId],
     input_image: Optional[str] = None,
 ) -> str:
     """Generate an image using text prompt or optionally pass an image for reference or for editing
@@ -112,11 +113,13 @@ async def generate_image_tool(
         aspect_ratio: Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4
         input_image: Optional; Image to use as reference. Pass image_id here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc.
     """
-    print('🛠️', prompt, aspect_ratio)
+    print('🛠️ tool_call_id', tool_call_id)
     ctx = config.get('configurable', {})
     canvas_id = ctx.get('canvas_id', '')
     session_id = ctx.get('session_id', '')
     print('🛠️canvas_id', canvas_id, 'session_id', session_id)
+    # Inject the tool call id into the context
+    ctx['tool_call_id'] = tool_call_id
     args_json = {
         'prompt': prompt,
         'aspect_ratio': aspect_ratio,

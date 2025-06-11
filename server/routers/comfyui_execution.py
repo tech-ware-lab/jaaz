@@ -6,26 +6,24 @@ import urllib.error
 import urllib.parse
 import uuid
 from datetime import timedelta
-from urllib import request
 import asyncio
 
 import httpx
-
+import websockets
 import typer
 from rich import print as pprint
 from rich.progress import BarColumn, Column, Progress, Table, TimeElapsedColumn
-from websocket import WebSocket
 
 from services.websocket_service import send_to_websocket
 
 async def check_comfy_server_running(port, host):
     async with httpx.AsyncClient(timeout=10) as client:
-        url = f'{host}:{port}/api/prompt'
+        url = f'http://{host}:{port}/api/prompt'
         response = await client.get(url)
         return response.status_code == 200
 
 async def execute(workflow: dict, host, port, wait=True, verbose=False, local_paths=False, timeout=300, ctx: dict = {}):
-    if not check_comfy_server_running(port, host):
+    if not await check_comfy_server_running(port, host):
         pprint(f"[bold red]ComfyUI not running on specified address ({host}:{port})[/bold red]")
         raise typer.Exit(code=1)
 
@@ -38,14 +36,14 @@ async def execute(workflow: dict, host, port, wait=True, verbose=False, local_pa
     else:
         print(f"Queuing comfyui workflow")
 
-    execution = WorkflowExecution(workflow, host, port, verbose, progress, local_paths, timeout, ctx = ctx)
+    execution = WorkflowExecution(workflow, host, port, verbose, progress, local_paths, timeout, ctx=ctx)
 
     try:
         if wait:
-            execution.connect()
-        execution.queue()
+            await execution.connect()
+        await execution.queue()
         if wait:
-            execution.watch_execution()
+            await execution.watch_execution()
             end = time.time()
             progress.stop()
             progress = None
@@ -105,45 +103,39 @@ class WorkflowExecution:
         self.timeout = timeout
         self.ctx = ctx
 
-    def connect(self):
-        self.ws = WebSocket()
-        self.ws.connect(f"ws://{self.host}:{self.port}/ws?clientId={self.client_id}")
+    async def connect(self):
+        self.ws = await websockets.connect(f"ws://{self.host}:{self.port}/ws?clientId={self.client_id}")
 
-    def queue(self):
+    async def queue(self):
         data = {"prompt": self.workflow, "client_id": self.client_id}
-        req = request.Request(f"http://{self.host}:{self.port}/prompt", json.dumps(data).encode("utf-8"))
-        try:
-            resp = request.urlopen(req)
-            body = json.loads(resp.read())
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(f"http://{self.host}:{self.port}/prompt", json=data)
+                body = response.json()
+                self.prompt_id = body["prompt_id"]
+            except httpx.HTTPStatusError as e:
+                message = "An unknown error occurred"
+                if e.response.status_code == 500:
+                    message = e.response.text
+                elif e.response.status_code == 400:
+                    body = e.response.json()
+                    if body["node_errors"].keys():
+                        message = json.dumps(body["node_errors"], indent=2)
 
-            self.prompt_id = body["prompt_id"]
-        except urllib.error.HTTPError as e:
-            message = "An unknown error occurred"
-            if e.status == 500:
-                # This is normally just the generic internal server error
-                message = e.read().decode()
-            elif e.status == 400:
-                # Bad Request - workflow failed validation on the server
-                body = json.loads(e.read())
-                if body["node_errors"].keys():
-                    message = json.dumps(body["node_errors"], indent=2)
+                self.progress.stop()
 
-            self.progress.stop()
+                pprint(f"[bold red]Error running workflow\n{message}[/bold red]")
+                await send_to_websocket(self.ctx.get('session_id'), {
+                    'type': 'error',
+                    'error': message
+                })
+                raise Exception(message)
 
-            pprint(f"[bold red]Error running workflow\n{message}[/bold red]")
-            asyncio.create_task(send_to_websocket(self.ctx.get('session_id'), {
-                'type': 'error',
-                'error': message
-            }))
-            raise Exception(message)
-
-    def watch_execution(self):
-        self.ws.settimeout(self.timeout)
-        while True:
-            message = self.ws.recv()
+    async def watch_execution(self):
+        async for message in self.ws:
             if isinstance(message, str):
                 message = json.loads(message)
-                if not self.on_message(message):
+                if not await self.on_message(message):
                     break
 
     def update_overall_progress(self):
@@ -170,40 +162,28 @@ class WorkflowExecution:
         pprint(f"{type} : {title}")
 
     def format_image_path(self, img):
-        # filename = img["filename"]
-        # subfolder = img["subfolder"] if "subfolder" in img else None
-        # output_type = img["type"] or "output"
-
-        # if self.local_paths:
-        #     if subfolder:
-        #         filename = os.path.join(subfolder, filename)
-
-        #     filename = os.path.join(workspace_manager.get_workspace_path()[0], output_type, filename)
-        #     return filename
-
         query = urllib.parse.urlencode(img)
         return f"http://{self.host}:{self.port}/view?{query}"
 
-    def on_message(self, message):
+    async def on_message(self, message):
         data = message["data"] if "data" in message else {}
-        # Skip any messages that aren't about our prompt
         if "prompt_id" not in data or data["prompt_id"] != self.prompt_id:
             return True
 
         if message["type"] == "executing":
-            return self.on_executing(data)
+            return await self.on_executing(data)
         elif message["type"] == "execution_cached":
-            self.on_cached(data)
+            await self.on_cached(data)
         elif message["type"] == "progress":
-            self.on_progress(data)
+            await self.on_progress(data)
         elif message["type"] == "executed":
-            self.on_executed(data)
+            await self.on_executed(data)
         elif message["type"] == "execution_error":
-            self.on_error(data)
+            await self.on_error(data)
 
         return True
 
-    def on_executing(self, data):
+    async def on_executing(self, data):
         if self.progress_task:
             self.progress.remove_task(self.progress_task)
             self.progress_task = None
@@ -217,28 +197,30 @@ class WorkflowExecution:
             self.current_node = data["node"]
             self.log_node("Executing", data["node"])
             if self.ctx.get('session_id'):
-                asyncio.create_task(send_to_websocket(self.ctx.get('session_id'), {
+                await send_to_websocket(self.ctx.get('session_id'), {
                     'type': 'tool_call_progress',
                     'tool_call_id': self.ctx.get('tool_call_id'),
+                    'session_id': self.ctx.get('session_id'),
                     'update': f'Executing {self.get_node_title(data["node"])}'
-                }))
+                })
         return True
 
-    def on_cached(self, data):
+    async def on_cached(self, data):
         nodes = data["nodes"]
         for n in nodes:
             self.remaining_nodes.discard(n)
             self.log_node("Cached", n)
         self.update_overall_progress()
 
-    def on_progress(self, data):
+    async def on_progress(self, data):
         node = data["node"]
         if self.ctx.get('session_id'):
-            asyncio.create_task(send_to_websocket(self.ctx.get('session_id'), {
+            await send_to_websocket(self.ctx.get('session_id'), {
                     'type': 'tool_call_progress',
                     'tool_call_id': self.ctx.get('tool_call_id'),
+                    'session_id': self.ctx.get('session_id'),
                     'update': f'Executing {self.get_node_title(node)} {data["value"] / data["max"] * 100}%'
-            }))
+            })
         if self.progress_node != node:
             self.progress_node = node
             if self.progress_task:
@@ -250,7 +232,7 @@ class WorkflowExecution:
 
         self.progress.update(self.progress_task, completed=data["value"])
 
-    def on_executed(self, data):
+    async def on_executed(self, data):
         self.remaining_nodes.discard(data["node"])
         self.update_overall_progress()
 
@@ -265,6 +247,6 @@ class WorkflowExecution:
         for img in output["images"]:
             self.outputs.append(self.format_image_path(img))
 
-    def on_error(self, data):
+    async def on_error(self, data):
         pprint(f"[bold red]Error running workflow\n{json.dumps(data, indent=2)}[/bold red]")
         raise typer.Exit(code=1)
