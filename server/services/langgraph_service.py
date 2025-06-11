@@ -17,6 +17,7 @@ langgraph_service.py
 - routers.websocket
 - routers.image_tools
 """
+from utils.ssl_config import create_aiohttp_session, create_httpx_client
 
 import asyncio
 import json
@@ -32,7 +33,7 @@ from routers.image_tools import generate_image_tool
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
-async def langgraph_agent(messages, session_id, text_model, image_model):
+async def langgraph_agent(messages, canvas_id, session_id, text_model, image_model):
     model = text_model.get('model')
     provider = text_model.get('provider')
     url = text_model.get('url')
@@ -46,13 +47,16 @@ async def langgraph_agent(messages, session_id, text_model, image_model):
             base_url=url,
         )
     else:
+        # Create httpx client with SSL configuration for ChatOpenAI
+        http_client = create_httpx_client(timeout=1000)
         model = ChatOpenAI(
             model=model,
             api_key=api_key,
             timeout=1000,
             base_url=url,
             temperature=0,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            http_client=http_client
         )
     agent = create_react_agent(
         model=model,
@@ -60,6 +64,7 @@ async def langgraph_agent(messages, session_id, text_model, image_model):
         prompt='You are a profession design agent, specializing in visual design.'
     )
     ctx = {
+        'canvas_id': canvas_id,
         'session_id': session_id,
         'model_info': {
             'image': image_model
