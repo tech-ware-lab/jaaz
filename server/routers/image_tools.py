@@ -19,11 +19,10 @@ from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 import httpx
 import aiofiles
 from mimetypes import guess_type
-import aiohttp
 import asyncio
 from typing import Optional, Annotated, List
 from langchain_core.tools import tool
-from utils.ssl_config import create_aiohttp_session
+from utils.http_client import HttpClient
 import json
 router = APIRouter(prefix="/api")
 
@@ -81,23 +80,19 @@ async def get_object_info(data: dict):
         raise HTTPException(status_code=400, detail="URL is required")
 
     try:
-        timeout = aiohttp.ClientTimeout(total=10)  # 10 second timeout
-        async with create_aiohttp_session(timeout=timeout) as session:
-            async with session.get(f"{url}/api/object_info") as response:
-                if response.status == 200:
-                    return await response.json()
-                else:
-                    raise HTTPException(
-                        status_code=response.status, detail=f"ComfyUI server returned status {response.status}")
-    except aiohttp.ClientConnectorError as e:
-        print(f"ComfyUI connection error: {str(e)}")
-        raise HTTPException(
-            status_code=503, detail="ComfyUI server is not available. Please make sure ComfyUI is running.")
-    except asyncio.TimeoutError:
-        print("ComfyUI connection timeout")
-        raise HTTPException(
-            status_code=504, detail="ComfyUI server connection timeout")
+        timeout = httpx.Timeout(10.0)
+        async with HttpClient.create(timeout=timeout) as client:
+            response = await client.get(f"{url}/api/object_info")
+            if response.status_code == 200:
+                return response.json()
+            else:
+                raise HTTPException(
+                    status_code=response.status_code, detail=f"ComfyUI server returned status {response.status_code}")
     except Exception as e:
+        if "ConnectError" in str(type(e)) or "timeout" in str(e).lower():
+            print(f"ComfyUI connection error: {str(e)}")
+            raise HTTPException(
+                status_code=503, detail="ComfyUI server is not available. Please make sure ComfyUI is running.")
         print(f"Unexpected error connecting to ComfyUI: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Failed to connect to ComfyUI: {str(e)}")
@@ -121,7 +116,7 @@ async def generate_image_tool(
     ctx = config.get('configurable', {})
     canvas_id = ctx.get('canvas_id', '')
     session_id = ctx.get('session_id', '')
-    print('🛠️canvas_id',canvas_id, 'session_id',session_id)
+    print('🛠️canvas_id', canvas_id, 'session_id', session_id)
     args_json = {
         'prompt': prompt,
         'aspect_ratio': aspect_ratio,
@@ -161,17 +156,17 @@ async def generate_image_tool(
         url = f'/api/file/{filename}'
 
         file_data = {
-          'mimeType': mime_type,
-          'id': file_id,
-          'dataURL': url,
-          'created': int(time.time() * 1000),
+            'mimeType': mime_type,
+            'id': file_id,
+            'dataURL': url,
+            'created': int(time.time() * 1000),
         }
-    
+
         new_image_element = await generate_new_image_element(canvas_id, file_id, {
             'width': width,
             'height': height,
         })
-        
+
         # update the canvas data, add the new image element
         canvas_data = await db_service.get_canvas_data(canvas_id)
         if 'data' not in canvas_data:
@@ -237,8 +232,10 @@ async def generate_new_image_element(canvas_id: str, fileid: str, image_data: di
     last_y = 0
     last_width = 0
     last_height = 0
-    image_elements = [element for element in elements if element.get('type') == 'image']
-    last_image_element = image_elements[-1] if len(image_elements) > 0 else None
+    image_elements = [
+        element for element in elements if element.get('type') == 'image']
+    last_image_element = image_elements[-1] if len(
+        image_elements) > 0 else None
     if last_image_element is not None:
         last_x = last_image_element.get('x', 0)
         last_y = last_image_element.get('y', 0)
