@@ -7,7 +7,14 @@ import { Message, Model, PendingType, Session } from '@/types/types'
 import { useSearch } from '@tanstack/react-router'
 import { motion } from 'motion/react'
 import { nanoid } from 'nanoid'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { PhotoProvider } from 'react-photo-view'
 import { toast } from 'sonner'
 import ShinyText from '../ui/shiny-text'
@@ -18,23 +25,23 @@ import ToolCallTag from './Message/ToolCallTag'
 import SessionSelector from './SessionSelector'
 import ChatSpinner from './Spinner'
 
+import { useTranslation } from 'react-i18next'
 import 'react-photo-view/dist/react-photo-view.css'
 
 type ChatInterfaceProps = {
   canvasId: string
-  session: Session | null
   sessionList: Session[]
-  onClickNewChat: () => void
-  onSessionChange: (sessionId: string) => void
+  setSessionList: Dispatch<SetStateAction<Session[]>>
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   canvasId,
-  session,
   sessionList,
-  onClickNewChat,
-  onSessionChange,
+  setSessionList,
 }) => {
+  const { t } = useTranslation()
+  const [session, setSession] = useState<Session | null>(null)
+
   useWebSocket(session?.id)
 
   const search = useSearch({ from: '/canvas/$id' }) as {
@@ -43,6 +50,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
   const searchSessionId = search.sessionId || ''
   const searchInit = search.init || false
+
+  useEffect(() => {
+    if (sessionList.length > 0) {
+      let _session = null
+      if (searchSessionId) {
+        _session = sessionList.find((s) => s.id === searchSessionId) || null
+      } else {
+        _session = sessionList[0]
+      }
+      setSession(_session)
+    } else {
+      setSession(null)
+    }
+  }, [sessionList, searchSessionId])
 
   const [messages, setMessages] = useState<Message[]>([])
   const [prompt, setPrompt] = useState('')
@@ -238,7 +259,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [sessionId, initChat])
 
   const onSelectSession = (sessionId: string) => {
-    onSessionChange(sessionId)
+    setSession(sessionList.find((s) => s.id === sessionId) || null)
+    window.history.pushState(
+      {},
+      '',
+      `/canvas/${canvasId}?sessionId=${sessionId}`
+    )
+  }
+
+  const onClickNewChat = () => {
+    const newSession: Session = {
+      id: nanoid(),
+      title: t('chat:newChat'),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      model: session?.model || 'gpt-4o',
+      provider: session?.provider || 'openai',
+    }
+
+    setSessionList((prev) => [...prev, newSession])
+    onSelectSession(newSession.id)
   }
 
   const onSendMessages = useCallback(

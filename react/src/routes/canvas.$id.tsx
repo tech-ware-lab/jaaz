@@ -10,11 +10,9 @@ import {
 import { CanvasProvider } from '@/contexts/canvas'
 import { Session } from '@/types/types'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, useParams, useSearch } from '@tanstack/react-router'
+import { createFileRoute, useParams } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { nanoid } from 'nanoid'
-import { useEffect, useRef, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/canvas/$id')({
   component: Canvas,
@@ -22,14 +20,9 @@ export const Route = createFileRoute('/canvas/$id')({
 
 function Canvas() {
   const [canvasName, setCanvasName] = useState('')
-  const [session, setSession] = useState<Session | null>(null)
   const [sessionList, setSessionList] = useState<Session[]>([])
-  const { t } = useTranslation()
 
   const { id } = useParams({ from: '/canvas/$id' })
-  const search = useSearch({ from: '/canvas/$id' }) as { sessionId: string }
-
-  const canvasKey = useRef(nanoid())
 
   const { data: canvas, isLoading } = useQuery({
     queryKey: ['canvas', id],
@@ -38,42 +31,14 @@ function Canvas() {
 
   useEffect(() => {
     console.log('👇canvas', canvas)
-    canvasKey.current = nanoid()
-    if (canvas && !canvasName && sessionList.length === 0) {
+    if (canvas && !canvasName) {
       setCanvasName(canvas.name)
       setSessionList(canvas.sessions)
-      if (canvas.sessions.length > 0) {
-        if (search.sessionId) {
-          setSession(
-            canvas.sessions.find((s) => s.id === search.sessionId) || null
-          )
-        } else {
-          setSession(canvas.sessions[0])
-        }
-      }
     }
-  }, [canvas, search.sessionId, canvasName, sessionList])
+  }, [canvas, canvasName])
 
   const handleNameSave = async () => {
     await renameCanvas(id, canvasName)
-  }
-
-  const handleNewChat = () => {
-    const newSession: Session = {
-      id: nanoid(),
-      title: t('chat:newChat'),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      model: session?.model || 'gpt-4o',
-      provider: session?.provider || 'openai',
-    }
-    setSession(newSession)
-    setSessionList((prev) => [...prev, newSession])
-  }
-
-  const handleSessionChange = (sessionId: string) => {
-    setSession(canvas?.sessions.find((s) => s.id === sessionId) || null)
-    window.history.pushState({}, '', `/canvas/${id}?sessionId=${sessionId}`)
   }
 
   return (
@@ -99,11 +64,7 @@ function Canvas() {
                   </div>
                 </div>
               ) : (
-                <CanvasExcali
-                  key={canvasKey.current}
-                  canvasId={id}
-                  initialData={canvas?.data}
-                />
+                <CanvasExcali canvasId={id} initialData={canvas?.data} />
               )}
             </div>
           </ResizablePanel>
@@ -114,10 +75,8 @@ function Canvas() {
             <div className="flex-1 flex-grow bg-accent/50 w-full">
               <ChatInterface
                 canvasId={id}
-                session={session}
                 sessionList={sessionList}
-                onClickNewChat={handleNewChat}
-                onSessionChange={handleSessionChange}
+                setSessionList={setSessionList}
               />
             </div>
           </ResizablePanel>
