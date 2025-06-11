@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse
 import asyncio
 import aiohttp
 import requests
-from utils.ssl_config import create_aiohttp_session
+from utils.ssl_config import create_aiohttp_session, create_httpx_client
 from services.agent_service import openai_client, anthropic_client, ollama_client
 from services.mcp import MCPClient
 from services.config_service import config_service, app_config, USER_DATA_DIR
@@ -85,7 +85,8 @@ async def chat(request: Request):
 
     task = asyncio.create_task(langgraph_agent(
         messages, session_id, text_model, image_model))
-    stream_tasks[session_id] = task
+
+  stream_tasks[session_id] = task
     try:
         await task
     except asyncio.exceptions.CancelledError:
