@@ -1,16 +1,17 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Network, Loader2, Save } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Network, Save } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { getSettings, updateSettings } from '@/api/settings'
 
+type ProxyMode = 'none' | 'system' | 'custom'
+
 interface ProxyConfig {
-  enable: boolean
+  mode: ProxyMode
   url: string
 }
 
@@ -20,7 +21,7 @@ const SettingProxy = () => {
   const [errorMessage, setErrorMessage] = useState('')
   const [testing, setTesting] = useState(false)
   const [proxyConfig, setProxyConfig] = useState<ProxyConfig>({
-    enable: false,
+    mode: 'none',
     url: ''
   })
 
@@ -30,11 +31,21 @@ const SettingProxy = () => {
         const settings = await getSettings()
 
         // Extract proxy config from the response
-        const proxy = (settings.proxy as Record<string, unknown>) || {}
-        setProxyConfig({
-          enable: (proxy.enable as boolean) || false,
-          url: (proxy.url as string) || ''
-        })
+        const proxyValue = (settings.proxy as string) || ''
+
+        let mode: ProxyMode = 'none'
+        let url = ''
+
+        if (proxyValue === '') {
+          mode = 'none'
+        } else if (proxyValue === 'system') {
+          mode = 'system'
+        } else {
+          mode = 'custom'
+          url = proxyValue
+        }
+
+        setProxyConfig({ mode, url })
       } catch (error) {
         console.error('Error loading settings:', error)
         setErrorMessage(t('settings:messages.failedToLoad'))
@@ -46,18 +57,36 @@ const SettingProxy = () => {
     loadConfig()
   }, [t])
 
-  const handleInputChange = (field: keyof ProxyConfig, value: string | boolean) => {
-    const newConfig = { ...proxyConfig, [field]: value }
-    setProxyConfig(newConfig)
+  const handleModeChange = (mode: ProxyMode) => {
+    setProxyConfig(prev => ({ ...prev, mode }))
+  }
+
+  const handleUrlChange = (url: string) => {
+    setProxyConfig(prev => ({ ...prev, url }))
   }
 
   const handleSave = async () => {
     try {
       setErrorMessage('')
 
-      // Save only proxy settings
+      let proxyValue: string
+      switch (proxyConfig.mode) {
+        case 'none':
+          proxyValue = ''
+          break
+        case 'system':
+          proxyValue = 'system'
+          break
+        case 'custom':
+          proxyValue = proxyConfig.url.trim()
+          break
+        default:
+          proxyValue = ''
+      }
+
+      // Save proxy settings
       const result = await updateSettings({
-        proxy: proxyConfig
+        proxy: proxyValue
       })
 
       if (result.status === 'success') {
@@ -80,47 +109,51 @@ const SettingProxy = () => {
       )}
 
       {!isLoading && (
-        <Card className="w-full max-w-2xl">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Network className="h-5 w-5" />
-              <CardTitle>{t('settings:proxy:title')}</CardTitle>
-            </div>
-          </CardHeader>
+        <div className="w-full">
+          <div className="flex items-center gap-2 mb-4">
+            <Network className="h-5 w-5" />
+            <h3 className="text-lg font-semibold">{t('settings:proxy:title')}</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-6">
+            {t('settings:proxy:description')}
+          </p>
 
-          <CardContent className="space-y-4">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="proxy-enabled" className="text-sm font-medium">
-                {t('settings:proxy:enable')}
+              <Label htmlFor="proxy-mode" className="text-sm font-medium">
+                {t('settings:proxy:mode')}
               </Label>
-              <Switch
-                id="proxy-enabled"
-                checked={proxyConfig.enable}
-                onCheckedChange={(checked) => handleInputChange('enable', checked)}
-              />
+              <Select value={proxyConfig.mode} onValueChange={handleModeChange}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder={t('settings:proxy:selectMode')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('settings:proxy:modes.none')}</SelectItem>
+                  <SelectItem value="system">{t('settings:proxy:modes.system')}</SelectItem>
+                  <SelectItem value="custom">{t('settings:proxy:modes.custom')}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            {proxyConfig.enable && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="proxy-url" className="text-sm font-medium">
-                    {t('settings:proxy:url')}
-                  </Label>
-                  <Input
-                    id="proxy-url"
-                    type="text"
-                    placeholder={t('settings:proxy:urlPlaceholder')}
-                    value={proxyConfig.url}
-                    onChange={(e) => handleInputChange('url', e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t('settings:proxy:urlDescription')}
-                  </p>
-                </div>
-              </>
+            {proxyConfig.mode === 'custom' && (
+              <div className="space-y-2">
+                <Label htmlFor="proxy-url" className="text-sm font-medium">
+                  {t('settings:proxy:url')}
+                </Label>
+                <Input
+                  id="proxy-url"
+                  type="text"
+                  placeholder={t('settings:proxy:urlPlaceholder')}
+                  value={proxyConfig.url}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t('settings:proxy:urlDescription')}
+                </p>
+              </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       <div className="flex justify-center fixed sm:bottom-2 sm:left-[calc(var(--sidebar-width)+0.45rem)] sm:translate-x-0 -translate-x-1/2 bottom-15 left-1/2 gap-1.5">
