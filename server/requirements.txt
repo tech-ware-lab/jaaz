@@ -6,7 +6,7 @@ toml
 pyinstaller
 openai
 ollama
-aiohttp
+httpx
 gunicorn
 aiosqlite
 requests
