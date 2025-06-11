@@ -30,7 +30,7 @@ async def handle_chat(data):
     await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1])) if len(messages) > 0 else None
 
     task = asyncio.create_task(langgraph_agent(
-        messages, session_id, text_model, image_model))
+        messages, canvas_id, session_id, text_model, image_model))
     add_stream_task(session_id, task)
     try:
         await task
