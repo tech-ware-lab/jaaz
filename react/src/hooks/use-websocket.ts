@@ -33,11 +33,11 @@ export const useWebSocket = (sessionId?: string) => {
       try {
         const data = JSON.parse(event.data)
         if (data.type == 'error') {
-          eventBus.emit('Socket::Error', data.error)
+          eventBus.emit('Socket::Error', data)
         } else if (data.type == 'done') {
           eventBus.emit('Socket::Done')
         } else if (data.type == 'info') {
-          eventBus.emit('Socket::Info', data.info)
+          eventBus.emit('Socket::Info', data)
         } else if (data.type == 'image_generated') {
           eventBus.emit('Socket::ImageGenerated', data.image_data)
         } else if (data.type == 'delta') {
