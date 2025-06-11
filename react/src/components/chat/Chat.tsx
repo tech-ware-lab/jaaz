@@ -80,6 +80,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const isAtBottomRef = useRef(false)
 
   const scrollToBottom = useCallback(() => {
+    if (!isAtBottomRef.current) {
+      return
+    }
     setTimeout(() => {
       scrollRef.current?.scrollTo({
         top: scrollRef.current!.scrollHeight,
@@ -210,7 +213,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       if (scrollRef.current) {
         isAtBottomRef.current =
           scrollRef.current.scrollHeight - scrollRef.current.scrollTop <=
-          scrollRef.current.clientHeight
+          scrollRef.current.clientHeight + 1
       }
     }
     const scrollEl = scrollRef.current

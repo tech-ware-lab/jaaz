@@ -49,11 +49,11 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
             )
         else:
             # Create httpx client with SSL configuration for ChatOpenAI
-            http_client = create_httpx_client(timeout=1000)
+            http_client = create_httpx_client(timeout=15)
             model = ChatOpenAI(
                 model=model,
                 api_key=api_key,
-                timeout=1000,
+                timeout=15,
                 base_url=url,
                 temperature=0,
                 max_tokens=max_tokens,
@@ -95,7 +95,7 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
             else:
                 # Access the AIMessageChunk
                 ai_message_chunk: AIMessageChunk = chunk[1][0]
-                print('👇ai_message_chunk', ai_message_chunk)
+                # print('👇ai_message_chunk', ai_message_chunk)
                 content = ai_message_chunk.content  # Get the content from the AIMessageChunk
                 if isinstance(ai_message_chunk, ToolMessage):
                     print('👇tool_call_results', ai_message_chunk.content)
@@ -122,8 +122,6 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
                         index: int = tool_call_chunk['index']
                         if index < len(tool_calls):
                             for_tool_call: ToolCall = tool_calls[index]
-                            print('🦄sending tool_call_arguments', 'id',
-                                for_tool_call, 'text', tool_call_chunk.get('args'))
                             await send_to_websocket(session_id, {
                                 'type': 'tool_call_arguments',
                                 'id': for_tool_call.get('id'),
