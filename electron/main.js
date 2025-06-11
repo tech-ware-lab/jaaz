@@ -39,6 +39,9 @@ const { autoUpdater } = require('electron-updater')
 
 const net = require('net')
 
+// Initialize settings service
+const settingsService = require('./settingsService')
+
 function findAvailablePort(startPort) {
   return new Promise((resolve, reject) => {
     const server = net.createServer()
@@ -156,6 +159,12 @@ const startPythonApi = async () => {
     env.IS_PACKAGED = '1'
   }
 
+  // Apply proxy settings and get environment variables
+  const proxyEnvVars = await settingsService.getProxyEnvironmentVariables()
+
+  // Merge proxy environment variables into env
+  Object.assign(env, proxyEnvVars)
+
   // Determine the Python executable path (considering packaged app)
   const isWindows = process.platform === 'win32'
   const pythonExecutable = app.isPackaged
@@ -265,6 +274,17 @@ for (const [channel, handler] of Object.entries(ipcHandlers)) {
 }
 
 app.whenReady().then(async () => {
+  // Initialize proxy settings for Electron sessions
+  try {
+    await settingsService.applyProxySettings()
+    console.log('Proxy settings applied for Electron sessions')
+  } catch (error) {
+    console.error(
+      'Failed to apply proxy settings for Electron sessions:',
+      error
+    )
+  }
+
   // Check for updates in production every time app starts
   if (process.env.NODE_ENV !== 'development' && app.isPackaged) {
     // Wait a bit for the app to fully load before checking updates
