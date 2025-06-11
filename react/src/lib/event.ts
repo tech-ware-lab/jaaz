@@ -46,6 +46,7 @@ export type TEvents = {
   'Socket::ToolCallProgress': {
     type: 'tool_call_progress'
     tool_call_id: string
+    session_id: string
     update: string
   }
   // ********** Socket events - End **********
