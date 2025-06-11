@@ -16,7 +16,7 @@ langgraph_service.py
 - routers.websocket
 - routers.image_tools
 """
-from utils.ssl_config import create_aiohttp_session, create_httpx_client
+from utils.http_client import HttpClient
 
 import asyncio
 import json
@@ -30,6 +30,7 @@ from services.websocket_service import send_to_websocket
 from routers.image_tools import generate_image_tool
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
+
 
 async def langgraph_agent(messages, canvas_id, session_id, text_model, image_model):
     try:
@@ -47,7 +48,8 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
             )
         else:
             # Create httpx client with SSL configuration for ChatOpenAI
-            http_client = create_httpx_client(timeout=15)
+            http_client = HttpClient.create_sync_client(timeout=15)
+            http_async_client = HttpClient.create_async_client(timeout=15)
             model = ChatOpenAI(
                 model=model,
                 api_key=api_key,
@@ -55,7 +57,8 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
                 base_url=url,
                 temperature=0,
                 max_tokens=max_tokens,
-                http_client=http_client
+                http_client=http_client,
+                http_async_client=http_async_client
             )
         agent = create_react_agent(
             model=model,
