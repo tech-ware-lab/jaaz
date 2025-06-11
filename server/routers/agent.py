@@ -9,7 +9,6 @@ from fastapi import APIRouter, Request, WebSocket, Query, HTTPException
 from fastapi.responses import FileResponse
 import asyncio
 import requests
-from utils.ssl_config import create_aiohttp_session, create_httpx_client
 from services.mcp import MCPClient
 from services.config_service import config_service, app_config, USER_DATA_DIR
 from starlette.websockets import WebSocketDisconnect

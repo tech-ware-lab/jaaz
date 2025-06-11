@@ -18,6 +18,7 @@ import asyncio
 import ssl
 import sys
 import os
+from utils.http_client import HttpClient
 
 router = APIRouter(prefix="/api")
 
@@ -25,14 +26,13 @@ router = APIRouter(prefix="/api")
 async def quick_ssl_test():
     """Quick SSL test for API endpoint"""
     try:
-        from utils.ssl_config import create_aiohttp_session
-        async with create_aiohttp_session() as session:
-            async with session.get('https://httpbin.org/get', timeout=5) as response:
-                return {
-                    'ssl_working': response.status == 200,
-                    'status_code': response.status,
-                    'message': 'SSL configuration is working' if response.status == 200 else f'Unexpected status: {response.status}'
-                }
+        async with HttpClient.create() as client:
+            response = await client.get('https://httpbin.org/get', timeout=5)
+            return {
+                'ssl_working': response.status_code == 200,
+                'status_code': response.status_code,
+                'message': 'SSL configuration is working' if response.status_code == 200 else f'Unexpected status: {response.status_code}'
+            }
     except ssl.SSLError as e:
         return {
             'ssl_working': False,
@@ -97,8 +97,7 @@ async def test_ssl_configuration():
 
     # Test 2: SSL context creation
     try:
-        from utils.ssl_config import create_ssl_context
-        ssl_context = create_ssl_context()
+        ssl_context = HttpClient._get_ssl_context()
         log_result(
             "SSL Context Creation",
             True,
@@ -115,8 +114,7 @@ async def test_ssl_configuration():
 
     # Test 2.5: httpx client creation for ChatOpenAI
     try:
-        from utils.ssl_config import create_httpx_client
-        httpx_client = create_httpx_client()
+        httpx_client = HttpClient.create_sync_client()
 
         # Get SSL verification info safely
         verify_info = "SSL context configured"
@@ -127,7 +125,7 @@ async def test_ssl_configuration():
             elif hasattr(httpx_client, 'verify'):
                 verify_info = str(httpx_client.verify)
         except:
-            verify_info = "ggSSL verification enabled"
+            verify_info = "SSL verification enabled"
 
         log_result(
             "httpx Client Creation",
@@ -155,34 +153,32 @@ async def test_ssl_configuration():
         https_ok = False
         for url in test_urls:
             try:
-                from utils.ssl_config import create_aiohttp_session
-                async with create_aiohttp_session() as session:
-                    async with session.get(url, timeout=10) as response:
-                        success = response.status in [200, 301, 302]
-                        log_result(
-                            f"HTTPS Test ({url})",
-                            success,
-                            f"Status: {response.status}",
-                            {'url': str(response.url)}
-                        )
-                        if success:
-                            https_ok = True
-                            break
+                async with HttpClient.create() as client:
+                    response = await client.get(url, timeout=10)
+                    success = response.status_code in [200, 301, 302]
+                    log_result(
+                        f"HTTPS Test ({url})",
+                        success,
+                        f"Status: {response.status_code}",
+                        {'url': str(response.url)}
+                    )
+                    if success:
+                        https_ok = True
+                        break
             except Exception as e:
                 log_result(f"HTTPS Test ({url})", False, f"Failed: {str(e)}")
 
         # Test 4: Replicate API connectivity
         try:
-            from utils.ssl_config import create_aiohttp_session
-            async with create_aiohttp_session() as session:
-                async with session.get('https://api.replicate.com', timeout=15) as response:
-                    success = response.status in [200, 401, 403, 404]
-                    log_result(
-                        "Replicate API SSL",
-                        success,
-                        f"SSL verification {'successful' if success else 'failed'} (Status: {response.status})",
-                        {'status_code': response.status}
-                    )
+            async with HttpClient.create() as client:
+                response = await client.get('https://api.replicate.com', timeout=15)
+                success = response.status_code in [200, 401, 403, 404]
+                log_result(
+                    "Replicate API SSL",
+                    success,
+                    f"SSL verification {'successful' if success else 'failed'} (Status: {response.status_code})",
+                    {'status_code': response.status_code}
+                )
         except ssl.SSLError as e:
             log_result("Replicate API SSL", False, f"SSL Error: {str(e)}")
         except Exception as e:
@@ -192,8 +188,7 @@ async def test_ssl_configuration():
     # Test 5: Basic httpx connectivity test
     if httpx_ok:
         try:
-            from utils.ssl_config import create_httpx_client
-            with create_httpx_client() as client:
+            with HttpClient.create_sync() as client:
                 # Test basic HTTPS connection first
                 response = client.get('https://httpbin.org/get', timeout=10)
                 success = response.status_code == 200
@@ -212,8 +207,7 @@ async def test_ssl_configuration():
     # Test 6: OpenAI API connectivity using httpx (for ChatOpenAI)
     if httpx_ok:
         try:
-            from utils.ssl_config import create_httpx_client
-            with create_httpx_client() as client:
+            with HttpClient.create_sync() as client:
                 # Test OpenAI API endpoint (just check SSL connection, not actual API call)
                 response = client.get('https://api.openai.com', timeout=15)
                 # Accept more status codes as successful SSL connection
