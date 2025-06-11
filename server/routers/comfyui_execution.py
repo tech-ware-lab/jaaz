@@ -38,7 +38,7 @@ async def execute(workflow: dict, host, port, wait=True, verbose=False, local_pa
     else:
         print(f"Queuing comfyui workflow")
 
-    execution = WorkflowExecution(workflow, host, port, verbose, progress, local_paths, timeout)
+    execution = WorkflowExecution(workflow, host, port, verbose, progress, local_paths, timeout, ctx = ctx)
 
     try:
         if wait:
@@ -220,7 +220,7 @@ class WorkflowExecution:
                 asyncio.create_task(send_to_websocket(self.ctx.get('session_id'), {
                     'type': 'tool_call_progress',
                     'tool_call_id': self.ctx.get('tool_call_id'),
-                    'progress': f'Executing {self.get_node_title(data["node"])}'
+                    'update': f'Executing {self.get_node_title(data["node"])}'
                 }))
         return True
 
@@ -237,7 +237,7 @@ class WorkflowExecution:
             asyncio.create_task(send_to_websocket(self.ctx.get('session_id'), {
                     'type': 'tool_call_progress',
                     'tool_call_id': self.ctx.get('tool_call_id'),
-                    'progress': f'Executing {self.get_node_title(node)} {data["value"] / data["max"] * 100}%'
+                    'update': f'Executing {self.get_node_title(node)} {data["value"] / data["max"] * 100}%'
             }))
         if self.progress_node != node:
             self.progress_node = node
