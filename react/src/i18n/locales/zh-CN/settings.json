@@ -38,6 +38,13 @@
   "proxy": {
     "title": "代理设置",
     "description": "配置网络代理，用于访问外部API服务。本地模型（Ollama、ComfyUI）不会使用代理。",
+    "mode": "代理模式",
+    "selectMode": "选择代理模式",
+    "modes": {
+      "none": "不使用代理",
+      "system": "系统代理",
+      "custom": "自定义代理"
+    },
     "enable": "启用代理",
     "url": "代理地址",
     "urlPlaceholder": "http://user:pass@proxy.example.com:8080 或 socks5://127.0.0.1:1080",

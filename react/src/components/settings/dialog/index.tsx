@@ -30,7 +30,7 @@ const SettingsDialog = () => {
       <CommonDialogContent
         open={open}
         transformPerspective={6000}
-        className="flex flex-col max-w-[min(1200px,80vw)]! min-w-[600px]! max-h-[80vh]! p-0 gap-0"
+        className="flex flex-col max-w-[min(1200px,80vw)]! min-w-[600px]! max-h-[80vh]! min-h-[80vh]! p-0 gap-0"
       >
         <SidebarProvider className="h-full min-h-full flex-1 relative">
           <SettingSidebar current={current} setCurrent={setCurrent} />
