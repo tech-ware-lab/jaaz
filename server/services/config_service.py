@@ -6,7 +6,6 @@ DEFAULT_PROVIDERS_CONFIG =  {}
 USER_DATA_DIR = os.getenv("USER_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(__file__)), "user_data"))
 FILES_DIR = os.path.join(USER_DATA_DIR, "files")
 
-app_config = {}
 class ConfigService:
     def __init__(self):
         self.root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -31,19 +30,11 @@ class ConfigService:
 
     async def update_config(self, data):
         try:
-            # if not os.path.exists(self.config_file):
-            #     config = DEFAULT_PROVIDERS_CONFIG
-            # else:
-            #     with open(self.config_file, 'r') as f:
-            #         config = toml.load(f)
-            # if 'llm' in data:
-            #     llm_config = data['llm']
-            #     for key in ['model', 'base_url', 'api_key', 'max_tokens', 'temperature']:
-            #         if key in llm_config:
-            #             config['llm'][key] = llm_config[key]
             os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
             with open(self.config_file, 'w') as f:
                 toml.dump(data, f)
+            
+            self.get_config()
             
             return {"status": "success", "message": "Configuration updated successfully"}
         except Exception as e:
@@ -51,3 +42,4 @@ class ConfigService:
             return {"status": "error", "message": str(e)} 
         
 config_service = ConfigService()
+app_config = config_service.get_config()
