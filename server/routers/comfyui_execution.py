@@ -131,7 +131,11 @@ class WorkflowExecution:
             self.progress.stop()
 
             pprint(f"[bold red]Error running workflow\n{message}[/bold red]")
-            raise typer.Exit(code=1)
+            asyncio.create_task(send_to_websocket(self.ctx.get('session_id'), {
+                'type': 'error',
+                'error': message
+            }))
+            raise Exception(message)
 
     def watch_execution(self):
         self.ws.settimeout(self.timeout)
