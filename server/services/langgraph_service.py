@@ -13,7 +13,6 @@ langgraph_service.py
 - langgraph, langchain_core, langchain_openai, langchain_ollama
 - services.db_service
 - services.config_service
-- services.agent_service
 - routers.websocket
 - routers.image_tools
 """
@@ -26,7 +25,6 @@ from langchain_core.messages import AIMessageChunk, ToolCall, convert_to_openai_
 from langgraph.prebuilt import create_react_agent
 from services.db_service import db_service
 from services.config_service import config_service, app_config
-from services.agent_service import openai_client, anthropic_client, ollama_client
 from services.websocket_service import send_to_websocket
 
 from routers.image_tools import generate_image_tool
