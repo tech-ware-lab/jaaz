@@ -18,7 +18,7 @@ const CanvasList: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col px-10 mt-10 gap-4 select-none">
+    <div className="flex flex-col px-10 mt-10 gap-4 select-none max-w-[1200px] mx-auto">
       {canvases && canvases.length > 0 && (
         <motion.span
           className="text-2xl font-bold"
