@@ -32,7 +32,8 @@ async def execute(workflow: dict, host, port, wait=True, verbose=False, local_pa
     if wait:
         pprint(f"Executing comfyui workflow")
         progress = ExecutionProgress()
-        progress.start()
+        # Remove or comment out the line below to avoid starting the live display
+        # progress.start()
     else:
         print(f"Queuing comfyui workflow")
 
