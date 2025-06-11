@@ -6,7 +6,7 @@ import { Network, Save } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { getSettings, updateSettings } from '@/api/settings'
+import { getProxySettings, updateProxySettings } from '@/api/settings'
 
 type ProxyMode = 'none' | 'system' | 'custom'
 
@@ -28,7 +28,7 @@ const SettingProxy = () => {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const settings = await getSettings()
+        const settings = await getProxySettings()
 
         // Extract proxy config from the response
         const proxyValue = (settings.proxy as string) || ''
@@ -47,8 +47,9 @@ const SettingProxy = () => {
 
         setProxyConfig({ mode, url })
       } catch (error) {
-        console.error('Error loading settings:', error)
-        setErrorMessage(t('settings:messages.failedToLoad'))
+        console.error('Error loading proxy settings:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load proxy settings'
+        setErrorMessage(errorMessage)
       } finally {
         setIsLoading(false)
       }
@@ -79,24 +80,39 @@ const SettingProxy = () => {
           break
         case 'custom':
           proxyValue = proxyConfig.url.trim()
+          // Validate custom proxy URL format
+          if (proxyValue && !proxyValue.match(/^(https?|socks[45]):\/\/.+/)) {
+            setErrorMessage('Invalid proxy URL format. Please use http://, https://, socks4://, or socks5:// protocol.')
+            return
+          }
           break
         default:
           proxyValue = ''
       }
 
-      // Save proxy settings
-      const result = await updateSettings({
+      console.log('Saving proxy settings:', { proxy: proxyValue })
+
+      // Save proxy settings using the dedicated proxy API
+      const result = await updateProxySettings({
         proxy: proxyValue
       })
 
+      console.log('Proxy settings save result:', result)
+
       if (result.status === 'success') {
-        toast.success(result.message)
+        toast.success(result.message || 'Proxy settings saved successfully')
+        setErrorMessage('')
       } else {
-        throw new Error(result.message || 'Failed to save settings')
+        const errorMsg = result.message || 'Failed to save proxy settings'
+        console.error('Save failed with result:', result)
+        setErrorMessage(errorMsg)
+        toast.error(errorMsg)
       }
     } catch (error) {
       console.error('Error saving proxy settings:', error)
-      setErrorMessage(t('settings:messages.failedToSave'))
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save proxy settings'
+      setErrorMessage(errorMessage)
+      toast.error(errorMessage)
     }
   }
 
@@ -114,9 +130,6 @@ const SettingProxy = () => {
             <Network className="h-5 w-5" />
             <h3 className="text-lg font-semibold">{t('settings:proxy:title')}</h3>
           </div>
-          <p className="text-sm text-muted-foreground mb-6">
-            {t('settings:proxy:description')}
-          </p>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -147,9 +160,6 @@ const SettingProxy = () => {
                   value={proxyConfig.url}
                   onChange={(e) => handleUrlChange(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">
-                  {t('settings:proxy:urlDescription')}
-                </p>
               </div>
             )}
           </div>
