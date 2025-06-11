@@ -53,8 +53,20 @@
     "notInstalledTitle": "ComfyUI 未安装",
     "notInstalledDescription": "安装 ComfyUI 以启用 Flux 模型的本地图像生成",
     "installButton": "安装 ComfyUI",
-    "startButton": "启动 ComfyUI"
+    "startButton": "启动 ComfyUI",
+    "uninstallButton": "卸载 ComfyUI",
+    "confirmUninstall": "确定要卸载 ComfyUI 吗？这将完全从您的系统中移除 ComfyUI，包括所有已下载的模型和配置。",
+    "confirmUninstallButton": "确认卸载",
+    "uninstallProgress": {
+      "title": "正在卸载 ComfyUI",
+      "preparing": "准备卸载中...",
+      "inProgress": "卸载进行中... 请稍候。",
+      "logTitle": "卸载日志：",
+      "completed": "卸载完成"
+    },
+    "notInstalled": "ComfyUI 未安装"
   },
   "saveSettings": "保存设置",
-  "close": "关闭"
+  "close": "关闭",
+  "cancel": "取消"
 }
