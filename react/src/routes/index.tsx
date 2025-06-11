@@ -23,7 +23,11 @@ function Home() {
   const { mutate: createCanvasMutation, isPending } = useMutation({
     mutationFn: createCanvas,
     onSuccess: (data) => {
-      navigate({ to: '/canvas/$id', params: { id: data.id } })
+      navigate({
+        to: '/canvas/$id',
+        params: { id: data.id },
+        search: { init: true },
+      })
     },
     onError: (error) => {
       toast.error(t('common:messages.error'), {
@@ -37,7 +41,7 @@ function Home() {
       <ScrollArea className="h-full">
         <HomeHeader />
 
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-300px)] select-none">
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-460px)] pt-[60px] select-none">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
