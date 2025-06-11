@@ -50,6 +50,8 @@ export const useWebSocket = (sessionId?: string) => {
           eventBus.emit('Socket::ToolCallResult', data)
         } else if (data.type == 'all_messages') {
           eventBus.emit('Socket::AllMessages', data)
+        } else if (data.type == 'tool_call_progress') {
+          eventBus.emit('Socket::ToolCallProgress', data)
         }
       } catch (error) {
         console.error('Error parsing JSON:', error)
