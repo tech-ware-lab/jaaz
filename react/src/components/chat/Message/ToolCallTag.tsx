@@ -7,6 +7,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import Markdown from 'react-markdown'
 import MultiChoicePrompt from '../MultiChoicePrompt'
 import SingleChoicePrompt from '../SingleChoicePrompt'
+import { useEffect, useState } from 'react'
+import { eventBus, TEvents } from '@/lib/event'
 
 type ToolCallTagProps = {
   toolCall: ToolCall
@@ -20,6 +22,7 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
   onToggleExpand,
 }) => {
   const { name, arguments: inputs } = toolCall.function
+
   let parsedArgs: Record<string, unknown> | null = null
   try {
     parsedArgs = JSON.parse(inputs)

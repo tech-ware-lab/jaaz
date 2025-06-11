@@ -27,6 +27,7 @@ import ChatSpinner from './Spinner'
 
 import { useTranslation } from 'react-i18next'
 import 'react-photo-view/dist/react-photo-view.css'
+import ToolcallProgressUpdate from './ToolcallProgressUpdate'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -386,6 +387,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
               ))}
               {pending && <ChatSpinner pending={pending} />}
+              {pending && sessionId && (
+                <ToolcallProgressUpdate sessionId={sessionId} />
+              )}
             </div>
           ) : (
             <motion.div className="flex flex-col h-full p-4 items-start justify-start pt-16 select-none">
