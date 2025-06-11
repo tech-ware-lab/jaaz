@@ -7,6 +7,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import Markdown from 'react-markdown'
 import MultiChoicePrompt from '../MultiChoicePrompt'
 import SingleChoicePrompt from '../SingleChoicePrompt'
+import { useEffect, useState } from 'react'
+import { eventBus, TEvents } from '@/lib/event'
 
 type ToolCallTagProps = {
   toolCall: ToolCall
@@ -20,12 +22,29 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
   onToggleExpand,
 }) => {
   const { name, arguments: inputs } = toolCall.function
+  const [progress, setProgress] = useState('')
   let parsedArgs: Record<string, unknown> | null = null
   try {
     parsedArgs = JSON.parse(inputs)
   } catch (error) {
     /* empty */
   }
+
+  const handleToolCallProgress = (
+    data: TEvents['Socket::ToolCallProgress']
+  ) => {
+    if (data.tool_call_id === toolCall.id) {
+      console.log('🦄toolCallProgress', data)
+      setProgress(data.update)
+    }
+  }
+
+  useEffect(() => {
+    eventBus.on('Socket::ToolCallProgress', handleToolCallProgress)
+    return () => {
+      eventBus.off('Socket::ToolCallProgress', handleToolCallProgress)
+    }
+  }, [parsedArgs])
 
   if (name == 'prompt_user_multi_choice') {
     return <MultiChoicePrompt />
@@ -68,6 +87,11 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
             <div className="p-2 break-all">
               <Markdown>{inputs}</Markdown>
             </div>
+            {progress && (
+              <div className="p-2 break-all">
+                <Markdown>{progress}</Markdown>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
