@@ -6,7 +6,8 @@ from routers.image_generators import generate_image_comfyui, generate_image_repl
 from services.config_service import app_config
 import traceback
 from services.config_service import USER_DATA_DIR, FILES_DIR
-from routers.websocket import send_to_websocket
+from services.websocket_service import send_to_websocket
+
 from PIL import Image
 from io import BytesIO
 import os
