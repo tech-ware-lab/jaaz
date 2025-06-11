@@ -9,6 +9,7 @@ interface ElectronAPI {
   pickImage: () => Promise<string[] | null>
   pickVideo: () => Promise<string | null>
   installComfyUI: () => Promise<{ success: boolean; error?: string }>
+  uninstallComfyUI: () => Promise<{ success: boolean; error?: string }>
   cancelComfyUIInstall: () => Promise<{
     success?: boolean
     error?: string

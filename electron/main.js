@@ -39,6 +39,9 @@ const { autoUpdater } = require('electron-updater')
 
 const net = require('net')
 
+// Initialize settings service
+const settingsService = require('./settingsService')
+
 function findAvailablePort(startPort) {
   return new Promise((resolve, reject) => {
     const server = net.createServer()
@@ -112,7 +115,8 @@ const createWindow = (pyPort) => {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    icon: path.join(__dirname, '../assets/icons/unicorn.png'), // ✅ Use .png for dev
+    icon: path.join(__dirname, '../assets/icons/jaaz.png'), // ✅ Use .png for dev
+    autoHideMenuBar: true, // Hide menu bar (can be toggled with Alt key)
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -155,6 +159,12 @@ const startPythonApi = async () => {
     env.USER_DATA_DIR = app.getPath('userData')
     env.IS_PACKAGED = '1'
   }
+
+  // Apply proxy settings and get environment variables
+  const proxyEnvVars = await settingsService.getProxyEnvironmentVariables()
+
+  // Merge proxy environment variables into env
+  Object.assign(env, proxyEnvVars)
 
   // Determine the Python executable path (considering packaged app)
   const isWindows = process.platform === 'win32'
@@ -265,6 +275,17 @@ for (const [channel, handler] of Object.entries(ipcHandlers)) {
 }
 
 app.whenReady().then(async () => {
+  // Initialize proxy settings for Electron sessions
+  try {
+    await settingsService.applyProxySettings()
+    console.log('Proxy settings applied for Electron sessions')
+  } catch (error) {
+    console.error(
+      'Failed to apply proxy settings for Electron sessions:',
+      error
+    )
+  }
+
   // Check for updates in production every time app starts
   if (process.env.NODE_ENV !== 'development' && app.isPackaged) {
     // Wait a bit for the app to fully load before checking updates

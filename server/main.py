@@ -5,7 +5,7 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
-from routers import config, agent, workspace, image_tools, canvas, ssl_test
+from routers import config, agent, workspace, image_tools, canvas, ssl_test, chat_router, websocket_router, settings
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
@@ -26,13 +26,14 @@ app = FastAPI(lifespan=lifespan)
 
 # Include routers
 app.include_router(config.router)
+app.include_router(settings.router)
 app.include_router(agent.router)
-app.include_router(agent.wsrouter)
 app.include_router(canvas.router)
 app.include_router(workspace.router)
 app.include_router(image_tools.router)
 app.include_router(ssl_test.router)
-
+app.include_router(chat_router.router)
+app.include_router(websocket_router.wsrouter)
 # Mount the React build directory
 react_build_dir = os.environ.get('UI_DIST_DIR', os.path.join(
     os.path.dirname(root_dir), "react", "dist"))
@@ -40,6 +41,7 @@ react_build_dir = os.environ.get('UI_DIST_DIR', os.path.join(
 static_site = os.path.join(react_build_dir, "assets")
 if os.path.exists(static_site):
     app.mount("/assets", StaticFiles(directory=static_site), name="assets")
+
 
 @app.get("/")
 async def serve_react_app():
