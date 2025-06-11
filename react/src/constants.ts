@@ -170,4 +170,4 @@ export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
   }
 
 export const LOGO_URL =
-  'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/unicorn.png'
+  'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/jaaz.png'

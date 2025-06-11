@@ -115,7 +115,7 @@ const createWindow = (pyPort) => {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    icon: path.join(__dirname, '../assets/icons/unicorn.png'), // ✅ Use .png for dev
+    icon: path.join(__dirname, '../assets/icons/jaaz.png'), // ✅ Use .png for dev
     autoHideMenuBar: true, // Hide menu bar (can be toggled with Alt key)
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
