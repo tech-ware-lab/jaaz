@@ -199,7 +199,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleImageGenerated = useCallback(
     (data: TEvents['Socket::ImageGenerated']) => {
-      if (data.canvas_id && data.canvas_id !== canvasId) {
+      if (
+        data.canvas_id &&
+        data.canvas_id !== canvasId &&
+        data.session_id !== sessionId
+      ) {
         return
       }
 

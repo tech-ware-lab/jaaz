@@ -188,17 +188,8 @@ async def generate_image_tool(
 
         await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data['data']))
 
-        await send_to_websocket(session_id, {
+        await broadcast_canvas_update(canvas_id, session_id, {
             'type': 'image_generated',
-            'canvas_id': canvas_id,
-            'image_data': {
-                'element': new_image_element,
-                'file': file_data,
-            },
-        })
-
-        await broadcast_canvas_update(canvas_id, {
-            'type': 'canvas_updated',
             'update_type': 'image_added',
             'element': new_image_element,
             'file': file_data,

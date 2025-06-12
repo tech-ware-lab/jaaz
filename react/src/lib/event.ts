@@ -10,6 +10,7 @@ export type TEvents = {
     error: string
   }
   'Socket::Done': {
+    type: 'done'
     session_id: string
   }
   'Socket::Info': {
@@ -20,6 +21,7 @@ export type TEvents = {
     element: ExcalidrawImageElement
     file: BinaryFileData
     canvas_id: string
+    session_id: string
     image_url: string
   }
   'Socket::Delta': {
