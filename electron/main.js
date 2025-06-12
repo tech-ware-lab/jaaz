@@ -127,6 +127,11 @@ const createWindow = (pyPort) => {
     },
   })
 
+  // Handle window closed event
+  mainWindow.on('closed', () => {
+    mainWindow = null
+  })
+
   // In development, use Vite dev server
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:5174', {
@@ -321,6 +326,10 @@ app.on('will-quit', () => {
     pyProc.kill()
     pyProc = null
   }
+})
+
+app.on('window-all-closed', () => {
+    app.quit()
 })
 
 // ipcMain.handle("reveal-in-explorer", async (event, filePath) => {
