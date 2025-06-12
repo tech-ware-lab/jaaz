@@ -62,8 +62,7 @@
     "win": {
       "icon": "assets/icons/jaaz.ico",
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ]
     },
     "linux": {
