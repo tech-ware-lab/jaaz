@@ -32,7 +32,7 @@ console.error = (...args) => {
 // Initial log entry
 console.log('🟢 Jaaz Electron app starting...')
 
-const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, session } = require('electron')
 const { spawn } = require('child_process')
 
 const { autoUpdater } = require('electron-updater')
@@ -339,11 +339,24 @@ if (!gotTheLock) {
 }
 
 // Quit the app and clean up the Python process
-app.on('will-quit', () => {
+app.on('will-quit', async (event) => {
+  event.preventDefault()
+
+  try {
+    // clear cache
+    await session.defaultSession.clearCache()
+    console.log('Cache cleared on app exit')
+  } catch (error) {
+    console.error('Failed to clear cache:', error)
+  }
+
+  // kill python process
   if (pyProc) {
     pyProc.kill()
     pyProc = null
   }
+
+  app.exit()
 })
 
 app.on('window-all-closed', () => {

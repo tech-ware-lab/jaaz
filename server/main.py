@@ -12,6 +12,8 @@ from fastapi import FastAPI
 import asyncio
 import argparse
 from contextlib import asynccontextmanager
+from starlette.types import Scope
+from starlette.responses import Response
 
 root_dir = os.path.dirname(__file__)
 
@@ -38,14 +40,30 @@ app.include_router(websocket_router.wsrouter)
 react_build_dir = os.environ.get('UI_DIST_DIR', os.path.join(
     os.path.dirname(root_dir), "react", "dist"))
 
+
+# 无缓存静态文件类
+class NoCacheStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
+
 static_site = os.path.join(react_build_dir, "assets")
 if os.path.exists(static_site):
-    app.mount("/assets", StaticFiles(directory=static_site), name="assets")
+    app.mount("/assets", NoCacheStaticFiles(directory=static_site), name="assets")
 
 
 @app.get("/")
 async def serve_react_app():
-    return FileResponse(os.path.join(react_build_dir, "index.html"))
+    response = FileResponse(os.path.join(react_build_dir, "index.html"))
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 if __name__ == "__main__":
