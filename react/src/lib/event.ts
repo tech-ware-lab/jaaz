@@ -9,7 +9,9 @@ export type TEvents = {
     type: 'error'
     error: string
   }
-  'Socket::Done': void
+  'Socket::Done': {
+    session_id: string
+  }
   'Socket::Info': {
     type: 'info'
     info: string
@@ -17,20 +19,25 @@ export type TEvents = {
   'Socket::ImageGenerated': {
     element: ExcalidrawImageElement
     file: BinaryFileData
+    canvas_id: string
+    image_url: string
   }
   'Socket::Delta': {
     type: 'delta'
     text: string
+    session_id: string
   }
   'Socket::ToolCall': {
     type: 'tool_call'
     id: string
     name: ToolCallFunctionName
+    session_id: string
   }
   'Socket::ToolCallArguments': {
     type: 'tool_call_arguments'
     id: string
     text: string
+    session_id: string
   }
   'Socket::ToolCallResult': {
     type: 'tool_call_result'
@@ -38,10 +45,12 @@ export type TEvents = {
     content: {
       text: string
     }[]
+    session_id: string
   }
   'Socket::AllMessages': {
     type: 'all_messages'
     messages: Message[]
+    session_id: string
   }
   'Socket::ToolCallProgress': {
     type: 'tool_call_progress'

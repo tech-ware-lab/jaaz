@@ -31,6 +31,13 @@
     "saved": "Saved successfully",
     "deleted": "Deleted successfully"
   },
+  "notifications": {
+    "title": "Notifications",
+    "clear": "Clear",
+    "markAllAsRead": "Mark all as read",
+    "allRead": "All read",
+    "newImageGenerated": "New image generated"
+  },
   "navigation": {
     "home": "Home",
     "canvas": "Canvas",
