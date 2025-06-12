@@ -17,7 +17,7 @@ langgraph_service.py
 - routers.image_tools
 """
 from utils.http_client import HttpClient
-
+import uuid
 import asyncio
 import json
 import traceback
@@ -68,13 +68,16 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
         ctx = {
             'canvas_id': canvas_id,
             'session_id': session_id,
+            'task_id': str(uuid.uuid4()),
             'model_info': {
                 'image': image_model
             },
         }
         tool_calls: list[ToolCall] = []
+
+        messages_copy = messages.copy()
         async for chunk in agent.astream(
-            {"messages": messages},
+            {"messages": messages_copy},
             config=ctx,
             stream_mode=["updates", "messages", "custom"]
         ):
@@ -89,6 +92,7 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
                 messages.extend(oai_messages)
                 await send_to_websocket(session_id, {
                     'type': 'all_messages',
+                    'task_id': ctx['task_id'],
                     'messages': messages
                 })
                 for new_message in oai_messages:
@@ -103,7 +107,8 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
                 elif content:
                     await send_to_websocket(session_id, {
                         'type': 'delta',
-                        'text': content
+                        'text': content,
+                        'task_id': ctx['task_id'],
                     })
                 elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
                     for index, tool_call in enumerate(ai_message_chunk.tool_calls):
@@ -113,6 +118,7 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
                                 'name'), tool_call.get('id'))
                             await send_to_websocket(session_id, {
                                 'type': 'tool_call',
+                                'task_id': ctx['task_id'],
                                 'id': tool_call.get('id'),
                                 'name': tool_call.get('name'),
                                 'arguments': '{}'
@@ -125,6 +131,7 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
                             for_tool_call: ToolCall = tool_calls[index]
                             await send_to_websocket(session_id, {
                                 'type': 'tool_call_arguments',
+                                'task_id': ctx['task_id'],
                                 'id': for_tool_call.get('id'),
                                 'text': tool_call_chunk.get('args')
                             })
@@ -135,5 +142,6 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
         traceback.print_exc()
         await send_to_websocket(session_id, {
             'type': 'error',
+            'task_id': ctx['task_id'],
             'error': str(e)
         })
