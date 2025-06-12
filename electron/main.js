@@ -154,6 +154,19 @@ const startPythonApi = async () => {
   pyPort = await findAvailablePort(57988)
   console.log('available pyPort:', pyPort)
 
+  // 在某些开发情况，我们希望 python server 独立运行，那么就不通过 electron 启动
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      const response = await fetch(`http://127.0.0.1:${pyPort}`)
+      if (response.ok) {
+        console.log('Python service already running')
+        return pyPort
+      }
+    } catch (error) {
+      console.log('Starting Python service...')
+    }
+  }
+
   // 确定UI dist目录
   const env = {
     ...process.env,
@@ -315,22 +328,22 @@ if (!gotTheLock) {
       }, 3000)
     }
 
-    if (process.env.NODE_ENV !== 'development') {
-      const pyPort = await startPythonApi()
-      while (true) {
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        // wait for the server to start
-        let status = await fetch(`http://127.0.0.1:${pyPort}`)
-          .then((res) => {
-            return res.ok
-          })
-          .catch((err) => {
-            console.error(err)
-            return false
-          })
-        if (status) {
-          break
-        }
+    // Start Python API in both development and production
+    const pyPort = await startPythonApi()
+
+    while (true) {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // wait for the server to start
+      let status = await fetch(`http://127.0.0.1:${pyPort}`)
+        .then((res) => {
+          return res.ok
+        })
+        .catch((err) => {
+          console.error(err)
+          return false
+        })
+      if (status) {
+        break
       }
     }
 
