@@ -80,11 +80,6 @@ export class SocketIOManager {
       this.handleSessionUpdate(data)
     })
 
-    this.socket.on('canvas_update', (data) => {
-      console.log('🔗 Canvas update received:', data)
-      this.handleCanvasUpdate(data)
-    })
-
     this.socket.on('canvas_data', (data) => {
       console.log('🔗 Canvas data received:', data)
     })
@@ -142,17 +137,18 @@ export class SocketIOManager {
           ...eventData,
         })
         break
-      // case 'image_generated':
-      //   eventBus.emit('Socket::ImageGenerated', {
-      //     ...eventData.image_data,
-      //     canvas_id: data.canvas_id || 'unknown',
-      //   })
-      //   break
+      case 'image_generated':
+        eventBus.emit('Socket::ImageGenerated', {
+          type,
+          session_id,
+          ...eventData,
+        })
+        break
       case 'all_messages':
         eventBus.emit('Socket::AllMessages', { type, session_id, ...eventData })
         break
       case 'done':
-        eventBus.emit('Socket::Done', { session_id })
+        eventBus.emit('Socket::Done', { type, session_id })
         break
       case 'error':
         eventBus.emit('Socket::Error', { type, error: eventData.error })
@@ -162,33 +158,6 @@ export class SocketIOManager {
         break
       default:
         console.log('⚠️ Unknown session update type:', type)
-    }
-  }
-
-  private handleCanvasUpdate(data: any) {
-    const { canvas_id, type, ...eventData } = data
-
-    if (!canvas_id) {
-      console.warn('⚠️ Canvas update missing canvas_id:', data)
-      return
-    }
-
-    switch (type) {
-      case 'canvas_updated':
-        if (eventData.update_type === 'image_added') {
-          eventBus.emit('Socket::ImageGenerated', {
-            element: eventData.element,
-            file: eventData.file,
-            canvas_id: canvas_id,
-            image_url: eventData.image_url,
-          })
-        }
-        break
-      case 'canvas_sync':
-        console.log('🔄 Canvas sync for:', canvas_id, eventData.data)
-        break
-      default:
-        console.log('⚠️ Unknown canvas update type:', type)
     }
   }
 
