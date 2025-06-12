@@ -1,22 +1,55 @@
 # services/websocket_service.py
-from services.websocket_state import active_websockets
-import json  # Add this import for JSON processing
-import traceback  # Add this import for exception traceback printing
+from services.websocket_state import sio, get_all_socket_ids
+import json
+import traceback
 
-# Sends a given event to the WebSocket associated with the given session_id
-async def send_to_websocket(session_id: str, event:dict):
-    ws = active_websockets.get(session_id)
-    if ws:
+async def broadcast_session_update(session_id: str, event: dict):
+    socket_ids = get_all_socket_ids()
+    if socket_ids:
         try:
-            await ws.send_text(json.dumps(event))
+            for socket_id in socket_ids:
+                await sio.emit('session_update', {
+                    'session_id': session_id,
+                    **event
+                }, room=socket_id)
         except Exception as e:
-            print(f"Error sending to websocket: {e}")
+            print(f"Error broadcasting session update for {session_id}: {e}")
             traceback.print_exc()
 
-# Broadcast an 'init_done' event to all active WebSocket connections
+async def broadcast_canvas_update(canvas_id: str, event: dict):
+    socket_ids = get_all_socket_ids()
+    if socket_ids:
+        try:
+            for socket_id in socket_ids:
+                await sio.emit('canvas_update', {
+                    'canvas_id': canvas_id,
+                    **event
+                }, room=socket_id)
+        except Exception as e:
+            print(f"Error broadcasting canvas update for {canvas_id}: {e}")
+            traceback.print_exc()
+
+async def send_to_websocket(session_id: str, event: dict):
+    await broadcast_session_update(session_id, event)
+
 async def broadcast_init_done():
-    for session_id in active_websockets:
-        websocket = active_websockets[session_id]
-        await websocket.send_json({
+    try:
+        await sio.emit('init_done', {
             'type': 'init_done'
         })
+        print("Broadcasted init_done to all clients")
+    except Exception as e:
+        print(f"Error broadcasting init_done: {e}")
+        traceback.print_exc()
+
+async def broadcast_message(event_name: str, data: dict):
+    socket_ids = get_all_socket_ids()
+    if socket_ids:
+        try:
+            for socket_id in socket_ids:
+                await sio.emit(event_name, data, room=socket_id)
+            print(f"Broadcasted {event_name} to {len(socket_ids)} clients")
+        except Exception as e:
+            print(f"Error broadcasting {event_name}: {e}")
+            traceback.print_exc()
+

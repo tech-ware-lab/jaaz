@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { Toaster } from 'sonner'
+import { useSocketEvents } from './hooks/use-socket'
 import { routeTree } from './route-tree.gen'
 
 import '@/assets/style/App.css'
@@ -25,6 +26,8 @@ const queryClient = new QueryClient()
 
 function App() {
   const { theme } = useTheme()
+
+  useSocketEvents()
 
   // Auto-start ComfyUI on app startup
   useEffect(() => {

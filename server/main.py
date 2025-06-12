@@ -5,7 +5,8 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
-from routers import config, agent, workspace, image_tools, canvas, ssl_test, chat_router, websocket_router, settings
+from routers import config, agent, workspace, image_tools, canvas, ssl_test, chat_router, settings
+import routers.websocket_router
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
@@ -14,6 +15,8 @@ import argparse
 from contextlib import asynccontextmanager
 from starlette.types import Scope
 from starlette.responses import Response
+import socketio
+from services.websocket_state import sio
 
 root_dir = os.path.dirname(__file__)
 
@@ -35,7 +38,7 @@ app.include_router(workspace.router)
 app.include_router(image_tools.router)
 app.include_router(ssl_test.router)
 app.include_router(chat_router.router)
-app.include_router(websocket_router.wsrouter)
+
 # Mount the React build directory
 react_build_dir = os.environ.get('UI_DIST_DIR', os.path.join(
     os.path.dirname(root_dir), "react", "dist"))
@@ -66,6 +69,8 @@ async def serve_react_app():
     return response
 
 
+socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/socket.io')
+
 if __name__ == "__main__":
     # bypas localhost request for proxy, fix ollama proxy issue
     _bypass = {"127.0.0.1", "localhost", "::1"}
@@ -80,4 +85,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     import uvicorn
     print("🌟Starting server, UI_DIST_DIR:", os.environ.get('UI_DIST_DIR'))
-    uvicorn.run(app, host="127.0.0.1", port=args.port)
+
+    uvicorn.run(socket_app, host="127.0.0.1", port=args.port)

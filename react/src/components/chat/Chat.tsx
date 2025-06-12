@@ -1,7 +1,6 @@
 import { sendMessages } from '@/api/chat'
 import Blur from '@/components/common/Blur'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useWebSocket } from '@/hooks/use-websocket'
 import { eventBus, TEvents } from '@/lib/event'
 import { Message, Model, PendingType, Session } from '@/types/types'
 import { useSearch } from '@tanstack/react-router'
@@ -42,8 +41,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const { t } = useTranslation()
   const [session, setSession] = useState<Session | null>(null)
-
-  useWebSocket(session?.id)
 
   const search = useSearch({ from: '/canvas/$id' }) as {
     sessionId: string
@@ -92,122 +89,170 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }, 200)
   }, [])
 
-  const handleDelta = (data: TEvents['Socket::Delta']) => {
-    setPending('text')
-    setMessages((prev) => {
-      const last = prev.at(-1)
-      if (last?.role == 'assistant' && last.content != null) {
-        const lastMessage = structuredClone(last)
-        if (lastMessage) {
-          if (typeof lastMessage.content == 'string') {
-            lastMessage.content += data.text
-          } else if (
-            lastMessage.content &&
-            lastMessage.content.at(-1) &&
-            lastMessage.content.at(-1)!.type === 'text'
-          ) {
-            ;(lastMessage.content.at(-1) as { text: string }).text += data.text
+  const handleDelta = useCallback(
+    (data: TEvents['Socket::Delta']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      setPending('text')
+      setMessages((prev) => {
+        const last = prev.at(-1)
+        if (last?.role == 'assistant' && last.content != null) {
+          const lastMessage = structuredClone(last)
+          if (lastMessage) {
+            if (typeof lastMessage.content == 'string') {
+              lastMessage.content += data.text
+            } else if (
+              lastMessage.content &&
+              lastMessage.content.at(-1) &&
+              lastMessage.content.at(-1)!.type === 'text'
+            ) {
+              ;(lastMessage.content.at(-1) as { text: string }).text +=
+                data.text
+            }
+            return [...prev.slice(0, -1), lastMessage]
+          } else {
+            return prev
           }
-          return [...prev.slice(0, -1), lastMessage]
         } else {
-          return prev
-        }
-      } else {
-        return [
-          ...prev,
-          {
-            role: 'assistant',
-            content: data.text,
-          },
-        ]
-      }
-    })
-    scrollToBottom()
-  }
-
-  const handleToolCall = (data: TEvents['Socket::ToolCall']) => {
-    setMessages((prev) => {
-      console.log('👇tool_call event get', data)
-      setExpandingToolCalls((prev) => [...prev, data.id])
-      setPending('tool')
-      return prev.concat({
-        role: 'assistant',
-        content: '',
-        tool_calls: [
-          {
-            type: 'function',
-            function: {
-              name: data.name,
-              arguments: '',
+          return [
+            ...prev,
+            {
+              role: 'assistant',
+              content: data.text,
             },
-            id: data.id,
-          },
-        ],
+          ]
+        }
       })
-    })
-  }
+      scrollToBottom()
+    },
+    [sessionId, scrollToBottom]
+  )
 
-  const handleToolCallArguments = (
-    data: TEvents['Socket::ToolCallArguments']
-  ) => {
-    setMessages((prev) => {
-      const lastMessage = structuredClone(prev.at(-1))
-      if (
-        lastMessage?.role === 'assistant' &&
-        lastMessage.tool_calls &&
-        lastMessage.tool_calls.at(-1) &&
-        lastMessage.tool_calls.at(-1)!.id == data.id
-      ) {
-        lastMessage.tool_calls.at(-1)!.function.arguments += data.text
-        return prev.slice(0, -1).concat(lastMessage)
+  const handleToolCall = useCallback(
+    (data: TEvents['Socket::ToolCall']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
       }
-      return prev
-    })
-    scrollToBottom()
-  }
 
-  const handleToolCallResult = (data: TEvents['Socket::ToolCallResult']) => {
-    setMessages((prev) => {
-      console.log('👇tool_call_result', data)
-      return prev
-    })
-  }
+      setMessages((prev) => {
+        console.log('👇tool_call event get', data)
+        setExpandingToolCalls((prev) => [...prev, data.id])
+        setPending('tool')
+        return prev.concat({
+          role: 'assistant',
+          content: '',
+          tool_calls: [
+            {
+              type: 'function',
+              function: {
+                name: data.name,
+                arguments: '',
+              },
+              id: data.id,
+            },
+          ],
+        })
+      })
+    },
+    [sessionId]
+  )
 
-  const handleImageGenerated = (data: TEvents['Socket::ImageGenerated']) => {
-    console.log('⭐️dispatching image_generated', data)
-    setPending('image')
-  }
+  const handleToolCallArguments = useCallback(
+    (data: TEvents['Socket::ToolCallArguments']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
 
-  const handleAllMessages = (data: TEvents['Socket::AllMessages']) => {
-    setMessages(() => {
-      console.log('👇all_messages', data.messages)
-      return data.messages
-    })
-    scrollToBottom()
-  }
+      setMessages((prev) => {
+        const lastMessage = structuredClone(prev.at(-1))
+        if (
+          lastMessage?.role === 'assistant' &&
+          lastMessage.tool_calls &&
+          lastMessage.tool_calls.at(-1) &&
+          lastMessage.tool_calls.at(-1)!.id == data.id
+        ) {
+          lastMessage.tool_calls.at(-1)!.function.arguments += data.text
+          return prev.slice(0, -1).concat(lastMessage)
+        }
+        return prev
+      })
+      scrollToBottom()
+    },
+    [sessionId, scrollToBottom]
+  )
 
-  const handleDone = () => {
-    setPending(false)
-    scrollToBottom()
-  }
+  const handleToolCallResult = useCallback(
+    (data: TEvents['Socket::ToolCallResult']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
 
-  const handleError = (data: TEvents['Socket::Error']) => {
+      setMessages((prev) => {
+        console.log('👇tool_call_result', data)
+        return prev
+      })
+    },
+    [sessionId]
+  )
+
+  const handleImageGenerated = useCallback(
+    (data: TEvents['Socket::ImageGenerated']) => {
+      if (data.canvas_id && data.canvas_id !== canvasId) {
+        return
+      }
+
+      console.log('⭐️dispatching image_generated', data)
+      setPending('image')
+    },
+    [canvasId]
+  )
+
+  const handleAllMessages = useCallback(
+    (data: TEvents['Socket::AllMessages']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      setMessages(() => {
+        console.log('👇all_messages', data.messages)
+        return data.messages
+      })
+      scrollToBottom()
+    },
+    [sessionId, scrollToBottom]
+  )
+
+  const handleDone = useCallback(
+    (data: TEvents['Socket::Done']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      setPending(false)
+      scrollToBottom()
+    },
+    [sessionId, scrollToBottom]
+  )
+
+  const handleError = useCallback((data: TEvents['Socket::Error']) => {
     setPending(false)
     toast.error('Error: ' + data.error, {
       closeButton: true,
-      duration: 3600 * 1000, // set super large duration to make it not auto dismiss
+      duration: 3600 * 1000,
       style: {
         color: 'red',
       },
     })
-  }
+  }, [])
 
-  const handleInfo = (data: TEvents['Socket::Info']) => {
+  const handleInfo = useCallback((data: TEvents['Socket::Info']) => {
     toast.info(data.info, {
       closeButton: true,
       duration: 10 * 1000,
     })
-  }
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
