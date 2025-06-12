@@ -1,6 +1,6 @@
 {
   "name": "jaaz",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "AI design agent local desktop app",
   "author": "weixuanfu",
   "main": "electron/main.js",
@@ -62,8 +62,7 @@
     "win": {
       "icon": "assets/icons/jaaz.ico",
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ]
     },
     "linux": {

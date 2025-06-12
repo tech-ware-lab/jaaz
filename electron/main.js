@@ -32,7 +32,7 @@ console.error = (...args) => {
 // Initial log entry
 console.log('🟢 Jaaz Electron app starting...')
 
-const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, session } = require('electron')
 const { spawn } = require('child_process')
 
 const { autoUpdater } = require('electron-updater')
@@ -125,6 +125,11 @@ const createWindow = (pyPort) => {
       webSecurity: false,
       allowRunningInsecureContent: true,
     },
+  })
+
+  // Handle window closed event
+  mainWindow.on('closed', () => {
+    mainWindow = null
   })
 
   // In development, use Vite dev server
@@ -274,53 +279,88 @@ for (const [channel, handler] of Object.entries(ipcHandlers)) {
   ipcMain.handle(channel, handler)
 }
 
-app.whenReady().then(async () => {
-  // Initialize proxy settings for Electron sessions
-  try {
-    await settingsService.applyProxySettings()
-    console.log('Proxy settings applied for Electron sessions')
-  } catch (error) {
-    console.error(
-      'Failed to apply proxy settings for Electron sessions:',
-      error
-    )
-  }
+// Make this app a single instance app
+const gotTheLock = app.requestSingleInstanceLock()
 
-  // Check for updates in production every time app starts
-  if (process.env.NODE_ENV !== 'development' && app.isPackaged) {
-    // Wait a bit for the app to fully load before checking updates
-    setTimeout(() => {
-      autoUpdater.checkForUpdatesAndNotify()
-    }, 3000)
-  }
+if (!gotTheLock) {
+  // Another instance is already running, quit this one
+  app.quit()
+} else {
+  // This is the first instance, set up second-instance handler
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, focus our window instead
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
 
-  if (process.env.NODE_ENV !== 'development') {
-    const pyPort = await startPythonApi()
-    while (true) {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      // wait for the server to start
-      let status = await fetch(`http://127.0.0.1:${pyPort}`)
-        .then((res) => {
-          return res.ok
-        })
-        .catch((err) => {
-          console.error(err)
-          return false
-        })
-      if (status) {
-        break
+  app.whenReady().then(async () => {
+    // Initialize proxy settings for Electron sessions
+    try {
+      await settingsService.applyProxySettings()
+      console.log('Proxy settings applied for Electron sessions')
+    } catch (error) {
+      console.error(
+        'Failed to apply proxy settings for Electron sessions:',
+        error
+      )
+    }
+
+    // Check for updates in production every time app starts
+    if (process.env.NODE_ENV !== 'development' && app.isPackaged) {
+      // Wait a bit for the app to fully load before checking updates
+      setTimeout(() => {
+        autoUpdater.checkForUpdatesAndNotify()
+      }, 3000)
+    }
+
+    if (process.env.NODE_ENV !== 'development') {
+      const pyPort = await startPythonApi()
+      while (true) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        // wait for the server to start
+        let status = await fetch(`http://127.0.0.1:${pyPort}`)
+          .then((res) => {
+            return res.ok
+          })
+          .catch((err) => {
+            console.error(err)
+            return false
+          })
+        if (status) {
+          break
+        }
       }
     }
-  }
-  createWindow(pyPort)
-})
+
+    createWindow(pyPort)
+  })
+}
 
 // Quit the app and clean up the Python process
-app.on('will-quit', () => {
+app.on('will-quit', async (event) => {
+  event.preventDefault()
+
+  try {
+    // clear cache
+    await session.defaultSession.clearCache()
+    console.log('Cache cleared on app exit')
+  } catch (error) {
+    console.error('Failed to clear cache:', error)
+  }
+
+  // kill python process
   if (pyProc) {
     pyProc.kill()
     pyProc = null
   }
+
+  app.exit()
+})
+
+app.on('window-all-closed', () => {
+  app.quit()
 })
 
 // ipcMain.handle("reveal-in-explorer", async (event, filePath) => {
