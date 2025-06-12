@@ -171,3 +171,8 @@ export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
 
 export const LOGO_URL =
   'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/jaaz.png'
+
+// API Configuration
+export const BASE_API_URL = import.meta.env.PROD
+  ? 'https://dev-nodecafe.onrender.com'
+  : 'http://localhost:3000'

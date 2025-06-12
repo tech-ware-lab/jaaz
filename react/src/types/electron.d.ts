@@ -25,6 +25,8 @@ interface ElectronAPI {
   restartAndInstall: () => Promise<void>
   onUpdateDownloaded: (callback: (info: UpdateInfo) => void) => void
   removeUpdateDownloadedListener: () => void
+  // Auth methods
+  openBrowserUrl: (url: string) => Promise<{ success: boolean; error?: string }>
 }
 
 interface UpdateInfo {
@@ -37,7 +39,7 @@ interface UpdateInfo {
 
 declare global {
   interface Window {
-    electronAPI: ElectronAPI
+    electronAPI?: ElectronAPI
   }
 }
 

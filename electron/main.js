@@ -181,8 +181,9 @@ const startPythonApi = async () => {
   // Set BASE_API_URL based on environment
   env.BASE_API_URL =
     process.env.NODE_ENV === 'development'
-      ? 'http://127.0.0.1:57988'
+      ? 'http://localhost:3000'
       : 'https://dev-nodecafe.onrender.com'
+  console.log('BASE_API_URL:', env.BASE_API_URL)
 
   // Apply proxy settings and get environment variables
   const proxyEnvVars = await settingsService.getProxyEnvironmentVariables()

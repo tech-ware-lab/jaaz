@@ -5,6 +5,7 @@ import { LOGO_URL } from '@/constants'
 import { useConfigs } from '@/contexts/configs'
 import { SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
+import { UserMenu } from '@/components/auth/UserMenu'
 
 function HomeHeader() {
   const { setShowSettingsDialog } = useConfigs()
@@ -30,6 +31,7 @@ function HomeHeader() {
         </Button>
         <LanguageSwitcher />
         <ThemeButton />
+        <UserMenu />
       </div>
     </motion.div>
   )
