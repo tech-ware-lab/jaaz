@@ -2,8 +2,15 @@ import { sendMessages } from '@/api/chat'
 import Blur from '@/components/common/Blur'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { eventBus, TEvents } from '@/lib/event'
-import { Message, Model, PendingType, Session } from '@/types/types'
+import {
+  AssistantMessage,
+  Message,
+  Model,
+  PendingType,
+  Session,
+} from '@/types/types'
 import { useSearch } from '@tanstack/react-router'
+import { produce } from 'immer'
 import { motion } from 'motion/react'
 import { nanoid } from 'nanoid'
 import {
@@ -14,6 +21,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PhotoProvider } from 'react-photo-view'
 import { toast } from 'sonner'
 import ShinyText from '../ui/shiny-text'
@@ -23,10 +31,9 @@ import ToolCallContent from './Message/ToolCallContent'
 import ToolCallTag from './Message/ToolCallTag'
 import SessionSelector from './SessionSelector'
 import ChatSpinner from './Spinner'
-
-import { useTranslation } from 'react-i18next'
-import 'react-photo-view/dist/react-photo-view.css'
 import ToolcallProgressUpdate from './ToolcallProgressUpdate'
+
+import 'react-photo-view/dist/react-photo-view.css'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -96,35 +103,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
 
       setPending('text')
-      setMessages((prev) => {
-        const last = prev.at(-1)
-        if (last?.role == 'assistant' && last.content != null) {
-          const lastMessage = structuredClone(last)
-          if (lastMessage) {
-            if (typeof lastMessage.content == 'string') {
-              lastMessage.content += data.text
+      setMessages(
+        produce((prev) => {
+          const last = prev.at(-1)
+          if (last?.role === 'assistant' && last.content != null) {
+            if (typeof last.content === 'string') {
+              last.content += data.text
             } else if (
-              lastMessage.content &&
-              lastMessage.content.at(-1) &&
-              lastMessage.content.at(-1)!.type === 'text'
+              last.content &&
+              last.content.at(-1) &&
+              last.content.at(-1)!.type === 'text'
             ) {
-              ;(lastMessage.content.at(-1) as { text: string }).text +=
-                data.text
+              ;(last.content.at(-1) as { text: string }).text += data.text
             }
-            return [...prev.slice(0, -1), lastMessage]
           } else {
-            return prev
-          }
-        } else {
-          return [
-            ...prev,
-            {
+            prev.push({
               role: 'assistant',
               content: data.text,
-            },
-          ]
-        }
-      })
+            })
+          }
+        })
+      )
       scrollToBottom()
     },
     [sessionId, scrollToBottom]
@@ -136,25 +135,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         return
       }
 
-      setMessages((prev) => {
-        console.log('👇tool_call event get', data)
-        setExpandingToolCalls((prev) => [...prev, data.id])
-        setPending('tool')
-        return prev.concat({
-          role: 'assistant',
-          content: '',
-          tool_calls: [
-            {
-              type: 'function',
-              function: {
-                name: data.name,
-                arguments: '',
+      const existToolCall = messages.find(
+        (m) =>
+          m.role === 'assistant' &&
+          m.tool_calls &&
+          m.tool_calls.find((t) => t.id == data.id)
+      )
+
+      if (existToolCall) {
+        return
+      }
+
+      setMessages(
+        produce((prev) => {
+          console.log('👇tool_call event get', data)
+          setPending('tool')
+          prev.push({
+            role: 'assistant',
+            content: '',
+            tool_calls: [
+              {
+                type: 'function',
+                function: {
+                  name: data.name,
+                  arguments: '',
+                },
+                id: data.id,
               },
-              id: data.id,
-            },
-          ],
+            ],
+          })
         })
-      })
+      )
+
+      setExpandingToolCalls(
+        produce((prev) => {
+          prev.push(data.id)
+        })
+      )
     },
     [sessionId]
   )
@@ -165,36 +182,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         return
       }
 
-      setMessages((prev) => {
-        const lastMessage = structuredClone(prev.at(-1))
-        if (
-          lastMessage?.role === 'assistant' &&
-          lastMessage.tool_calls &&
-          lastMessage.tool_calls.at(-1) &&
-          lastMessage.tool_calls.at(-1)!.id == data.id
-        ) {
-          lastMessage.tool_calls.at(-1)!.function.arguments += data.text
-          return prev.slice(0, -1).concat(lastMessage)
-        }
-        return prev
-      })
+      setMessages(
+        produce((prev) => {
+          const lastMessage = prev.find(
+            (m) =>
+              m.role === 'assistant' &&
+              m.tool_calls &&
+              m.tool_calls.find((t) => t.id == data.id)
+          ) as AssistantMessage
+
+          if (lastMessage) {
+            const toolCall = lastMessage.tool_calls!.find(
+              (t) => t.id == data.id
+            )
+            if (toolCall) {
+              toolCall.function.arguments += data.text
+            }
+          }
+        })
+      )
       scrollToBottom()
     },
     [sessionId, scrollToBottom]
-  )
-
-  const handleToolCallResult = useCallback(
-    (data: TEvents['Socket::Session::ToolCallResult']) => {
-      if (data.session_id && data.session_id !== sessionId) {
-        return
-      }
-
-      setMessages((prev) => {
-        console.log('👇tool_call_result', data)
-        return prev
-      })
-    },
-    [sessionId]
   )
 
   const handleImageGenerated = useCallback(
@@ -270,7 +279,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     eventBus.on('Socket::Session::Delta', handleDelta)
     eventBus.on('Socket::Session::ToolCall', handleToolCall)
     eventBus.on('Socket::Session::ToolCallArguments', handleToolCallArguments)
-    eventBus.on('Socket::Session::ToolCallResult', handleToolCallResult)
     eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
     eventBus.on('Socket::Session::AllMessages', handleAllMessages)
     eventBus.on('Socket::Session::Done', handleDone)
@@ -280,11 +288,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       scrollEl?.removeEventListener('scroll', handleScroll)
 
       eventBus.off('Socket::Session::Delta', handleDelta)
+      eventBus.off('Socket::Session::ToolCall', handleToolCall)
       eventBus.off(
         'Socket::Session::ToolCallArguments',
         handleToolCallArguments
       )
-      eventBus.off('Socket::Session::ToolCallResult', handleToolCallResult)
       eventBus.off('Socket::Session::ImageGenerated', handleImageGenerated)
       eventBus.off('Socket::Session::AllMessages', handleAllMessages)
       eventBus.off('Socket::Session::Done', handleDone)

@@ -10,7 +10,6 @@ export type TEvents = {
   'Socket::Session::Delta': ISocket.SessionDeltaEvent
   'Socket::Session::ToolCall': ISocket.SessionToolCallEvent
   'Socket::Session::ToolCallArguments': ISocket.SessionToolCallArgumentsEvent
-  'Socket::Session::ToolCallResult': ISocket.SessionToolCallResultEvent
   'Socket::Session::AllMessages': ISocket.SessionAllMessagesEvent
   'Socket::Session::ToolCallProgress': ISocket.SessionToolCallProgressEvent
   // ********** Socket events - End **********

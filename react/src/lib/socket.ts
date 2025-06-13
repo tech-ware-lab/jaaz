@@ -104,9 +104,6 @@ export class SocketIOManager {
       case ISocket.SessionEventType.ToolCallArguments:
         eventBus.emit('Socket::Session::ToolCallArguments', data)
         break
-      case ISocket.SessionEventType.ToolCallResult:
-        eventBus.emit('Socket::Session::ToolCallResult', data)
-        break
       case ISocket.SessionEventType.ToolCallProgress:
         eventBus.emit('Socket::Session::ToolCallProgress', data)
         break
