@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { startDeviceAuth, pollDeviceAuth, saveAuthData } from '../../api/auth'
+import { updateJaazApiKey } from '../../api/config'
 import { useAuth } from '../../contexts/AuthContext'
 
 interface LoginDialogProps {
@@ -50,6 +51,9 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
           // Login successful - save auth data to local storage
           if (result.token && result.user_info) {
             saveAuthData(result.token, result.user_info)
+
+            // Update jaaz provider api_key with the access token
+            updateJaazApiKey(result.token)
           }
 
           setAuthMessage(t('common:auth.loginSuccessMessage'))

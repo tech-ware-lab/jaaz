@@ -1,6 +1,7 @@
 import AddProviderDialog from '@/components/settings/AddProviderDialog'
 import ComfyuiSetting from '@/components/settings/ComfyuiSetting'
 import CommonSetting from '@/components/settings/CommonSetting'
+import JaazSetting from '@/components/settings/JaazSetting'
 import { Button } from '@/components/ui/button'
 import { DEFAULT_PROVIDERS_CONFIG } from '@/constants'
 import useConfigsStore from '@/stores/configs'
@@ -110,8 +111,6 @@ const SettingProviders = () => {
     }
   }
 
-
-
   return (
     <div className="flex flex-col items-center justify-center p-4 relative w-full sm:pb-0 pb-10">
       {isLoading && (
@@ -119,6 +118,15 @@ const SettingProviders = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-zinc-500"></div>
         </div>
       )}
+
+      <div className="w-full">
+        <JaazSetting
+          config={providers['jaaz']}
+          onConfigChange={handleConfigChange}
+        />
+
+        <div className="my-6 border-t bg-border" />
+      </div>
 
       {!isLoading &&
         Object.keys(providers).map((key, index) => (
