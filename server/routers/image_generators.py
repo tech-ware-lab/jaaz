@@ -14,7 +14,7 @@ import httpx
 import aiofiles
 from typing import Optional
 from utils.http_client import HttpClient
-
+import copy
 
 async def get_image_info_and_save(url, file_path_without_extension):
     # Fetch the image asynchronously
@@ -124,11 +124,11 @@ async def generate_image_comfyui(args_json: dict, ctx: dict):
         raise ValueError("Image model is not selected")
     model = image_model.get('model', '')
     if 'flux' in model:
-        workflow = flux_comfy_workflow
+        workflow = copy.deepcopy(flux_comfy_workflow)
         workflow['6']['inputs']['text'] = prompt
         workflow['30']['inputs']['ckpt_name'] = model
     else:
-        workflow = basic_comfy_t2i_workflow
+        workflow = copy.deepcopy(basic_comfy_t2i_workflow)
         workflow['6']['inputs']['text'] = prompt
         workflow['4']['inputs']['ckpt_name'] = model
     execution = await execute(workflow, host, port, ctx=ctx)
