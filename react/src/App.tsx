@@ -1,4 +1,4 @@
-import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
+// import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
 import UpdateNotificationDialog from '@/components/common/UpdateNotificationDialog'
 import SettingsDialog from '@/components/settings/dialog'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
@@ -67,7 +67,7 @@ function App() {
               <RouterProvider router={router} />
 
               {/* Install ComfyUI Dialog */}
-              <InstallComfyUIDialog />
+              {/* <InstallComfyUIDialog /> */}
 
               {/* Update Notification Dialog */}
               <UpdateNotificationDialog />

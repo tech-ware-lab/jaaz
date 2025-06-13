@@ -1,4 +1,4 @@
-import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
+// import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
 import UninstallProgressDialog from '@/components/comfyui/UninstallProgressDialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -139,9 +139,9 @@ export default function ComfyuiSetting({
     })
   }
 
-  const handleInstallClick = () => {
-    setShowInstallDialog(true)
-  }
+    // const handleInstallClick = () => {
+    //   setShowInstallDialog(true)
+    // }
 
   // start ComfyUI
   const startComfyUI = async () => {
@@ -386,7 +386,7 @@ export default function ComfyuiSetting({
       )}
 
       {/* Install Dialog */}
-      <InstallComfyUIDialog onInstallSuccess={handleInstallSuccess} />
+      {/* <InstallComfyUIDialog onInstallSuccess={handleInstallSuccess} /> */}
 
       {/* Uninstall Dialog */}
       <UninstallProgressDialog
