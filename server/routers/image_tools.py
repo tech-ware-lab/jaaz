@@ -207,7 +207,7 @@ async def generate_image_tool(
             'type': 'error',
             'error': str(e)
         })
-        raise HTTPException(status_code=500, detail=str(e))
+        return f"image generation failed: {str(e)}"
 
 print('🛠️', generate_image_tool.args_schema.model_json_schema())
 
