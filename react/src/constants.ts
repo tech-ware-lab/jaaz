@@ -67,10 +67,10 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
   },
   jaaz: {
     models: {
-      // image models
+      // text models
       'gpt-4o': { type: 'text' },
       'gpt-4o-mini': { type: 'text' },
-      // text models
+      // image models
       'google/imagen-4': { type: 'image' },
       'black-forest-labs/flux-1.1-pro': { type: 'image' },
       'black-forest-labs/flux-kontext-pro': { type: 'image' },
@@ -193,4 +193,3 @@ export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
 
 export const LOGO_URL =
   'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/jaaz.png'
-
