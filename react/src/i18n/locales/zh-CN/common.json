@@ -31,6 +31,13 @@
     "saved": "保存成功",
     "deleted": "删除成功"
   },
+  "notifications": {
+    "title": "通知",
+    "clear": "清空",
+    "markAllAsRead": "全部已读",
+    "allRead": "全部已读",
+    "newImageGenerated": "新图片生成"
+  },
   "navigation": {
     "home": "首页",
     "canvas": "画布",

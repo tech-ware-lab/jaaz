@@ -1,21 +1,20 @@
 # routers/websocket_router.py
-from fastapi import APIRouter, WebSocket, Query
-from starlette.websockets import WebSocketDisconnect
-from services.websocket_state import active_websockets  # Import active_websockets
+from services.websocket_state import sio, add_connection, remove_connection
 
-wsrouter = APIRouter()
+@sio.event
+async def connect(sid, environ, auth):
+    print(f"Client {sid} connected")
+    
+    user_info = auth or {}
+    add_connection(sid, user_info)
+    
+    await sio.emit('connected', {'status': 'connected'}, room=sid)
 
-@wsrouter.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket, session_id: str = Query(...)):
-    await websocket.accept()
-    active_websockets[session_id] = websocket
-    try:
-        while True:
-            data = await websocket.receive_text()
-            # 可以处理 data
-    except WebSocketDisconnect as e:
-        print(f"WebSocket disconnected: {e.code}, {e.reason}")
-    except Exception as e:
-        print(f"WebSocket error: {e}")
-    finally:
-        active_websockets.pop(session_id, None)
+@sio.event
+async def disconnect(sid):
+    print(f"Client {sid} disconnected")
+    remove_connection(sid)
+
+@sio.event
+async def ping(sid, data):
+    await sio.emit('pong', data, room=sid)

@@ -129,6 +129,12 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
                             })
                 else:
                     print('👇no tool_call_chunks', chunk)
+                    
+        # 发送完成事件
+        await send_to_websocket(session_id, {
+            'type': 'done'
+        })
+        
     except Exception as e:
         print('Error in langgraph_agent', e)
         traceback.print_exc()

@@ -9,7 +9,7 @@ from services.db_service import db_service
 from services.config_service import app_config
 import traceback
 from services.config_service import USER_DATA_DIR, FILES_DIR
-from services.websocket_service import send_to_websocket
+from services.websocket_service import send_to_websocket, broadcast_session_update
 
 from PIL import Image
 from io import BytesIO
@@ -186,19 +186,20 @@ async def generate_image_tool(
         canvas_data['data']['elements'].append(new_image_element)
         canvas_data['data']['files'][file_id] = file_data
 
+        image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
+
         print('🛠️canvas_data', canvas_data)
 
         await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data['data']))
 
-        await send_to_websocket(session_id, {
+        await broadcast_session_update(session_id, canvas_id, {
             'type': 'image_generated',
-            'image_data': {
-                'element': new_image_element,
-                'file': file_data,
-            },
+            'element': new_image_element,
+            'file': file_data,
+            'image_url': image_url,
         })
 
-        return f"image generated successfully ![image_id: {filename}](http://localhost:{DEFAULT_PORT}/api/file/{filename})"
+        return f"image generated successfully ![image_id: {filename}]({image_url})"
 
     except Exception as e:
         print(f"Error generating image: {str(e)}")
