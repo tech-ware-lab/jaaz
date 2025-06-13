@@ -6,10 +6,29 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DEFAULT_PROVIDERS_CONFIG, PROVIDER_NAME_MAPPING } from '@/constants'
 import { LLMConfig } from '@/types/types'
-import { AlertCircle, CheckCircle, Download, Play, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import {
+  AlertCircle,
+  CheckCircle,
+  Download,
+  PaletteIcon,
+  Play,
+  Plus,
+  PlusIcon,
+  SquareSquareIcon,
+  Trash2,
+  UploadIcon,
+} from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useConfigs } from '@/contexts/configs'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogHeader,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { toast } from 'sonner'
 
 interface ComfyuiSettingProps {
   config: LLMConfig
@@ -30,6 +49,7 @@ export default function ComfyuiSetting({
   const provider = PROVIDER_NAME_MAPPING.comfyui
   const comfyUrl = config.url || ''
   const [comfyuiModels, setComfyuiModels] = useState<string[]>([])
+  const [workflows, setWorkflows] = useState<string[]>([])
 
   // Validate URL format
   const isValidUrl = (url: string): boolean => {
@@ -56,8 +76,6 @@ export default function ComfyuiSetting({
 
     checkInstallation()
   }, [])
-
-
 
   // Fetch ComfyUI models when URL is available
   useEffect(() => {
@@ -122,7 +140,10 @@ export default function ComfyuiSetting({
         setComfyUIStatus('not-running')
       }
     } catch (error) {
-      console.log('ComfyUI connection failed:', error instanceof Error ? error.message : String(error))
+      console.log(
+        'ComfyUI connection failed:',
+        error instanceof Error ? error.message : String(error)
+      )
       setComfyUIStatus('not-running')
     }
   }, [comfyUrl])
@@ -183,7 +204,7 @@ export default function ComfyuiSetting({
         if (stopResult?.success) {
           console.log('ComfyUI process stopped successfully')
           // Wait for process to fully terminate
-          await new Promise(resolve => setTimeout(resolve, 2000))
+          await new Promise((resolve) => setTimeout(resolve, 2000))
         }
       } catch (stopError) {
         console.log('Error stopping ComfyUI process:', stopError)
@@ -284,7 +305,8 @@ export default function ComfyuiSetting({
               <span className="text-sm text-muted-foreground">
                 {getComfyUIStatusText()}
               </span>
-              {(comfyUIStatus === 'not-running' || (!comfyUrl && isComfyUIInstalled)) && (
+              {(comfyUIStatus === 'not-running' ||
+                (!comfyUrl && isComfyUIInstalled)) && (
                 <Button
                   onClick={handleStartClick}
                   variant="outline"
@@ -324,18 +346,17 @@ export default function ComfyuiSetting({
 
       {/* API URL Input */}
       <div className="space-y-2">
-        <Label htmlFor="comfyui-url">
-          {t('settings:provider.apiUrl')}
-        </Label>
+        <Label htmlFor="comfyui-url">{t('settings:provider.apiUrl')}</Label>
         <Input
           id="comfyui-url"
           placeholder="http://127.0.0.1:8188"
           value={comfyUrl}
           onChange={(e) => handleUrlChange(e.target.value)}
-          className={`w-full ${comfyUrl && !isValidUrl(comfyUrl)
-            ? 'border-red-300 focus:border-red-500'
-            : ''
-            }`}
+          className={`w-full ${
+            comfyUrl && !isValidUrl(comfyUrl)
+              ? 'border-red-300 focus:border-red-500'
+              : ''
+          }`}
         />
         <p className="text-xs text-gray-500">
           {t('settings:comfyui.urlDescription')}
@@ -347,10 +368,19 @@ export default function ComfyuiSetting({
         )}
       </div>
 
+      <div className="flex items-center gap-2">
+        <PaletteIcon className="w-5 h-5" />
+        <p className="text-sm font-bold">{t('settings:comfyui.workflows')}</p>
+        <AddWorkflowDialog />
+      </div>
+
       {/* ComfyUI Models */}
       {comfyuiModels.length > 0 && (
         <div className="space-y-2">
-          <Label>{t('settings:models.title')}</Label>
+          <div className="flex items-center gap-2">
+            <SquareSquareIcon className="w-4 h-4" />
+            <p className="text-sm font-bold">{t('settings:models.title')}</p>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             {comfyuiModels.map((model) => (
               <div key={model} className="flex items-center gap-2">
@@ -396,5 +426,190 @@ export default function ComfyuiSetting({
         onConfirmUninstall={handleConfirmUninstall}
       />
     </div>
+  )
+}
+type ComfyUIAPINode = {
+  class_type: string
+  inputs: Record<string, any>
+}
+function AddWorkflowDialog() {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [workflowName, setWorkflowName] = useState('')
+  const [workflowJson, setWorkflowJson] = useState<Record<
+    string,
+    ComfyUIAPINode
+  > | null>(null)
+  const [inputs, setInputs] = useState<
+    {
+      name: string
+      type: 'string' | 'number' | 'boolean'
+      description: string
+      node_id: string
+      node_input_name: string
+      default_value: string | number | boolean
+    }[]
+  >([])
+  const [outputs, setOutputs] = useState<
+    {
+      name: string
+      type: 'string' | 'number' | 'boolean'
+      description: string
+    }[]
+  >([])
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputs([])
+    const file = e.target.files?.[0]
+    if (file) {
+      try {
+        const fileContent = await file.text()
+        // Parse the JSON content
+        const jsonContent = JSON.parse(fileContent)
+        console.log('Parsed workflow JSON:', jsonContent)
+        setWorkflowJson(jsonContent)
+        setWorkflowName(file.name.replace('.json', ''))
+        for (const key in jsonContent) {
+          const node: ComfyUIAPINode = jsonContent[key]
+          if (!node.class_type) {
+            throw new Error('No class_type found in workflow JSON')
+          }
+          const classType = node.class_type
+          // if (classType === 'SaveImage') {
+          //   setOutputs(node.inputs.required.model_name.map((model: string) => ({
+          //     name: model,
+          //     type: 'string',
+          //     description: '',
+          //   })))
+          // }
+        }
+      } catch (error) {
+        console.error(error)
+        toast.error(
+          'Invalid workflow JSON, make sure you exprted API JSON in ComfyUI! ' +
+            error
+        )
+      }
+
+      // const formData = new FormData()
+      // formData.append('file', file)
+      // formData.append('workflow_name', workflowName)
+
+      // await fetch('/api/settings/comfyui/upload_workflow', {
+      //   method: 'POST',
+      //   body: formData,
+      // })
+    }
+  }
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <PlusIcon className="w-4 h-4" />
+          Add Workflow
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl h-[80vh] overflow-y-auto flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Add Workflow</DialogTitle>
+        </DialogHeader>
+        <Input
+          type="text"
+          style={{ flexShrink: 0 }}
+          placeholder="Workflow Name"
+          value={workflowName}
+          onChange={(e) => setWorkflowName(e.target.value)}
+        />
+        <Button onClick={() => inputRef.current?.click()}>
+          <UploadIcon className="w-4 h-4 mr-2" />
+          Upload Workflow API JSON
+        </Button>
+        <input
+          type="file"
+          accept=".json"
+          ref={inputRef}
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        {workflowJson && (
+          <div className="flex flex-col bg-accent p-2 rounded-md">
+            <p className="font-bold">Inputs</p>
+            {inputs.length > 0 ? (
+              inputs.map((input) => (
+                <div key={input.name}>
+                  <p>{input.name}</p>
+                  <p>{input.description}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center">
+                Please add your workflow inputs from below. Choose at lease one
+                input.
+              </p>
+            )}
+            {/* <p className="font-bold">Outputs</p>
+            {outputs.map((input) => (
+              <div key={input.name}>
+                <p>{input.name}</p>
+                <p>{input.description}</p>
+              </div>
+            ))} */}
+          </div>
+        )}
+        {workflowJson &&
+          Object.keys(workflowJson).map((nodeID) => {
+            const node = workflowJson[nodeID]
+            return (
+              <div key={nodeID}>
+                <p className="font-bold">
+                  {node.class_type} #{nodeID}
+                </p>
+                <div className="ml-4 flex flex-col gap-1">
+                  {Object.keys(node.inputs).map((inputKey) => {
+                    const inputValue = node.inputs[inputKey]
+                    if (
+                      typeof inputValue !== 'boolean' &&
+                      typeof inputValue !== 'number' &&
+                      typeof inputValue !== 'string'
+                    ) {
+                      return null
+                    }
+                    return (
+                      <div key={inputKey} className="flex items-center gap-2">
+                        <p className="bg-accent text-sm px-2 py-0.5 rounded-md">
+                          {inputKey}
+                        </p>
+                        <Input
+                          type="text"
+                          value={inputValue.toString()}
+                          disabled
+                        />
+                        <Button
+                          variant="outline"
+                          size="default"
+                          onClick={() => {
+                            setInputs([
+                              ...inputs,
+                              {
+                                name: inputKey,
+                                type: 'string',
+                                description: '',
+                                node_id: nodeID,
+                                node_input_name: inputKey,
+                                default_value: inputValue,
+                              },
+                            ])
+                          }}
+                        >
+                          <PlusIcon className="w-4 h-4" />
+                          Add Input
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+      </DialogContent>
+    </Dialog>
   )
 }
