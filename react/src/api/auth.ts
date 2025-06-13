@@ -1,5 +1,6 @@
 import { BASE_API_URL } from '../constants'
 import i18n from '../i18n'
+import { clearJaazApiKey } from './config'
 
 export interface AuthStatus {
   status: 'logged_out' | 'pending' | 'logged_in'
@@ -120,6 +121,9 @@ export async function logout(): Promise<{ status: string; message: string }> {
   // Clear local storage
   localStorage.removeItem('jaaz_access_token')
   localStorage.removeItem('jaaz_user_info')
+
+  // Clear jaaz provider api_key
+  clearJaazApiKey()
 
   return {
     status: 'success',
