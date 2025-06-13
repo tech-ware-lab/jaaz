@@ -1,4 +1,5 @@
 import LanguageSwitcher from '@/components/common/LanguageSwitcher'
+import { NotificationPanel } from '@/components/common/NotificationPanel'
 import ThemeButton from '@/components/theme/ThemeButton'
 import { Button } from '@/components/ui/button'
 import { LOGO_URL } from '@/constants'
@@ -22,6 +23,7 @@ function HomeHeader() {
         <p className="text-xl font-bold">Jaaz</p>
       </div>
       <div className="flex items-center gap-2">
+        <NotificationPanel />
         <Button
           size={'sm'}
           variant="ghost"
