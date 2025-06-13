@@ -4,13 +4,12 @@ from utils.http_client import HttpClient
 import traceback
 
 import aiofiles
-import ffmpeg
 import httpx
 import mimetypes
 import os
 from io import BytesIO
 
-from pymediainfo import MediaInfo
+# from pymediainfo import MediaInfo
 
 # services
 from services.config_service import app_config
