@@ -6,8 +6,9 @@ import {
 } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useNotifications } from '@/hooks/use-notifications'
+import { eventBus, TEvents } from '@/lib/event'
 import { cn } from '@/lib/utils'
-import { useNavigate } from '@tanstack/react-router'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import {
   Bell,
   CheckCheck,
@@ -17,7 +18,9 @@ import {
   MessageSquare,
   X,
 } from 'lucide-react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 export const NotificationPanel: React.FC = () => {
   const {
@@ -28,6 +31,9 @@ export const NotificationPanel: React.FC = () => {
     clearNotifications,
   } = useNotifications()
   const { t } = useTranslation()
+  const location = useLocation()
+  const sessionId = (location.search as { sessionId?: string }).sessionId
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'canvas_update':
@@ -59,6 +65,27 @@ export const NotificationPanel: React.FC = () => {
   }
 
   const navigate = useNavigate()
+
+  const handleError = (data: TEvents['Socket::Session::Error']) => {
+    // Only show error if it's not the current session
+    if (data.session_id === sessionId) {
+      return
+    }
+
+    toast.error('Error: ' + data.error, {
+      closeButton: true,
+      duration: 3600 * 1000,
+      style: { color: 'red' },
+    })
+  }
+
+  useEffect(() => {
+    eventBus.on('Socket::Session::Error', handleError)
+
+    return () => {
+      eventBus.off('Socket::Session::Error', handleError)
+    }
+  })
 
   return (
     <Popover>

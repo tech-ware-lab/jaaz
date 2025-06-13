@@ -1,65 +1,18 @@
-import { Message, ToolCallFunctionName } from '@/types/types'
-import { ExcalidrawImageElement } from '@excalidraw/excalidraw/element/types'
-import { BinaryFileData } from '@excalidraw/excalidraw/types'
+import * as ISocket from '@/types/socket'
 import mitt from 'mitt'
 
 export type TEvents = {
   // ********** Socket events - Start **********
-  'Socket::Error': {
-    type: 'error'
-    error: string
-  }
-  'Socket::Done': {
-    type: 'done'
-    session_id: string
-  }
-  'Socket::Info': {
-    type: 'info'
-    info: string
-  }
-  'Socket::ImageGenerated': {
-    element: ExcalidrawImageElement
-    file: BinaryFileData
-    canvas_id: string
-    session_id: string
-    image_url: string
-  }
-  'Socket::Delta': {
-    type: 'delta'
-    text: string
-    session_id: string
-  }
-  'Socket::ToolCall': {
-    type: 'tool_call'
-    id: string
-    name: ToolCallFunctionName
-    session_id: string
-  }
-  'Socket::ToolCallArguments': {
-    type: 'tool_call_arguments'
-    id: string
-    text: string
-    session_id: string
-  }
-  'Socket::ToolCallResult': {
-    type: 'tool_call_result'
-    id: string
-    content: {
-      text: string
-    }[]
-    session_id: string
-  }
-  'Socket::AllMessages': {
-    type: 'all_messages'
-    messages: Message[]
-    session_id: string
-  }
-  'Socket::ToolCallProgress': {
-    type: 'tool_call_progress'
-    tool_call_id: string
-    session_id: string
-    update: string
-  }
+  'Socket::Session::Error': ISocket.SessionErrorEvent
+  'Socket::Session::Done': ISocket.SessionDoneEvent
+  'Socket::Session::Info': ISocket.SessionInfoEvent
+  'Socket::Session::ImageGenerated': ISocket.SessionImageGeneratedEvent
+  'Socket::Session::Delta': ISocket.SessionDeltaEvent
+  'Socket::Session::ToolCall': ISocket.SessionToolCallEvent
+  'Socket::Session::ToolCallArguments': ISocket.SessionToolCallArgumentsEvent
+  'Socket::Session::ToolCallResult': ISocket.SessionToolCallResultEvent
+  'Socket::Session::AllMessages': ISocket.SessionAllMessagesEvent
+  'Socket::Session::ToolCallProgress': ISocket.SessionToolCallProgressEvent
   // ********** Socket events - End **********
 }
 

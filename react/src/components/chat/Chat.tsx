@@ -90,7 +90,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [])
 
   const handleDelta = useCallback(
-    (data: TEvents['Socket::Delta']) => {
+    (data: TEvents['Socket::Session::Delta']) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -131,7 +131,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleToolCall = useCallback(
-    (data: TEvents['Socket::ToolCall']) => {
+    (data: TEvents['Socket::Session::ToolCall']) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -160,7 +160,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleToolCallArguments = useCallback(
-    (data: TEvents['Socket::ToolCallArguments']) => {
+    (data: TEvents['Socket::Session::ToolCallArguments']) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -184,7 +184,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleToolCallResult = useCallback(
-    (data: TEvents['Socket::ToolCallResult']) => {
+    (data: TEvents['Socket::Session::ToolCallResult']) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -198,7 +198,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleImageGenerated = useCallback(
-    (data: TEvents['Socket::ImageGenerated']) => {
+    (data: TEvents['Socket::Session::ImageGenerated']) => {
       if (
         data.canvas_id &&
         data.canvas_id !== canvasId &&
@@ -210,11 +210,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       console.log('⭐️dispatching image_generated', data)
       setPending('image')
     },
-    [canvasId]
+    [canvasId, sessionId]
   )
 
   const handleAllMessages = useCallback(
-    (data: TEvents['Socket::AllMessages']) => {
+    (data: TEvents['Socket::Session::AllMessages']) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -229,7 +229,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleDone = useCallback(
-    (data: TEvents['Socket::Done']) => {
+    (data: TEvents['Socket::Session::Done']) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -240,18 +240,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     [sessionId, scrollToBottom]
   )
 
-  const handleError = useCallback((data: TEvents['Socket::Error']) => {
+  const handleError = useCallback((data: TEvents['Socket::Session::Error']) => {
     setPending(false)
     toast.error('Error: ' + data.error, {
       closeButton: true,
       duration: 3600 * 1000,
-      style: {
-        color: 'red',
-      },
+      style: { color: 'red' },
     })
   }, [])
 
-  const handleInfo = useCallback((data: TEvents['Socket::Info']) => {
+  const handleInfo = useCallback((data: TEvents['Socket::Session::Info']) => {
     toast.info(data.info, {
       closeButton: true,
       duration: 10 * 1000,
@@ -269,27 +267,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const scrollEl = scrollRef.current
     scrollEl?.addEventListener('scroll', handleScroll)
 
-    eventBus.on('Socket::Delta', handleDelta)
-    eventBus.on('Socket::ToolCall', handleToolCall)
-    eventBus.on('Socket::ToolCallArguments', handleToolCallArguments)
-    eventBus.on('Socket::ToolCallResult', handleToolCallResult)
-    eventBus.on('Socket::ImageGenerated', handleImageGenerated)
-    eventBus.on('Socket::AllMessages', handleAllMessages)
-    eventBus.on('Socket::Done', handleDone)
-    eventBus.on('Socket::Error', handleError)
-    eventBus.on('Socket::Info', handleInfo)
+    eventBus.on('Socket::Session::Delta', handleDelta)
+    eventBus.on('Socket::Session::ToolCall', handleToolCall)
+    eventBus.on('Socket::Session::ToolCallArguments', handleToolCallArguments)
+    eventBus.on('Socket::Session::ToolCallResult', handleToolCallResult)
+    eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
+    eventBus.on('Socket::Session::AllMessages', handleAllMessages)
+    eventBus.on('Socket::Session::Done', handleDone)
+    eventBus.on('Socket::Session::Error', handleError)
+    eventBus.on('Socket::Session::Info', handleInfo)
     return () => {
       scrollEl?.removeEventListener('scroll', handleScroll)
 
-      eventBus.off('Socket::Delta', handleDelta)
-      eventBus.off('Socket::ToolCall', handleToolCall)
-      eventBus.off('Socket::ToolCallArguments', handleToolCallArguments)
-      eventBus.off('Socket::ToolCallResult', handleToolCallResult)
-      eventBus.off('Socket::ImageGenerated', handleImageGenerated)
-      eventBus.off('Socket::AllMessages', handleAllMessages)
-      eventBus.off('Socket::Done', handleDone)
-      eventBus.off('Socket::Error', handleError)
-      eventBus.off('Socket::Info', handleInfo)
+      eventBus.off('Socket::Session::Delta', handleDelta)
+      eventBus.off(
+        'Socket::Session::ToolCallArguments',
+        handleToolCallArguments
+      )
+      eventBus.off('Socket::Session::ToolCallResult', handleToolCallResult)
+      eventBus.off('Socket::Session::ImageGenerated', handleImageGenerated)
+      eventBus.off('Socket::Session::AllMessages', handleAllMessages)
+      eventBus.off('Socket::Session::Done', handleDone)
+      eventBus.off('Socket::Session::Error', handleError)
+      eventBus.off('Socket::Session::Info', handleInfo)
     }
   })
 
