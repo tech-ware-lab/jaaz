@@ -99,10 +99,10 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       return
     }
     // Check if there are image models, if not, prompt to install ComfyUI
-    if (!imageModel || imageModels.length === 0) {
-      setShowInstallDialog(true)
-      return
-    }
+    // if (!imageModel || imageModels.length === 0) {
+    //   setShowInstallDialog(true)
+    //   return
+    // }
     if (value.length === 0 || value.trim() === '') {
       toast.error(t('chat:textarea.enterPrompt'))
       return
