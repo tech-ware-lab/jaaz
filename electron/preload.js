@@ -16,6 +16,8 @@ const { contextBridge, ipcRenderer } = require('electron')
 // console.log("Exposing API with methods:", Object.keys(exposedAPI));
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  openBrowserUrl: (url) => ipcRenderer.invoke('open-browser-url', url),
+
   publishPost: (...args) => {
     return ipcRenderer.invoke('publishPost', ...args)
   },

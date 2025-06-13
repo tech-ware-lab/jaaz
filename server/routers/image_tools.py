@@ -28,15 +28,16 @@ router = APIRouter(prefix="/api")
 
 os.makedirs(FILES_DIR, exist_ok=True)
 
-
+# 生成唯一文件 ID
 def generate_file_id():
     return 'im_' + generate(size=8)
 
-
+# 上传图片接口，支持表单提交
 @router.post("/upload_image")
 async def upload_image(session_id: str = Form(...), file: UploadFile = File(...)):
     print('🦄upload_image session_id', session_id)
     print('🦄upload_image file', file.filename)
+    # 生成文件 ID 和文件名
     file_id = generate_file_id()
     filename = file.filename or ''
 
@@ -52,10 +53,12 @@ async def upload_image(session_id: str = Form(...), file: UploadFile = File(...)
     # default to 'bin' if unknown
     extension = mime_type.split('/')[-1] if mime_type else ''
 
+    # 保存图片到本地
     file_path = os.path.join(FILES_DIR, f'{file_id}.{extension}')
     async with aiofiles.open(file_path, 'wb') as f:
         await f.write(content)
 
+    # 返回文件信息
     print('🦄upload_image file_path', file_path)
     return {
         'file_id': f'{file_id}.{extension}',
@@ -64,6 +67,7 @@ async def upload_image(session_id: str = Form(...), file: UploadFile = File(...)
     }
 
 
+# 文件下载接口
 @router.get("/file/{file_id}")
 async def get_file(file_id: str):
     file_path = os.path.join(FILES_DIR, f'{file_id}')
@@ -97,7 +101,7 @@ async def get_object_info(data: dict):
         raise HTTPException(
             status_code=500, detail=f"Failed to connect to ComfyUI: {str(e)}")
 
-
+# LangChain Tool: 图像生成工具
 @tool("generate_image", parse_docstring=True)
 async def generate_image_tool(
     prompt: str,
@@ -203,11 +207,11 @@ async def generate_image_tool(
             'type': 'error',
             'error': str(e)
         })
-        raise HTTPException(status_code=500, detail=str(e))
+        return f"image generation failed: {str(e)}"
 
 print('🛠️', generate_image_tool.args_schema.model_json_schema())
 
-
+# 未完成
 async def generate_image(args_json: dict, ctx: dict):
     session_id = ctx.get('session_id', '')
     image_model = ctx.get('model_info', {}).get('image', {})
@@ -224,7 +228,7 @@ async def generate_image(args_json: dict, ctx: dict):
     if model == '':
         raise ValueError("Image generation failed: model is not selected")
 
-
+# 生成新的 image 元素，放置到 canvas 中
 async def generate_new_image_element(canvas_id: str, fileid: str, image_data: dict):
     canvas = await db_service.get_canvas_data(canvas_id)
     canvas_data = canvas.get('data', {})

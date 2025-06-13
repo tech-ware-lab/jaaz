@@ -247,7 +247,17 @@ class WorkflowExecution:
 
         for img in output["images"]:
             self.outputs.append(self.format_image_path(img))
+        await send_to_websocket(self.ctx.get('session_id'), {
+            'type': 'tool_call_progress',
+            'tool_call_id': self.ctx.get('tool_call_id'),
+            'session_id': self.ctx.get('session_id'),
+            'update': '' # clear the progress update section by send empty string
+        })
 
     async def on_error(self, data):
         pprint(f"[bold red]Error running workflow\n{json.dumps(data, indent=2)}[/bold red]")
-        raise typer.Exit(code=1)
+        await send_to_websocket(self.ctx.get('session_id'), {
+            'type': 'error',
+            'error': json.dumps(data, indent=2)
+        })
+        raise Exception(json.dumps(data, indent=2))
