@@ -9,7 +9,7 @@ from services.db_service import db_service
 from services.config_service import app_config
 import traceback
 from services.config_service import USER_DATA_DIR, FILES_DIR
-from services.websocket_service import send_to_websocket, broadcast_canvas_update
+from services.websocket_service import send_to_websocket, broadcast_session_update
 
 from PIL import Image
 from io import BytesIO
@@ -188,9 +188,8 @@ async def generate_image_tool(
 
         await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data['data']))
 
-        await broadcast_canvas_update(canvas_id, session_id, {
+        await broadcast_session_update(session_id, canvas_id, {
             'type': 'image_generated',
-            'update_type': 'image_added',
             'element': new_image_element,
             'file': file_data,
             'image_url': image_url,

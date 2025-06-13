@@ -1,5 +1,5 @@
 import { socketManager } from '@/lib/socket'
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useEffect, useState } from 'react'
 
 interface SocketContextType {
   connected: boolean
@@ -12,8 +12,6 @@ const SocketContext = createContext<SocketContextType>({
   connected: false,
   connecting: false,
 })
-
-export const useSocketContext = () => useContext(SocketContext)
 
 interface SocketProviderProps {
   children: React.ReactNode
@@ -60,7 +58,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
               }
             }
 
-            const handleConnectError = (error: any) => {
+            const handleConnectError = (error: Error) => {
               if (mounted) {
                 setError(error.message || 'Connection error')
                 setConnected(false)

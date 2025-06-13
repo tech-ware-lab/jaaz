@@ -1,3 +1,4 @@
+import * as ISocket from '@/types/socket'
 import { io, Socket } from 'socket.io-client'
 import { eventBus } from './event'
 
@@ -80,29 +81,13 @@ export class SocketIOManager {
       this.handleSessionUpdate(data)
     })
 
-    this.socket.on('canvas_data', (data) => {
-      console.log('🔗 Canvas data received:', data)
-    })
-
-    this.socket.on('session_data', (data) => {
-      console.log('🔗 Session data received:', data)
-    })
-
-    this.socket.on('error', (data) => {
-      console.error('🔗 Socket.IO error:', data)
-      eventBus.emit('Socket::Error', {
-        type: 'error',
-        error: data.message || 'Unknown error',
-      })
-    })
-
     this.socket.on('pong', (data) => {
       console.log('🔗 Pong received:', data)
     })
   }
 
-  private handleSessionUpdate(data: any) {
-    const { session_id, type, ...eventData } = data
+  private handleSessionUpdate(data: ISocket.SessionUpdateEvent) {
+    const { session_id, type } = data
 
     if (!session_id) {
       console.warn('⚠️ Session update missing session_id:', data)
@@ -110,106 +95,42 @@ export class SocketIOManager {
     }
 
     switch (type) {
-      case 'delta':
-        eventBus.emit('Socket::Delta', { type, session_id, ...eventData })
+      case ISocket.SessionEventType.Delta:
+        eventBus.emit('Socket::Session::Delta', data)
         break
-      case 'tool_call':
-        eventBus.emit('Socket::ToolCall', { type, session_id, ...eventData })
+      case ISocket.SessionEventType.ToolCall:
+        eventBus.emit('Socket::Session::ToolCall', data)
         break
-      case 'tool_call_arguments':
-        eventBus.emit('Socket::ToolCallArguments', {
-          type,
-          session_id,
-          ...eventData,
-        })
+      case ISocket.SessionEventType.ToolCallArguments:
+        eventBus.emit('Socket::Session::ToolCallArguments', data)
         break
-      case 'tool_call_result':
-        eventBus.emit('Socket::ToolCallResult', {
-          type,
-          session_id,
-          ...eventData,
-        })
+      case ISocket.SessionEventType.ToolCallResult:
+        eventBus.emit('Socket::Session::ToolCallResult', data)
         break
-      case 'tool_call_progress':
-        eventBus.emit('Socket::ToolCallProgress', {
-          type,
-          session_id,
-          ...eventData,
-        })
+      case ISocket.SessionEventType.ToolCallProgress:
+        eventBus.emit('Socket::Session::ToolCallProgress', data)
         break
-      case 'image_generated':
-        eventBus.emit('Socket::ImageGenerated', {
-          type,
-          session_id,
-          ...eventData,
-        })
+      case ISocket.SessionEventType.ImageGenerated:
+        eventBus.emit('Socket::Session::ImageGenerated', data)
         break
-      case 'all_messages':
-        eventBus.emit('Socket::AllMessages', { type, session_id, ...eventData })
+      case ISocket.SessionEventType.AllMessages:
+        eventBus.emit('Socket::Session::AllMessages', data)
         break
-      case 'done':
-        eventBus.emit('Socket::Done', { type, session_id })
+      case ISocket.SessionEventType.Done:
+        eventBus.emit('Socket::Session::Done', data)
         break
-      case 'error':
-        eventBus.emit('Socket::Error', { type, error: eventData.error })
+      case ISocket.SessionEventType.Error:
+        eventBus.emit('Socket::Session::Error', data)
         break
-      case 'info':
-        eventBus.emit('Socket::Info', { type, info: eventData.info })
+      case ISocket.SessionEventType.Info:
+        eventBus.emit('Socket::Session::Info', data)
         break
       default:
         console.log('⚠️ Unknown session update type:', type)
     }
   }
 
-  getCanvasData(canvasId: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      if (!this.socket || !this.connected) {
-        reject(new Error('Socket not connected'))
-        return
-      }
-
-      const handleResponse = (data: any) => {
-        if (data.canvas_id === canvasId) {
-          this.socket?.off('canvas_data', handleResponse)
-          resolve(data.data)
-        }
-      }
-
-      this.socket.on('canvas_data', handleResponse)
-      this.socket.emit('get_canvas_data', { canvas_id: canvasId })
-
-      setTimeout(() => {
-        this.socket?.off('canvas_data', handleResponse)
-        reject(new Error('Timeout waiting for canvas data'))
-      }, 5000)
-    })
-  }
-
-  getSessionData(sessionId: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      if (!this.socket || !this.connected) {
-        reject(new Error('Socket not connected'))
-        return
-      }
-
-      const handleResponse = (data: any) => {
-        if (data.session_id === sessionId) {
-          this.socket?.off('session_data', handleResponse)
-          resolve(data.data)
-        }
-      }
-
-      this.socket.on('session_data', handleResponse)
-      this.socket.emit('get_session_data', { session_id: sessionId })
-
-      setTimeout(() => {
-        this.socket?.off('session_data', handleResponse)
-        reject(new Error('Timeout waiting for session data'))
-      }, 5000)
-    })
-  }
-
-  ping(data: any = {}) {
+  ping(data: unknown) {
     if (this.socket && this.connected) {
       this.socket.emit('ping', data)
     }
@@ -240,12 +161,3 @@ export class SocketIOManager {
 export const socketManager = new SocketIOManager({
   serverUrl: 'http://localhost:57988',
 })
-
-export function useSocketConnection() {
-  return {
-    isConnected: socketManager.isConnected(),
-    socketId: socketManager.getSocketId(),
-    connect: socketManager.connect.bind(socketManager),
-    disconnect: socketManager.disconnect.bind(socketManager),
-  }
-}

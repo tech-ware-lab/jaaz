@@ -1,4 +1,3 @@
-import { toast } from 'sonner'
 import { eventBus } from './event'
 
 type NotificationType = 'canvas_update' | 'session_done' | 'error' | 'info'
@@ -30,7 +29,7 @@ class NotificationManager {
 
   private initializeEventListeners() {
     // Image Generated
-    eventBus.on('Socket::ImageGenerated', (data) => {
+    eventBus.on('Socket::Session::ImageGenerated', (data) => {
       this.addNotification({
         type: 'canvas_update',
         title: 'Image generated',
@@ -40,18 +39,8 @@ class NotificationManager {
       })
     })
 
-    // Session Done
-    eventBus.on('Socket::Done', () => {})
-
-    // Error
-    eventBus.on('Socket::Error', (data) => {
-      toast.error('Error', {
-        description: data.error,
-      })
-    })
-
     // Info
-    eventBus.on('Socket::Info', (data) => {
+    eventBus.on('Socket::Session::Info', (data) => {
       this.addNotification({
         type: 'info',
         title: 'Info',
