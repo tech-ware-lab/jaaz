@@ -19,8 +19,12 @@ Settings Router - 设置路由模块
 - services.settings_service - 设置服务
 """
 
-from fastapi import APIRouter, HTTPException, Request
+import json
+import os
+import shutil
+from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 from services.settings_service import settings_service
+from services.config_service import USER_DATA_DIR
 
 # 创建设置相关的路由器，所有端点都以 /api/settings 为前缀
 router = APIRouter(prefix="/api/settings")
@@ -215,3 +219,30 @@ async def update_proxy_settings(request: Request):
     # 更新代理设置
     result = await settings_service.update_settings({"proxy": proxy_value})
     return result
+
+
+@router.post("/comfyui/upload_workflow")
+async def upload_workflow(file: UploadFile = File(...), workflow_name: str = Form(...)):
+    workflows_dir = os.path.join(USER_DATA_DIR, "comfyui_workflow_apis")
+    contents = await file.read()
+
+    try:
+        data = json.loads(contents)
+        if not isinstance(data, dict):  # or `list`, depending on what structure you expect
+            raise ValueError("Not a JSON object")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON file: {str(e)}")
+
+    # Save the validated file
+    file_path = os.path.join(workflows_dir, workflow_name)
+
+    if os.path.exists(file_path):
+        raise HTTPException(status_code=400, detail=f"File already exists: {workflow_name} Please use a different name.")
+
+    try:
+        with open(file_path, "wb") as f:
+            f.write(contents)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to save file: {str(e)}")
+
+    return {"message": "Valid JSON file uploaded and saved", "filename": file.filename}

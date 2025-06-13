@@ -59,6 +59,7 @@
       "misconfigured": "Misconfigured"
     }
   },
+  "comfyui.workflows": "Workflows",
   "comfyui": {
     "title": "ComfyUI",
     "localImageGeneration": "🎨 Local Image Generation",

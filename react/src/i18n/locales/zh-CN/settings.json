@@ -59,6 +59,7 @@
       "misconfigured": "配置错误"
     }
   },
+  "comfyui.workflows": "工作流",
   "comfyui": {
     "title": "ComfyUI",
     "localImageGeneration": "🎨 本地图像生成",
