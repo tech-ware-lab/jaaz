@@ -1,5 +1,10 @@
 import type { LLMConfig, ToolCallFunctionName } from '@/types/types'
 
+// API Configuration
+export const BASE_API_URL = import.meta.env.PROD
+  ? 'https://dev-nodecafe.onrender.com'
+  : 'http://localhost:3000'
+
 export const PROVIDER_NAME_MAPPING: {
   [key: string]: { name: string; icon: string }
 } = {
@@ -57,6 +62,23 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
       'stability-ai/sdxl': { type: 'image' },
     },
     url: 'https://api.replicate.com/v1/',
+    api_key: '',
+    max_tokens: 8192,
+  },
+  jaaz: {
+    models: {
+      // image models
+      'gpt-4o': { type: 'text' },
+      'gpt-4o-mini': { type: 'text' },
+      // text models
+      'google/imagen-4': { type: 'image' },
+      'black-forest-labs/flux-1.1-pro': { type: 'image' },
+      'black-forest-labs/flux-kontext-pro': { type: 'image' },
+      'black-forest-labs/flux-kontext-max': { type: 'image' },
+      'recraft-ai/recraft-v3': { type: 'image' },
+      'stability-ai/sdxl': { type: 'image' },
+    },
+    url: `${BASE_API_URL}/api/v1/`,
     api_key: '',
     max_tokens: 8192,
   },
@@ -172,7 +194,3 @@ export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
 export const LOGO_URL =
   'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/jaaz.png'
 
-// API Configuration
-export const BASE_API_URL = import.meta.env.PROD
-  ? 'https://dev-nodecafe.onrender.com'
-  : 'http://localhost:3000'
