@@ -26,8 +26,6 @@ from langgraph.prebuilt import create_react_agent
 from services.db_service import db_service
 from services.config_service import config_service, app_config
 from services.websocket_service import send_to_websocket
-
-from routers.video_tools import generate_video_tool
 from routers.image_tools import generate_image_tool
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
@@ -63,7 +61,7 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
             )
         agent = create_react_agent(
             model=model,
-            tools=[generate_image_tool, generate_video_tool],
+            tools=[generate_image_tool],
             prompt='You are a profession design agent, specializing in visual design.'
         )
         ctx = {
