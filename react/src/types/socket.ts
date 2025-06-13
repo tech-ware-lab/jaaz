@@ -10,7 +10,6 @@ export enum SessionEventType {
   Delta = 'delta',
   ToolCall = 'tool_call',
   ToolCallArguments = 'tool_call_arguments',
-  ToolCallResult = 'tool_call_result',
   AllMessages = 'all_messages',
   ToolCallProgress = 'tool_call_progress',
 }
