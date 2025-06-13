@@ -33,11 +33,11 @@ const InstallComfyUIDialog = ({
     handleOpenChange(false) // Close the initial dialog
 
     try {
-      const result = await window.electronAPI.installComfyUI()
-      if (result.success) {
+      const result = await window.electronAPI?.installComfyUI()
+      if (result?.success) {
         toast.success('ComfyUI installation successful!')
       } else {
-        toast.error(`Installation failed: ${result.error}`)
+        toast.error(`Installation failed: ${result?.error}`)
         setShowProgressDialog(false)
       }
     } catch (error: unknown) {
