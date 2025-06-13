@@ -1,7 +1,7 @@
 // ipcHandlers.js
 const { chromium, BrowserContext } = require('playwright')
 const path = require('path')
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, shell } = require('electron')
 const fs = require('fs')
 const { spawn, fork } = require('child_process')
 
@@ -10,6 +10,17 @@ let installationWorker = null
 let installationPromise = null
 
 module.exports = {
+  // 处理打开浏览器的请求
+  'open-browser-url': async (event, url) => {
+    try {
+      await shell.openExternal(url)
+      return { success: true }
+    } catch (error) {
+      console.error('Failed to open browser:', error)
+      return { success: false, error: error.message }
+    }
+  },
+
   publishPost: async (event, data) => {
     console.log('🦄🦄publishPost called with data:', data)
     try {
