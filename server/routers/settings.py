@@ -23,8 +23,10 @@ import json
 import os
 import shutil
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
+from services.db_service import db_service
 from services.settings_service import settings_service
 from services.config_service import USER_DATA_DIR
+from pydantic import BaseModel
 
 # 创建设置相关的路由器，所有端点都以 /api/settings 为前缀
 router = APIRouter(prefix="/api/settings")
@@ -221,28 +223,36 @@ async def update_proxy_settings(request: Request):
     return result
 
 
-@router.post("/comfyui/upload_workflow")
-async def upload_workflow(file: UploadFile = File(...), workflow_name: str = Form(...)):
-    workflows_dir = os.path.join(USER_DATA_DIR, "comfyui_workflow_apis")
-    contents = await file.read()
+class CreateWorkflowRequest(BaseModel):
+    name: str
+    api_json: dict  # or str if you want it as string
+    description: str
+    inputs: list   # or str if you want it as string
+    outputs: str = None
 
+@router.post("/comfyui/create_workflow")
+async def create_workflow(request: CreateWorkflowRequest):
+    if not request.name:
+        raise HTTPException(status_code=400, detail="Name is required")
+    if not request.api_json:
+        raise HTTPException(status_code=400, detail="API JSON is required")
+    if not request.description:
+        raise HTTPException(status_code=400, detail="Description is required")
+    if not request.inputs:
+        raise HTTPException(status_code=400, detail="Inputs are required")
     try:
-        data = json.loads(contents)
-        if not isinstance(data, dict):  # or `list`, depending on what structure you expect
-            raise ValueError("Not a JSON object")
+        api_json = json.dumps(request.api_json)
+        inputs = json.dumps(request.inputs)
+        outputs = json.dumps(request.outputs)
+        await db_service.create_comfy_workflow(request.name, api_json, request.description, inputs, outputs)
+        return {"success": True}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid JSON file: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Failed to create workflow: {str(e)}")
 
-    # Save the validated file
-    file_path = os.path.join(workflows_dir, workflow_name)
+@router.get("/comfyui/list_workflows")
+async def list_workflows():
+    return await db_service.list_comfy_workflows()
 
-    if os.path.exists(file_path):
-        raise HTTPException(status_code=400, detail=f"File already exists: {workflow_name} Please use a different name.")
-
-    try:
-        with open(file_path, "wb") as f:
-            f.write(contents)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to save file: {str(e)}")
-
-    return {"message": "Valid JSON file uploaded and saved", "filename": file.filename}
+@router.delete("/comfyui/delete_workflow")
+async def delete_workflow(id: int):
+    return await db_service.delete_comfy_workflow(id)
