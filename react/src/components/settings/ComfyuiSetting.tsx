@@ -9,28 +9,13 @@ import { LLMConfig } from '@/types/types'
 import {
   AlertCircle,
   CheckCircle,
-  Download,
-  PaletteIcon,
   Play,
-  Plus,
-  PlusIcon,
   SquareSquareIcon,
   Trash2,
-  TrashIcon,
-  UploadIcon,
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useConfigs } from '@/contexts/configs'
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogHeader,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { toast } from 'sonner'
-import { Textarea } from '../ui/textarea'
 import ComfuiWorkflowSetting from './ComfuiWorkflowSetting'
 
 interface ComfyuiSettingProps {

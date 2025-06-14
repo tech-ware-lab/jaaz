@@ -10,7 +10,7 @@ from .migrations.manager import MigrationManager
 DB_PATH = os.path.join(USER_DATA_DIR, "localmanus.db")
 
 # Database version
-CURRENT_VERSION = 3
+CURRENT_VERSION = 2
 
 class DatabaseService:
     def __init__(self):

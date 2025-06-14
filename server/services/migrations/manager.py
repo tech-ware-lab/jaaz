@@ -17,10 +17,11 @@ ALL_MIGRATIONS = [
         'version': 2,
         'migration': V2AddCanvases,
     },
-    {
-        'version': 3,
-        'migration': V3AddComfyWorkflow,
-    },
+    # Will add this migration in the future
+    # {
+    #     'version': 3,
+    #     'migration': V3AddComfyWorkflow,
+    # },
 ]
 class MigrationManager:
     def get_migrations_to_apply(self, current_version: int, target_version: int) -> List[Type[Migration]]:
