@@ -1,3 +1,11 @@
+.excalidraw .shapes-section {
+  display: none !important;
+}
+
+.excalidraw .Stack.Stack_vertical.App-menu_top__left > div {
+  display: none !important;
+}
+
 .ToolIcon__keybinding {
   display: none !important;
 }
@@ -17,4 +25,20 @@
 
 .excalidraw .layer-ui__wrapper__top-right {
   display: none !important;
+}
+
+.excalidraw .FixedSideContainer.FixedSideContainer_side_top.App-top-bar {
+  display: none !important;
+}
+
+.excalidraw .layer-ui__wrapper__footer.App-menu.App-menu_bottom {
+  display: none !important;
+}
+
+.excalidraw .App-bottom-bar {
+  display: none !important;
+}
+
+.scroll-back-to-content {
+  bottom: 80px !important;
 }
