@@ -50,13 +50,6 @@ export interface SessionToolCallArgumentsEvent extends SessionBaseEvent {
   id: string
   text: string
 }
-export interface SessionToolCallResultEvent extends SessionBaseEvent {
-  type: SessionEventType.ToolCallResult
-  id: string
-  content: {
-    text: string
-  }[]
-}
 export interface SessionAllMessagesEvent extends SessionBaseEvent {
   type: SessionEventType.AllMessages
   messages: Message[]
@@ -71,7 +64,6 @@ export type SessionUpdateEvent =
   | SessionDeltaEvent
   | SessionToolCallEvent
   | SessionToolCallArgumentsEvent
-  | SessionToolCallResultEvent
   | SessionToolCallProgressEvent
   | SessionImageGeneratedEvent
   | SessionAllMessagesEvent
