@@ -130,14 +130,14 @@ class DatabaseService:
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
-    async def save_canvas_data(self, id: str, data: str):
+    async def save_canvas_data(self, id: str, data: str, thumbnail: str):
         """Save canvas data"""
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("""
                 UPDATE canvases 
-                SET data = ?, updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+                SET data = ?, thumbnail = ?, updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
                 WHERE id = ?
-            """, (data, id))
+            """, (data, thumbnail, id))
             await db.commit()
 
     async def get_canvas_data(self, id: str) -> Optional[Dict[str, Any]]:
