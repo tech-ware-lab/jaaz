@@ -16,6 +16,7 @@ import {
   PlusIcon,
   SquareSquareIcon,
   Trash2,
+  TrashIcon,
   UploadIcon,
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -29,6 +30,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { Textarea } from '../ui/textarea'
 
 interface ComfyuiSettingProps {
   config: LLMConfig
@@ -108,6 +110,13 @@ export default function ComfyuiSetting({
       .catch((error) => {
         console.error('Failed to fetch ComfyUI models:', error)
         setComfyuiModels([])
+      })
+
+    fetch('/api/settings/comfyui/list_workflows')
+      .then((res) => res.json())
+      .then((data) => {
+        console.log('ComfyUI workflows:', data)
+        setWorkflows(data)
       })
   }, [comfyUrl])
 
@@ -232,6 +241,7 @@ export default function ComfyuiSetting({
       models: {},
     })
   }
+  const [showAddWorkflowDialog, setShowAddWorkflowDialog] = useState(false)
 
   // ComfyUI installed successfully
   const handleInstallSuccess = async () => {
@@ -371,7 +381,17 @@ export default function ComfyuiSetting({
       <div className="flex items-center gap-2">
         <PaletteIcon className="w-5 h-5" />
         <p className="text-sm font-bold">{t('settings:comfyui.workflows')}</p>
-        <AddWorkflowDialog />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowAddWorkflowDialog(true)}
+        >
+          <PlusIcon className="w-4 h-4" />
+          Add Workflow
+        </Button>
+        {showAddWorkflowDialog && (
+          <AddWorkflowDialog onClose={() => setShowAddWorkflowDialog(false)} />
+        )}
       </div>
 
       {/* ComfyUI Models */}
@@ -432,7 +452,7 @@ type ComfyUIAPINode = {
   class_type: string
   inputs: Record<string, any>
 }
-function AddWorkflowDialog() {
+function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [workflowName, setWorkflowName] = useState('')
   const [workflowJson, setWorkflowJson] = useState<Record<
@@ -449,6 +469,8 @@ function AddWorkflowDialog() {
       default_value: string | number | boolean
     }[]
   >([])
+  const [error, setError] = useState('')
+  const [workflowDescription, setWorkflowDescription] = useState('')
   const [outputs, setOutputs] = useState<
     {
       name: string
@@ -499,17 +521,58 @@ function AddWorkflowDialog() {
       // })
     }
   }
+  const handleSubmit = () => {
+    if (!workflowJson) {
+      setError('Please upload a workflow API JSON file')
+      return
+    }
+    if (inputs.length === 0) {
+      setError('Please add at least one input')
+      return
+    }
+    if (workflowName === '') {
+      setError('Please enter a workflow name')
+      return
+    }
+    fetch('/api/settings/comfyui/create_workflow', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: workflowName,
+        api_json: workflowJson,
+        description: workflowDescription,
+        inputs: inputs,
+      }),
+    }).then(async (res) => {
+      if (res.ok) {
+        toast.success('Workflow created successfully')
+      } else {
+        const data = await res.json()
+        toast.error(`Failed to create workflow: ${data.message}`)
+      }
+    })
+  }
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <PlusIcon className="w-4 h-4" />
-          Add Workflow
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl h-[80vh] overflow-y-auto flex flex-col">
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose()
+        }
+      }}
+    >
+      <DialogContent
+        // open={true}
+        className="max-w-4xl h-[80vh] overflow-y-auto flex flex-col"
+      >
         <DialogHeader>
-          <DialogTitle>Add Workflow</DialogTitle>
+          <div className="flex items-center gap-2 justify-between">
+            <DialogTitle>Add Workflow</DialogTitle>
+            <Button onClick={handleSubmit}>Submit</Button>
+          </div>
+          {error && <p className="text-red-500">{error}</p>}
         </DialogHeader>
         <Input
           type="text"
@@ -518,7 +581,12 @@ function AddWorkflowDialog() {
           value={workflowName}
           onChange={(e) => setWorkflowName(e.target.value)}
         />
-        <Button onClick={() => inputRef.current?.click()}>
+        <Textarea
+          placeholder="Workflow Description"
+          value={workflowDescription}
+          onChange={(e) => setWorkflowDescription(e.target.value)}
+        />
+        <Button onClick={() => inputRef.current?.click()} variant={'outline'}>
           <UploadIcon className="w-4 h-4 mr-2" />
           Upload Workflow API JSON
         </Button>
@@ -531,20 +599,65 @@ function AddWorkflowDialog() {
         />
         {workflowJson && (
           <div className="flex flex-col bg-accent p-2 rounded-md">
-            <p className="font-bold">Inputs</p>
-            {inputs.length > 0 ? (
-              inputs.map((input) => (
-                <div key={input.name}>
-                  <p>{input.name}</p>
-                  <p>{input.description}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground text-center">
-                Please add your workflow inputs from below. Choose at lease one
-                input.
-              </p>
-            )}
+            <p className="font-bold mb-2">Inputs</p>
+            <div className="ml-1">
+              {inputs.length > 0 ? (
+                inputs.map((input) => (
+                  <div key={input.name} className="flex items-center gap-2">
+                    <div className="flex flex-col gap-1 flex-1">
+                      <input
+                        type="text"
+                        value={input.name}
+                        placeholder="Input Name"
+                        onChange={(e) => {
+                          setInputs(
+                            inputs.map((i) =>
+                              i.name === input.name
+                                ? { ...i, name: e.target.value }
+                                : i
+                            )
+                          )
+                        }}
+                        className="border-none bg-transparent w-full"
+                      />
+                      <Input
+                        type="text"
+                        value={input.default_value.toString()}
+                        disabled
+                      />
+                      <textarea
+                        placeholder="Please enter your description of the input"
+                        value={input.description}
+                        className="border-none bg-transparent w-full"
+                        onChange={(e) => {
+                          setInputs(
+                            inputs.map((i) =>
+                              i.name === input.name
+                                ? { ...i, description: e.target.value }
+                                : i
+                            )
+                          )
+                        }}
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setInputs(inputs.filter((i) => i.name !== input.name))
+                      }}
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center">
+                  Please add your workflow inputs from below. Choose at lease
+                  one input.
+                </p>
+              )}
+            </div>
             {/* <p className="font-bold">Outputs</p>
             {outputs.map((input) => (
               <div key={input.name}>
@@ -587,10 +700,17 @@ function AddWorkflowDialog() {
                           size="default"
                           onClick={() => {
                             setInputs([
-                              ...inputs,
+                              ...inputs.filter(
+                                (i) =>
+                                  i.node_id !== nodeID ||
+                                  i.node_input_name !== inputKey
+                              ),
                               {
                                 name: inputKey,
-                                type: 'string',
+                                type: typeof inputValue as
+                                  | 'string'
+                                  | 'number'
+                                  | 'boolean',
                                 description: '',
                                 node_id: nodeID,
                                 node_input_name: inputKey,
