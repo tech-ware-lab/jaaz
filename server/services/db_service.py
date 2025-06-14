@@ -173,5 +173,28 @@ class DatabaseService:
             await db.execute("UPDATE canvases SET name = ? WHERE id = ?", (name, id))
             await db.commit()
 
+    async def create_comfy_workflow(self, name: str, api_json: str, description: str, inputs: str, outputs: str = None):
+        """Create a new comfy workflow"""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
+                INSERT INTO comfy_workflows (name, api_json, description, inputs, outputs)
+                VALUES (?, ?, ?, ?, ?)
+            """, (name, api_json, description, inputs, outputs))
+            await db.commit()
+
+    async def list_comfy_workflows(self) -> List[Dict[str, Any]]:
+        """List all comfy workflows"""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = sqlite3.Row
+            cursor = await db.execute("SELECT id, name, description, api_json, inputs, outputs FROM comfy_workflows ORDER BY id DESC")
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
+    
+    async def delete_comfy_workflow(self, id: int):
+        """Delete a comfy workflow"""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("DELETE FROM comfy_workflows WHERE id = ?", (id,))
+            await db.commit()
+
 # Create a singleton instance
 db_service = DatabaseService() 

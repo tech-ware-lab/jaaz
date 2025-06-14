@@ -6,10 +6,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DEFAULT_PROVIDERS_CONFIG, PROVIDER_NAME_MAPPING } from '@/constants'
 import { LLMConfig } from '@/types/types'
-import { AlertCircle, CheckCircle, Download, Play, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import {
+  AlertCircle,
+  CheckCircle,
+  Play,
+  SquareSquareIcon,
+  Trash2,
+} from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useConfigs } from '@/contexts/configs'
+import ComfuiWorkflowSetting from './ComfuiWorkflowSetting'
 
 interface ComfyuiSettingProps {
   config: LLMConfig
@@ -56,8 +63,6 @@ export default function ComfyuiSetting({
 
     checkInstallation()
   }, [])
-
-
 
   // Fetch ComfyUI models when URL is available
   useEffect(() => {
@@ -122,7 +127,10 @@ export default function ComfyuiSetting({
         setComfyUIStatus('not-running')
       }
     } catch (error) {
-      console.log('ComfyUI connection failed:', error instanceof Error ? error.message : String(error))
+      console.log(
+        'ComfyUI connection failed:',
+        error instanceof Error ? error.message : String(error)
+      )
       setComfyUIStatus('not-running')
     }
   }, [comfyUrl])
@@ -183,7 +191,7 @@ export default function ComfyuiSetting({
         if (stopResult?.success) {
           console.log('ComfyUI process stopped successfully')
           // Wait for process to fully terminate
-          await new Promise(resolve => setTimeout(resolve, 2000))
+          await new Promise((resolve) => setTimeout(resolve, 2000))
         }
       } catch (stopError) {
         console.log('Error stopping ComfyUI process:', stopError)
@@ -211,6 +219,7 @@ export default function ComfyuiSetting({
       models: {},
     })
   }
+  const [showAddWorkflowDialog, setShowAddWorkflowDialog] = useState(false)
 
   // ComfyUI installed successfully
   const handleInstallSuccess = async () => {
@@ -284,7 +293,8 @@ export default function ComfyuiSetting({
               <span className="text-sm text-muted-foreground">
                 {getComfyUIStatusText()}
               </span>
-              {(comfyUIStatus === 'not-running' || (!comfyUrl && isComfyUIInstalled)) && (
+              {(comfyUIStatus === 'not-running' ||
+                (!comfyUrl && isComfyUIInstalled)) && (
                 <Button
                   onClick={handleStartClick}
                   variant="outline"
@@ -324,18 +334,17 @@ export default function ComfyuiSetting({
 
       {/* API URL Input */}
       <div className="space-y-2">
-        <Label htmlFor="comfyui-url">
-          {t('settings:provider.apiUrl')}
-        </Label>
+        <Label htmlFor="comfyui-url">{t('settings:provider.apiUrl')}</Label>
         <Input
           id="comfyui-url"
           placeholder="http://127.0.0.1:8188"
           value={comfyUrl}
           onChange={(e) => handleUrlChange(e.target.value)}
-          className={`w-full ${comfyUrl && !isValidUrl(comfyUrl)
-            ? 'border-red-300 focus:border-red-500'
-            : ''
-            }`}
+          className={`w-full ${
+            comfyUrl && !isValidUrl(comfyUrl)
+              ? 'border-red-300 focus:border-red-500'
+              : ''
+          }`}
         />
         <p className="text-xs text-gray-500">
           {t('settings:comfyui.urlDescription')}
@@ -346,11 +355,14 @@ export default function ComfyuiSetting({
           </p>
         )}
       </div>
-
+      <ComfuiWorkflowSetting />
       {/* ComfyUI Models */}
       {comfyuiModels.length > 0 && (
-        <div className="space-y-2">
-          <Label>{t('settings:models.title')}</Label>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <SquareSquareIcon className="w-5 h-5" />
+            <p className="text-sm font-bold">{t('settings:models.title')}</p>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             {comfyuiModels.map((model) => (
               <div key={model} className="flex items-center gap-2">
