@@ -1,6 +1,8 @@
 import { getCanvas, renameCanvas } from '@/api/canvas'
 import CanvasExcali from '@/components/canvas/CanvasExcali'
 import CanvasHeader from '@/components/canvas/CanvasHeader'
+import CanvasMenu from '@/components/canvas/menu'
+import CanvasPopbarWrapper from '@/components/canvas/pop-bar'
 import ChatInterface from '@/components/chat/Chat'
 import {
   ResizableHandle,
@@ -88,7 +90,11 @@ function Canvas() {
                   </div>
                 </div>
               ) : (
-                <CanvasExcali canvasId={id} initialData={canvas?.data} />
+                <>
+                  <CanvasExcali canvasId={id} initialData={canvas?.data} />
+                  <CanvasMenu />
+                  <CanvasPopbarWrapper />
+                </>
               )}
             </div>
           </ResizablePanel>

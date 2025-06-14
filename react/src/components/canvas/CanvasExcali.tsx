@@ -62,7 +62,18 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
         files,
       }
 
-      saveCanvas(canvasId, data)
+      let thumbnail = ''
+      const latestImage = elements
+        .filter((element) => element.type === 'image')
+        .sort((a, b) => b.updated - a.updated)[0]
+      if (latestImage) {
+        const file = files[latestImage.fileId!]
+        if (file) {
+          thumbnail = file.dataURL
+        }
+      }
+
+      saveCanvas(canvasId, { data, thumbnail })
     },
     1000
   )
