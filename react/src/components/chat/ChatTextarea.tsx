@@ -2,14 +2,16 @@ import { cancelChat } from '@/api/chat'
 import { uploadImage } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
-import { cn } from '@/lib/utils'
+import { eventBus, TCanvasAddImagesToChatEvent } from '@/lib/event'
+import { cn, dataURLToFile } from '@/lib/utils'
 import { Message, Model } from '@/types/types'
 import { useMutation } from '@tanstack/react-query'
 import { useDrop } from 'ahooks'
+import { produce } from 'immer'
 import { ArrowUp, Loader2, PlusIcon, Square, XIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Textarea, { TextAreaRef } from 'rc-textarea'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import ModelSelector from './ModelSelector'
@@ -124,7 +126,11 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
     onSendMessages(newMessage, {
       textModel: textModel,
-      imageModel: imageModel,
+      imageModel: imageModel || {
+        provider: '',
+        model: '',
+        url: '',
+      },
     })
   }, [pending, textModel, imageModel, imageModels, value, onSendMessages])
 
@@ -152,6 +158,33 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       setIsDragOver(false)
     },
     onFiles: handleFilesDrop,
+  })
+
+  useEffect(() => {
+    const handleAddImagesToChat = (data: TCanvasAddImagesToChatEvent) => {
+      data.forEach(async (image) => {
+        if (image.base64) {
+          const file = dataURLToFile(image.base64, image.fileId)
+          uploadImageMutation(file)
+        } else {
+          setImages(
+            produce((prev) => {
+              prev.push({
+                file_id: image.fileId,
+                width: image.width,
+                height: image.height,
+              })
+            })
+          )
+        }
+      })
+
+      textareaRef.current?.focus()
+    }
+    eventBus.on('Canvas::AddImagesToChat', handleAddImagesToChat)
+    return () => {
+      eventBus.off('Canvas::AddImagesToChat', handleAddImagesToChat)
+    }
   })
 
   return (

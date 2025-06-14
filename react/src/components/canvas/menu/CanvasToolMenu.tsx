@@ -33,7 +33,7 @@ const CanvasToolMenu = () => {
 
   return (
     <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-primary-foreground/75 backdrop-blur-lg rounded-lg p-1 shadow-[0_5px_10px_rgba(0,0,0,0.08)] border border-primary/10">
-      {tools.map((tool) =>
+      {tools.map((tool, index) =>
         tool ? (
           <CanvasMenuButton
             key={tool}
@@ -42,7 +42,11 @@ const CanvasToolMenu = () => {
             onClick={() => handleToolChange(tool)}
           />
         ) : (
-          <Separator orientation="vertical" className="h-6! bg-primary/5" />
+          <Separator
+            key={index}
+            orientation="vertical"
+            className="h-6! bg-primary/5"
+          />
         )
       )}
     </div>
