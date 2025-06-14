@@ -41,5 +41,8 @@
     "arrow": "箭头",
     "line": "线条",
     "zoomFit": "缩放至适合"
+  },
+  "popbar": {
+    "addToChat": "添加到对话"
   }
 }
