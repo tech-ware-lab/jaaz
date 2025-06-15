@@ -31,7 +31,7 @@ def generate_file_id():
 class GenerateImageInputSchema(BaseModel):
     prompt: str = Field(description="Required. The prompt for image generation. If you want to edit an image, please describe what you want to edit in the prompt.")
     aspect_ratio: str = Field(description="Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4")
-    input_image: Optional[str] = Field(description="Optional; Image to use as reference. Pass image_id here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc.")
+    input_image: Optional[str] = Field(default=None, description="Optional; Image to use as reference. Pass image_id here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc.")
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
