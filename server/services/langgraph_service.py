@@ -212,8 +212,8 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 ],
                 'handoffs': [
                     {
-                        'name': 'hotel_assistant',
-                        'description': "Transfer user to the hotel-booking assistant.",
+                        'agent_name': 'generate_image_agent',
+                        'description': "Transfer user to the generate_image_agent.",
                     }
                 ]
             },
