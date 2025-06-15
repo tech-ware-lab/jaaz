@@ -275,13 +275,13 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
         planner = create_react_agent(
             model=model,
             tools=[transfer_to_general_image_designer],
-            prompt="You are a design planning writing agent. You should write a plan for the design project. And then handoff the task to the suitable agent who specializes in the task. Tools this agent has: generate_image_tool",
+            prompt="You are a design planning writing agent. You should do: - Step 1. write a plan for the design project. Including the layout, style, elements of the image etc. Step \n - Step 2. handoff the task to the suitable agent who specializes in the task. Tools this agent has: generate_image_tool",
             name="planner"
         )
         general_image_designer = create_react_agent(
             model=model,
             tools=[generate_image_tool],
-            prompt="You are a general image designer. You should generate an image based on the plan.",
+            prompt="You are a general image designer. You should generate an image based on the plan. Tools this agent has: generate_image_tool",
             name="general_image_designer"
         )
 
@@ -303,28 +303,26 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             },
         }
         tool_calls: list[ToolCall] = []
+        last_saved_message_index = len(messages) - 1
+
         async for chunk in swarm.astream(
             {"messages": messages},
             config=ctx,
-            stream_mode=["updates", "messages", "custom"]
+            stream_mode=["messages", "custom", 'values']
         ):
             chunk_type = chunk[0]
-            print('👇chunk', chunk)
-            if chunk_type == 'updates':
-                print('👇updates', chunk)
-                for key in chunk[1]:
-                    print('👇key', key)
-                    all_messages = chunk[1].get(key).get('messages', [])
-                    oai_messages = convert_to_openai_messages(all_messages)
-                    # new_message = oai_messages[-1]
-
-                    messages.extend(oai_messages)
-                    await send_to_websocket(session_id, {
+            if chunk_type == 'values':
+                print('👇values', chunk)
+                all_messages = chunk[1].get('messages', [])
+                oai_messages = convert_to_openai_messages(all_messages)
+                await send_to_websocket(session_id, {
                         'type': 'all_messages',
-                        'messages': messages
+                        'messages': oai_messages
                     })
-                    for new_message in oai_messages:
-                        await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
+                for i in range(last_saved_message_index + 1, len(oai_messages)):
+                    new_message = oai_messages[i]
+                    await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
+                    last_saved_message_index = i
             else:
                 # Access the AIMessageChunk
                 ai_message_chunk: AIMessageChunk = chunk[1][0]

@@ -146,6 +146,8 @@ print('🛠️', generate_image_tool.args_schema.model_json_schema())
 
 
 async def get_image_info_and_save(url, file_path_without_extension):
+    print('🌐image url', url)
+
     # Fetch the image asynchronously
     async with HttpClient.create() as client:
         response = await client.get(url)
