@@ -323,10 +323,6 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             agent_name="general_image_designer",
             description="Transfer user to the general_image_designer. This agent specializes in generating images.",
         )
-        transfer_to_video_editor = create_handoff_tool(
-            agent_name="video_editor",
-            description="Transfer user to the video_editor. This agent specializes in generating videos.",
-        )
         planner = create_react_agent(
             model=model,
             tools=[write_plan_tool, transfer_to_general_image_designer],
@@ -343,23 +339,30 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             For example, if the user ask to 'Generate a cartoon anime style portrait of Zimomo', the example plan is :
             ```
             [{
-                "title": "Web search Zimomo reference image",
+                "title": "Web search image",
+                "description": "Search the web for images referenceof Zimomo"
             }, {
-                "title": "Generate a cartoon anime style portrait of Zimomo",
+                "title": "Generate Image",
+                "description": "Generate an image based on the image reference searched"
             }]
             ```
             For example, if the user ask to 'Generate a ads video for a lipstick product', the example plan is :
             ```
             [{
-                "title": "Design the text script and key frames for the ads video",
+                "title": "Design the video script",
+                "description": "Design the video script for the ads video"
             }, {
-                "title": "Write the image prompts for each key frame and generate the story board",
+                "title": "Write the image prompts for the story board",
+                "description": "Write the image prompts for the story board"
             }, {
-                "title": "Generate the images of the story board",
+                "title": "Generate the images",
+                "description": "Generate the images for the story board"
             }, {
-                "title": "Generate the video clips from the images",
+                "title": "Generate the video clips",
+                "description": "Generate the video clips from the images"
             }, {
-                "title": "Combine the video clips into a final video",
+                "title": "Combine the video clips",
+                "description": "Combine the video clips into a final video"
             }]
             ```
             """,
@@ -368,14 +371,23 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
         general_image_designer = create_react_agent(
             model=model,
             tools=[generate_image_tool],
-            prompt="You are a general image designer. You should generate an image based on the plan. Tools this agent has: generate_image_tool",
+            prompt="""
+            You are a professional image designer. You should first write a design strategy plan and then generate the image based on the plan. 
+            Example Design Strategy Plan:
+            ### Style
+            - Use a modern and clean style
+            ### Elements
+            - Featuring a sofa in the center, an armchair in the corner, and a table in the corner
+            ### Colors
+            - Use a combination of blue and green
+            ### Layout
+            - Place the sofa in the center of the image, with the armchair and table on either side
+            ### Details
+            - Add a small pattern to the fabric of the sofa
+            - Add a small pattern to the fabric of the armchair
+
+            """,
             name="general_image_designer"
-        )
-        video_editor = create_react_agent(
-            model=model,
-            tools=[generate_image_tool,],
-            prompt="You are a video editor. You should generate a video based on the plan. Tools this agent has: generate_video_tool",
-            name="video_editor"
         )
 
         swarm = create_swarm(

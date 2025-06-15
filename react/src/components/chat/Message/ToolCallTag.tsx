@@ -9,6 +9,7 @@ import MultiChoicePrompt from '../MultiChoicePrompt'
 import SingleChoicePrompt from '../SingleChoicePrompt'
 import { useEffect, useState } from 'react'
 import { eventBus, TEvents } from '@/lib/event'
+import WritePlanToolCall from './WritePlanToolcall'
 
 type ToolCallTagProps = {
   toolCall: ToolCall
@@ -23,18 +24,17 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
 }) => {
   const { name, arguments: inputs } = toolCall.function
 
-  let parsedArgs: Record<string, unknown> | null = null
-  try {
-    parsedArgs = JSON.parse(inputs)
-  } catch (error) {
-    /* empty */
-  }
-
   if (name == 'prompt_user_multi_choice') {
     return <MultiChoicePrompt />
   }
   if (name == 'prompt_user_single_choice') {
     return <SingleChoicePrompt />
+  }
+  if (name == 'write_plan') {
+    return <WritePlanToolCall args={inputs} />
+  }
+  if (name.startsWith('transfer_to')) {
+    return null
   }
 
   return (
@@ -69,7 +69,10 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
             transition={{ duration: 0.3, ease: 'easeOut' }}
           >
             <div className="p-2 break-all">
-              <Markdown>{inputs}</Markdown>
+              <Markdown>
+                {/* {parsedArgs ? JSON.stringify(parsedArgs) : inputs} */}
+                {inputs}
+              </Markdown>
             </div>
           </motion.div>
         )}
