@@ -29,7 +29,7 @@ from langgraph.prebuilt import create_react_agent
 from services.db_service import db_service
 from services.config_service import config_service, app_config
 from services.websocket_service import send_to_websocket
-from routers.image_tools import generate_image_tool
+from tools.image_generators import generate_image_tool
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langgraph_swarm import create_swarm, create_handoff_tool
@@ -201,8 +201,13 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 'name': 'planning_agent',
                 'tools': [],
                 'system_prompt': """
-                You are a design planning writing agent. You should write a detailed plan for the design project. Example Plan:
-                ## 
+                You are a design planning writing agent. You should write a plan for the design project. 
+                And then handoff the task to the suitable agent who specializes in the task.
+                Example Plan:
+                ## Style
+                - Use a modern and clean style
+                ## Elements
+                - Featuring a sofa in the center, an armchair in the corner, and a table in the corner
                 """,
                 'knowledge': [
                     {
@@ -212,13 +217,15 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 ],
                 'handoffs': [
                     {
-                        'agent_name': 'generate_image_agent',
-                        'description': "Transfer user to the generate_image_agent.",
+                        'agent_name': 'general_image_designer',
+                        'description': """
+                        Transfer user to the general_image_designer. About this agent: Specialize in generating images.
+                        """
                     }
                 ]
             },
             {
-                'name': 'generate_image_agent',
+                'name': 'general_image_designer',
                 'tools': [{
                     'name': 'generate_image',
                     'description': "Generate an image",
@@ -226,7 +233,7 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 }],
                 'knowledge': [
                     {
-                        'name': 'poster.md',
+                        'name': 'poster_design_guide.md',
                         'mode': 'prompt'
                     },
                 ],
@@ -237,7 +244,7 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             handoff_tools = []
             for handoff in agent.get('handoffs', []):
                 hf = create_handoff_tool(
-                    agent_name=handoff['name'],
+                    agent_name=handoff['agent_name'],
                     description=handoff['description'],
                 )
                 handoff_tools.append(hf)
@@ -254,14 +261,39 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 name=agent.get('name'),
                 model=model,
                 tools=tools,
-                prompt=agent.get('system_prompt')
+                prompt=agent.get('You specialize in generating images.')
             )
             agents.append(agent)
+        transfer_to_hotel_assistant = create_handoff_tool(agent_name="hotel_assistant")
+        transfer_to_flight_assistant = create_handoff_tool(agent_name="flight_assistant")
+
+        # Define agents
+        transfer_to_general_image_designer = create_handoff_tool(
+            agent_name="general_image_designer",
+            description="Transfer user to the general_image_designer. This agent specializes in generating images.",
+        )
+        planner = create_react_agent(
+            model=model,
+            tools=[transfer_to_general_image_designer],
+            prompt="You are a design planning writing agent. You should write a plan for the design project. And then handoff the task to the suitable agent who specializes in the task. Tools this agent has: generate_image_tool",
+            name="planner"
+        )
+        general_image_designer = create_react_agent(
+            model=model,
+            tools=[generate_image_tool],
+            prompt="You are a general image designer. You should generate an image based on the plan.",
+            name="general_image_designer"
+        )
 
         swarm = create_swarm(
-            agents=agents,
-            default_active_agent=agent_schemas[0]['name']
+            agents=[planner, general_image_designer],
+            default_active_agent="planner"
         ).compile()
+
+        # swarm = create_swarm(
+        #     agents=agents,
+        #     default_active_agent=agent_schemas[0]['name']
+        # ).compile()
   
         ctx = {
             'canvas_id': canvas_id,
@@ -279,18 +311,20 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             chunk_type = chunk[0]
             print('👇chunk', chunk)
             if chunk_type == 'updates':
-                all_messages = chunk[1].get(
-                    'agent', chunk[1].get('tools')).get('messages', [])
-                oai_messages = convert_to_openai_messages(all_messages)
-                # new_message = oai_messages[-1]
+                print('👇updates', chunk)
+                for key in chunk[1]:
+                    print('👇key', key)
+                    all_messages = chunk[1].get(key).get('messages', [])
+                    oai_messages = convert_to_openai_messages(all_messages)
+                    # new_message = oai_messages[-1]
 
-                messages.extend(oai_messages)
-                await send_to_websocket(session_id, {
-                    'type': 'all_messages',
-                    'messages': messages
-                })
-                for new_message in oai_messages:
-                    await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
+                    messages.extend(oai_messages)
+                    await send_to_websocket(session_id, {
+                        'type': 'all_messages',
+                        'messages': messages
+                    })
+                    for new_message in oai_messages:
+                        await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
             else:
                 # Access the AIMessageChunk
                 ai_message_chunk: AIMessageChunk = chunk[1][0]
