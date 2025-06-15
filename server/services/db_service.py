@@ -130,7 +130,7 @@ class DatabaseService:
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
-    async def save_canvas_data(self, id: str, data: str, thumbnail: str):
+    async def save_canvas_data(self, id: str, data: str, thumbnail: str = None):
         """Save canvas data"""
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("""
