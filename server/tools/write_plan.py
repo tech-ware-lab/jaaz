@@ -23,7 +23,10 @@ class StepsInput(BaseModel):
 
 
 @tool("write_plan", 
-description="Write a plan to complete the current task in the order of execution, including the steps and the description of each step. The plan should be friendly to showcase to the user.", 
+description="""
+Write a plan to complete the current task in the order of execution, including the steps and the description of each step. 
+The plan should be friendly to showcase to the user.
+""",
 args_schema=StepsInput)
 def write_plan_tool(
     steps: List[Step],
