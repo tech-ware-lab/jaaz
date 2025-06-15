@@ -16,9 +16,8 @@ langgraph_service.py
 - routers.websocket
 - routers.image_tools
 """
-from typing import Annotated
-
 from pydantic import BaseModel, Field
+from tools.write_plan import write_plan_tool
 from utils.http_client import HttpClient
 
 import asyncio
@@ -274,8 +273,33 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
         )
         planner = create_react_agent(
             model=model,
-            tools=[transfer_to_general_image_designer],
-            prompt="You are a design planning writing agent. You should do: - Step 1. write a plan for the design project. Including the layout, style, elements of the image etc. Step \n - Step 2. handoff the task to the suitable agent who specializes in the task. Tools this agent has: generate_image_tool",
+            tools=[write_plan_tool, generate_image_tool],
+            prompt="""
+            You are a design planning writing agent. You should do: 
+            - Step 1. write a execution plan for the user's request. You should breakdown the task into high level steps for the other agents to execute. 
+            For example, if the user ask to 'Generate a cartoon anime style portrait of Zimomo', the example plan is :
+            ```json
+            [{
+                "title": "Web search Zimomo reference image",
+            }, {
+                "title": "Generate a cartoon anime style portrait of Zimomo",
+            }]
+            ```
+            For example, if the user ask to 'Generate a ads video for a lipstick product', the example plan is :
+            ```json
+            [{
+                "title": "Design the text script and key frames for the ads video",
+            }, {
+                "title": "Write the image prompts for each key frame and generate the story board",
+            }, {
+                "title": "Generate the images of the story board",
+            }, {
+                "title": "Generate the video clips from the images",
+            }, {
+                "title": "Combine the video clips into a final video",
+            }]
+            ```
+            """,
             name="planner"
         )
         general_image_designer = create_react_agent(
