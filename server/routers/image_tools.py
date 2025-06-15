@@ -1,37 +1,17 @@
-from langchain_core.runnables import RunnableConfig
-import base64
-import random
-import time
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
-from common import DEFAULT_PORT
-from routers.image_generators import generate_image_comfyui, generate_image_replicate, generate_image_wavespeed, generate_image_jaaz_cloud
-from services.db_service import db_service
-from services.config_service import app_config
-import traceback
-from services.config_service import USER_DATA_DIR, FILES_DIR
-from services.websocket_service import send_to_websocket, broadcast_session_update
-
+from tools.image_generators import generate_file_id
+from services.config_service import FILES_DIR
 from PIL import Image
 from io import BytesIO
 import os
-from nanoid import generate
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 import httpx
 import aiofiles
 from mimetypes import guess_type
-import asyncio
-from typing import Optional, Annotated, List
-from langchain_core.tools import tool, InjectedToolCallId
 from utils.http_client import HttpClient
-import json
+
 router = APIRouter(prefix="/api")
-
 os.makedirs(FILES_DIR, exist_ok=True)
-
-# 生成唯一文件 ID
-def generate_file_id():
-    return 'im_' + generate(size=8)
 
 # 上传图片接口，支持表单提交
 @router.post("/upload_image")
@@ -101,175 +81,3 @@ async def get_object_info(data: dict):
         print(f"Unexpected error connecting to ComfyUI: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Failed to connect to ComfyUI: {str(e)}")
-
-# LangChain Tool: 图像生成工具
-class GenerateImageInputSchema(BaseModel):
-    prompt: str = Field(description="Required. The prompt for image generation. If you want to edit an image, please describe what you want to edit in the prompt.")
-    aspect_ratio: str = Field(description="Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4")
-    input_image: Optional[str] = Field(description="Optional; Image to use as reference. Pass image_id here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc.")
-    tool_call_id: Annotated[str, InjectedToolCallId]
-    
-@tool("generate_image", 
-description="Generate an image using text prompt or optionally pass an image for reference or for editing", 
-args_schema=GenerateImageInputSchema)
-async def generate_image_tool(
-    prompt: str,
-    aspect_ratio: str,
-    config: RunnableConfig,
-    tool_call_id: Annotated[str, InjectedToolCallId],
-    input_image: Optional[str] = None,
-) -> str:
-    print('🛠️ tool_call_id', tool_call_id)
-    ctx = config.get('configurable', {})
-    canvas_id = ctx.get('canvas_id', '')
-    session_id = ctx.get('session_id', '')
-    print('🛠️canvas_id', canvas_id, 'session_id', session_id)
-    # Inject the tool call id into the context
-    ctx['tool_call_id'] = tool_call_id
-    args_json = {
-        'prompt': prompt,
-        'aspect_ratio': aspect_ratio,
-    }
-    image_model = ctx.get('model_info', {}).get('image', {})
-    if image_model is None:
-        raise ValueError("Image model is not selected")
-    model = image_model.get('model', '')
-    provider = image_model.get('provider', 'replicate')
-
-    try:
-        if input_image:
-            image_path = os.path.join(FILES_DIR, f'{input_image}')
-            async with aiofiles.open(image_path, 'rb') as f:
-                image_data = await f.read()
-            b64 = base64.b64encode(image_data).decode('utf-8')
-
-            mime_type, _ = guess_type(image_path)
-            if not mime_type:
-                mime_type = "image/png"  # default fallback
-            input_image = f"data:{mime_type};base64,{b64}"
-            if provider == 'replicate':
-                mime_type, width, height, filename = await generate_image_replicate(prompt, model, aspect_ratio, input_image)
-            elif provider == 'comfyui':
-                mime_type, width, height, filename = await generate_image_comfyui(args_json, ctx)
-            elif provider == 'wavespeed':
-                mime_type, width, height, filename = await generate_image_wavespeed(prompt, model, input_image)
-            elif provider == 'jaaz':
-                mime_type, width, height, filename = await generate_image_jaaz_cloud(prompt, model, aspect_ratio, input_image)
-        else:
-            if provider == 'replicate':
-                mime_type, width, height, filename = await generate_image_replicate(prompt, model, aspect_ratio)
-            elif provider == 'comfyui':
-                mime_type, width, height, filename = await generate_image_comfyui(args_json, ctx)
-            elif provider == 'wavespeed':
-                mime_type, width, height, filename = await generate_image_wavespeed(prompt, model, **args_json)
-            elif provider == 'jaaz':
-                mime_type, width, height, filename = await generate_image_jaaz_cloud(prompt, model, aspect_ratio)
-
-        file_id = generate_file_id()
-        url = f'/api/file/{filename}'
-
-        file_data = {
-            'mimeType': mime_type,
-            'id': file_id,
-            'dataURL': url,
-            'created': int(time.time() * 1000),
-        }
-
-        new_image_element = await generate_new_image_element(canvas_id, file_id, {
-            'width': width,
-            'height': height,
-        })
-
-        # update the canvas data, add the new image element
-        canvas_data = await db_service.get_canvas_data(canvas_id)
-        if 'data' not in canvas_data:
-            canvas_data['data'] = {}
-        if 'elements' not in canvas_data['data']:
-            canvas_data['data']['elements'] = []
-        if 'files' not in canvas_data['data']:
-            canvas_data['data']['files'] = {}
-
-        canvas_data['data']['elements'].append(new_image_element)
-        canvas_data['data']['files'][file_id] = file_data
-
-        image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
-
-        print('🛠️canvas_data', canvas_data)
-
-        await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data['data']))
-
-        await broadcast_session_update(session_id, canvas_id, {
-            'type': 'image_generated',
-            'element': new_image_element,
-            'file': file_data,
-            'image_url': image_url,
-        })
-
-        return f"image generated successfully ![image_id: {filename}]({image_url})"
-
-    except Exception as e:
-        print(f"Error generating image: {str(e)}")
-        traceback.print_exc()
-        await send_to_websocket(session_id, {
-            'type': 'error',
-            'error': str(e)
-        })
-        return f"image generation failed: {str(e)}"
-
-print('🛠️', generate_image_tool.args_schema.model_json_schema())
-
-# 生成新的 image 元素，放置到 canvas 中
-async def generate_new_image_element(canvas_id: str, fileid: str, image_data: dict):
-    canvas = await db_service.get_canvas_data(canvas_id)
-    canvas_data = canvas.get('data', {})
-    elements = canvas_data.get('elements', [])
-
-    # find the last image element
-    last_x = 0
-    last_y = 0
-    last_width = 0
-    last_height = 0
-    image_elements = [
-        element for element in elements if element.get('type') == 'image']
-    last_image_element = image_elements[-1] if len(
-        image_elements) > 0 else None
-    if last_image_element is not None:
-        last_x = last_image_element.get('x', 0)
-        last_y = last_image_element.get('y', 0)
-        last_width = last_image_element.get('width', 0)
-        last_height = last_image_element.get('height', 0)
-
-    new_x = last_x + last_width + 20
-
-    return {
-        'type': 'image',
-        'id': fileid,
-        'x': new_x,
-        'y': last_y,
-        'width': image_data.get('width', 0),
-        'height': image_data.get('height', 0),
-        'angle': 0,
-        'fileId': fileid,
-        'strokeColor': '#000000',
-        'fillStyle': 'solid',
-        'strokeStyle': 'solid',
-        'boundElements': None,
-        'roundness': None,
-        'frameId': None,
-        'backgroundColor': 'transparent',
-        'strokeWidth': 1,
-        'roughness': 0,
-        'opacity': 100,
-        'groupIds': [],
-        'seed': int(random.random() * 1000000),
-        'version': 1,
-        'versionNonce': int(random.random() * 1000000),
-        'isDeleted': False,
-        'index': None,
-        'updated': 0,
-        'link': None,
-        'locked': False,
-        'status': 'saved',
-        'scale': [1, 1],
-        'crop': None,
-    }
