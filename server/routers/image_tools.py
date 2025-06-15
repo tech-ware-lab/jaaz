@@ -3,6 +3,7 @@ import base64
 import random
 import time
 from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 from common import DEFAULT_PORT
 from routers.image_generators import generate_image_comfyui, generate_image_replicate, generate_image_wavespeed, generate_image_jaaz_cloud
 from services.db_service import db_service
@@ -102,7 +103,15 @@ async def get_object_info(data: dict):
             status_code=500, detail=f"Failed to connect to ComfyUI: {str(e)}")
 
 # LangChain Tool: 图像生成工具
-@tool("generate_image", parse_docstring=True)
+class GenerateImageInputSchema(BaseModel):
+    prompt: str = Field(description="Required. The prompt for image generation. If you want to edit an image, please describe what you want to edit in the prompt.")
+    aspect_ratio: str = Field(description="Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4")
+    input_image: Optional[str] = Field(description="Optional; Image to use as reference. Pass image_id here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc.")
+    tool_call_id: Annotated[str, InjectedToolCallId]
+    
+@tool("generate_image", 
+description="Generate an image using text prompt or optionally pass an image for reference or for editing", 
+args_schema=GenerateImageInputSchema)
 async def generate_image_tool(
     prompt: str,
     aspect_ratio: str,
@@ -110,13 +119,6 @@ async def generate_image_tool(
     tool_call_id: Annotated[str, InjectedToolCallId],
     input_image: Optional[str] = None,
 ) -> str:
-    """Generate an image using text prompt or optionally pass an image for reference or for editing
-
-    Args:
-        prompt: Required. The prompt for image generation. If you want to edit an image, please describe what you want to edit in the prompt.
-        aspect_ratio: Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4
-        input_image: Optional; Image to use as reference. Pass image_id here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc.
-    """
     print('🛠️ tool_call_id', tool_call_id)
     ctx = config.get('configurable', {})
     canvas_id = ctx.get('canvas_id', '')
@@ -215,23 +217,6 @@ async def generate_image_tool(
         return f"image generation failed: {str(e)}"
 
 print('🛠️', generate_image_tool.args_schema.model_json_schema())
-
-# 未完成
-async def generate_image(args_json: dict, ctx: dict):
-    session_id = ctx.get('session_id', '')
-    image_model = ctx.get('model_info', {}).get('image', {})
-    if image_model is None:
-        raise ValueError("Image model is not selected")
-    model = image_model.get('model', '')
-    provider = image_model.get('provider', 'replicate')
-    prompt: str = args_json.get('prompt', '')
-    aspect_ratio: str = args_json.get('aspect_ratio', '1:1')
-    input_image: str = args_json.get('input_image', '')
-
-    if prompt == '':
-        raise ValueError("Image generation failed: text prompt is required")
-    if model == '':
-        raise ValueError("Image generation failed: model is not selected")
 
 # 生成新的 image 元素，放置到 canvas 中
 async def generate_new_image_element(canvas_id: str, fileid: str, image_data: dict):
