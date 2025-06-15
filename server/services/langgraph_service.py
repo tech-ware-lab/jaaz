@@ -31,7 +31,7 @@ from services.websocket_service import send_to_websocket
 from tools.image_generators import generate_image_tool
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
-from langgraph_swarm import create_swarm, create_handoff_tool
+from langgraph_swarm import create_swarm
 from langchain_core.tools import BaseTool, InjectedToolCallId, tool
 from langchain_core.runnables import RunnableConfig
 
@@ -166,6 +166,60 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
             'error': str(e)
         })
 
+from langgraph_swarm.handoff import _normalize_agent_name, METADATA_KEY_HANDOFF_DESTINATION
+from langchain_core.messages import ToolMessage
+from langchain_core.tools import BaseTool, InjectedToolCallId, tool
+from langgraph.graph.state import CompiledStateGraph
+from langgraph.prebuilt import InjectedState, ToolNode
+from langgraph.types import Command
+from typing import Annotated
+
+def create_handoff_tool(
+    *, agent_name: str, name: str | None = None, description: str | None = None
+) -> BaseTool:
+    """Create a tool that can handoff control to the requested agent.
+
+    Args:
+        agent_name: The name of the agent to handoff control to, i.e.
+            the name of the agent node in the multi-agent graph.
+            Agent names should be simple, clear and unique, preferably in snake_case,
+            although you are only limited to the names accepted by LangGraph
+            nodes as well as the tool names accepted by LLM providers
+            (the tool name will look like this: `transfer_to_<agent_name>`).
+        name: Optional name of the tool to use for the handoff.
+            If not provided, the tool name will be `transfer_to_<agent_name>`.
+        description: Optional description for the handoff tool.
+            If not provided, the tool description will be `Ask agent <agent_name> for help`.
+    """
+    if name is None:
+        name = f"transfer_to_{_normalize_agent_name(agent_name)}"
+
+    if description is None:
+        description = f"Ask agent '{agent_name}' for help"
+
+    @tool(name, description=description+"""
+    \nIMPORTANT RULES:
+            1. You MUST complete the other tool calls and wait for their result BEFORE attempting to transfer to another agent
+            2. Do NOT call this handoff tool with other tools simultaneously
+            3. Always wait for the result of other tool calls before making this handoff call
+    """)
+    def handoff_to_agent(
+        state: Annotated[dict, InjectedState],
+        tool_call_id: Annotated[str, InjectedToolCallId],
+    ):
+        tool_message = ToolMessage(
+            content=f"Successfully transferred to {agent_name}",
+            name=name,
+            tool_call_id=tool_call_id,
+        )
+        return Command(
+            goto=agent_name,
+            graph=Command.PARENT,
+            update={"messages": state["messages"] + [tool_message], "active_agent": agent_name},
+        )
+
+    handoff_to_agent.metadata = {METADATA_KEY_HANDOFF_DESTINATION: agent_name}
+    return handoff_to_agent
 
 async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, image_model):
     try:
@@ -263,22 +317,31 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 prompt=agent.get('You specialize in generating images.')
             )
             agents.append(agent)
-        transfer_to_hotel_assistant = create_handoff_tool(agent_name="hotel_assistant")
-        transfer_to_flight_assistant = create_handoff_tool(agent_name="flight_assistant")
 
         # Define agents
         transfer_to_general_image_designer = create_handoff_tool(
             agent_name="general_image_designer",
             description="Transfer user to the general_image_designer. This agent specializes in generating images.",
         )
+        transfer_to_video_editor = create_handoff_tool(
+            agent_name="video_editor",
+            description="Transfer user to the video_editor. This agent specializes in generating videos.",
+        )
         planner = create_react_agent(
             model=model,
-            tools=[write_plan_tool, generate_image_tool],
+            tools=[write_plan_tool, transfer_to_general_image_designer],
             prompt="""
             You are a design planning writing agent. You should do: 
             - Step 1. write a execution plan for the user's request. You should breakdown the task into high level steps for the other agents to execute. 
+            - Step 2. Transfer the task to the most suitable agent who specializes in the task.
+            
+            IMPORTANT RULES:
+            1. You MUST complete the write_plan tool call and wait for its result BEFORE attempting to transfer to another agent
+            2. Do NOT call multiple tools simultaneously
+            3. Always wait for the result of one tool call before making another
+            
             For example, if the user ask to 'Generate a cartoon anime style portrait of Zimomo', the example plan is :
-            ```json
+            ```
             [{
                 "title": "Web search Zimomo reference image",
             }, {
@@ -286,7 +349,7 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             }]
             ```
             For example, if the user ask to 'Generate a ads video for a lipstick product', the example plan is :
-            ```json
+            ```
             [{
                 "title": "Design the text script and key frames for the ads video",
             }, {
@@ -307,6 +370,12 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             tools=[generate_image_tool],
             prompt="You are a general image designer. You should generate an image based on the plan. Tools this agent has: generate_image_tool",
             name="general_image_designer"
+        )
+        video_editor = create_react_agent(
+            model=model,
+            tools=[generate_image_tool,],
+            prompt="You are a video editor. You should generate a video based on the plan. Tools this agent has: generate_video_tool",
+            name="video_editor"
         )
 
         swarm = create_swarm(
@@ -336,7 +405,6 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
         ):
             chunk_type = chunk[0]
             if chunk_type == 'values':
-                print('👇values', chunk)
                 all_messages = chunk[1].get('messages', [])
                 oai_messages = convert_to_openai_messages(all_messages)
                 await send_to_websocket(session_id, {
@@ -350,7 +418,7 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             else:
                 # Access the AIMessageChunk
                 ai_message_chunk: AIMessageChunk = chunk[1][0]
-                # print('👇ai_message_chunk', ai_message_chunk)
+                print('👇ai_message_chunk', ai_message_chunk)
                 content = ai_message_chunk.content  # Get the content from the AIMessageChunk
                 if isinstance(ai_message_chunk, ToolMessage):
                     print('👇tool_call_results', ai_message_chunk.content)
