@@ -47,6 +47,7 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
     models: {
       'gpt-4o': { type: 'text' },
       'gpt-4o-mini': { type: 'text' },
+      'gpt-image-1': { type: 'image' },
     },
     url: 'https://api.openai.com/v1/',
     api_key: '',

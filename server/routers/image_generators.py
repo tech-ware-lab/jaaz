@@ -15,15 +15,19 @@ import aiofiles
 from typing import Optional
 from utils.http_client import HttpClient
 import copy
+from openai import OpenAI
 
-async def get_image_info_and_save(url, file_path_without_extension):
-    # Fetch the image asynchronously
-    async with HttpClient.create() as client:
-        response = await client.get(url)
-        # Read the image content as bytes
-        image_content = response.content
-        # Open the image
-        image = Image.open(BytesIO(image_content))
+async def get_image_info_and_save(url, file_path_without_extension, is_b64=False):
+    if is_b64:
+        image_content = base64.b64decode(url)
+    else:
+        # Fetch the image asynchronously
+        async with HttpClient.create() as client:
+            response = await client.get(url)
+            # Read the image content as bytes
+            image_content = response.content
+    # Open the image
+    image = Image.open(BytesIO(image_content))
 
     # Get MIME type
     mime_type = Image.MIME.get(image.format if image.format else 'PNG')
@@ -270,5 +274,42 @@ async def generate_image_jaaz_cloud(prompt: str, model: str, aspect_ratio: str =
 
     except Exception as e:
         print('Error generating image with Jaaz:', e)
+        traceback.print_exc()
+        raise e
+
+
+async def generate_image_openai(prompt: str, model: str, input_path: Optional[str] = None, **kwargs):
+    try:
+        api_key = app_config.get('openai', {}).get('api_key', '')
+        url = app_config.get('openai', {}).get('url', '')
+        model = model.replace('openai/', '')
+
+        client = OpenAI(api_key=api_key, base_url=url)
+        
+        if input_path:
+            with open(input_path, 'rb') as image_file:
+                result = client.images.edit(
+                    model=model,
+                    image=[image_file],
+                    prompt=prompt,
+                    n=kwargs.get("num_images", 1)
+                )
+
+        else:
+            result = client.images.generate(
+                model=model,
+                prompt=prompt,
+                n=kwargs.get("num_images", 1),
+                size=kwargs.get("size", "auto"),
+            )
+
+        image_b64 = result.data[0].b64_json
+        image_id = 'im_' + generate(size=8)
+        mime_type, width, height, extension = await get_image_info_and_save(image_b64, os.path.join(FILES_DIR, f'{image_id}'), is_b64=True)
+        filename = f'{image_id}.{extension}'
+        return mime_type, width, height, filename
+
+    except Exception as e:
+        print('Error generating image with OpenAI:', e)
         traceback.print_exc()
         raise e
