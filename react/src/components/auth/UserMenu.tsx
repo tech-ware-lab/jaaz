@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/contexts/AuthContext'
+import { useConfigs } from '@/contexts/configs'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,13 +12,12 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { LoginDialog } from './LoginDialog'
 import { logout } from '@/api/auth'
 
 export function UserMenu() {
   const { authStatus, refreshAuth } = useAuth()
+  const { setShowLoginDialog } = useConfigs()
   const { t } = useTranslation()
-  const [loginDialogOpen, setLoginDialogOpen] = useState(false)
 
   const handleLogout = async () => {
     await logout()
@@ -53,14 +53,8 @@ export function UserMenu() {
 
   // 未登录状态，显示登录按钮
   return (
-    <>
-      <Button variant="outline" onClick={() => setLoginDialogOpen(true)}>
-        {t('common:auth.login')}
-      </Button>
-      <LoginDialog
-        open={loginDialogOpen}
-        onOpenChange={setLoginDialogOpen}
-      />
-    </>
+    <Button variant="outline" onClick={() => setShowLoginDialog(true)}>
+      {t('common:auth.login')}
+    </Button>
   )
 }
