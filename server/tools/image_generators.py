@@ -38,7 +38,7 @@ class GenerateImageInputSchema(BaseModel):
 @tool("generate_image", 
 description="Generate an image using text prompt or optionally pass an image for reference or for editing", 
 args_schema=GenerateImageInputSchema)
-async def generate_image_tool(
+async def generate_image(
     prompt: str,
     aspect_ratio: str,
     config: RunnableConfig,
@@ -149,7 +149,7 @@ async def generate_image_tool(
         })
         return f"image generation failed: {str(e)}"
 
-print('🛠️', generate_image_tool.args_schema.model_json_schema())
+print('🛠️', generate_image.args_schema.model_json_schema())
 
 
 from openai import OpenAI
