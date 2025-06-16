@@ -36,6 +36,12 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
   if (name.startsWith('transfer_to')) {
     return null
   }
+  let parsedArgs = null
+  if (inputs.endsWith('}')) {
+    try {
+      parsedArgs = JSON.parse(inputs)
+    } catch (error) {}
+  }
 
   return (
     <div className="w-full border rounded-lg overflow-hidden mt-2">
@@ -69,10 +75,20 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
             transition={{ duration: 0.3, ease: 'easeOut' }}
           >
             <div className="p-2 break-all">
-              <Markdown>
-                {/* {parsedArgs ? JSON.stringify(parsedArgs) : inputs} */}
-                {inputs}
-              </Markdown>
+              {parsedArgs && Object.keys(parsedArgs).length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {Object.entries(parsedArgs).map(([key, value]) => (
+                    <div key={key}>
+                      <span className="font-bold">{key}:</span>{' '}
+                      {typeof value == 'object'
+                        ? JSON.stringify(value)
+                        : String(value)}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                inputs
+              )}
             </div>
           </motion.div>
         )}
