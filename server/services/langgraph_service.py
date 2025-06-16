@@ -208,7 +208,7 @@ def create_handoff_tool(
         tool_call_id: Annotated[str, InjectedToolCallId],
     ):
         tool_message = ToolMessage(
-            content=f"Successfully transferred to {agent_name}",
+            content=f"<hide_in_user_ui> Successfully transferred to {agent_name}",
             name=name,
             tool_call_id=tool_call_id,
         )
