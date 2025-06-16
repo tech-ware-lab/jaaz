@@ -22,6 +22,9 @@ type ConfigsStore = {
   showSettingsDialog: boolean
   setShowSettingsDialog: (show: boolean) => void
 
+  showLoginDialog: boolean
+  setShowLoginDialog: (show: boolean) => void
+
   providers: {
     [key: string]: LLMConfig
   }
@@ -47,6 +50,9 @@ const useConfigsStore = create<ConfigsStore>((set) => ({
 
   showSettingsDialog: false,
   setShowSettingsDialog: (show) => set({ showSettingsDialog: show }),
+
+  showLoginDialog: false,
+  setShowLoginDialog: (show) => set({ showLoginDialog: show }),
 
   providers: DEFAULT_PROVIDERS_CONFIG,
   setProviders: (providers) => set({ providers }),
