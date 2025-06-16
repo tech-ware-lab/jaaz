@@ -16,7 +16,6 @@ export const Route = createFileRoute('/')({
 })
 
 function Home() {
-  const [prompt, setPrompt] = useState('')
   const navigate = useNavigate()
   const { t } = useTranslation()
 
@@ -63,8 +62,6 @@ function Home() {
 
           <ChatTextarea
             className="w-full max-w-xl"
-            value={prompt}
-            onChange={setPrompt}
             messages={[]}
             onSendMessages={(messages, configs) => {
               createCanvasMutation({

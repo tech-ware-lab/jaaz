@@ -71,7 +71,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [sessionList, searchSessionId])
 
   const [messages, setMessages] = useState<Message[]>([])
-  const [prompt, setPrompt] = useState('')
   const [pending, setPending] = useState<PendingType>(
     searchInit ? 'text' : false
   )
@@ -346,7 +345,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     (data: Message[], configs: { textModel: Model; imageModel: Model }) => {
       setPending('text')
       setMessages(data)
-      setPrompt('')
 
       sendMessages({
         sessionId: sessionId!,
@@ -472,11 +470,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         <div className="p-2 gap-2 sticky bottom-0">
           <ChatTextarea
-            value={prompt}
             sessionId={sessionId!}
             pending={!!pending}
             messages={messages}
-            onChange={setPrompt}
             onSendMessages={onSendMessages}
             onCancelChat={handleCancelChat}
           />
