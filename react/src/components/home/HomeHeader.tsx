@@ -34,7 +34,7 @@ function HomeHeader() {
         <LanguageSwitcher />
         <ThemeButton />
         {/* disable user login until cloud server is ready */}
-        {/* <UserMenu /> */}
+        <UserMenu />
       </div>
     </motion.div>
   )
