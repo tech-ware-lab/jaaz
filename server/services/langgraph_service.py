@@ -128,17 +128,15 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
                         'text': content
                     })
                 elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
-                    for index, tool_call in enumerate(ai_message_chunk.tool_calls):
-                        if tool_call.get('name'):
-                            tool_calls.append(tool_call)
-                            print('😘tool_call', tool_call, tool_call.get(
-                                'name'), tool_call.get('id'))
-                            await send_to_websocket(session_id, {
-                                'type': 'tool_call',
-                                'id': tool_call.get('id'),
-                                'name': tool_call.get('name'),
-                                'arguments': '{}'
-                            })
+                    tool_calls = [tc for tc in ai_message_chunk.tool_calls if tc.get('name')]
+                    print('😘tool_call event', ai_message_chunk.tool_calls)
+                    for tool_call in tool_calls:
+                        await send_to_websocket(session_id, {
+                            'type': 'tool_call',
+                            'id': tool_call.get('id'),
+                            'name': tool_call.get('name'),
+                            'arguments': '{}'
+                        })
                 elif hasattr(ai_message_chunk, 'tool_call_chunks'):
                     tool_call_chunks = ai_message_chunk.tool_call_chunks
                     for tool_call_chunk in tool_call_chunks:
@@ -445,23 +443,23 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                         'text': content
                     })
                 elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
-                    for index, tool_call in enumerate(ai_message_chunk.tool_calls):
-                        if tool_call.get('name'):
-                            tool_calls.append(tool_call)
-                            print('😘tool_call', tool_call, tool_call.get(
-                                'name'), tool_call.get('id'))
-                            await send_to_websocket(session_id, {
-                                'type': 'tool_call',
-                                'id': tool_call.get('id'),
-                                'name': tool_call.get('name'),
-                                'arguments': '{}'
-                            })
+                    tool_calls = [tc for tc in ai_message_chunk.tool_calls if tc.get('name')]
+                    print('😘tool_call event', ai_message_chunk.tool_calls)
+                    for tool_call in tool_calls:
+                        await send_to_websocket(session_id, {
+                            'type': 'tool_call',
+                            'id': tool_call.get('id'),
+                            'name': tool_call.get('name'),
+                            'arguments': '{}'
+                        })
                 elif hasattr(ai_message_chunk, 'tool_call_chunks'):
+                    print('👇tool_call_chunks event', ai_message_chunk)
                     tool_call_chunks = ai_message_chunk.tool_call_chunks
                     for tool_call_chunk in tool_call_chunks:
                         index: int = tool_call_chunk['index']
                         if index < len(tool_calls):
                             for_tool_call: ToolCall = tool_calls[index]
+                            # print('👇tool_call_arguments event', for_tool_call, 'chunk', tool_call_chunk)
                             await send_to_websocket(session_id, {
                                 'type': 'tool_call_arguments',
                                 'id': for_tool_call.get('id'),
