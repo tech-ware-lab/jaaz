@@ -1,6 +1,7 @@
 // import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
 import UpdateNotificationDialog from '@/components/common/UpdateNotificationDialog'
 import SettingsDialog from '@/components/settings/dialog'
+import { LoginDialog } from '@/components/auth/LoginDialog'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { ConfigsProvider } from '@/contexts/configs'
 import { AuthProvider } from '@/contexts/AuthContext'
@@ -74,6 +75,9 @@ function App() {
 
               {/* Settings Dialog */}
               <SettingsDialog />
+
+              {/* Login Dialog */}
+              <LoginDialog />
             </div>
           </ConfigsProvider>
         </AuthProvider>

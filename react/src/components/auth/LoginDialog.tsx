@@ -5,16 +5,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { startDeviceAuth, pollDeviceAuth, saveAuthData } from '../../api/auth'
 import { updateJaazApiKey } from '../../api/config'
 import { useAuth } from '../../contexts/AuthContext'
+import { useConfigs } from '../../contexts/configs'
 
-interface LoginDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
-
-export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
+export function LoginDialog() {
   const [isLoading, setIsLoading] = useState(false)
   const [authMessage, setAuthMessage] = useState('')
   const { refreshAuth } = useAuth()
+  const { showLoginDialog: open, setShowLoginDialog } = useConfigs()
   const { t } = useTranslation()
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -71,7 +68,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
             console.error('Failed to refresh auth status:', error)
           }
 
-          setTimeout(() => onOpenChange(false), 1500)
+          setTimeout(() => setShowLoginDialog(false), 1500)
 
         } else if (result.status === 'expired') {
           // Authorization expired
@@ -136,11 +133,11 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     }
     setIsLoading(false)
     setAuthMessage('')
-    onOpenChange(false)
+    setShowLoginDialog(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setShowLoginDialog}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('common:auth.loginToJaaz')}</DialogTitle>
