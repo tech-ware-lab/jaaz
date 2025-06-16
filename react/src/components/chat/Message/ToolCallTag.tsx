@@ -38,7 +38,7 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
   }
 
   return (
-    <div className="w-full border rounded-lg overflow-hidden">
+    <div className="w-full border rounded-lg overflow-hidden mt-2">
       <Button
         variant={'secondary'}
         onClick={onToggleExpand}
