@@ -28,7 +28,7 @@ from langgraph.prebuilt import create_react_agent
 from services.db_service import db_service
 from services.config_service import config_service, app_config
 from services.websocket_service import send_to_websocket
-from tools.image_generators import generate_image_tool
+from tools.image_generators import generate_image
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langgraph_swarm import create_swarm
@@ -41,18 +41,12 @@ class InputParam(BaseModel):
     required: bool
     default: str
 
-def create_tool(name: str, description: str, inputs: list[InputParam]):
-    class CustomToolInputSchema(BaseModel):
-        a: int = Field(description="First operand")
-        b: int = Field(description="Second operand")
-    # @tool(name=name, description=description, args_schema=CustomToolInputSchema)
-    # def custom_tool(
-    #     state: Annotated[dict, InjectedState],
-    #     tool_call_id: Annotated[str, InjectedToolCallId],
-    #     config: RunnableConfig,
-    # ):
-    #     return 'Success'
-    return generate_image_tool
+def create_tool(tool_json: dict):
+    TOOL_MAP = {
+        'generate_image': generate_image,
+        'write_plan': write_plan_tool,
+    }
+    return TOOL_MAP.get(tool_json.get('tool', ''), None)
 
 async def langgraph_agent(messages, canvas_id, session_id, text_model, image_model):
     try:
@@ -60,7 +54,6 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
         provider = text_model.get('provider')
         url = text_model.get('url')
         api_key = app_config.get(provider, {}).get("api_key", "")
-        print('👇model', model, provider, url, api_key)
         # TODO: Verify if max token is working
         max_tokens = text_model.get('max_tokens', 8148)
         if provider == 'ollama':
@@ -84,7 +77,7 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
             )
         agent = create_react_agent(
             model=model,
-            tools=[generate_image_tool],
+            tools=[generate_image],
             prompt='You are a profession design agent, specializing in visual design.'
         )
         ctx = {
@@ -225,7 +218,6 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
         provider = text_model.get('provider')
         url = text_model.get('url')
         api_key = app_config.get(provider, {}).get("api_key", "")
-        print('👇model', model, provider, url, api_key)
         # TODO: Verify if max token is working
         max_tokens = text_model.get('max_tokens', 8148)
         if provider == 'ollama':
@@ -249,82 +241,16 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             )
         agent_schemas = [
             {
-                'name': 'planning_agent',
-                'tools': [],
+                'name': 'planner',
+                'tools': [
+                    {
+                    'name': 'write_plan',
+                    'description': "Write a execution plan for the user's request",
+                    'type': 'system',
+                    'tool': 'write_plan',
+                }
+                ],
                 'system_prompt': """
-                You are a design planning writing agent. You should write a plan for the design project. 
-                And then handoff the task to the suitable agent who specializes in the task.
-                Example Plan:
-                ## Style
-                - Use a modern and clean style
-                ## Elements
-                - Featuring a sofa in the center, an armchair in the corner, and a table in the corner
-                """,
-                'knowledge': [
-                    {
-                        'name': 'planner.md',
-                        'mode': 'prompt'
-                    },
-                ],
-                'handoffs': [
-                    {
-                        'agent_name': 'general_image_designer',
-                        'description': """
-                        Transfer user to the general_image_designer. About this agent: Specialize in generating images.
-                        """
-                    }
-                ]
-            },
-            {
-                'name': 'general_image_designer',
-                'tools': [{
-                    'name': 'generate_image',
-                    'description': "Generate an image",
-                    'tool': 'generate_image_tool',
-                }],
-                'knowledge': [
-                    {
-                        'name': 'poster_design_guide.md',
-                        'mode': 'prompt'
-                    },
-                ],
-            }
-        ]
-        agents = []
-        for agent in agent_schemas:
-            handoff_tools = []
-            for handoff in agent.get('handoffs', []):
-                hf = create_handoff_tool(
-                    agent_name=handoff['agent_name'],
-                    description=handoff['description'],
-                )
-                handoff_tools.append(hf)
-            tools = []
-            for tool_json in agent.get('tools', []):
-                tool = create_tool(
-                    tool_json.get('name'),
-                    tool_json.get('description'),
-                    tool_json.get('inputs')
-                )
-                tools.append(tool)
-
-            agent = create_react_agent(
-                name=agent.get('name'),
-                model=model,
-                tools=tools,
-                prompt=agent.get('You specialize in generating images.')
-            )
-            agents.append(agent)
-
-        # Define agents
-        transfer_to_general_image_designer = create_handoff_tool(
-            agent_name="general_image_designer",
-            description="Transfer user to the general_image_designer. This agent specializes in generating images.",
-        )
-        planner = create_react_agent(
-            model=model,
-            tools=[write_plan_tool, transfer_to_general_image_designer],
-            prompt="""
             You are a design planning writing agent. You should do: 
             - Step 1. write a execution plan for the user's request. You should breakdown the task into high level steps for the other agents to execute. 
             - Step 2. Transfer the task to the most suitable agent who specializes in the task.
@@ -358,18 +284,22 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             }, {
                 "title": "Generate the video clips",
                 "description": "Generate the video clips from the images"
-            }, {
-                "title": "Combine the video clips",
-                "description": "Combine the video clips into a final video"
             }]
             ```
             """,
-            name="planner"
-        )
-        general_image_designer = create_react_agent(
-            model=model,
-            tools=[generate_image_tool],
-            prompt="""
+                'knowledge': [],
+                'handoffs': [
+                    {
+                        'agent_name': 'general_image_designer',
+                        'description': """
+                        Transfer user to the general_image_designer. About this agent: Specialize in generating images.
+                        """
+                    }
+                ]
+            },
+            {
+                'name': 'general_image_designer',
+                'system_prompt': """
             You are a professional image designer. You should first write a design strategy plan and then generate the image based on the plan. 
             Example Design Strategy Plan:
             ### Style
@@ -385,16 +315,46 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             - Add a small pattern to the fabric of the armchair
 
             """,
-            name="general_image_designer"
-        )
+                'tools': [{
+                    'name': 'generate_image',
+                    'description': "Generate an image",
+                    'tool': 'generate_image',
+                }],
+                'knowledge': [],
+            }
+        ]
+        agents = []
+        for ag_schema in agent_schemas:
+            handoff_tools = []
+            for handoff in ag_schema.get('handoffs', []):
+                hf = create_handoff_tool(
+                    agent_name=handoff['agent_name'],
+                    description=handoff['description'],
+                )
+                if hf:
+                    handoff_tools.append(hf)
+            tools = []
+            for tool_json in ag_schema.get('tools', []):
+                tool = create_tool(tool_json)
+                if tool:
+                    tools.append(tool)
+            agent = create_react_agent(
+                name=ag_schema.get('name'),
+                model=model,
+                tools=[*tools, *handoff_tools],
+                prompt=ag_schema.get('system_prompt', '')
+            )
+            agents.append(agent)
+        agent_names = [ag.get('name') for ag in agent_schemas]
         last_agent = None
         for message in messages[::-1]:
             if message.get('role') == 'assistant':
-                last_agent = message.get('name')
+                if message.get('name') in agent_names:
+                    last_agent = message.get('name')
                 break
         print('👇last_agent', last_agent)
         swarm = create_swarm(
-            agents=[planner, general_image_designer],
+            agents=agents,
             default_active_agent=last_agent if last_agent else "planner"
         ).compile()
 

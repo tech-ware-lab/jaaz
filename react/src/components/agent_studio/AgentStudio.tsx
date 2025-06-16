@@ -1,10 +1,20 @@
-import React, { useCallback, useEffect, useRef } from 'react'
-import { ReactFlow, useNodesState, useEdgesState, addEdge } from '@xyflow/react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  ReactFlow,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  Edge,
+  Node,
+  OnConnect,
+  NodeMouseHandler,
+} from '@xyflow/react'
 import debounce from 'lodash.debounce'
 
 import '@xyflow/react/dist/style.css'
 import HomeHeader from '../home/HomeHeader'
 import AgentNode from './AgentNode'
+import { Textarea } from '../ui/textarea'
 
 const LOCAL_STORAGE_KEY = 'agent-studio-graph'
 
@@ -23,7 +33,7 @@ const defaultNodes = [
   },
 ]
 // const defaultEdges = [{ id: 'e1-2', source: '1', target: '2' }]
-const defaultEdges = []
+const defaultEdges: Edge[] = []
 
 const loadInitialGraph = () => {
   try {
@@ -42,6 +52,7 @@ export default function AgentStudio() {
   const [initialNodes, initialEdges] = loadInitialGraph()
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null)
 
   const saveGraph = useRef(
     debounce((nodes, edges) => {
@@ -54,7 +65,12 @@ export default function AgentStudio() {
     saveGraph(nodes, edges)
   }, [nodes, edges, saveGraph])
 
-  const onConnect = useCallback(
+  const onNodeClick: NodeMouseHandler<Node> = useCallback((_, node) => {
+    console.log('onNodeClick', node)
+    setSelectedNode(node)
+  }, [])
+
+  const onConnect: OnConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   )
@@ -72,10 +88,48 @@ export default function AgentStudio() {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onNodeClick={onNodeClick}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
         />
       </div>
+      {/* Sidebar */}
+      {selectedNode && (
+        <>
+          <div
+            className="absolute right-0 top-0 left-0 bottom-0"
+            onClick={() => setSelectedNode(null)}
+          />
+          <div
+            className="absolute right-0 top-0 h-[100vh] w-96 bg-sidebar"
+            style={{
+              width: '25%',
+              padding: '16px',
+              boxSizing: 'border-box',
+              overflowY: 'auto',
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Enter Agent Name"
+              className="w-full text-lg font-semibold outline-none border-none mb-2"
+            />
+            <textarea
+              placeholder="Enter Agent Description"
+              className="w-full text-sm outline-none border-none resize-none mb-2"
+            />
+            <div className="flex flex-col gap-2">
+              <p>
+                <strong>System Prompt</strong>
+              </p>
+              <Textarea
+                className="w-full text-sm mb-2 h-48"
+                placeholder="Enter System Prompt"
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
