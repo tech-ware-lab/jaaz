@@ -34,4 +34,4 @@ def write_plan_tool(
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> str:
     print("write_plan_tool")
-    return "Plan made. Now you can start executing the plan, or handoff the task to the suitable agent who specializes in the steps of the plan."
+    return "<hide_in_user_ui> Plan made. Now you can start executing the plan, or handoff the task to the suitable agent who specializes in the steps of the plan.</hide_from_user>"
