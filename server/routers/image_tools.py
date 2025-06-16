@@ -4,7 +4,7 @@ import random
 import time
 from fastapi.responses import FileResponse
 from common import DEFAULT_PORT
-from routers.image_generators import generate_image_comfyui, generate_image_replicate, generate_image_wavespeed, generate_image_jaaz_cloud
+from routers.image_generators import generate_image_comfyui, generate_image_replicate, generate_image_wavespeed, generate_image_jaaz_cloud, generate_image_openai
 from services.db_service import db_service
 from services.config_service import app_config
 import traceback
@@ -153,15 +153,22 @@ async def generate_image_tool(
                 mime_type, width, height, filename = await generate_image_wavespeed(prompt, model, input_image)
             elif provider == 'jaaz':
                 mime_type, width, height, filename = await generate_image_jaaz_cloud(prompt, model, aspect_ratio, input_image)
+            elif provider == 'openai':
+                mime_type, width, height, filename = await generate_image_openai(prompt, model, image_path)
         else:
             if provider == 'replicate':
                 mime_type, width, height, filename = await generate_image_replicate(prompt, model, aspect_ratio)
             elif provider == 'comfyui':
                 mime_type, width, height, filename = await generate_image_comfyui(args_json, ctx)
             elif provider == 'wavespeed':
-                mime_type, width, height, filename = await generate_image_wavespeed(prompt, model, **args_json)
+                # fix: got multiple values for argument 'prompt'
+                args_json_copy = args_json.copy()
+                args_json_copy.pop('prompt', None)
+                mime_type, width, height, filename = await generate_image_wavespeed(prompt, model, **args_json_copy)
             elif provider == 'jaaz':
                 mime_type, width, height, filename = await generate_image_jaaz_cloud(prompt, model, aspect_ratio)
+            elif provider == 'openai':
+                mime_type, width, height, filename = await generate_image_openai(prompt, model)
 
         file_id = generate_file_id()
         url = f'/api/file/{filename}'

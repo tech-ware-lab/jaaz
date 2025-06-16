@@ -30,9 +30,9 @@ const SettingsDialog = () => {
       <CommonDialogContent
         open={open}
         transformPerspective={6000}
-        className="flex flex-col min-w-[600px]! min-h-[80vh]! p-0 gap-0 max-h-[100vh]! max-w-[95vw]!"
+        className="flex flex-col p-0 gap-0 w-screen! h-screen! max-h-[100vh]! max-w-[100vw]! rounded-none! border-none! shadow-none!"
       >
-        <SidebarProvider className="h-full min-h-full flex-1 relative">
+        <SidebarProvider className="h-[calc(100vh-60px)]! min-h-[calc(100vh-60px)]! flex-1 relative">
           <SettingSidebar current={current} setCurrent={setCurrent} />
           <ScrollArea className="max-h-[calc(100vh-50px)]! w-full">
             {renderContent()}
