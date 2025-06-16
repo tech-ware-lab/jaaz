@@ -389,10 +389,15 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             """,
             name="general_image_designer"
         )
-
+        last_agent = None
+        for message in messages[::-1]:
+            if message.get('role') == 'assistant':
+                last_agent = message.get('name')
+                break
+        print('👇last_agent', last_agent)
         swarm = create_swarm(
             agents=[planner, general_image_designer],
-            default_active_agent="planner"
+            default_active_agent=last_agent if last_agent else "planner"
         ).compile()
 
         # swarm = create_swarm(
@@ -430,7 +435,7 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             else:
                 # Access the AIMessageChunk
                 ai_message_chunk: AIMessageChunk = chunk[1][0]
-                print('👇ai_message_chunk', ai_message_chunk)
+                # print('👇ai_message_chunk', ai_message_chunk)
                 content = ai_message_chunk.content  # Get the content from the AIMessageChunk
                 if isinstance(ai_message_chunk, ToolMessage):
                     print('👇tool_call_results', ai_message_chunk.content)

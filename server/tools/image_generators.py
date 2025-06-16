@@ -198,7 +198,7 @@ async def generate_image_replicate(prompt, model, aspect_ratio, input_image_b64:
         async with HttpClient.create() as client:
             response = await client.post(url, headers=headers, json=data)
             res = response.json()
-        print('🦄image generation response', res)
+
         output = res.get('output', '')
         image_id = 'im_' + generate(size=8)
         # image_id = int(time.time() * 1000)
