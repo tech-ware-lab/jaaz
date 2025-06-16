@@ -120,6 +120,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       },
     ])
     setImages([])
+    setPrompt('')
 
     onSendMessages(newMessage, {
       textModel: textModel,
