@@ -1,9 +1,9 @@
 import { deleteCanvas, ListCanvasesResponse } from '@/api/canvas'
-import { Trash2 } from 'lucide-react'
+import { ImageIcon, Trash2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { Button } from '../ui/button'
 import CanvasDeleteDialog from './CanvasDeleteDialog'
 
@@ -66,7 +66,9 @@ const CanvasCard: React.FC<CanvasCardProps> = ({
             className="w-full h-40 object-cover rounded-lg"
           />
         ) : (
-          <div className="w-full h-40 bg-primary/20 rounded-lg" />
+          <div className="w-full h-40 bg-primary/10 rounded-lg flex items-center justify-center">
+            <ImageIcon className="w-10 h-10 opacity-10" />
+          </div>
         )}
         <div className="flex flex-col">
           <h3 className="text-lg font-bold">{canvas.name}</h3>

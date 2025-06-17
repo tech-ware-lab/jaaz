@@ -61,7 +61,7 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
     },
     li: ({ node, children, ...props }) => {
       return (
-        <li className="py-1" {...props}>
+        <li className="py-1 [&>p]:inline [&>p]:m-0" {...props}>
           {children}
         </li>
       )

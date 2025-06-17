@@ -44,11 +44,17 @@ export async function getCanvas(
   return await response.json()
 }
 
-export async function saveCanvas(id: string, data: CanvasData): Promise<void> {
+export async function saveCanvas(
+  id: string,
+  payload: {
+    data: CanvasData
+    thumbnail: string
+  }
+): Promise<void> {
   const response = await fetch(`/api/canvas/${id}/save`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   })
   return await response.json()
 }

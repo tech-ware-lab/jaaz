@@ -6,8 +6,7 @@ from services.db_service import db_service
 
 #services
 from services.files_service import download_file
-from services.websocket_state import active_websockets
-from services.websocket_service import send_to_websocket
+from services.websocket_service import broadcast_init_done
 
 router = APIRouter(prefix="/api")
 
@@ -17,10 +16,7 @@ router = APIRouter(prefix="/api")
 
 async def initialize():
     # await initialize_mcp()
-    for session_id in active_websockets:
-        await send_to_websocket(session_id, {
-            'type': 'init_done'
-        })
+    await broadcast_init_done()
 
 @router.get("/workspace_download")
 async def workspace_download(path: str):
