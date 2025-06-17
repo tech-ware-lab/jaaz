@@ -19,8 +19,14 @@ Settings Router - 设置路由模块
 - services.settings_service - 设置服务
 """
 
-from fastapi import APIRouter, HTTPException, Request
+import json
+import os
+import shutil
+from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
+from services.db_service import db_service
 from services.settings_service import settings_service
+from services.config_service import USER_DATA_DIR
+from pydantic import BaseModel
 
 # 创建设置相关的路由器，所有端点都以 /api/settings 为前缀
 router = APIRouter(prefix="/api/settings")
@@ -215,3 +221,38 @@ async def update_proxy_settings(request: Request):
     # 更新代理设置
     result = await settings_service.update_settings({"proxy": proxy_value})
     return result
+
+
+class CreateWorkflowRequest(BaseModel):
+    name: str
+    api_json: dict  # or str if you want it as string
+    description: str
+    inputs: list   # or str if you want it as string
+    outputs: str = None
+
+@router.post("/comfyui/create_workflow")
+async def create_workflow(request: CreateWorkflowRequest):
+    if not request.name:
+        raise HTTPException(status_code=400, detail="Name is required")
+    if not request.api_json:
+        raise HTTPException(status_code=400, detail="API JSON is required")
+    if not request.description:
+        raise HTTPException(status_code=400, detail="Description is required")
+    if not request.inputs:
+        raise HTTPException(status_code=400, detail="Inputs are required")
+    try:
+        api_json = json.dumps(request.api_json)
+        inputs = json.dumps(request.inputs)
+        outputs = json.dumps(request.outputs)
+        await db_service.create_comfy_workflow(request.name, api_json, request.description, inputs, outputs)
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to create workflow: {str(e)}")
+
+@router.get("/comfyui/list_workflows")
+async def list_workflows():
+    return await db_service.list_comfy_workflows()
+
+@router.delete("/comfyui/delete_workflow")
+async def delete_workflow(id: int):
+    return await db_service.delete_comfy_workflow(id)

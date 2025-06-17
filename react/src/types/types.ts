@@ -5,6 +5,7 @@ export type ToolCallFunctionName =
   | 'generate_image'
   | 'prompt_user_multi_choice'
   | 'prompt_user_single_choice'
+  | 'write_plan'
   | 'finish'
 
 export type ToolCall = {

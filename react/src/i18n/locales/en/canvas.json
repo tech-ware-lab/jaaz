@@ -28,5 +28,20 @@
     "description": "Are you sure you want to delete this Canvas? This action cannot be undone.",
     "cancel": "Cancel",
     "delete": "Delete"
+  },
+  "tool": {
+    "hand": "Hand",
+    "selection": "Selection",
+    "rectangle": "Rectangle",
+    "ellipse": "Ellipse",
+    "text": "Text",
+    "image": "Image",
+    "shape": "Shape",
+    "arrow": "Arrow",
+    "line": "Line",
+    "zoomFit": "Zoom to fit"
+  },
+  "popbar": {
+    "addToChat": "Add to chat"
   }
 }

@@ -1,6 +1,8 @@
+import { saveCanvas } from '@/api/canvas'
 import { useCanvas } from '@/contexts/canvas'
 import useDebounce from '@/hooks/use-debounce'
 import { useTheme } from '@/hooks/use-theme'
+import { eventBus } from '@/lib/event'
 import { CanvasData } from '@/types/types'
 import { Excalidraw } from '@excalidraw/excalidraw'
 import {
@@ -18,9 +20,7 @@ import {
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { saveCanvas } from '@/api/canvas'
 import '@/assets/style/canvas.css'
-import { eventBus } from '@/lib/event'
 
 type LastImagePosition = {
   x: number
@@ -62,7 +62,18 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
         files,
       }
 
-      saveCanvas(canvasId, data)
+      let thumbnail = ''
+      const latestImage = elements
+        .filter((element) => element.type === 'image')
+        .sort((a, b) => b.updated - a.updated)[0]
+      if (latestImage) {
+        const file = files[latestImage.fileId!]
+        if (file) {
+          thumbnail = file.dataURL
+        }
+      }
+
+      saveCanvas(canvasId, { data, thumbnail })
     },
     1000
   )
@@ -103,8 +114,9 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   )
 
   useEffect(() => {
-    eventBus.on('Socket::ImageGenerated', handleImageGenerated)
-    return () => eventBus.off('Socket::ImageGenerated', handleImageGenerated)
+    eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
+    return () =>
+      eventBus.off('Socket::Session::ImageGenerated', handleImageGenerated)
   }, [handleImageGenerated])
 
   return (

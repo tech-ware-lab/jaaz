@@ -2,25 +2,25 @@ import { cancelChat } from '@/api/chat'
 import { uploadImage } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
-import { cn } from '@/lib/utils'
+import { eventBus, TCanvasAddImagesToChatEvent } from '@/lib/event'
+import { cn, dataURLToFile } from '@/lib/utils'
 import { Message, Model } from '@/types/types'
 import { useMutation } from '@tanstack/react-query'
 import { useDrop } from 'ahooks'
+import { produce } from 'immer'
 import { ArrowUp, Loader2, PlusIcon, Square, XIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Textarea, { TextAreaRef } from 'rc-textarea'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import ModelSelector from './ModelSelector'
 
 type ChatTextareaProps = {
-  value: string
   pending: boolean
   className?: string
   messages: Message[]
   sessionId?: string
-  onChange: (value: string) => void
   onSendMessages: (
     data: Message[],
     configs: {
@@ -32,19 +32,17 @@ type ChatTextareaProps = {
 }
 
 const ChatTextarea: React.FC<ChatTextareaProps> = ({
-  value,
   pending,
   className,
   messages,
   sessionId,
-  onChange,
   onSendMessages,
   onCancelChat,
 }) => {
   const { t } = useTranslation()
   const { textModel, imageModel, imageModels, setShowInstallDialog } =
     useConfigs()
-
+  const [prompt, setPrompt] = useState('')
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
     {
@@ -99,10 +97,11 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       return
     }
     // Check if there are image models, if not, prompt to install ComfyUI
-    if (!imageModel || imageModels.length === 0) {
-      setShowInstallDialog(true)
-      return
-    }
+    // if (!imageModel || imageModels.length === 0) {
+    //   setShowInstallDialog(true)
+    //   return
+    // }
+    let value = prompt
     if (value.length === 0 || value.trim() === '') {
       toast.error(t('chat:textarea.enterPrompt'))
       return
@@ -121,12 +120,27 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       },
     ])
     setImages([])
+    setPrompt('')
 
     onSendMessages(newMessage, {
       textModel: textModel,
-      imageModel: imageModel,
+      imageModel: imageModel || {
+        provider: '',
+        model: '',
+        url: '',
+      },
     })
-  }, [pending, textModel, imageModel, imageModels, value, onSendMessages])
+  }, [
+    pending,
+    textModel,
+    imageModel,
+    imageModels,
+    prompt,
+    onSendMessages,
+    images,
+    messages,
+    t,
+  ])
 
   // Drop Area
   const dropAreaRef = useRef<HTMLDivElement>(null)
@@ -153,6 +167,33 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     },
     onFiles: handleFilesDrop,
   })
+
+  useEffect(() => {
+    const handleAddImagesToChat = (data: TCanvasAddImagesToChatEvent) => {
+      data.forEach(async (image) => {
+        if (image.base64) {
+          const file = dataURLToFile(image.base64, image.fileId)
+          uploadImageMutation(file)
+        } else {
+          setImages(
+            produce((prev) => {
+              prev.push({
+                file_id: image.fileId,
+                width: image.width,
+                height: image.height,
+              })
+            })
+          )
+        }
+      })
+
+      textareaRef.current?.focus()
+    }
+    eventBus.on('Canvas::AddImagesToChat', handleAddImagesToChat)
+    return () => {
+      eventBus.off('Canvas::AddImagesToChat', handleAddImagesToChat)
+    }
+  }, [uploadImageMutation])
 
   return (
     <motion.div
@@ -237,9 +278,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         ref={textareaRef}
         className="w-full h-full border-none outline-none resize-none"
         placeholder={t('chat:textarea.placeholder')}
-        value={value}
+        value={prompt}
         autoSize
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => setPrompt(e.target.value)}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         onKeyDown={(e) => {
@@ -287,7 +328,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             variant="default"
             size="icon"
             onClick={handleSendPrompt}
-            disabled={!textModel || !imageModel || value.length === 0}
+            disabled={!textModel || !imageModel || prompt.length === 0}
           >
             <ArrowUp className="size-4" />
           </Button>
