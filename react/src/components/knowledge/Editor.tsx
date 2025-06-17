@@ -27,7 +27,7 @@ import { toast } from 'sonner'
 import { useTheme } from '@/hooks/use-theme'
 import { Textarea } from '../ui/textarea'
 import { Switch } from '../ui/switch'
-import { ImagePlusIcon } from 'lucide-react'
+import { ImagePlusIcon, SaveIcon } from 'lucide-react'
 import { Button } from '../ui/button'
 import MarkdownIt from 'markdown-it'
 import MdEditor from 'react-markdown-editor-lite'
@@ -61,13 +61,7 @@ function useDebounce<T extends (...args: any[]) => any>(
   )
 }
 
-export default function Editor({
-  curPath,
-  setCurPath,
-}: {
-  curPath: string
-  setCurPath: (path: string) => void
-}) {
+export default function Editor({ knowledgeID }: { knowledgeID: string }) {
   const HEADER_HEIGHT = 50
   const { theme } = useTheme()
   const [isTextSelected, setIsTextSelected] = useState(false)
@@ -80,13 +74,18 @@ export default function Editor({
   const [editorTitle, setEditorTitle] = useState('')
   const [editorContent, setEditorContent] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([])
 
   useEffect(() => {
     setIsLoading(true)
+    const draft = localStorage.getItem('knowledge_draft')
+    if (draft) {
+      setEditorContent(draft)
+      mdxEditorRef.current?.setMarkdown(draft)
+      setIsLoading(false)
+    }
     fetch('/api/read_file', {
       method: 'POST',
-      body: JSON.stringify({ path: curPath }),
+      body: JSON.stringify({ knowledge_id: knowledgeID }),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -100,18 +99,11 @@ export default function Editor({
           toast.error('Failed to read file ' + curPath)
         }
       })
-  }, [curPath])
+  }, [])
 
-  const updateFile = useCallback(
-    (content: string) => {
-      const fullContent = `# ${editorTitle}\n${content}`
-      fetch('/api/update_file', {
-        method: 'POST',
-        body: JSON.stringify({ path: curPath, content: fullContent }),
-      })
-    },
-    [curPath, editorTitle]
-  )
+  const updateFile = useCallback((content: string) => {
+    localStorage.setItem('knowledge_draft', content)
+  }, [])
 
   // Create debounced versions of the functions
   const debouncedUpdateFile = useDebounce(updateFile, 500)
@@ -158,23 +150,26 @@ export default function Editor({
     return res.url
   }
   return (
-    <div className="mb-5">
+    <div className="mb-5 p-5">
       <div
-        className="flex py-2 items-center gap-2"
+        className="flex py-2 items-center gap-2 justify-between"
         style={{ height: `${HEADER_HEIGHT}px` }}
       >
-        <Switch checked={isPreviewMode} onCheckedChange={setIsPreviewMode} />
-        <span className="text-sm">Preview</span>
+        <div className="flex items-center gap-2">
+          <Switch checked={isPreviewMode} onCheckedChange={setIsPreviewMode} />
+          <span className="text-sm">Preview</span>
+        </div>
+        <Button className="w-[200px]">
+          <SaveIcon />
+          Save
+        </Button>
       </div>
-      <div
-        style={{ height: `calc(100vh - ${HEADER_HEIGHT}px)` }}
-        className="overflow-y-auto border rounded-md"
-      >
+      <div className="overflow-y-auto">
         {!isPreviewMode ? (
           <div className="mb-5 border rounded-md overflow-hidden">
             <MdEditor
               value={editorContent}
-              style={{ height: '500px' }}
+              style={{ height: '80vh' }}
               renderHTML={(text) => mdParser.render(text)}
               onChange={({ text }) => setEditorContentWrapper(text)}
               onImageUpload={handleImageUpload}
