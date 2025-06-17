@@ -150,30 +150,15 @@ export function LoginDialog() {
             {t('common:auth.loginDescription')}
           </p>
 
-          {authMessage && (
-            <div className="p-3 bg-muted rounded-md">
-              <p className="text-sm">{authMessage}</p>
-            </div>
-          )}
-
           <div className="flex gap-2">
             <Button
               onClick={handleLogin}
-              disabled={isLoading}
+              disabled={isLoading || !!authMessage}
               className="flex-1"
             >
-              {isLoading ? t('common:auth.preparingLogin') : t('common:auth.startLogin')}
+              {authMessage || (isLoading ? t('common:auth.preparingLogin') : t('common:auth.startLogin'))}
             </Button>
 
-            {isLoading && (
-              <Button
-                onClick={handleCancel}
-                variant="outline"
-                className="flex-1"
-              >
-                {t('common:auth.cancel')}
-              </Button>
-            )}
           </div>
         </div>
       </DialogContent>
