@@ -77,11 +77,12 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
       'gpt-4o-mini': { type: 'text' },
       // image models
       'google/imagen-4': { type: 'image' },
+      'google/imagen-4-ultra': { type: 'image' },
       'black-forest-labs/flux-1.1-pro': { type: 'image' },
       'black-forest-labs/flux-kontext-pro': { type: 'image' },
       'black-forest-labs/flux-kontext-max': { type: 'image' },
       'recraft-ai/recraft-v3': { type: 'image' },
-      'stability-ai/sdxl': { type: 'image' },
+      'ideogram-ai/ideogram-v3-balanced': { type: 'image' },
     },
     url: `${BASE_API_URL}/api/v1/`,
     api_key: '',
