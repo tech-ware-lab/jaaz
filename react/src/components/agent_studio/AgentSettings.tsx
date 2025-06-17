@@ -4,10 +4,11 @@ import { Button } from '../ui/button'
 import { Textarea } from '../ui/textarea'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
 
 export default function AgentSettings() {
   const [systemPrompt, setSystemPrompt] = useState(
-    localStorage.getItem('system_prompt') || ''
+    localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT
   )
 
   const handleSave = () => {
@@ -27,7 +28,7 @@ export default function AgentSettings() {
         <div className="flex flex-col gap-2">
           <Textarea
             placeholder="Enter your system prompt here"
-            className="h-[50vh]"
+            className="h-[60vh]"
             value={systemPrompt}
             onChange={(e) => setSystemPrompt(e.target.value)}
           />

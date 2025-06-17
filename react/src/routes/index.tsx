@@ -3,6 +3,7 @@ import ChatTextarea from '@/components/chat/ChatTextarea'
 import CanvasList from '@/components/home/CanvasList'
 import HomeHeader from '@/components/home/HomeHeader'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion } from 'motion/react'
@@ -71,6 +72,9 @@ function Home() {
                 session_id: nanoid(),
                 text_model: configs.textModel,
                 image_model: configs.imageModel,
+                system_prompt:
+                  localStorage.getItem('system_prompt') ||
+                  DEFAULT_SYSTEM_PROMPT,
               })
             }}
             pending={isPending}
