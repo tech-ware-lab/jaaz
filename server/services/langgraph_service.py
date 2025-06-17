@@ -212,7 +212,7 @@ def create_handoff_tool(
     handoff_to_agent.metadata = {METADATA_KEY_HANDOFF_DESTINATION: agent_name}
     return handoff_to_agent
 
-async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, image_model):
+async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, image_model, system_prompt: str = None):
     try:
         model = text_model.get('model')
         provider = text_model.get('provider')
@@ -241,14 +241,52 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             )
         agent_schemas = [
             {
-                'name': 'art_designer',
+                'name': 'planner',
                 'tools': [
                     {
-                        'name': 'write_plan',
-                        'description': "Write a execution plan for the user's request",
-                        'type': 'system',
-                        'tool': 'write_plan',
-                    },
+                    'name': 'write_plan',
+                    'description': "Write a execution plan for the user's request",
+                    'type': 'system',
+                    'tool': 'write_plan',
+                }
+                ],
+                'system_prompt': """
+            You are a design planning writing agent. You should do:
+            - Step 1. write a execution plan for the user's request. You should breakdown the task into high level steps for the other agents to execute.
+            - Step 2. Transfer the task to the most suitable agent who specializes in the task.
+
+            IMPORTANT RULES:
+            1. You MUST complete the write_plan tool call and wait for its result BEFORE attempting to transfer to another agent
+            2. Do NOT call multiple tools simultaneously
+            3. Always wait for the result of one tool call before making another
+
+            For example, if the user ask to 'Generate a ads video for a lipstick product', the example plan is :
+            ```
+            [{
+                "title": "Design the video script",
+                "description": "Design the video script for the ads video"
+            }, {
+                "title": "Generate the images",
+                "description": "Design image prompts, generate the images for the story board"
+            }, {
+                "title": "Generate the video clips",
+                "description": "Generate the video clips from the images"
+            }]
+            ```
+            """,
+                'knowledge': [],
+                'handoffs': [
+                    {
+                        'agent_name': 'image_designer',
+                        'description': """
+                        Transfer user to the image_designer. About this agent: Specialize in generating images.
+                        """
+                    }
+                ]
+            },
+            {
+                'name': 'image_designer',
+                'tools': [
                     {
                         'name': 'generate_image',
                         'description': "Generate an image",
@@ -256,27 +294,8 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                     }
                 ],
                 'system_prompt': """
-            You are a professional art design agent. You can write very professional image prompts to generate aesthetically pleasing images that best fulfilling and matching the user's request. You should do: 
-            - Step 1. Analyze the user's request, and break it down into seteps of execution, and use write_plan tool to write and display a execution plan for the user. 
-            - Step 2. If the user's request is about image generation, write a design strategy doc for the image generation.
-            - Step 3. Use any tools you need to complete the task.
-
-            For example, if the user ask to 'Generate a ads video for a lipstick product', the example execution plan is :
-            ```
-            [{
-                "title": "Design the video script",
-                "description": "Design the video script for the ads video"
-            }, {
-                "title": "Write the image prompts for the story board",
-                "description": "Write the image prompts for the story board"
-            }, {
-                "title": "Generate the images",
-                "description": "Generate the images for the story board"
-            }, {
-                "title": "Generate the video clips",
-                "description": "Generate the video clips from the images"
-            }]
-            ```
+            You are a professional art design agent. You can write very professional image prompts to generate aesthetically pleasing images that best fulfilling and matching the user's request.
+            You should first write a design strategy plan and then generate the image based on the plan.
 
             Example Design Strategy Doc:
 Design Proposal for “MUSE MODULAR – Future of Identity” Cover
