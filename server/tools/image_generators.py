@@ -4,7 +4,7 @@ import asyncio
 import base64
 import json
 import sys
-from services.config_service import app_config
+from services.config_service import config_service
 import traceback
 from services.config_service import USER_DATA_DIR, FILES_DIR
 from PIL import Image
@@ -35,8 +35,8 @@ class GenerateImageInputSchema(BaseModel):
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
-@tool("generate_image", 
-description="Generate an image using text prompt or optionally pass an image for reference or for editing", 
+@tool("generate_image",
+description="Generate an image using text prompt or optionally pass an image for reference or for editing",
 args_schema=GenerateImageInputSchema)
 async def generate_image(
     prompt: str,
@@ -186,7 +186,8 @@ async def get_image_info_and_save(url, file_path_without_extension, is_b64=False
 
 async def generate_image_replicate(prompt, model, aspect_ratio, input_image_b64: Optional[str] = None):
     try:
-        api_key = app_config.get('replicate', {}).get('api_key', '')
+        api_key = config_service.app_config.get(
+            'replicate', {}).get('api_key', '')
         if not api_key:
             raise ValueError(
                 "Image generation failed: Replicate API key is not set")
@@ -255,7 +256,7 @@ except Exception as e:
 async def generate_image_comfyui(args_json: dict, ctx: dict):
     if not flux_comfy_workflow:
         raise Exception('Flux workflow json not found')
-    api_url = app_config.get('comfyui', {}).get('url', '')
+    api_url = config_service.app_config.get('comfyui', {}).get('url', '')
     api_url = api_url.replace('http://', '').replace('https://', '')
     host = api_url.split(':')[0]
     port = api_url.split(':')[1]
@@ -283,8 +284,8 @@ async def generate_image_comfyui(args_json: dict, ctx: dict):
 
 
 async def generate_image_wavespeed(prompt: str, model, input_image: Optional[str] = None, **kwargs):
-    api_key = app_config.get('wavespeed', {}).get('api_key', '')
-    url = app_config.get('wavespeed', {}).get('url', '')
+    api_key = config_service.app_config.get('wavespeed', {}).get('api_key', '')
+    url = config_service.app_config.get('wavespeed', {}).get('url', '')
 
     async with HttpClient.create() as client:
         headers = {
@@ -348,7 +349,7 @@ async def generate_image_jaaz_cloud(prompt: str, model: str, aspect_ratio: str =
     """
     try:
         # 从配置中获取 API 设置
-        jaaz_config = app_config.get('jaaz', {})
+        jaaz_config = config_service.app_config.get('jaaz', {})
         api_url = jaaz_config.get('url', '')
         api_token = jaaz_config.get('api_key', '')
 
@@ -473,12 +474,12 @@ async def generate_new_image_element(canvas_id: str, fileid: str, image_data: di
 
 async def generate_image_openai(prompt: str, model: str, input_path: Optional[str] = None, **kwargs):
     try:
-        api_key = app_config.get('openai', {}).get('api_key', '')
-        url = app_config.get('openai', {}).get('url', '')
+        api_key = config_service.app_config.get('openai', {}).get('api_key', '')
+        url = config_service.app_config.get('openai', {}).get('url', '')
         model = model.replace('openai/', '')
 
         client = OpenAI(api_key=api_key, base_url=url)
-        
+
         if input_path:
             with open(input_path, 'rb') as image_file:
                 result = client.images.edit(
