@@ -9,10 +9,10 @@ async def config_exists():
 
 @router.get("")
 async def get_config():
-    return config_service.get_config()
+    return config_service.app_config
 
 @router.post("")
 async def update_config(request: Request):
     data = await request.json()
-    res = await config_service.update_config(data) 
+    res = await config_service.update_config(data)
     return res
