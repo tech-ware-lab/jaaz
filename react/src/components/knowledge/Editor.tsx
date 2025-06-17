@@ -165,86 +165,15 @@ export default function Editor({ knowledgeID }: { knowledgeID: string }) {
         </Button>
       </div>
       <div className="overflow-y-auto">
-        {!isPreviewMode ? (
-          <div className="mb-5 border rounded-md overflow-hidden">
-            <MdEditor
-              value={editorContent}
-              style={{ height: '80vh' }}
-              renderHTML={(text) => mdParser.render(text)}
-              onChange={({ text }) => setEditorContentWrapper(text)}
-              onImageUpload={handleImageUpload}
-            />
-          </div>
-        ) : (
-          <MDXEditor
-            ref={mdxEditorRef}
-            className={theme == 'dark' ? `dark-theme` : ''}
-            plugins={[
-              headingsPlugin(),
-              linkPlugin(),
-              imagePlugin({
-                imageUploadHandler: (file) => handleImageUpload(file),
-                imageAutocompleteSuggestions: [
-                  'https://picsum.photos/200/300',
-                  'https://picsum.photos/200',
-                ],
-              }),
-              listsPlugin(),
-              quotePlugin(),
-              thematicBreakPlugin(),
-              markdownShortcutPlugin(),
-              toolbarPlugin({
-                toolbarClassName: 'my-classname',
-                toolbarPosition: 'top',
-                toolbarContents: () => (
-                  <>
-                    {
-                      <div
-                        role="toolbar"
-                        className="flex rounded-md"
-                        // style={{
-                        //   top: `${selectionPosition.top}px`,
-                        //   left: `${selectionPosition.left}px`,
-                        // }}
-                      >
-                        <BoldItalicUnderlineToggles />
-                        <BlockTypeSelect />
-                        {/* <CodeToggle /> */}
-                        <Separator orientation="vertical" />
-                        <CreateLink />
-                        <Button
-                          variant={'ghost'}
-                          onClick={() => {
-                            const input = document.createElement('input')
-                            input.type = 'file'
-                            input.accept = 'image/*'
-
-                            input.onchange = async () => {
-                              const file = input.files?.[0]
-                              if (!file) return
-                              console.log('selected file', file)
-
-                              handleImageUpload(file)
-                            }
-
-                            input.click()
-                          }}
-                        >
-                          <ImagePlusIcon />
-                        </Button>
-                      </div>
-                    }
-                  </>
-                ),
-              }),
-            ]}
-            onChange={(t) => {
-              setEditorContentWrapper(t)
-            }}
-            placeholder={`Write your post here...`}
-            markdown={editorContent}
+        <div className="mb-5 border rounded-md overflow-hidden">
+          <MdEditor
+            value={editorContent}
+            style={{ height: '80vh' }}
+            renderHTML={(text) => mdParser.render(text)}
+            onChange={({ text }) => setEditorContentWrapper(text)}
+            onImageUpload={handleImageUpload}
           />
-        )}
+        </div>
       </div>
     </div>
   )
