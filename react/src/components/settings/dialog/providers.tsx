@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { DEFAULT_PROVIDERS_CONFIG } from '@/constants'
 import useConfigsStore from '@/stores/configs'
 import { LLMConfig } from '@/types/types'
+import { getConfig, updateConfig } from '@/api/config'
 import { Plus, Save } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -21,8 +22,7 @@ const SettingProviders = () => {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const response = await fetch('/api/config')
-        const config: { [key: string]: LLMConfig } = await response.json()
+        const config: { [key: string]: LLMConfig } = await getConfig()
 
         const res: { [key: string]: LLMConfig } = {}
 
@@ -87,19 +87,8 @@ const SettingProviders = () => {
     try {
       setErrorMessage('')
 
-      const response = await fetch('/api/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(providers),
-      })
+      const result = await updateConfig(providers)
 
-      if (!response.ok) {
-        throw new Error('Failed to save configuration')
-      }
-
-      const result = await response.json()
       if (result.status === 'success') {
         toast.success(result.message)
       } else {
