@@ -33,7 +33,7 @@ export default function Knowledge() {
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-[90vw]">
-            <Editor curPath={''} setCurPath={() => {}} />
+            <Editor />
           </DialogContent>
         </Dialog>
         <div
