@@ -8,7 +8,6 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useConfigs, useRefreshModels } from '../../contexts/configs'
 
 export function LoginDialog() {
-  const [isLoading, setIsLoading] = useState(false)
   const [authMessage, setAuthMessage] = useState('')
   const { refreshAuth } = useAuth()
   const { showLoginDialog: open, setShowLoginDialog } = useConfigs()
@@ -18,13 +17,13 @@ export function LoginDialog() {
 
   // Clean up polling when dialog closes
   useEffect(() => {
+    setAuthMessage('')
+
     if (!open) {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current)
         pollingIntervalRef.current = null
       }
-      setIsLoading(false)
-      setAuthMessage('')
     }
   }, [open])
 
@@ -55,7 +54,6 @@ export function LoginDialog() {
           }
 
           setAuthMessage(t('common:auth.loginSuccessMessage'))
-          setIsLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
@@ -75,7 +73,6 @@ export function LoginDialog() {
         } else if (result.status === 'expired') {
           // Authorization expired
           setAuthMessage(t('common:auth.authExpiredMessage'))
-          setIsLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
@@ -84,7 +81,6 @@ export function LoginDialog() {
         } else if (result.status === 'error') {
           // Error occurred
           setAuthMessage(result.message || t('common:auth.authErrorMessage'))
-          setIsLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
@@ -97,7 +93,6 @@ export function LoginDialog() {
       } catch (error) {
         console.error('Polling error:', error)
         setAuthMessage(t('common:auth.pollErrorMessage'))
-        setIsLoading(false)
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current)
           pollingIntervalRef.current = null
@@ -112,7 +107,6 @@ export function LoginDialog() {
 
   const handleLogin = async () => {
     try {
-      setIsLoading(true)
       setAuthMessage(t('common:auth.preparingLoginMessage'))
 
       const result = await startDeviceAuth()
@@ -124,7 +118,6 @@ export function LoginDialog() {
     } catch (error) {
       console.error('登录请求失败:', error)
       setAuthMessage(t('common:auth.loginRequestFailed'))
-      setIsLoading(false)
     }
   }
 
@@ -133,7 +126,6 @@ export function LoginDialog() {
       clearInterval(pollingIntervalRef.current)
       pollingIntervalRef.current = null
     }
-    setIsLoading(false)
     setAuthMessage('')
     setShowLoginDialog(false)
   }
@@ -153,10 +145,10 @@ export function LoginDialog() {
           <div className="flex gap-2">
             <Button
               onClick={handleLogin}
-              disabled={isLoading || !!authMessage}
+              disabled={!!authMessage}
               className="flex-1"
             >
-              {authMessage || (isLoading ? t('common:auth.preparingLogin') : t('common:auth.startLogin'))}
+              {authMessage || t('common:auth.startLogin')}
             </Button>
 
           </div>
