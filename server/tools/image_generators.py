@@ -290,7 +290,7 @@ async def generate_image_wavespeed(prompt: str, model, input_image: Optional[str
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json',
-            'channel': 'jaaz_1'
+            'channel': 'jaaz_main'
         }
         if input_image:
             model = 'wavespeed-ai/flux-kontext-pro/multi'
