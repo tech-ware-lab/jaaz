@@ -1,4 +1,5 @@
 import { LLMConfig } from '@/types/types'
+import { DEFAULT_PROVIDERS_CONFIG } from '../constants'
 
 export async function getConfigExists(): Promise<{ exists: boolean }> {
   const response = await fetch('/api/config/exists')
@@ -30,11 +31,12 @@ export async function updateJaazApiKey(token: string): Promise<void> {
 
     if (config.jaaz) {
       config.jaaz.api_key = token
+      config.jaaz.url = DEFAULT_PROVIDERS_CONFIG.jaaz.url
     } else {
-      const { DEFAULT_PROVIDERS_CONFIG } = await import('../constants')
       config.jaaz = {
         ...DEFAULT_PROVIDERS_CONFIG.jaaz,
         api_key: token,
+        url: DEFAULT_PROVIDERS_CONFIG.jaaz.url,
       }
     }
 
@@ -52,6 +54,7 @@ export async function clearJaazApiKey(): Promise<void> {
 
     if (config.jaaz) {
       config.jaaz.api_key = ''
+      config.jaaz.url = ''
       await updateConfig(config)
       console.log('Successfully cleared jaaz provider api_key')
     }
