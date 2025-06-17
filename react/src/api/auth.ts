@@ -123,7 +123,7 @@ export async function logout(): Promise<{ status: string; message: string }> {
   localStorage.removeItem('jaaz_user_info')
 
   // Clear jaaz provider api_key
-  clearJaazApiKey()
+  await clearJaazApiKey()
 
   return {
     status: 'success',

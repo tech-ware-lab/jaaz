@@ -21,6 +21,11 @@ export default function CommonSetting({
   onDeleteProvider,
 }: CommonSettingProps) {
   const { t } = useTranslation()
+  // jaaz is official provider, so we don't need to show it here
+  if (providerKey === 'jaaz') {
+    return null
+  }
+
   const provider = PROVIDER_NAME_MAPPING[providerKey] || {
     name:
       providerKey.charAt(0).toUpperCase() +
