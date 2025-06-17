@@ -56,7 +56,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const imageInputRef = useRef<HTMLInputElement>(null)
 
   const { mutate: uploadImageMutation } = useMutation({
-    mutationFn: (file: File) => uploadImage(file, ''),
+    mutationFn: (file: File) => uploadImage(file),
     onSuccess: (data) => {
       console.log('🦄uploadImageMutation onSuccess', data)
       setImages((prev) => [

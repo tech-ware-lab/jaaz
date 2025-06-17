@@ -20,8 +20,7 @@ os.makedirs(FILES_DIR, exist_ok=True)
 
 # 上传图片接口，支持表单提交
 @router.post("/upload_image")
-async def upload_image(session_id: str = Form(...), file: UploadFile = File(...)):
-    print('🦄upload_image session_id', session_id)
+async def upload_image(file: UploadFile = File(...)):
     print('🦄upload_image file', file.filename)
     # 生成文件 ID 和文件名
     file_id = generate_file_id()
@@ -48,6 +47,7 @@ async def upload_image(session_id: str = Form(...), file: UploadFile = File(...)
     print('🦄upload_image file_path', file_path)
     return {
         'file_id': f'{file_id}.{extension}',
+        'url': f'http://localhost:{DEFAULT_PORT}/api/file/{file_id}.{extension}',
         'width': width,
         'height': height,
     }
