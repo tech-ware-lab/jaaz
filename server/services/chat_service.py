@@ -7,7 +7,7 @@ import json
 # Import service modules
 from services.db_service import db_service
 from services.langgraph_service import langgraph_agent, langgraph_multi_agent
-from services.config_service import app_config
+from services.config_service import config_service
 from services.websocket_service import send_to_websocket
 from services.stream_service import add_stream_task, remove_stream_task
 
@@ -40,13 +40,13 @@ async def handle_chat(data):
 
 
     print('👇app_config.get("system_prompt", "")',
-          app_config.get('system_prompt', ''))
-    
+          config_service.app_config.get('system_prompt', ''))
+
     # If system prompt is configured, append it as a 'system' message
-    if app_config.get('system_prompt', ''):
+    if config_service.app_config.get('system_prompt', ''):
         messages.append({
             'role': 'system',
-            'content': app_config.get('system_prompt', '')
+            'content': config_service.app_config.get('system_prompt', '')
         })
 
     # If there is only one message, create a new chat session
@@ -61,14 +61,14 @@ async def handle_chat(data):
     # Create and start langgraph_agent task for chat processing
     task = asyncio.create_task(langgraph_multi_agent(
         messages, canvas_id, session_id, text_model, image_model))
-    
+
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)
     try:
         # Await completion of the langgraph_agent task
         await task
     except asyncio.exceptions.CancelledError:
-        print(f"🛑Session {session_id} cancelled during stream") 
+        print(f"🛑Session {session_id} cancelled during stream")
     finally:
         # Always remove the task from stream_tasks after completion/cancellation
         remove_stream_task(session_id)
