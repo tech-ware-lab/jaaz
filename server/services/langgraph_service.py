@@ -241,36 +241,27 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             )
         agent_schemas = [
             {
-                'name': 'planner',
+                'name': 'art_designer',
                 'tools': [
                     {
-                    'name': 'write_plan',
-                    'description': "Write a execution plan for the user's request",
-                    'type': 'system',
-                    'tool': 'write_plan',
-                }
+                        'name': 'write_plan',
+                        'description': "Write a execution plan for the user's request",
+                        'type': 'system',
+                        'tool': 'write_plan',
+                    },
+                    {
+                        'name': 'generate_image',
+                        'description': "Generate an image",
+                        'tool': 'generate_image',
+                    }
                 ],
                 'system_prompt': """
-            You are a design planning writing agent. You should do:
-            - Step 1. write a execution plan for the user's request. You should breakdown the task into high level steps for the other agents to execute.
-            - Step 2. Transfer the task to the most suitable agent who specializes in the task.
+            You are a professional art design agent. You can write very professional image prompts to generate aesthetically pleasing images that best fulfilling and matching the user's request. You should do: 
+            - Step 1. Analyze the user's request, and break it down into seteps of execution, and use write_plan tool to write and display a execution plan for the user. 
+            - Step 2. If the user's request is about image generation, write a design strategy doc for the image generation.
+            - Step 3. Use any tools you need to complete the task.
 
-            IMPORTANT RULES:
-            1. You MUST complete the write_plan tool call and wait for its result BEFORE attempting to transfer to another agent
-            2. Do NOT call multiple tools simultaneously
-            3. Always wait for the result of one tool call before making another
-
-            For example, if the user ask to 'Generate a cartoon anime style portrait of Zimomo', the example plan is :
-            ```
-            [{
-                "title": "Web search image",
-                "description": "Search the web for images referenceof Zimomo"
-            }, {
-                "title": "Generate Image",
-                "description": "Generate an image based on the image reference searched"
-            }]
-            ```
-            For example, if the user ask to 'Generate a ads video for a lipstick product', the example plan is :
+            For example, if the user ask to 'Generate a ads video for a lipstick product', the example execution plan is :
             ```
             [{
                 "title": "Design the video script",
@@ -286,41 +277,49 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 "description": "Generate the video clips from the images"
             }]
             ```
-            """,
-                'knowledge': [],
-                'handoffs': [
-                    {
-                        'agent_name': 'general_image_designer',
-                        'description': """
-                        Transfer user to the general_image_designer. About this agent: Specialize in generating images.
-                        """
-                    }
-                ]
-            },
-            {
-                'name': 'general_image_designer',
-                'system_prompt': """
-            You are a professional image designer. You should first write a design strategy plan and then generate the image based on the plan.
-            Example Design Strategy Plan:
-            ### Style
-            - Use a modern and clean style
-            ### Elements
-            - Featuring a sofa in the center, an armchair in the corner, and a table in the corner
-            ### Colors
-            - Use a combination of blue and green
-            ### Layout
-            - Place the sofa in the center of the image, with the armchair and table on either side
-            ### Details
-            - Add a small pattern to the fabric of the sofa
-            - Add a small pattern to the fabric of the armchair
 
+            Example Design Strategy Doc:
+Design Proposal for “MUSE MODULAR – Future of Identity” Cover
+• Recommended resolution: 1024 × 1536 px (portrait) – optimal for a standard magazine trim while preserving detail for holographic accents.
+
+• Style & Mood
+– High-contrast grayscale base evoking timeless editorial sophistication.
+– Holographic iridescence selectively applied (cyan → violet → lime) for mask edges, title glyphs and micro-glitches, signalling futurism and fluid identity.
+– Atmosphere: enigmatic, cerebral, slightly unsettling yet glamorous.
+
+• Key Visual Element
+– Central androgynous model, shoulders-up, lit with soft frontal key and twin rim lights.
+– A translucent polygonal AR mask overlays the face; within it, three offset “ghost” facial layers (different eyes, nose, mouth) hint at multiple personas.
+– Subtle pixel sorting/glitch streaks emanate from mask edges, blending into background grid.
+
+• Composition & Layout
+
+Masthead “MUSE MODULAR” across the top, extra-condensed modular sans serif; characters constructed from repeating geometric units. Spot UV + holo foil.
+Tagline “Who are you today?” centered beneath masthead in ultra-light italic.
+Subject’s gaze directly engages reader; head breaks the baseline of the masthead for depth.
+Bottom left kicker “Future of Identity Issue” in tiny monospaced capitals.
+Discreet modular grid lines and data glyphs fade into matte charcoal background, preserving negative space.
+• Color Palette
+#000000, #1a1a1a, #4d4d4d, #d9d9d9 + holographic gradient (#00eaff, #c400ff, #38ffab).
+
+• Typography
+– Masthead: custom variable sans with removable modules.
+– Tagline: thin italic grotesque.
+– Secondary copy: 10 pt monospaced to reference code.
+
+• Print Finishing
+– Soft-touch matte laminate overall.
+– Spot UV + holographic foil on masthead, mask outline and glitch shards.
+
+Image-Generation Prompt (copy directly)
+Generate a vertical magazine cover, 1024×1536 px, 300 ppi. Photorealistic editorial style.
+Scene: shoulders-up portrait of an androgynous, ethnically ambiguous high-fashion model against a charcoal-to-light-gray gradient background with faint modular grid lines and translucent data glyphs. Lighting: soft frontal key, subtle dual rim lights, creating high-contrast grayscale tones.
+Subject wears a semi-transparent, holographic polygonal augmented-reality mask; mask projects three slightly offset ghost faces with alternative eyes, noses, mouths, as luminous layers. Edges of the mask emit iridescent light (gradient #00eaff → #c400ff → #38ffab) and subtle pixel-sorting glitch streaks.
+Masthead “MUSE MODULAR” top-center, uppercase, extra-condensed modular sans serif, holographic foil effect, breaking plane behind model’s head. Directly below, thin italic tagline “Who are you today?”. Bottom left, small monospaced caption “Future of Identity Issue”.
+Overall palette strictly grayscale except selective holographic highlights. Emphasize negative space, pristine editorial composition, futuristic mood, crisp detail suitable for print.
             """,
-                'tools': [{
-                    'name': 'generate_image',
-                    'description': "Generate an image",
-                    'tool': 'generate_image',
-                }],
                 'knowledge': [],
+                'handoffs': []
             }
         ]
         agents = []
@@ -355,7 +354,7 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
         print('👇last_agent', last_agent)
         swarm = create_swarm(
             agents=agents,
-            default_active_agent=last_agent if last_agent else "planner"
+            default_active_agent=last_agent if last_agent else agent_schemas[0]['name']
         ).compile()
 
         # swarm = create_swarm(

@@ -105,7 +105,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setMessages(
         produce((prev) => {
           const last = prev.at(-1)
-          if (last?.role === 'assistant' && last.content != null) {
+          if (
+            last?.role === 'assistant' &&
+            last.content != null &&
+            last.tool_calls == null
+          ) {
             if (typeof last.content === 'string') {
               last.content += data.text
             } else if (
