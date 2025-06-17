@@ -7,6 +7,7 @@ import { DEFAULT_PROVIDERS_CONFIG } from '@/constants'
 import useConfigsStore from '@/stores/configs'
 import { LLMConfig } from '@/types/types'
 import { getConfig, updateConfig } from '@/api/config'
+import { useRefreshModels } from '@/contexts/configs'
 import { Plus, Save } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -15,6 +16,7 @@ import { toast } from 'sonner'
 const SettingProviders = () => {
   const { t } = useTranslation()
   const { providers, setProviders } = useConfigsStore()
+  const refreshModels = useRefreshModels()
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [isAddProviderDialogOpen, setIsAddProviderDialogOpen] = useState(false)
@@ -91,6 +93,8 @@ const SettingProviders = () => {
 
       if (result.status === 'success') {
         toast.success(result.message)
+        // Refresh models list after successful config update
+        refreshModels()
       } else {
         throw new Error(result.message || 'Failed to save configuration')
       }

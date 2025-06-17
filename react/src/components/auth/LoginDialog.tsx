@@ -5,13 +5,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { startDeviceAuth, pollDeviceAuth, saveAuthData } from '../../api/auth'
 import { updateJaazApiKey } from '../../api/config'
 import { useAuth } from '../../contexts/AuthContext'
-import { useConfigs } from '../../contexts/configs'
+import { useConfigs, useRefreshModels } from '../../contexts/configs'
 
 export function LoginDialog() {
   const [isLoading, setIsLoading] = useState(false)
   const [authMessage, setAuthMessage] = useState('')
   const { refreshAuth } = useAuth()
   const { showLoginDialog: open, setShowLoginDialog } = useConfigs()
+  const refreshModels = useRefreshModels()
   const { t } = useTranslation()
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -50,7 +51,7 @@ export function LoginDialog() {
             saveAuthData(result.token, result.user_info)
 
             // Update jaaz provider api_key with the access token
-            updateJaazApiKey(result.token)
+            await updateJaazApiKey(result.token)
           }
 
           setAuthMessage(t('common:auth.loginSuccessMessage'))
@@ -60,10 +61,11 @@ export function LoginDialog() {
             pollingIntervalRef.current = null
           }
 
-          // Refresh auth status after saving data
           try {
             await refreshAuth()
             console.log('Auth status refreshed successfully')
+            // Refresh models list after successful login and config update
+            refreshModels()
           } catch (error) {
             console.error('Failed to refresh auth status:', error)
           }

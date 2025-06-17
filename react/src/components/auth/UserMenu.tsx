@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/contexts/AuthContext'
-import { useConfigs } from '@/contexts/configs'
+import { useConfigs, useRefreshModels } from '@/contexts/configs'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -17,11 +17,14 @@ import { logout } from '@/api/auth'
 export function UserMenu() {
   const { authStatus, refreshAuth } = useAuth()
   const { setShowLoginDialog } = useConfigs()
+  const refreshModels = useRefreshModels()
   const { t } = useTranslation()
 
   const handleLogout = async () => {
     await logout()
     await refreshAuth()
+    // Refresh models list after logout and config update
+    refreshModels()
   }
 
   // 如果用户已登录，显示用户菜单
