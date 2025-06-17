@@ -289,7 +289,8 @@ async def generate_image_wavespeed(prompt: str, model, input_image: Optional[str
     async with HttpClient.create() as client:
         headers = {
             'Authorization': f'Bearer {api_key}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'channel': os.environ.get('WAVESPEED_CHANNEL', ''),
         }
         if input_image:
             model = 'wavespeed-ai/flux-kontext-pro/multi'
