@@ -76,6 +76,8 @@
     "browserLoginMessage": "请在浏览器中完成登录",
     "loginRequestFailed": "登录请求失败，请重试",
     "logoutSuccessMessage": "已成功登出",
-    "notLoggedIn": "未登录"
+    "notLoggedIn": "未登录",
+    "balance": "余额",
+    "recharge": "充值"
   }
 }
