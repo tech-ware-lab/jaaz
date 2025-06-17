@@ -29,6 +29,11 @@ import { Textarea } from '../ui/textarea'
 import { Switch } from '../ui/switch'
 import { ImagePlusIcon } from 'lucide-react'
 import { Button } from '../ui/button'
+import MarkdownIt from 'markdown-it'
+import MdEditor from 'react-markdown-editor-lite'
+import 'react-markdown-editor-lite/lib/index.css'
+import { uploadImage } from '@/api/upload'
+const mdParser = new MarkdownIt()
 
 type MediaFile = {
   path: string
@@ -97,39 +102,6 @@ export default function Editor({
       })
   }, [curPath])
 
-  const renameFile = useCallback(
-    (title: string) => {
-      const fullContent = `# ${title}\n${editorContent}`
-      fetch('/api/rename_file', {
-        method: 'POST',
-        body: JSON.stringify({ old_path: curPath, new_title: title }),
-      })
-        .then((res) => res.json())
-        .then(async (data) => {
-          if (data.path) {
-            // successfully renamed, update to the new path
-            await fetch('/api/update_file', {
-              method: 'POST',
-              body: JSON.stringify({ path: data.path, content: fullContent }),
-            })
-            setCurPath(data.path)
-            dispatchEvent(new CustomEvent('refresh_workspace'))
-          } else {
-            // failed to rename, update to the old path
-            await fetch('/api/update_file', {
-              method: 'POST',
-              body: JSON.stringify({ path: curPath, content: fullContent }),
-            })
-            toast.error(data.error)
-          }
-        })
-        .finally(() => {
-          setIsLoading(false)
-        })
-    },
-    [curPath, editorContent, setCurPath]
-  )
-
   const updateFile = useCallback(
     (content: string) => {
       const fullContent = `# ${editorTitle}\n${content}`
@@ -142,13 +114,7 @@ export default function Editor({
   )
 
   // Create debounced versions of the functions
-  const debouncedRenameFile = useDebounce(renameFile, 500)
   const debouncedUpdateFile = useDebounce(updateFile, 500)
-
-  const setEditorTitleWrapper = (title: string) => {
-    setEditorTitle(title)
-    debouncedRenameFile(title)
-  }
 
   const setEditorContentWrapper = (content: string) => {
     setEditorContent(content)
@@ -186,8 +152,10 @@ export default function Editor({
     }
   }, [])
 
-  const handleImageUpload = (file: File) => {
-    return new Promise((resolve, reject) => {})
+  const handleImageUpload = async (file: File) => {
+    const res = await uploadImage(file)
+    console.log('res', res)
+    return res.url
   }
   return (
     <div className="mb-5">
@@ -203,12 +171,15 @@ export default function Editor({
         className="overflow-y-auto border rounded-md"
       >
         {!isPreviewMode ? (
-          <Textarea
-            placeholder="Post content"
-            className="text-sm flex-1 h-[calc(100vh-200px)]"
-            value={editorContent}
-            onChange={(e) => setEditorContentWrapper(e.target.value)}
-          />
+          <div className="mb-5 border rounded-md overflow-hidden">
+            <MdEditor
+              value={editorContent}
+              style={{ height: '500px' }}
+              renderHTML={(text) => mdParser.render(text)}
+              onChange={({ text }) => setEditorContentWrapper(text)}
+              onImageUpload={handleImageUpload}
+            />
+          </div>
         ) : (
           <MDXEditor
             ref={mdxEditorRef}

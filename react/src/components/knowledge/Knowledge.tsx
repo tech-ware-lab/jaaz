@@ -3,17 +3,14 @@ import HomeHeader from '../home/HomeHeader'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader } from '../ui/card'
 import { PlusIcon } from 'lucide-react'
-import MarkdownIt from 'markdown-it'
-import MdEditor from 'react-markdown-editor-lite'
-import 'react-markdown-editor-lite/lib/index.css'
+
+import Editor from './Editor'
 
 // Sample data for knowledge base items
 const knowledgeItems = [
   { id: 1, title: 'Item 1', description: 'Description for item 1' },
   { id: 2, title: 'Item 2', description: 'Description for item 2' },
 ]
-
-const mdParser = new MarkdownIt()
 
 export default function Knowledge() {
   const [showEditor, setShowEditor] = useState(false)
@@ -32,28 +29,7 @@ export default function Knowledge() {
           Add Knowledge
         </Button>
 
-        {showEditor && (
-          <div className="mb-5 border rounded-md overflow-hidden">
-            <MdEditor
-              value={markdown}
-              style={{ height: '500px' }}
-              renderHTML={(text) => mdParser.render(text)}
-              onChange={({ text }) => setMarkdown(text)}
-              onImageUpload={async (file) => {
-                console.log('file', file)
-                // Upload to your server or S3
-                const formData = new FormData()
-                formData.append('file', file)
-                const res = await fetch('/api/upload', {
-                  method: 'POST',
-                  body: formData,
-                })
-                const { url } = await res.json()
-                return url // markdown link will be auto-inserted
-              }}
-            />
-          </div>
-        )}
+        {showEditor && <Editor curPath={''} setCurPath={() => {}} />}
 
         <div
           style={{
