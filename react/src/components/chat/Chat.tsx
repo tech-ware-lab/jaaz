@@ -33,6 +33,7 @@ import SessionSelector from './SessionSelector'
 import ChatSpinner from './Spinner'
 import ToolcallProgressUpdate from './ToolcallProgressUpdate'
 
+import { useConfigs } from '@/contexts/configs'
 import 'react-photo-view/dist/react-photo-view.css'
 
 type ChatInterfaceProps = {
@@ -48,13 +49,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const { t } = useTranslation()
   const [session, setSession] = useState<Session | null>(null)
+  const { initCanvas, setInitCanvas } = useConfigs()
 
   const search = useSearch({ from: '/canvas/$id' }) as {
     sessionId: string
-    init?: boolean
   }
   const searchSessionId = search.sessionId || ''
-  const searchInit = search.init || false
 
   useEffect(() => {
     if (sessionList.length > 0) {
@@ -73,7 +73,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [messages, setMessages] = useState<Message[]>([])
   const [prompt, setPrompt] = useState('')
   const [pending, setPending] = useState<PendingType>(
-    searchInit ? 'text' : false
+    initCanvas ? 'text' : false
   )
 
   const sessionId = session?.id
@@ -184,6 +184,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       setMessages(
         produce((prev) => {
+          setPending('tool')
           const lastMessage = prev.find(
             (m) =>
               m.role === 'assistant' &&
@@ -310,10 +311,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     const resp = await fetch('/api/chat_session/' + sessionId)
     const data = await resp.json()
-    setMessages(data?.length ? data : [])
+    const msgs = data?.length ? data : []
+    setMessages(msgs)
+    if (msgs.length > 0) {
+      setInitCanvas(false)
+    }
 
     scrollToBottom()
-  }, [sessionId, scrollToBottom])
+  }, [sessionId, scrollToBottom, setInitCanvas])
 
   useEffect(() => {
     initChat()

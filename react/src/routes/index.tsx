@@ -3,6 +3,7 @@ import ChatTextarea from '@/components/chat/ChatTextarea'
 import CanvasList from '@/components/home/CanvasList'
 import HomeHeader from '@/components/home/HomeHeader'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useConfigs } from '@/contexts/configs'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion } from 'motion/react'
@@ -19,14 +20,15 @@ function Home() {
   const [prompt, setPrompt] = useState('')
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { setInitCanvas } = useConfigs()
 
   const { mutate: createCanvasMutation, isPending } = useMutation({
     mutationFn: createCanvas,
     onSuccess: (data) => {
+      setInitCanvas(true)
       navigate({
         to: '/canvas/$id',
         params: { id: data.id },
-        search: { init: true },
       })
     },
     onError: (error) => {
