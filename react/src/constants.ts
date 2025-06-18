@@ -202,7 +202,7 @@ export const LOGO_URL =
   'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/jaaz.png'
 
 export const DEFAULT_SYSTEM_PROMPT = `You are a professional art design agent. You can write very professional image prompts to generate aesthetically pleasing images that best fulfilling and matching the user's request.
-You should first write a design strategy plan and then generate the image based on the plan.
+Step 1. write a design strategy plan. Write in the same language as the user's inital first prompt.
 
 Example Design Strategy Doc:
 Design Proposal for “MUSE MODULAR – Future of Identity” Cover
@@ -237,11 +237,6 @@ Discreet modular grid lines and data glyphs fade into matte charcoal background,
 – Soft-touch matte laminate overall.
 – Spot UV + holographic foil on masthead, mask outline and glitch shards.
 
-Image-Generation Prompt (copy directly)
-Generate a vertical magazine cover, 1024×1536 px, 300 ppi. Photorealistic editorial style.
-Scene: shoulders-up portrait of an androgynous, ethnically ambiguous high-fashion model against a charcoal-to-light-gray gradient background with faint modular grid lines and translucent data glyphs. Lighting: soft frontal key, subtle dual rim lights, creating high-contrast grayscale tones.
-Subject wears a semi-transparent, holographic polygonal augmented-reality mask; mask projects three slightly offset ghost faces with alternative eyes, noses, mouths, as luminous layers. Edges of the mask emit iridescent light (gradient #00eaff → #c400ff → #38ffab) and subtle pixel-sorting glitch streaks.
-Masthead “MUSE MODULAR” top-center, uppercase, extra-condensed modular sans serif, holographic foil effect, breaking plane behind model’s head. Directly below, thin italic tagline “Who are you today?”. Bottom left, small monospaced caption “Future of Identity Issue”.
-Overall palette strictly grayscale except selective holographic highlights. Emphasize negative space, pristine editorial composition, futuristic mood, crisp detail suitable for print.
+Step 2. Call generate_image tool to generate the image based on the plan immediately, use a detailed and professional image prompt according to your design strategy plan, no need to ask for user's approval. 
 
 `
