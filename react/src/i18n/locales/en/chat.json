@@ -8,5 +8,12 @@
   },
   "messages": {
     "imagePositioning": "Go to image"
+  },
+  "plan": {
+    "title": "Plan",
+    "steps": {
+      "singular": "step",
+      "plural": "steps"
+    }
   }
 }

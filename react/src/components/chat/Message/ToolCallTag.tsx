@@ -9,6 +9,7 @@ import MultiChoicePrompt from '../MultiChoicePrompt'
 import SingleChoicePrompt from '../SingleChoicePrompt'
 import { useEffect, useState } from 'react'
 import { eventBus, TEvents } from '@/lib/event'
+import WritePlanToolCall from './WritePlanToolcall'
 
 type ToolCallTagProps = {
   toolCall: ToolCall
@@ -23,22 +24,27 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
 }) => {
   const { name, arguments: inputs } = toolCall.function
 
-  let parsedArgs: Record<string, unknown> | null = null
-  try {
-    parsedArgs = JSON.parse(inputs)
-  } catch (error) {
-    /* empty */
-  }
-
   if (name == 'prompt_user_multi_choice') {
     return <MultiChoicePrompt />
   }
   if (name == 'prompt_user_single_choice') {
     return <SingleChoicePrompt />
   }
+  if (name == 'write_plan') {
+    return <WritePlanToolCall args={inputs} />
+  }
+  if (name.startsWith('transfer_to')) {
+    return null
+  }
+  let parsedArgs = null
+  if (inputs.endsWith('}')) {
+    try {
+      parsedArgs = JSON.parse(inputs)
+    } catch (error) {}
+  }
 
   return (
-    <div className="w-full border rounded-lg overflow-hidden">
+    <div className="w-full border rounded-lg overflow-hidden mt-2">
       <Button
         variant={'secondary'}
         onClick={onToggleExpand}
@@ -69,7 +75,20 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
             transition={{ duration: 0.3, ease: 'easeOut' }}
           >
             <div className="p-2 break-all">
-              <Markdown>{inputs}</Markdown>
+              {parsedArgs && Object.keys(parsedArgs).length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {Object.entries(parsedArgs).map(([key, value]) => (
+                    <div key={key}>
+                      <span className="font-bold">{key}:</span>{' '}
+                      {typeof value == 'object'
+                        ? JSON.stringify(value)
+                        : String(value)}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                inputs
+              )}
             </div>
           </motion.div>
         )}

@@ -17,12 +17,10 @@ import { toast } from 'sonner'
 import ModelSelector from './ModelSelector'
 
 type ChatTextareaProps = {
-  value: string
   pending: boolean
   className?: string
   messages: Message[]
   sessionId?: string
-  onChange: (value: string) => void
   onSendMessages: (
     data: Message[],
     configs: {
@@ -34,19 +32,17 @@ type ChatTextareaProps = {
 }
 
 const ChatTextarea: React.FC<ChatTextareaProps> = ({
-  value,
   pending,
   className,
   messages,
   sessionId,
-  onChange,
   onSendMessages,
   onCancelChat,
 }) => {
   const { t } = useTranslation()
   const { textModel, imageModel, imageModels, setShowInstallDialog } =
     useConfigs()
-
+  const [prompt, setPrompt] = useState('')
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
     {
@@ -60,7 +56,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const imageInputRef = useRef<HTMLInputElement>(null)
 
   const { mutate: uploadImageMutation } = useMutation({
-    mutationFn: (file: File) => uploadImage(file, ''),
+    mutationFn: (file: File) => uploadImage(file),
     onSuccess: (data) => {
       console.log('🦄uploadImageMutation onSuccess', data)
       setImages((prev) => [
@@ -105,6 +101,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     //   setShowInstallDialog(true)
     //   return
     // }
+    let value = prompt
     if (value.length === 0 || value.trim() === '') {
       toast.error(t('chat:textarea.enterPrompt'))
       return
@@ -123,6 +120,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       },
     ])
     setImages([])
+    setPrompt('')
 
     onSendMessages(newMessage, {
       textModel: textModel,
@@ -132,7 +130,17 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         url: '',
       },
     })
-  }, [pending, textModel, imageModel, imageModels, value, onSendMessages])
+  }, [
+    pending,
+    textModel,
+    imageModel,
+    imageModels,
+    prompt,
+    onSendMessages,
+    images,
+    messages,
+    t,
+  ])
 
   // Drop Area
   const dropAreaRef = useRef<HTMLDivElement>(null)
@@ -185,7 +193,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     return () => {
       eventBus.off('Canvas::AddImagesToChat', handleAddImagesToChat)
     }
-  })
+  }, [uploadImageMutation])
 
   return (
     <motion.div
@@ -270,9 +278,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         ref={textareaRef}
         className="w-full h-full border-none outline-none resize-none max-h-[calc(100vh-700px)]"
         placeholder={t('chat:textarea.placeholder')}
-        value={value}
+        value={prompt}
         autoSize
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => setPrompt(e.target.value)}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         onKeyDown={(e) => {
@@ -320,7 +328,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             variant="default"
             size="icon"
             onClick={handleSendPrompt}
-            disabled={!textModel || !imageModel || value.length === 0}
+            disabled={!textModel || !imageModel || prompt.length === 0}
           >
             <ArrowUp className="size-4" />
           </Button>

@@ -4,6 +4,7 @@ import CanvasList from '@/components/home/CanvasList'
 import HomeHeader from '@/components/home/HomeHeader'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useConfigs } from '@/contexts/configs'
+import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion } from 'motion/react'
@@ -17,7 +18,6 @@ export const Route = createFileRoute('/')({
 })
 
 function Home() {
-  const [prompt, setPrompt] = useState('')
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { setInitCanvas } = useConfigs()
@@ -65,8 +65,6 @@ function Home() {
 
           <ChatTextarea
             className="w-full max-w-xl"
-            value={prompt}
-            onChange={setPrompt}
             messages={[]}
             onSendMessages={(messages, configs) => {
               createCanvasMutation({
@@ -76,6 +74,9 @@ function Home() {
                 session_id: nanoid(),
                 text_model: configs.textModel,
                 image_model: configs.imageModel,
+                system_prompt:
+                  localStorage.getItem('system_prompt') ||
+                  DEFAULT_SYSTEM_PROMPT,
               })
             }}
             pending={isPending}

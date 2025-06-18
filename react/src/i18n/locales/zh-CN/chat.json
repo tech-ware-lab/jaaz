@@ -8,5 +8,12 @@
   },
   "messages": {
     "imagePositioning": "定位到图片"
+  },
+  "plan": {
+    "title": "计划",
+    "steps": {
+      "singular": "步骤",
+      "plural": "步骤"
+    }
   }
 }

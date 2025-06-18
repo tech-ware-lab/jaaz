@@ -7,6 +7,7 @@ import { useConfigs } from '@/contexts/configs'
 import { SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { UserMenu } from '@/components/auth/UserMenu'
+import AgentSettings from '../agent_studio/AgentSettings'
 
 function HomeHeader() {
   const { setShowSettingsDialog } = useConfigs()
@@ -24,6 +25,7 @@ function HomeHeader() {
       </div>
       <div className="flex items-center gap-2">
         <NotificationPanel />
+        <AgentSettings />
         <Button
           size={'sm'}
           variant="ghost"

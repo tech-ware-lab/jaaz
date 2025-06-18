@@ -4,8 +4,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from '@/components/ui/select'
 import { useConfigs } from '@/contexts/configs'
+import { PROVIDER_NAME_MAPPING } from '@/constants'
 
 const ModelSelector: React.FC = () => {
   const {
@@ -16,6 +19,38 @@ const ModelSelector: React.FC = () => {
     textModels,
     imageModels,
   } = useConfigs()
+
+  // Group models by provider
+  const groupModelsByProvider = (models: typeof textModels) => {
+    const grouped: { [provider: string]: typeof textModels } = {}
+    models?.forEach((model) => {
+      if (!grouped[model.provider]) {
+        grouped[model.provider] = []
+      }
+      grouped[model.provider].push(model)
+    })
+    return grouped
+  }
+
+  const groupedTextModels = groupModelsByProvider(textModels)
+  const groupedImageModels = groupModelsByProvider(imageModels)
+
+  // Sort providers to put Jaaz first
+  const sortProviders = (providers: [string, typeof textModels][]) => {
+    return providers.sort(([providerA], [providerB]) => {
+      if (providerA === 'jaaz') return -1
+      if (providerB === 'jaaz') return 1
+      return 0
+    })
+  }
+
+  const getProviderDisplayName = (provider: string) => {
+    const providerInfo = PROVIDER_NAME_MAPPING[provider]
+    return {
+      name: providerInfo?.name || provider,
+      icon: providerInfo?.icon
+    }
+  }
 
   return (
     <>
@@ -32,14 +67,31 @@ const ModelSelector: React.FC = () => {
           <SelectValue placeholder="Theme" />
         </SelectTrigger>
         <SelectContent>
-          {textModels?.map((model) => (
-            <SelectItem
-              key={model.provider + ':' + model.model}
-              value={model.provider + ':' + model.model}
-            >
-              {model.model}
-            </SelectItem>
-          ))}
+          {sortProviders(Object.entries(groupedTextModels)).map(([provider, models]) => {
+            const providerInfo = getProviderDisplayName(provider)
+            return (
+              <SelectGroup key={provider}>
+                <SelectLabel className="flex items-center gap-2 select-none">
+                  {providerInfo.icon && (
+                    <img
+                      src={providerInfo.icon}
+                      alt={providerInfo.name}
+                      className="w-4 h-4 rounded-sm"
+                    />
+                  )}
+                  {providerInfo.name}
+                </SelectLabel>
+                {models.map((model) => (
+                  <SelectItem
+                    key={model.provider + ':' + model.model}
+                    value={model.provider + ':' + model.model}
+                  >
+                    {model.model}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            )
+          })}
         </SelectContent>
       </Select>
       <Select
@@ -56,14 +108,31 @@ const ModelSelector: React.FC = () => {
           <SelectValue placeholder="Theme" />
         </SelectTrigger>
         <SelectContent>
-          {imageModels?.map((model) => (
-            <SelectItem
-              key={model.provider + ':' + model.model}
-              value={model.provider + ':' + model.model}
-            >
-              {model.model}
-            </SelectItem>
-          ))}
+          {sortProviders(Object.entries(groupedImageModels)).map(([provider, models]) => {
+            const providerInfo = getProviderDisplayName(provider)
+            return (
+              <SelectGroup key={provider}>
+                <SelectLabel className="flex items-center gap-2 select-none">
+                  {providerInfo.icon && (
+                    <img
+                      src={providerInfo.icon}
+                      alt={providerInfo.name}
+                      className="w-4 h-4 rounded-sm"
+                    />
+                  )}
+                  {providerInfo.name}
+                </SelectLabel>
+                {models.map((model) => (
+                  <SelectItem
+                    key={model.provider + ':' + model.model}
+                    value={model.provider + ':' + model.model}
+                  >
+                    {model.model}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            )
+          })}
         </SelectContent>
       </Select>
     </>

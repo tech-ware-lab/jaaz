@@ -12,7 +12,7 @@ from io import BytesIO
 # from pymediainfo import MediaInfo
 
 # services
-from services.config_service import app_config
+from services.config_service import config_service
 from services.config_service import FILES_DIR
 
 import asyncio
@@ -51,10 +51,11 @@ async def get_video_info_and_save(url, file_path_without_extension):
 
 async def generate_video_replicate(prompt, model, aspect_ratio):
     try:
-        api_key = app_config.get('replicate', {}).get('api_key', '')
+        api_key = config_service.app_config.get(
+            'replicate', {}).get('api_key', '')
         if not api_key:
             raise ValueError("Video generation failed: Replicate API key is not set")
-        
+
         url = f"https://api.replicate.com/v1/models/{model}/predictions"
         headers = {
             "Authorization": f"Bearer {api_key}",
