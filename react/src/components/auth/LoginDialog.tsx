@@ -5,28 +5,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { startDeviceAuth, pollDeviceAuth, saveAuthData } from '../../api/auth'
 import { updateJaazApiKey } from '../../api/config'
 import { useAuth } from '../../contexts/AuthContext'
+import { useConfigs, useRefreshModels } from '../../contexts/configs'
 
-interface LoginDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
-
-export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
-  const [isLoading, setIsLoading] = useState(false)
+export function LoginDialog() {
   const [authMessage, setAuthMessage] = useState('')
   const { refreshAuth } = useAuth()
+  const { showLoginDialog: open, setShowLoginDialog } = useConfigs()
+  const refreshModels = useRefreshModels()
   const { t } = useTranslation()
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Clean up polling when dialog closes
   useEffect(() => {
+    setAuthMessage('')
+
     if (!open) {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current)
         pollingIntervalRef.current = null
       }
-      setIsLoading(false)
-      setAuthMessage('')
     }
   }, [open])
 
@@ -53,30 +50,29 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
             saveAuthData(result.token, result.user_info)
 
             // Update jaaz provider api_key with the access token
-            updateJaazApiKey(result.token)
+            await updateJaazApiKey(result.token)
           }
 
           setAuthMessage(t('common:auth.loginSuccessMessage'))
-          setIsLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
           }
 
-          // Refresh auth status after saving data
           try {
             await refreshAuth()
             console.log('Auth status refreshed successfully')
+            // Refresh models list after successful login and config update
+            refreshModels()
           } catch (error) {
             console.error('Failed to refresh auth status:', error)
           }
 
-          setTimeout(() => onOpenChange(false), 1500)
+          setTimeout(() => setShowLoginDialog(false), 1500)
 
         } else if (result.status === 'expired') {
           // Authorization expired
           setAuthMessage(t('common:auth.authExpiredMessage'))
-          setIsLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
@@ -85,7 +81,6 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
         } else if (result.status === 'error') {
           // Error occurred
           setAuthMessage(result.message || t('common:auth.authErrorMessage'))
-          setIsLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
@@ -98,7 +93,6 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       } catch (error) {
         console.error('Polling error:', error)
         setAuthMessage(t('common:auth.pollErrorMessage'))
-        setIsLoading(false)
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current)
           pollingIntervalRef.current = null
@@ -113,7 +107,6 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
 
   const handleLogin = async () => {
     try {
-      setIsLoading(true)
       setAuthMessage(t('common:auth.preparingLoginMessage'))
 
       const result = await startDeviceAuth()
@@ -125,7 +118,6 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     } catch (error) {
       console.error('登录请求失败:', error)
       setAuthMessage(t('common:auth.loginRequestFailed'))
-      setIsLoading(false)
     }
   }
 
@@ -134,13 +126,12 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       clearInterval(pollingIntervalRef.current)
       pollingIntervalRef.current = null
     }
-    setIsLoading(false)
     setAuthMessage('')
-    onOpenChange(false)
+    setShowLoginDialog(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setShowLoginDialog}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('common:auth.loginToJaaz')}</DialogTitle>
@@ -151,30 +142,15 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
             {t('common:auth.loginDescription')}
           </p>
 
-          {authMessage && (
-            <div className="p-3 bg-muted rounded-md">
-              <p className="text-sm">{authMessage}</p>
-            </div>
-          )}
-
           <div className="flex gap-2">
             <Button
               onClick={handleLogin}
-              disabled={isLoading}
+              disabled={!!authMessage}
               className="flex-1"
             >
-              {isLoading ? t('common:auth.preparingLogin') : t('common:auth.startLogin')}
+              {authMessage || t('common:auth.startLogin')}
             </Button>
 
-            {isLoading && (
-              <Button
-                onClick={handleCancel}
-                variant="outline"
-                className="flex-1"
-              >
-                {t('common:auth.cancel')}
-              </Button>
-            )}
           </div>
         </div>
       </DialogContent>

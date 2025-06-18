@@ -35,6 +35,7 @@ import ToolcallProgressUpdate from './ToolcallProgressUpdate'
 
 import { useConfigs } from '@/contexts/configs'
 import 'react-photo-view/dist/react-photo-view.css'
+import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -71,7 +72,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [sessionList, searchSessionId])
 
   const [messages, setMessages] = useState<Message[]>([])
-  const [prompt, setPrompt] = useState('')
   const [pending, setPending] = useState<PendingType>(
     initCanvas ? 'text' : false
   )
@@ -106,7 +106,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setMessages(
         produce((prev) => {
           const last = prev.at(-1)
-          if (last?.role === 'assistant' && last.content != null) {
+          if (
+            last?.role === 'assistant' &&
+            last.content != null &&
+            last.tool_calls == null
+          ) {
             if (typeof last.content === 'string') {
               last.content += data.text
             } else if (
@@ -351,7 +355,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     (data: Message[], configs: { textModel: Model; imageModel: Model }) => {
       setPending('text')
       setMessages(data)
-      setPrompt('')
 
       sendMessages({
         sessionId: sessionId!,
@@ -359,6 +362,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         newMessages: data,
         textModel: configs.textModel,
         imageModel: configs.imageModel,
+        systemPrompt:
+          localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
       })
 
       if (searchSessionId !== sessionId) {
@@ -477,11 +482,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         <div className="p-2 gap-2 sticky bottom-0">
           <ChatTextarea
-            value={prompt}
             sessionId={sessionId!}
             pending={!!pending}
             messages={messages}
-            onChange={setPrompt}
             onSendMessages={onSendMessages}
             onCancelChat={handleCancelChat}
           />

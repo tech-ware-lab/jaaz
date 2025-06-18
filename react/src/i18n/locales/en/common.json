@@ -70,6 +70,8 @@
     "browserLoginMessage": "Please complete login in browser",
     "loginRequestFailed": "Login request failed, please try again",
     "logoutSuccessMessage": "Successfully logged out",
-    "notLoggedIn": "Not logged in"
+    "notLoggedIn": "Not logged in",
+    "balance": "Balance",
+    "recharge": "Recharge"
   }
 }

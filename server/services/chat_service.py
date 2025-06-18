@@ -6,8 +6,8 @@ import json
 
 # Import service modules
 from services.db_service import db_service
-from services.langgraph_service import langgraph_agent
-from services.config_service import app_config
+from services.langgraph_service import langgraph_agent, langgraph_multi_agent
+from services.config_service import config_service
 from services.websocket_service import send_to_websocket
 from services.stream_service import add_stream_task, remove_stream_task
 
@@ -37,17 +37,8 @@ async def handle_chat(data):
     canvas_id = data.get('canvas_id')
     text_model = data.get('text_model')
     image_model = data.get('image_model')
-
-
-    print('👇app_config.get("system_prompt", "")',
-          app_config.get('system_prompt', ''))
-    
-    # If system prompt is configured, append it as a 'system' message
-    if app_config.get('system_prompt', ''):
-        messages.append({
-            'role': 'system',
-            'content': app_config.get('system_prompt', '')
-        })
+    # TODO: save and fetch system prompt from db or settings config
+    system_prompt = data.get('system_prompt')
 
     # If there is only one message, create a new chat session
     if len(messages) == 1:
@@ -59,16 +50,16 @@ async def handle_chat(data):
     await db_service.create_message(session_id, messages[-1].get('role', 'user'), json.dumps(messages[-1])) if len(messages) > 0 else None
 
     # Create and start langgraph_agent task for chat processing
-    task = asyncio.create_task(langgraph_agent(
-        messages, canvas_id, session_id, text_model, image_model))
-    
+    task = asyncio.create_task(langgraph_multi_agent(
+        messages, canvas_id, session_id, text_model, image_model, system_prompt))
+
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)
     try:
         # Await completion of the langgraph_agent task
         await task
     except asyncio.exceptions.CancelledError:
-        print(f"🛑Session {session_id} cancelled during stream") 
+        print(f"🛑Session {session_id} cancelled during stream")
     finally:
         # Always remove the task from stream_tasks after completion/cancellation
         remove_stream_task(session_id)
