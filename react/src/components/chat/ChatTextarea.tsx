@@ -268,7 +268,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
       <Textarea
         ref={textareaRef}
-        className="w-full h-full border-none outline-none resize-none"
+        className="w-full h-full border-none outline-none resize-none max-h-[calc(100vh-700px)] min-h-[120px]"
         placeholder={t('chat:textarea.placeholder')}
         value={value}
         autoSize
