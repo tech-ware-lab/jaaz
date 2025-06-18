@@ -1,4 +1,5 @@
 import LanguageSwitcher from '@/components/common/LanguageSwitcher'
+import { NotificationPanel } from '@/components/common/NotificationPanel'
 import ThemeButton from '@/components/theme/ThemeButton'
 import { Input } from '@/components/ui/input'
 import { LOGO_URL } from '@/constants'
@@ -52,7 +53,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
           }}
         >
           <motion.span className="flex items-center" layout>
-            Jaaz
+            {t('canvas:back')}
           </motion.span>
           <motion.span className="flex items-center" layout aria-hidden>
             {t('canvas:back')}
@@ -70,6 +71,7 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
+        <NotificationPanel />
         <CanvasExport />
         <Button
           size={'sm'}

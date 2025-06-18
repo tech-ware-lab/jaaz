@@ -6,7 +6,7 @@ toml
 pyinstaller
 openai
 ollama
-aiohttp
+httpx
 gunicorn
 aiosqlite
 requests
@@ -21,3 +21,5 @@ typer # needed for comfyui execution
 langgraph
 langchain_ollama
 langchain_openai
+python-socketio==5.13.0
+langgraph-swarm

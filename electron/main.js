@@ -32,12 +32,15 @@ console.error = (...args) => {
 // Initial log entry
 console.log('🟢 Jaaz Electron app starting...')
 
-const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, session } = require('electron')
 const { spawn } = require('child_process')
 
 const { autoUpdater } = require('electron-updater')
 
 const net = require('net')
+
+// Initialize settings service
+const settingsService = require('./settingsService')
 
 function findAvailablePort(startPort) {
   return new Promise((resolve, reject) => {
@@ -112,7 +115,8 @@ const createWindow = (pyPort) => {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    icon: path.join(__dirname, '../assets/icons/unicorn.png'), // ✅ Use .png for dev
+    icon: path.join(__dirname, '../assets/icons/jaaz.png'), // ✅ Use .png for dev
+    autoHideMenuBar: true, // Hide menu bar (can be toggled with Alt key)
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -121,6 +125,11 @@ const createWindow = (pyPort) => {
       webSecurity: false,
       allowRunningInsecureContent: true,
     },
+  })
+
+  // Handle window closed event
+  mainWindow.on('closed', () => {
+    mainWindow = null
   })
 
   // In development, use Vite dev server
@@ -145,6 +154,19 @@ const startPythonApi = async () => {
   pyPort = await findAvailablePort(57988)
   console.log('available pyPort:', pyPort)
 
+  // 在某些开发情况，我们希望 python server 独立运行，那么就不通过 electron 启动
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      const response = await fetch(`http://127.0.0.1:${pyPort}`)
+      if (response.ok) {
+        console.log('Python service already running')
+        return pyPort
+      }
+    } catch (error) {
+      console.log('Starting Python service...')
+    }
+  }
+
   // 确定UI dist目录
   const env = {
     ...process.env,
@@ -155,6 +177,19 @@ const startPythonApi = async () => {
     env.USER_DATA_DIR = app.getPath('userData')
     env.IS_PACKAGED = '1'
   }
+
+  // Set BASE_API_URL based on environment
+  env.BASE_API_URL =
+    process.env.NODE_ENV === 'development'
+      ? 'https://dev.jaaz.app'
+      : 'https://dev.jaaz.app'
+  console.log('BASE_API_URL:', env.BASE_API_URL)
+
+  // Apply proxy settings and get environment variables
+  const proxyEnvVars = await settingsService.getProxyEnvironmentVariables()
+
+  // Merge proxy environment variables into env
+  Object.assign(env, proxyEnvVars)
 
   // Determine the Python executable path (considering packaged app)
   const isWindows = process.platform === 'win32'
@@ -264,17 +299,45 @@ for (const [channel, handler] of Object.entries(ipcHandlers)) {
   ipcMain.handle(channel, handler)
 }
 
-app.whenReady().then(async () => {
-  // Check for updates in production every time app starts
-  if (process.env.NODE_ENV !== 'development' && app.isPackaged) {
-    // Wait a bit for the app to fully load before checking updates
-    setTimeout(() => {
-      autoUpdater.checkForUpdatesAndNotify()
-    }, 3000)
-  }
+// Make this app a single instance app
+const gotTheLock = app.requestSingleInstanceLock()
 
-  if (process.env.NODE_ENV !== 'development') {
+if (!gotTheLock) {
+  // Another instance is already running, quit this one
+  app.quit()
+} else {
+  // This is the first instance, set up second-instance handler
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, focus our window instead
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
+
+  app.whenReady().then(async () => {
+    // Initialize proxy settings for Electron sessions
+    try {
+      await settingsService.applyProxySettings()
+      console.log('Proxy settings applied for Electron sessions')
+    } catch (error) {
+      console.error(
+        'Failed to apply proxy settings for Electron sessions:',
+        error
+      )
+    }
+
+    // Check for updates in production every time app starts
+    if (process.env.NODE_ENV !== 'development' && app.isPackaged) {
+      // Wait a bit for the app to fully load before checking updates
+      setTimeout(() => {
+        autoUpdater.checkForUpdatesAndNotify()
+      }, 3000)
+    }
+
+    // Start Python API in both development and production
     const pyPort = await startPythonApi()
+
     while (true) {
       await new Promise((resolve) => setTimeout(resolve, 1000))
       // wait for the server to start
@@ -290,16 +353,34 @@ app.whenReady().then(async () => {
         break
       }
     }
-  }
-  createWindow(pyPort)
-})
+
+    createWindow(pyPort)
+  })
+}
 
 // Quit the app and clean up the Python process
-app.on('will-quit', () => {
+app.on('will-quit', async (event) => {
+  event.preventDefault()
+
+  try {
+    // clear cache
+    await session.defaultSession.clearCache()
+    console.log('Cache cleared on app exit')
+  } catch (error) {
+    console.error('Failed to clear cache:', error)
+  }
+
+  // kill python process
   if (pyProc) {
     pyProc.kill()
     pyProc = null
   }
+
+  app.exit()
+})
+
+app.on('window-all-closed', () => {
+  app.quit()
 })
 
 // ipcMain.handle("reveal-in-explorer", async (event, filePath) => {

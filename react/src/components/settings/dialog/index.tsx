@@ -7,6 +7,7 @@ import { useConfigs } from '@/contexts/configs'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import SettingProviders from './providers'
+import SettingProxy from './proxy'
 import SettingSidebar, { SettingSidebarType } from './sidebar'
 
 const SettingsDialog = () => {
@@ -14,17 +15,27 @@ const SettingsDialog = () => {
   const { t } = useTranslation()
   const [current, setCurrent] = useState<SettingSidebarType>('provider')
 
+  const renderContent = () => {
+    switch (current) {
+      case 'proxy':
+        return <SettingProxy />
+      case 'provider':
+      default:
+        return <SettingProviders />
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={setShowSettingsDialog}>
       <CommonDialogContent
         open={open}
         transformPerspective={6000}
-        className="flex flex-col max-w-[min(1200px,80vw)]! min-w-[600px]! max-h-[80vh]! p-0 gap-0"
+        className="flex flex-col p-0 gap-0 w-screen! h-screen! max-h-[100vh]! max-w-[100vw]! rounded-none! border-none! shadow-none!"
       >
-        <SidebarProvider className="h-full min-h-full flex-1 relative">
+        <SidebarProvider className="h-[calc(100vh-60px)]! min-h-[calc(100vh-60px)]! flex-1 relative">
           <SettingSidebar current={current} setCurrent={setCurrent} />
           <ScrollArea className="max-h-[calc(100vh-50px)]! w-full">
-            <SettingProviders />
+            {renderContent()}
           </ScrollArea>
         </SidebarProvider>
 

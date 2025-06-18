@@ -1,6 +1,8 @@
 import { getCanvas, renameCanvas } from '@/api/canvas'
 import CanvasExcali from '@/components/canvas/CanvasExcali'
 import CanvasHeader from '@/components/canvas/CanvasHeader'
+import CanvasMenu from '@/components/canvas/menu'
+import CanvasPopbarWrapper from '@/components/canvas/pop-bar'
 import ChatInterface from '@/components/chat/Chat'
 import {
   ResizableHandle,
@@ -9,67 +11,60 @@ import {
 } from '@/components/ui/resizable'
 import { CanvasProvider } from '@/contexts/canvas'
 import { Session } from '@/types/types'
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, useParams, useSearch } from '@tanstack/react-router'
+import { createFileRoute, useParams } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { nanoid } from 'nanoid'
 import { useEffect, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 
 export const Route = createFileRoute('/canvas/$id')({
   component: Canvas,
 })
 
 function Canvas() {
-  const [canvasName, setCanvasName] = useState('')
-  const [session, setSession] = useState<Session | null>(null)
-  const [sessionList, setSessionList] = useState<Session[]>([])
-  const { t } = useTranslation()
-
   const { id } = useParams({ from: '/canvas/$id' })
-  const search = useSearch({ from: '/canvas/$id' }) as { sessionId: string }
-
-  const { data: canvas, isLoading } = useQuery({
-    queryKey: ['canvas', id],
-    queryFn: () => getCanvas(id),
-  })
+  const [canvas, setCanvas] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [canvasName, setCanvasName] = useState('')
+  const [sessionList, setSessionList] = useState<Session[]>([])
 
   useEffect(() => {
-    if (canvas && !canvasName && sessionList.length === 0) {
-      setCanvasName(canvas.name)
-      setSessionList(canvas.sessions)
-      if (canvas.sessions.length > 0) {
-        if (search.sessionId) {
-          setSession(
-            canvas.sessions.find((s) => s.id === search.sessionId) || null
+    let mounted = true
+
+    const fetchCanvas = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const data = await getCanvas(id)
+        if (mounted) {
+          setCanvas(data)
+          setCanvasName(data.name)
+          setSessionList(data.sessions)
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(
+            err instanceof Error
+              ? err
+              : new Error('Failed to fetch canvas data')
           )
-        } else {
-          setSession(canvas.sessions[0])
+          console.error('Failed to fetch canvas data:', err)
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
         }
       }
     }
-  }, [canvas, search.sessionId, canvasName, sessionList])
+
+    fetchCanvas()
+
+    return () => {
+      mounted = false
+    }
+  }, [id])
 
   const handleNameSave = async () => {
     await renameCanvas(id, canvasName)
-  }
-
-  const handleNewChat = () => {
-    const newSession: Session = {
-      id: nanoid(),
-      title: t('chat:newChat'),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      model: session?.model || 'gpt-4o',
-      provider: session?.provider || 'openai',
-    }
-    setSession(newSession)
-    setSessionList((prev) => [...prev, newSession])
-  }
-
-  const handleSessionChange = (sessionId: string) => {
-    setSession(canvas?.sessions.find((s) => s.id === sessionId) || null)
-    window.history.pushState({}, '', `/canvas/${id}?sessionId=${sessionId}`)
   }
 
   return (
@@ -97,6 +92,8 @@ function Canvas() {
               ) : (
                 <>
                   <CanvasExcali canvasId={id} initialData={canvas?.data} />
+                  <CanvasMenu />
+                  <CanvasPopbarWrapper />
                 </>
               )}
             </div>
@@ -108,10 +105,8 @@ function Canvas() {
             <div className="flex-1 flex-grow bg-accent/50 w-full">
               <ChatInterface
                 canvasId={id}
-                session={session}
                 sessionList={sessionList}
-                onClickNewChat={handleNewChat}
-                onSessionChange={handleSessionChange}
+                setSessionList={setSessionList}
               />
             </div>
           </ResizablePanel>

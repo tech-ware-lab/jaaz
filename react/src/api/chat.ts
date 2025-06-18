@@ -12,6 +12,7 @@ export const sendMessages = async (payload: {
   newMessages: Message[]
   textModel: Model
   imageModel: Model
+  systemPrompt: string | null
 }) => {
   const response = await fetch(`/api/chat`, {
     method: 'POST',
@@ -24,6 +25,7 @@ export const sendMessages = async (payload: {
       session_id: payload.sessionId,
       text_model: payload.textModel,
       image_model: payload.imageModel,
+      system_prompt: payload.systemPrompt,
     }),
   })
   const data = await response.json()

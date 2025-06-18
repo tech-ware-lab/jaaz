@@ -1,8 +1,10 @@
-import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
+// import InstallComfyUIDialog from '@/components/comfyui/InstallComfyUIDialog'
 import UpdateNotificationDialog from '@/components/common/UpdateNotificationDialog'
 import SettingsDialog from '@/components/settings/dialog'
+import { LoginDialog } from '@/components/auth/LoginDialog'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { ConfigsProvider } from '@/contexts/configs'
+import { AuthProvider } from '@/contexts/AuthContext'
 import { useTheme } from '@/hooks/use-theme'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
@@ -60,20 +62,25 @@ function App() {
   return (
     <ThemeProvider defaultTheme={theme} storageKey="vite-ui-theme">
       <QueryClientProvider client={queryClient}>
-        <ConfigsProvider>
-          <div className="app-container">
-            <RouterProvider router={router} />
+        <AuthProvider>
+          <ConfigsProvider>
+            <div className="app-container">
+              <RouterProvider router={router} />
 
-            {/* Install ComfyUI Dialog */}
-            <InstallComfyUIDialog />
+              {/* Install ComfyUI Dialog */}
+              {/* <InstallComfyUIDialog /> */}
 
-            {/* Update Notification Dialog */}
-            <UpdateNotificationDialog />
+              {/* Update Notification Dialog */}
+              <UpdateNotificationDialog />
 
-            {/* Settings Dialog */}
-            <SettingsDialog />
-          </div>
-        </ConfigsProvider>
+              {/* Settings Dialog */}
+              <SettingsDialog />
+
+              {/* Login Dialog */}
+              <LoginDialog />
+            </div>
+          </ConfigsProvider>
+        </AuthProvider>
       </QueryClientProvider>
       <Toaster position="bottom-center" />
     </ThemeProvider>

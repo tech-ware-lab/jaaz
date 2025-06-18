@@ -13,5 +13,12 @@
   },
   "thinking": {
     "title": "Thinking"
+  },
+  "plan": {
+    "title": "Plan",
+    "steps": {
+      "singular": "step",
+      "plural": "steps"
+    }
   }
 }

@@ -13,5 +13,12 @@
   },
   "thinking": {
     "title": "思考过程"
+  },
+  "plan": {
+    "title": "计划",
+    "steps": {
+      "singular": "步骤",
+      "plural": "步骤"
+    }
   }
 }

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
-from routers.agent import chat
+#from routers.agent import chat
+from services.chat_service import handle_chat
 from services.db_service import db_service
 import asyncio
 import json
@@ -16,7 +17,7 @@ async def create_canvas(request: Request):
     id = data.get('canvas_id')
     name = data.get('name')
 
-    asyncio.create_task(chat(request))
+    asyncio.create_task(handle_chat(data))
     await db_service.create_canvas(id, name)
     return {"id": id }
 
@@ -26,9 +27,9 @@ async def get_canvas(id: str):
 
 @router.post("/{id}/save")
 async def save_canvas(id: str, request: Request):
-    data = await request.json()
-    data_str = json.dumps(data)
-    await db_service.save_canvas_data(id, data_str)
+    payload = await request.json()
+    data_str = json.dumps(payload['data'])
+    await db_service.save_canvas_data(id, data_str, payload['thumbnail'])
     return {"id": id }
 
 @router.post("/{id}/rename")

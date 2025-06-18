@@ -1,7 +1,7 @@
 // ipcHandlers.js
 const { chromium, BrowserContext } = require('playwright')
 const path = require('path')
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, shell } = require('electron')
 const fs = require('fs')
 const { spawn, fork } = require('child_process')
 
@@ -10,6 +10,17 @@ let installationWorker = null
 let installationPromise = null
 
 module.exports = {
+  // 处理打开浏览器的请求
+  'open-browser-url': async (event, url) => {
+    try {
+      await shell.openExternal(url)
+      return { success: true }
+    } catch (error) {
+      console.error('Failed to open browser:', error)
+      return { success: false, error: error.message }
+    }
+  },
+
   publishPost: async (event, data) => {
     console.log('🦄🦄publishPost called with data:', data)
     try {
@@ -225,6 +236,123 @@ module.exports = {
     } catch (error) {
       console.error('Error getting ComfyUI process status:', error)
       return { running: false }
+    }
+  },
+  'uninstall-comfyui': async (event) => {
+    console.log('🦄🦄uninstall-comfyui called')
+
+    // Prevent multiple uninstallations
+    if (installationWorker) {
+      return { error: 'Installation/uninstallation already in progress' }
+    }
+
+    try {
+      // Create a promise to track the uninstallation
+      installationPromise = new Promise((resolve, reject) => {
+        // Fork a child process to run the uninstallation
+        const workerPath = path.join(__dirname, 'comfyUIInstaller.js')
+
+        // Prepare environment variables for the child process
+        const env = {
+          ...process.env,
+          USER_DATA_DIR: app.getPath('userData'),
+          IS_WORKER_PROCESS: 'true',
+        }
+
+        installationWorker = fork(workerPath, [], {
+          stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+          env: env,
+        })
+
+        console.log('🦄 Started ComfyUI uninstallation worker process')
+
+        // Handle messages from worker process
+        installationWorker.on('message', (message) => {
+          console.log('🦄 Received message from worker:', message)
+
+          // Forward progress, log, and error messages to renderer
+          const mainWindow = BrowserWindow.getAllWindows()[0]
+          if (mainWindow) {
+            if (message.type === 'progress') {
+              mainWindow.webContents.executeJavaScript(`
+                window.dispatchEvent(new CustomEvent('comfyui-uninstall-progress', {
+                  detail: { percent: ${message.percent}, status: "${(
+                message.status || ''
+              ).replace(/"/g, '\\"')}" }
+                }));
+              `)
+            } else if (message.type === 'log') {
+              mainWindow.webContents.executeJavaScript(`
+                window.dispatchEvent(new CustomEvent('comfyui-uninstall-log', {
+                  detail: { message: "${(message.message || '').replace(
+                    /"/g,
+                    '\\"'
+                  )}" }
+                }));
+              `)
+            } else if (message.type === 'error') {
+              mainWindow.webContents.executeJavaScript(`
+                window.dispatchEvent(new CustomEvent('comfyui-uninstall-error', {
+                  detail: { error: "${(
+                    message.error || 'Unknown error occurred'
+                  ).replace(/"/g, '\\"')}" }
+                }));
+              `)
+            }
+          }
+
+          if (message.type === 'uninstall-complete') {
+            installationWorker = null
+            installationPromise = null
+            resolve(message.result)
+          } else if (message.type === 'uninstall-error') {
+            installationWorker = null
+            installationPromise = null
+            reject(new Error(message.error || 'Unknown error occurred'))
+          }
+        })
+
+        // Handle worker process errors
+        installationWorker.on('error', (error) => {
+          console.error('🦄 Worker process error:', error)
+          installationWorker = null
+          installationPromise = null
+          reject(error)
+        })
+
+        // Handle worker process exit
+        installationWorker.on('exit', (code, signal) => {
+          console.log(
+            `🦄 Worker process exited with code ${code}, signal ${signal}`
+          )
+          if (installationWorker) {
+            installationWorker = null
+            installationPromise = null
+            if (code !== 0) {
+              reject(
+                new Error(`Uninstallation process exited with code ${code}`)
+              )
+            }
+          }
+        })
+
+        // Start the uninstallation
+        installationWorker.send({ type: 'start-uninstall' })
+      })
+
+      const result = await installationPromise
+      return result
+    } catch (error) {
+      console.error('Error uninstalling ComfyUI:', error)
+
+      // Clean up worker if it still exists
+      if (installationWorker) {
+        installationWorker.kill('SIGTERM')
+        installationWorker = null
+        installationPromise = null
+      }
+
+      return { error: error.message }
     }
   },
 }
