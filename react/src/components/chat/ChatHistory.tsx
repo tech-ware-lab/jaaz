@@ -27,7 +27,7 @@ export default function ChatHistory({
     fetchChatSessions()
   }, [])
   return (
-    <div className="flex flex-col mt-10 bg-sidebar text-foreground w-[300px]">
+    <div className="flex flex-col bg-sidebar text-foreground w-[300px]">
       <div className="flex flex-col gap-4 p-3 sticky top-0 right-0 items-end">
         <Button variant={'ghost'} onClick={onClose} className="w-fit">
           <XIcon />

@@ -4,7 +4,8 @@
     "settingsSaved": "Settings saved successfully",
     "settingsReset": "Settings reset to default",
     "failedToSave": "Failed to save settings",
-    "failedToLoad": "Failed to load configuration"
+    "failedToLoad": "Failed to load configuration",
+    "restartRequired": "Please restart the application for proxy settings to take effect"
   },
   "models": {
     "title": "Models",
@@ -35,6 +36,30 @@
     "save": "Save",
     "cancel": "Cancel"
   },
+  "proxy": {
+    "title": "Proxy Settings",
+    "mode": "Proxy Mode",
+    "selectMode": "Select proxy mode",
+    "modes": {
+      "none": "No Proxy",
+      "system": "System Proxy",
+      "custom": "Custom Proxy"
+    },
+    "enable": "Enable Proxy",
+    "url": "Proxy URL",
+    "urlPlaceholder": "http://proxy.example.com:8080",
+    "testConnection": "Test Connection",
+    "testing": "Testing...",
+    "testSuccess": "Proxy connection test successful",
+    "testFailed": "Proxy connection test failed: {{message}}",
+    "testError": "Proxy connection test error",
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "misconfigured": "Misconfigured"
+    }
+  },
+  "comfyui.workflows": "Workflows",
   "comfyui": {
     "title": "ComfyUI",
     "localImageGeneration": "🎨 Local Image Generation",
@@ -53,8 +78,20 @@
     "notInstalledTitle": "ComfyUI Not Installed",
     "notInstalledDescription": "Install ComfyUI to enable local image generation with Flux models",
     "installButton": "Install ComfyUI",
-    "startButton": "Start ComfyUI"
+    "startButton": "Start ComfyUI",
+    "uninstallButton": "Uninstall ComfyUI",
+    "confirmUninstall": "Are you sure you want to uninstall ComfyUI? This will completely remove ComfyUI from your system, including all downloaded models and configurations.",
+    "confirmUninstallButton": "Confirm Uninstall",
+    "uninstallProgress": {
+      "title": "Uninstalling ComfyUI",
+      "preparing": "Preparing to uninstall...",
+      "inProgress": "Uninstallation in progress... Please wait.",
+      "logTitle": "Uninstallation Log:",
+      "completed": "Uninstallation completed"
+    },
+    "notInstalled": "ComfyUI is not installed"
   },
   "saveSettings": "Save Settings",
-  "close": "Close"
+  "close": "Close",
+  "cancel": "Cancel"
 }

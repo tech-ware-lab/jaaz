@@ -4,11 +4,13 @@
 
 AI design agent. Local and free alternative for Lovart. AI agent with ability to design, edit and generate images, posters, storyboards, etc. with a creative canvas board for fast iterations and layout publishing
 
-<div align="center"> <a href="https://github.com/11cafe/localart/releases/latest/download/Jaaz-1.0.9-arm64.dmg"> <img src="https://user-images.githubusercontent.com/37590873/219133640-8b7a0179-20a7-4e02-8887-fbbd2eaad64b.png" alt="Download for macOS" width="300"/> </a> &nbsp;&nbsp; <a href="https://github.com/11cafe/localart/releases/latest/download/Jaaz-1.0.9.exe"> <img width="300" src="https://cdn.intheloop.io/wp-content/uploads/2020/08/windows-button.png" alt="Download for Windows" /> </a> </div>
+<div align="center"> <a href="https://github.com/11cafe/localart/releases/latest/download/Jaaz-1.0.11-arm64.dmg"> <img src="https://user-images.githubusercontent.com/37590873/219133640-8b7a0179-20a7-4e02-8887-fbbd2eaad64b.png" alt="Download for macOS" width="300"/> </a> &nbsp;&nbsp; <a href="https://github.com/11cafe/localart/releases/latest/download/Jaaz-Setup-1.0.11.exe"> <img width="300" src="https://cdn.intheloop.io/wp-content/uploads/2020/08/windows-button.png" alt="Download for Windows" /> </a> </div>
 
 <img width="900" alt="Screenshot 2025-06-02 at 3 51 56 AM" src="https://github.com/user-attachments/assets/5d8efe74-99b0-41bc-aa3e-6f7b92b69c36" />
 
 <img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/6001af3a-2e2d-4bce-8112-7ee81cc75670" />
+<img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/a1c949c4-d204-4976-9103-693180e5299d" />
+
 
 ## ✨ Key Features
 
@@ -20,11 +22,8 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 - [Upcoming] Video generations through Wan2.1, Kling, and video creation and editing agent
 
 ---
-
-- Available for **macOS** and **Windows**
 - Use Claude, OpenAI, Gemini via API key, or run locally with [Ollama](https://github.com/ollama/ollama) for **100% free** usage
 - Use image generation models like **GPT-4O, Recraft, Flux, Google Imagen**, etc. through Replicate API key
-- Support local Huggingface models like **SDXL, Flux Dev** for free local image generations
 
 ---
 
@@ -38,6 +37,14 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 3. Start chatting with agent to generate stories or storyboards!
 
 <img width="900" alt="Screenshot 2025-06-02 at 3 58 24 AM" src="https://github.com/user-attachments/assets/e4ca2740-c3a0-4d3b-be38-32d66fb419cc" />
+
+## Cases
+
+- Prompt: 帮我把这个角色放到6张不同的场景里，都是世界各地的地标建筑前，灯光和谐，他在世界各地拍照，写实，温暖的光线，高画质，画面比例9:16
+
+![814c563b08f6ef44de0c2c31f0fdd00b-min](https://github.com/user-attachments/assets/4e2634b3-9068-47cd-a18f-ddde8f218d25)
+
+
 
 ## API Providers
 

@@ -4,7 +4,8 @@
     "settingsSaved": "设置保存成功",
     "settingsReset": "设置已重置为默认值",
     "failedToSave": "保存设置失败",
-    "failedToLoad": "加载配置失败"
+    "failedToLoad": "加载配置失败",
+    "restartRequired": "请重启应用以使代理设置生效"
   },
   "models": {
     "title": "模型",
@@ -35,6 +36,30 @@
     "save": "保存",
     "cancel": "取消"
   },
+  "proxy": {
+    "title": "代理设置",
+    "mode": "代理模式",
+    "selectMode": "选择代理模式",
+    "modes": {
+      "none": "不使用代理",
+      "system": "系统代理",
+      "custom": "自定义代理"
+    },
+    "enable": "启用代理",
+    "url": "代理地址",
+    "urlPlaceholder": "http://proxy.example.com:8080",
+    "testConnection": "测试连接",
+    "testing": "测试中...",
+    "testSuccess": "代理连接测试成功",
+    "testFailed": "代理连接测试失败: {{message}}",
+    "testError": "代理连接测试出错",
+    "status": {
+      "enabled": "已启用",
+      "disabled": "已禁用",
+      "misconfigured": "配置错误"
+    }
+  },
+  "comfyui.workflows": "工作流",
   "comfyui": {
     "title": "ComfyUI",
     "localImageGeneration": "🎨 本地图像生成",
@@ -53,8 +78,20 @@
     "notInstalledTitle": "ComfyUI 未安装",
     "notInstalledDescription": "安装 ComfyUI 以启用 Flux 模型的本地图像生成",
     "installButton": "安装 ComfyUI",
-    "startButton": "启动 ComfyUI"
+    "startButton": "启动 ComfyUI",
+    "uninstallButton": "卸载 ComfyUI",
+    "confirmUninstall": "确定要卸载 ComfyUI 吗？这将完全从您的系统中移除 ComfyUI，包括所有已下载的模型和配置。",
+    "confirmUninstallButton": "确认卸载",
+    "uninstallProgress": {
+      "title": "正在卸载 ComfyUI",
+      "preparing": "准备卸载中...",
+      "inProgress": "卸载进行中... 请稍候。",
+      "logTitle": "卸载日志：",
+      "completed": "卸载完成"
+    },
+    "notInstalled": "ComfyUI 未安装"
   },
   "saveSettings": "保存设置",
-  "close": "关闭"
+  "close": "关闭",
+  "cancel": "取消"
 }

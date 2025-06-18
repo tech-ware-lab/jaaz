@@ -1,11 +1,27 @@
 import { sendMessages } from '@/api/chat'
 import Blur from '@/components/common/Blur'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Message, Model, PendingType, Session } from '@/types/types'
+import { eventBus, TEvents } from '@/lib/event'
+import {
+  AssistantMessage,
+  Message,
+  Model,
+  PendingType,
+  Session,
+} from '@/types/types'
 import { useSearch } from '@tanstack/react-router'
+import { produce } from 'immer'
 import { motion } from 'motion/react'
 import { nanoid } from 'nanoid'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+import { useTranslation } from 'react-i18next'
 import { PhotoProvider } from 'react-photo-view'
 import { toast } from 'sonner'
 import ShinyText from '../ui/shiny-text'
@@ -15,34 +31,53 @@ import ToolCallContent from './Message/ToolCallContent'
 import ToolCallTag from './Message/ToolCallTag'
 import SessionSelector from './SessionSelector'
 import ChatSpinner from './Spinner'
+import ToolcallProgressUpdate from './ToolcallProgressUpdate'
 
 import 'react-photo-view/dist/react-photo-view.css'
+import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
 
 type ChatInterfaceProps = {
   canvasId: string
-  session: Session | null
   sessionList: Session[]
-  onClickNewChat: () => void
-  onSessionChange: (sessionId: string) => void
+  setSessionList: Dispatch<SetStateAction<Session[]>>
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   canvasId,
-  session,
   sessionList,
-  onClickNewChat,
-  onSessionChange,
+  setSessionList,
 }) => {
+  const { t } = useTranslation()
+  const [session, setSession] = useState<Session | null>(null)
+
+  const search = useSearch({ from: '/canvas/$id' }) as {
+    sessionId: string
+    init?: boolean
+  }
+  const searchSessionId = search.sessionId || ''
+  const searchInit = search.init || false
+
+  useEffect(() => {
+    if (sessionList.length > 0) {
+      let _session = null
+      if (searchSessionId) {
+        _session = sessionList.find((s) => s.id === searchSessionId) || null
+      } else {
+        _session = sessionList[0]
+      }
+      setSession(_session)
+    } else {
+      setSession(null)
+    }
+  }, [sessionList, searchSessionId])
+
   const [messages, setMessages] = useState<Message[]>([])
-  const [prompt, setPrompt] = useState('')
-  const [pending, setPending] = useState<PendingType>(false)
+  const [pending, setPending] = useState<PendingType>(
+    searchInit ? 'text' : false
+  )
 
   const sessionId = session?.id
 
-  const search = useSearch({ from: '/canvas/$id' }) as { sessionId: string }
-  const searchSessionId = search.sessionId || ''
-
-  const webSocketRef = useRef<WebSocket | null>(null)
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
 
@@ -50,14 +85,188 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const isAtBottomRef = useRef(false)
 
   const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      setTimeout(() => {
-        scrollRef.current!.scrollTo({
-          top: scrollRef.current!.scrollHeight,
-          behavior: 'smooth',
-        })
-      }, 200)
+    if (!isAtBottomRef.current) {
+      return
     }
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        top: scrollRef.current!.scrollHeight,
+        behavior: 'smooth',
+      })
+    }, 200)
+  }, [])
+
+  const handleDelta = useCallback(
+    (data: TEvents['Socket::Session::Delta']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      setPending('text')
+      setMessages(
+        produce((prev) => {
+          const last = prev.at(-1)
+          if (
+            last?.role === 'assistant' &&
+            last.content != null &&
+            last.tool_calls == null
+          ) {
+            if (typeof last.content === 'string') {
+              last.content += data.text
+            } else if (
+              last.content &&
+              last.content.at(-1) &&
+              last.content.at(-1)!.type === 'text'
+            ) {
+              ;(last.content.at(-1) as { text: string }).text += data.text
+            }
+          } else {
+            prev.push({
+              role: 'assistant',
+              content: data.text,
+            })
+          }
+        })
+      )
+      scrollToBottom()
+    },
+    [sessionId, scrollToBottom]
+  )
+
+  const handleToolCall = useCallback(
+    (data: TEvents['Socket::Session::ToolCall']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      const existToolCall = messages.find(
+        (m) =>
+          m.role === 'assistant' &&
+          m.tool_calls &&
+          m.tool_calls.find((t) => t.id == data.id)
+      )
+
+      if (existToolCall) {
+        return
+      }
+
+      setMessages(
+        produce((prev) => {
+          console.log('👇tool_call event get', data)
+          setPending('tool')
+          prev.push({
+            role: 'assistant',
+            content: '',
+            tool_calls: [
+              {
+                type: 'function',
+                function: {
+                  name: data.name,
+                  arguments: '',
+                },
+                id: data.id,
+              },
+            ],
+          })
+        })
+      )
+
+      setExpandingToolCalls(
+        produce((prev) => {
+          prev.push(data.id)
+        })
+      )
+    },
+    [sessionId]
+  )
+
+  const handleToolCallArguments = useCallback(
+    (data: TEvents['Socket::Session::ToolCallArguments']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      setMessages(
+        produce((prev) => {
+          const lastMessage = prev.find(
+            (m) =>
+              m.role === 'assistant' &&
+              m.tool_calls &&
+              m.tool_calls.find((t) => t.id == data.id)
+          ) as AssistantMessage
+
+          if (lastMessage) {
+            const toolCall = lastMessage.tool_calls!.find(
+              (t) => t.id == data.id
+            )
+            if (toolCall) {
+              toolCall.function.arguments += data.text
+            }
+          }
+        })
+      )
+      scrollToBottom()
+    },
+    [sessionId, scrollToBottom]
+  )
+
+  const handleImageGenerated = useCallback(
+    (data: TEvents['Socket::Session::ImageGenerated']) => {
+      if (
+        data.canvas_id &&
+        data.canvas_id !== canvasId &&
+        data.session_id !== sessionId
+      ) {
+        return
+      }
+
+      console.log('⭐️dispatching image_generated', data)
+      setPending('image')
+    },
+    [canvasId, sessionId]
+  )
+
+  const handleAllMessages = useCallback(
+    (data: TEvents['Socket::Session::AllMessages']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      setMessages(() => {
+        console.log('👇all_messages', data.messages)
+        return data.messages
+      })
+      scrollToBottom()
+    },
+    [sessionId, scrollToBottom]
+  )
+
+  const handleDone = useCallback(
+    (data: TEvents['Socket::Session::Done']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      setPending(false)
+      scrollToBottom()
+    },
+    [sessionId, scrollToBottom]
+  )
+
+  const handleError = useCallback((data: TEvents['Socket::Session::Error']) => {
+    setPending(false)
+    toast.error('Error: ' + data.error, {
+      closeButton: true,
+      duration: 3600 * 1000,
+      style: { color: 'red' },
+    })
+  }, [])
+
+  const handleInfo = useCallback((data: TEvents['Socket::Session::Info']) => {
+    toast.info(data.info, {
+      closeButton: true,
+      duration: 10 * 1000,
+    })
   }, [])
 
   useEffect(() => {
@@ -65,16 +274,36 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       if (scrollRef.current) {
         isAtBottomRef.current =
           scrollRef.current.scrollHeight - scrollRef.current.scrollTop <=
-          scrollRef.current.clientHeight
+          scrollRef.current.clientHeight + 1
       }
     }
     const scrollEl = scrollRef.current
     scrollEl?.addEventListener('scroll', handleScroll)
 
+    eventBus.on('Socket::Session::Delta', handleDelta)
+    eventBus.on('Socket::Session::ToolCall', handleToolCall)
+    eventBus.on('Socket::Session::ToolCallArguments', handleToolCallArguments)
+    eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
+    eventBus.on('Socket::Session::AllMessages', handleAllMessages)
+    eventBus.on('Socket::Session::Done', handleDone)
+    eventBus.on('Socket::Session::Error', handleError)
+    eventBus.on('Socket::Session::Info', handleInfo)
     return () => {
       scrollEl?.removeEventListener('scroll', handleScroll)
+
+      eventBus.off('Socket::Session::Delta', handleDelta)
+      eventBus.off('Socket::Session::ToolCall', handleToolCall)
+      eventBus.off(
+        'Socket::Session::ToolCallArguments',
+        handleToolCallArguments
+      )
+      eventBus.off('Socket::Session::ImageGenerated', handleImageGenerated)
+      eventBus.off('Socket::Session::AllMessages', handleAllMessages)
+      eventBus.off('Socket::Session::Done', handleDone)
+      eventBus.off('Socket::Session::Error', handleError)
+      eventBus.off('Socket::Session::Info', handleInfo)
     }
-  }, [])
+  })
 
   const initChat = useCallback(async () => {
     if (!sessionId) {
@@ -83,165 +312,44 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     sessionIdRef.current = sessionId
 
-    if (webSocketRef.current) {
-      webSocketRef.current.close()
-    }
-
     const resp = await fetch('/api/chat_session/' + sessionId)
     const data = await resp.json()
     setMessages(data?.length ? data : [])
-
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsHost = window.location.host
-    const wsUrl = `${wsProtocol}//${wsHost}/ws?session_id=${sessionIdRef.current}`
-
-    const socket = new WebSocket(wsUrl)
-    webSocketRef.current = socket
-
-    socket.onopen = () => {
-      console.log('Connected to WebSocket server')
-    }
-    socket.onclose = () => {
-      console.log('Disconnected from WebSocket server')
-    }
-    socket.onerror = (event) => {
-      console.error('WebSocket error:', event)
-    }
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        if (data.type == 'error') {
-          setPending(false)
-          toast.error('Error: ' + data.error, {
-            closeButton: true,
-            duration: 3600 * 1000, // set super large duration to make it not auto dismiss
-            style: {
-              color: 'red',
-            },
-          })
-        } else if (data.type == 'done') {
-          setPending(false)
-          scrollToBottom()
-        } else if (data.type == 'info') {
-          toast.info(data.info, {
-            closeButton: true,
-            duration: 10 * 1000,
-          })
-        } else if (data.type == 'image_generated') {
-          console.log('⭐️dispatching image_generated', data)
-          setPending('image')
-          window.dispatchEvent(
-            new CustomEvent('image_generated', {
-              detail: {
-                image_data: data.image_data,
-              },
-            })
-          )
-          scrollToBottom()
-        } else {
-          setMessages((prev) => {
-            if (data.type == 'delta') {
-              if (
-                prev.at(-1)?.role == 'assistant' &&
-                prev.at(-1)?.content != null
-              ) {
-                const lastMessage = structuredClone(prev.at(-1))
-                if (lastMessage) {
-                  if (typeof lastMessage.content == 'string') {
-                    lastMessage.content += data.text
-                  } else if (
-                    lastMessage.content &&
-                    lastMessage.content.at(-1) &&
-                    lastMessage.content.at(-1)!.type === 'text'
-                  ) {
-                    ;(lastMessage.content.at(-1) as { text: string }).text +=
-                      data.text
-                  }
-                  // TODO: handle other response type
-                }
-                return [...prev.slice(0, -1), lastMessage]
-              } else {
-                return [
-                  ...prev,
-                  {
-                    role: 'assistant',
-                    content: data.text,
-                  },
-                ]
-              }
-            } else if (data.type == 'tool_call') {
-              console.log('👇tool_call event get', data)
-              setExpandingToolCalls((prev) => [...prev, data.id])
-              setPending('tool')
-              return prev.concat({
-                role: 'assistant',
-                content: '',
-                tool_calls: [
-                  {
-                    type: 'function',
-                    function: {
-                      name: data.name,
-                      arguments: '',
-                    },
-                    id: data.id,
-                  },
-                ],
-              })
-            } else if (data.type == 'tool_call_arguments') {
-              const lastMessage = structuredClone(prev.at(-1))
-
-              if (
-                lastMessage?.role === 'assistant' &&
-                lastMessage.tool_calls &&
-                lastMessage.tool_calls.at(-1) &&
-                lastMessage.tool_calls.at(-1)!.id == data.id
-              ) {
-                lastMessage.tool_calls.at(-1)!.function.arguments += data.text
-                return prev.slice(0, -1).concat(lastMessage)
-              }
-            } else if (data.type == 'tool_call_result') {
-              const res: {
-                id: string
-                content: {
-                  text: string
-                }[]
-              } = data
-            } else if (data.type == 'all_messages') {
-              console.log('👇all_messages', data.messages)
-              return data.messages
-            }
-
-            scrollToBottom()
-
-            return prev
-          })
-        }
-      } catch (error) {
-        console.error('Error parsing JSON:', error)
-      }
-    }
 
     scrollToBottom()
   }, [sessionId, scrollToBottom])
 
   useEffect(() => {
     initChat()
-    return () => {
-      if (webSocketRef.current) {
-        webSocketRef.current.close()
-      }
-    }
   }, [sessionId, initChat])
 
   const onSelectSession = (sessionId: string) => {
-    onSessionChange(sessionId)
+    setSession(sessionList.find((s) => s.id === sessionId) || null)
+    window.history.pushState(
+      {},
+      '',
+      `/canvas/${canvasId}?sessionId=${sessionId}`
+    )
+  }
+
+  const onClickNewChat = () => {
+    const newSession: Session = {
+      id: nanoid(),
+      title: t('chat:newChat'),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      model: session?.model || 'gpt-4o',
+      provider: session?.provider || 'openai',
+    }
+
+    setSessionList((prev) => [...prev, newSession])
+    onSelectSession(newSession.id)
   }
 
   const onSendMessages = useCallback(
     (data: Message[], configs: { textModel: Model; imageModel: Model }) => {
-      setMessages(data)
-      setPrompt('')
       setPending('text')
+      setMessages(data)
 
       sendMessages({
         sessionId: sessionId!,
@@ -249,6 +357,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         newMessages: data,
         textModel: configs.textModel,
         imageModel: configs.imageModel,
+        systemPrompt:
+          localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
       })
 
       if (searchSessionId !== sessionId) {
@@ -339,6 +449,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
               ))}
               {pending && <ChatSpinner pending={pending} />}
+              {pending && sessionId && (
+                <ToolcallProgressUpdate sessionId={sessionId} />
+              )}
             </div>
           ) : (
             <motion.div className="flex flex-col h-full p-4 items-start justify-start pt-16 select-none">
@@ -364,11 +477,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         <div className="p-2 gap-2 sticky bottom-0">
           <ChatTextarea
-            value={prompt}
             sessionId={sessionId!}
             pending={!!pending}
             messages={messages}
-            onChange={setPrompt}
             onSendMessages={onSendMessages}
             onCancelChat={handleCancelChat}
           />

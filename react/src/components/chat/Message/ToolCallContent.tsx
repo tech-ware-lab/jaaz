@@ -13,6 +13,10 @@ const ToolCallContent: React.FC<ToolCallContentProps> = ({
 }) => {
   const isExpanded = expandingToolCalls.includes(message.tool_call_id)
 
+  if (message.content.includes('<hide_in_user_ui>')) {
+    return null
+  }
+
   return (
     <AnimatePresence>
       {isExpanded && (

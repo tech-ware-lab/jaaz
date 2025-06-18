@@ -9,6 +9,7 @@ interface ElectronAPI {
   pickImage: () => Promise<string[] | null>
   pickVideo: () => Promise<string | null>
   installComfyUI: () => Promise<{ success: boolean; error?: string }>
+  uninstallComfyUI: () => Promise<{ success: boolean; error?: string }>
   cancelComfyUIInstall: () => Promise<{
     success?: boolean
     error?: string
@@ -24,6 +25,8 @@ interface ElectronAPI {
   restartAndInstall: () => Promise<void>
   onUpdateDownloaded: (callback: (info: UpdateInfo) => void) => void
   removeUpdateDownloadedListener: () => void
+  // Auth methods
+  openBrowserUrl: (url: string) => Promise<{ success: boolean; error?: string }>
 }
 
 interface UpdateInfo {
@@ -36,7 +39,7 @@ interface UpdateInfo {
 
 declare global {
   interface Window {
-    electronAPI: ElectronAPI
+    electronAPI?: ElectronAPI
   }
 }
 

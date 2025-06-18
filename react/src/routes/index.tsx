@@ -3,6 +3,7 @@ import ChatTextarea from '@/components/chat/ChatTextarea'
 import CanvasList from '@/components/home/CanvasList'
 import HomeHeader from '@/components/home/HomeHeader'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion } from 'motion/react'
@@ -16,14 +17,17 @@ export const Route = createFileRoute('/')({
 })
 
 function Home() {
-  const [prompt, setPrompt] = useState('')
   const navigate = useNavigate()
   const { t } = useTranslation()
 
   const { mutate: createCanvasMutation, isPending } = useMutation({
     mutationFn: createCanvas,
     onSuccess: (data) => {
-      navigate({ to: '/canvas/$id', params: { id: data.id } })
+      navigate({
+        to: '/canvas/$id',
+        params: { id: data.id },
+        search: { init: true },
+      })
     },
     onError: (error) => {
       toast.error(t('common:messages.error'), {
@@ -37,7 +41,7 @@ function Home() {
       <ScrollArea className="h-full">
         <HomeHeader />
 
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-300px)] select-none">
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-460px)] pt-[60px] select-none">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -59,8 +63,6 @@ function Home() {
 
           <ChatTextarea
             className="w-full max-w-xl"
-            value={prompt}
-            onChange={setPrompt}
             messages={[]}
             onSendMessages={(messages, configs) => {
               createCanvasMutation({
@@ -70,6 +72,9 @@ function Home() {
                 session_id: nanoid(),
                 text_model: configs.textModel,
                 image_model: configs.imageModel,
+                system_prompt:
+                  localStorage.getItem('system_prompt') ||
+                  DEFAULT_SYSTEM_PROMPT,
               })
             }}
             pending={isPending}

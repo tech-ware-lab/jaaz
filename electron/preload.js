@@ -16,6 +16,8 @@ const { contextBridge, ipcRenderer } = require('electron')
 // console.log("Exposing API with methods:", Object.keys(exposedAPI));
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  openBrowserUrl: (url) => ipcRenderer.invoke('open-browser-url', url),
+
   publishPost: (...args) => {
     return ipcRenderer.invoke('publishPost', ...args)
   },
@@ -24,6 +26,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pickVideo: () => ipcRenderer.invoke('pick-video'),
   // Add ComfyUI installation methods
   installComfyUI: () => ipcRenderer.invoke('install-comfyui'),
+  uninstallComfyUI: () => ipcRenderer.invoke('uninstall-comfyui'),
   cancelComfyUIInstall: () => ipcRenderer.invoke('cancel-comfyui-install'),
   checkComfyUIInstalled: () => ipcRenderer.invoke('check-comfyui-installed'),
   // Add ComfyUI process management methods
