@@ -26,7 +26,7 @@ import traceback
 from langchain_core.messages import AIMessageChunk, ToolCall, convert_to_openai_messages, ToolMessage
 from langgraph.prebuilt import create_react_agent
 from services.db_service import db_service
-from services.config_service import config_service, app_config
+from services.config_service import config_service
 from services.websocket_service import send_to_websocket
 from tools.image_generators import generate_image
 from langchain_ollama import ChatOllama
@@ -53,7 +53,7 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
         model = text_model.get('model')
         provider = text_model.get('provider')
         url = text_model.get('url')
-        api_key = app_config.get(provider, {}).get("api_key", "")
+        api_key = config_service.app_config.get(provider, {}).get("api_key", "")
         # TODO: Verify if max token is working
         max_tokens = text_model.get('max_tokens', 8148)
         if provider == 'ollama':
@@ -143,12 +143,12 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
                             })
                 else:
                     print('👇no tool_call_chunks', chunk)
-                    
+
         # 发送完成事件
         await send_to_websocket(session_id, {
             'type': 'done'
         })
-        
+
     except Exception as e:
         print('Error in langgraph_agent', e)
         traceback.print_exc()
@@ -217,7 +217,7 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
         model = text_model.get('model')
         provider = text_model.get('provider')
         url = text_model.get('url')
-        api_key = app_config.get(provider, {}).get("api_key", "")
+        api_key = config_service.app_config.get(provider, {}).get("api_key", "")
         # TODO: Verify if max token is working
         max_tokens = text_model.get('max_tokens', 8148)
         if provider == 'ollama':
@@ -251,15 +251,15 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 }
                 ],
                 'system_prompt': """
-            You are a design planning writing agent. You should do: 
-            - Step 1. write a execution plan for the user's request. You should breakdown the task into high level steps for the other agents to execute. 
+            You are a design planning writing agent. You should do:
+            - Step 1. write a execution plan for the user's request. You should breakdown the task into high level steps for the other agents to execute.
             - Step 2. Transfer the task to the most suitable agent who specializes in the task.
-            
+
             IMPORTANT RULES:
             1. You MUST complete the write_plan tool call and wait for its result BEFORE attempting to transfer to another agent
             2. Do NOT call multiple tools simultaneously
             3. Always wait for the result of one tool call before making another
-            
+
             For example, if the user ask to 'Generate a cartoon anime style portrait of Zimomo', the example plan is :
             ```
             [{
@@ -300,7 +300,7 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             {
                 'name': 'general_image_designer',
                 'system_prompt': """
-            You are a professional image designer. You should first write a design strategy plan and then generate the image based on the plan. 
+            You are a professional image designer. You should first write a design strategy plan and then generate the image based on the plan.
             Example Design Strategy Plan:
             ### Style
             - Use a modern and clean style
@@ -362,7 +362,7 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
         #     agents=agents,
         #     default_active_agent=agent_schemas[0]['name']
         # ).compile()
-  
+
         ctx = {
             'canvas_id': canvas_id,
             'session_id': session_id,
@@ -427,12 +427,12 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                             })
                 else:
                     print('👇no tool_call_chunks', chunk)
-                    
+
         # 发送完成事件
         await send_to_websocket(session_id, {
             'type': 'done'
         })
-        
+
     except Exception as e:
         print('Error in langgraph_agent', e)
         tb_str = traceback.format_exc()

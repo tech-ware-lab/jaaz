@@ -8,6 +8,10 @@ export const BASE_API_URL = import.meta.env.PROD
 export const PROVIDER_NAME_MAPPING: {
   [key: string]: { name: string; icon: string }
 } = {
+  jaaz: {
+    name: 'Jaaz',
+    icon: 'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/jaaz.png',
+  },
   anthropic: {
     name: 'Claude',
     icon: 'https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/claude-color.png',
@@ -73,11 +77,12 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
       'gpt-4o-mini': { type: 'text' },
       // image models
       'google/imagen-4': { type: 'image' },
+      'google/imagen-4-ultra': { type: 'image' },
       'black-forest-labs/flux-1.1-pro': { type: 'image' },
       'black-forest-labs/flux-kontext-pro': { type: 'image' },
       'black-forest-labs/flux-kontext-max': { type: 'image' },
       'recraft-ai/recraft-v3': { type: 'image' },
-      'stability-ai/sdxl': { type: 'image' },
+      'ideogram-ai/ideogram-v3-balanced': { type: 'image' },
     },
     url: `${BASE_API_URL}/api/v1/`,
     api_key: '',
@@ -189,6 +194,7 @@ export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
     generate_image: 'Generate Image',
     prompt_user_multi_choice: 'Prompt Multi-Choice',
     prompt_user_single_choice: 'Prompt Single-Choice',
+    write_plan: 'Write Plan',
     finish: 'Finish',
   }
 

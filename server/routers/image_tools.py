@@ -2,7 +2,6 @@ from fastapi.responses import FileResponse
 from common import DEFAULT_PORT
 from tools.image_generators import generate_file_id
 from services.db_service import db_service
-from services.config_service import app_config
 import traceback
 from services.config_service import USER_DATA_DIR, FILES_DIR
 from services.websocket_service import send_to_websocket, broadcast_session_update
@@ -21,8 +20,7 @@ os.makedirs(FILES_DIR, exist_ok=True)
 
 # 上传图片接口，支持表单提交
 @router.post("/upload_image")
-async def upload_image(session_id: str = Form(...), file: UploadFile = File(...)):
-    print('🦄upload_image session_id', session_id)
+async def upload_image(file: UploadFile = File(...)):
     print('🦄upload_image file', file.filename)
     # 生成文件 ID 和文件名
     file_id = generate_file_id()
@@ -49,6 +47,7 @@ async def upload_image(session_id: str = Form(...), file: UploadFile = File(...)
     print('🦄upload_image file_path', file_path)
     return {
         'file_id': f'{file_id}.{extension}',
+        'url': f'http://localhost:{DEFAULT_PORT}/api/file/{file_id}.{extension}',
         'width': width,
         'height': height,
     }
