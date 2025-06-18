@@ -34,7 +34,7 @@ app_settings = {}
 # 默认设置配置模板
 # 定义了应用程序的基础配置结构和默认值
 DEFAULT_SETTINGS = {
-    "proxy": ""  # 代理设置：'' (不使用代理), 'system' (使用系统代理), 或具体的代理URL地址
+    "proxy": "system"  # 代理设置：'' (不使用代理), 'system' (使用系统代理), 或具体的代理URL地址
 }
 
 

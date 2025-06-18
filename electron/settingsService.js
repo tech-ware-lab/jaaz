@@ -68,16 +68,17 @@ class SettingsService {
   }
 
   /**
-   * 获取代理配置
-   * @returns {string|null} 代理配置字符串
+   * 获取代理配置，如果配置文件不存在，则使用系统代理
+   * @returns {string} 代理配置字符串
    */
   getProxyConfig() {
     const settings = this.readSettings()
     if (!settings) {
-      return null
+      console.log('Settings file not found, using default system proxy')
+      return 'system'
     }
 
-    const proxyUrl = settings.proxy || ''
+    const proxyUrl = settings.proxy || 'system'
     console.log('Proxy setting from settings.json:', proxyUrl)
 
     return proxyUrl
@@ -207,8 +208,8 @@ class SettingsService {
   async applyProxySettings() {
     const proxyConfig = this.getProxyConfig()
 
-    if (!proxyConfig || proxyConfig === '') {
-      console.log('No proxy configured, clearing proxy settings')
+    if (proxyConfig === '') {
+      console.log('Proxy explicitly disabled, clearing proxy settings')
       return await this.clearProxy()
     }
 
