@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { DEFAULT_PROVIDERS_CONFIG } from '@/constants'
 import useConfigsStore from '@/stores/configs'
 import { LLMConfig } from '@/types/types'
+import { getConfig, updateConfig } from '@/api/config'
+import { useRefreshModels } from '@/contexts/configs'
 import { Plus, Save } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -14,6 +16,7 @@ import { toast } from 'sonner'
 const SettingProviders = () => {
   const { t } = useTranslation()
   const { providers, setProviders } = useConfigsStore()
+  const refreshModels = useRefreshModels()
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [isAddProviderDialogOpen, setIsAddProviderDialogOpen] = useState(false)
@@ -21,8 +24,7 @@ const SettingProviders = () => {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const response = await fetch('/api/config')
-        const config: { [key: string]: LLMConfig } = await response.json()
+        const config: { [key: string]: LLMConfig } = await getConfig()
 
         const res: { [key: string]: LLMConfig } = {}
 
@@ -87,21 +89,12 @@ const SettingProviders = () => {
     try {
       setErrorMessage('')
 
-      const response = await fetch('/api/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(providers),
-      })
+      const result = await updateConfig(providers)
 
-      if (!response.ok) {
-        throw new Error('Failed to save configuration')
-      }
-
-      const result = await response.json()
       if (result.status === 'success') {
         toast.success(result.message)
+        // Refresh models list after successful config update
+        refreshModels()
       } else {
         throw new Error(result.message || 'Failed to save configuration')
       }

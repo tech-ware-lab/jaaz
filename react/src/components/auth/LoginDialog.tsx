@@ -5,25 +5,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { startDeviceAuth, pollDeviceAuth, saveAuthData } from '../../api/auth'
 import { updateJaazApiKey } from '../../api/config'
 import { useAuth } from '../../contexts/AuthContext'
-import { useConfigs } from '../../contexts/configs'
+import { useConfigs, useRefreshModels } from '../../contexts/configs'
 
 export function LoginDialog() {
-  const [isLoading, setIsLoading] = useState(false)
   const [authMessage, setAuthMessage] = useState('')
   const { refreshAuth } = useAuth()
   const { showLoginDialog: open, setShowLoginDialog } = useConfigs()
+  const refreshModels = useRefreshModels()
   const { t } = useTranslation()
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Clean up polling when dialog closes
   useEffect(() => {
+    setAuthMessage('')
+
     if (!open) {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current)
         pollingIntervalRef.current = null
       }
-      setIsLoading(false)
-      setAuthMessage('')
     }
   }, [open])
 
@@ -50,20 +50,20 @@ export function LoginDialog() {
             saveAuthData(result.token, result.user_info)
 
             // Update jaaz provider api_key with the access token
-            updateJaazApiKey(result.token)
+            await updateJaazApiKey(result.token)
           }
 
           setAuthMessage(t('common:auth.loginSuccessMessage'))
-          setIsLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
           }
 
-          // Refresh auth status after saving data
           try {
             await refreshAuth()
             console.log('Auth status refreshed successfully')
+            // Refresh models list after successful login and config update
+            refreshModels()
           } catch (error) {
             console.error('Failed to refresh auth status:', error)
           }
@@ -73,7 +73,6 @@ export function LoginDialog() {
         } else if (result.status === 'expired') {
           // Authorization expired
           setAuthMessage(t('common:auth.authExpiredMessage'))
-          setIsLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
@@ -82,7 +81,6 @@ export function LoginDialog() {
         } else if (result.status === 'error') {
           // Error occurred
           setAuthMessage(result.message || t('common:auth.authErrorMessage'))
-          setIsLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
@@ -95,7 +93,6 @@ export function LoginDialog() {
       } catch (error) {
         console.error('Polling error:', error)
         setAuthMessage(t('common:auth.pollErrorMessage'))
-        setIsLoading(false)
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current)
           pollingIntervalRef.current = null
@@ -110,7 +107,6 @@ export function LoginDialog() {
 
   const handleLogin = async () => {
     try {
-      setIsLoading(true)
       setAuthMessage(t('common:auth.preparingLoginMessage'))
 
       const result = await startDeviceAuth()
@@ -122,7 +118,6 @@ export function LoginDialog() {
     } catch (error) {
       console.error('登录请求失败:', error)
       setAuthMessage(t('common:auth.loginRequestFailed'))
-      setIsLoading(false)
     }
   }
 
@@ -131,7 +126,6 @@ export function LoginDialog() {
       clearInterval(pollingIntervalRef.current)
       pollingIntervalRef.current = null
     }
-    setIsLoading(false)
     setAuthMessage('')
     setShowLoginDialog(false)
   }
@@ -148,30 +142,15 @@ export function LoginDialog() {
             {t('common:auth.loginDescription')}
           </p>
 
-          {authMessage && (
-            <div className="p-3 bg-muted rounded-md">
-              <p className="text-sm">{authMessage}</p>
-            </div>
-          )}
-
           <div className="flex gap-2">
             <Button
               onClick={handleLogin}
-              disabled={isLoading}
+              disabled={!!authMessage}
               className="flex-1"
             >
-              {isLoading ? t('common:auth.preparingLogin') : t('common:auth.startLogin')}
+              {authMessage || t('common:auth.startLogin')}
             </Button>
 
-            {isLoading && (
-              <Button
-                onClick={handleCancel}
-                variant="outline"
-                className="flex-1"
-              >
-                {t('common:auth.cancel')}
-              </Button>
-            )}
           </div>
         </div>
       </DialogContent>

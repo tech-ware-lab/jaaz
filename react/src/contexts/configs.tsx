@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect } from 'react'
 
 export const ConfigsContext = createContext<{
   configsStore: typeof useConfigsStore
+  refreshModels: () => void
 } | null>(null)
 
 export const ConfigsProvider = ({
@@ -16,7 +17,7 @@ export const ConfigsProvider = ({
   const { setTextModels, setImageModels, setTextModel, setImageModel } =
     configsStore
 
-  const { data: modelList } = useQuery({
+  const { data: modelList, refetch: refreshModels } = useQuery({
     queryKey: ['list_models'],
     queryFn: () => listModels(),
   })
@@ -56,7 +57,7 @@ export const ConfigsProvider = ({
   }, [modelList, setImageModel, setTextModel, setTextModels, setImageModels])
 
   return (
-    <ConfigsContext.Provider value={{ configsStore: useConfigsStore }}>
+    <ConfigsContext.Provider value={{ configsStore: useConfigsStore, refreshModels }}>
       {children}
     </ConfigsContext.Provider>
   )
@@ -68,4 +69,12 @@ export const useConfigs = () => {
     throw new Error('useConfigs must be used within a ConfigsProvider')
   }
   return context.configsStore()
+}
+
+export const useRefreshModels = () => {
+  const context = useContext(ConfigsContext)
+  if (!context) {
+    throw new Error('useRefreshModels must be used within a ConfigsProvider')
+  }
+  return context.refreshModels
 }
