@@ -181,8 +181,8 @@ const startPythonApi = async () => {
   // Set BASE_API_URL based on environment
   env.BASE_API_URL =
     process.env.NODE_ENV === 'development'
-      ? 'https://dev.jaaz.app'
-      : 'https://dev.jaaz.app'
+      ? 'http://localhost:3000'
+      : 'https://jaaz.app'
   console.log('BASE_API_URL:', env.BASE_API_URL)
 
   // Apply proxy settings and get environment variables
