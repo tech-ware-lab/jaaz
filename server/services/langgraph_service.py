@@ -252,7 +252,7 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 ],
                 'system_prompt': """
             You are a design planning writing agent. You should do:
-            - Step 1. write a execution plan for the user's request. You should breakdown the task into high level steps for the other agents to execute.
+            - Step 1. write a execution plan for the user's request using the same language as the user's prompt. You should breakdown the task into high level steps for the other agents to execute.
             - Step 2. Transfer the task to the most suitable agent who specializes in the task.
 
             IMPORTANT RULES:
