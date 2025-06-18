@@ -212,7 +212,7 @@ def create_handoff_tool(
     handoff_to_agent.metadata = {METADATA_KEY_HANDOFF_DESTINATION: agent_name}
     return handoff_to_agent
 
-async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, image_model):
+async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, image_model, system_prompt: str = None):
     try:
         model = text_model.get('model')
         provider = text_model.get('provider')
@@ -260,27 +260,14 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             2. Do NOT call multiple tools simultaneously
             3. Always wait for the result of one tool call before making another
 
-            For example, if the user ask to 'Generate a cartoon anime style portrait of Zimomo', the example plan is :
-            ```
-            [{
-                "title": "Web search image",
-                "description": "Search the web for images referenceof Zimomo"
-            }, {
-                "title": "Generate Image",
-                "description": "Generate an image based on the image reference searched"
-            }]
-            ```
             For example, if the user ask to 'Generate a ads video for a lipstick product', the example plan is :
             ```
             [{
                 "title": "Design the video script",
                 "description": "Design the video script for the ads video"
             }, {
-                "title": "Write the image prompts for the story board",
-                "description": "Write the image prompts for the story board"
-            }, {
                 "title": "Generate the images",
-                "description": "Generate the images for the story board"
+                "description": "Design image prompts, generate the images for the story board"
             }, {
                 "title": "Generate the video clips",
                 "description": "Generate the video clips from the images"
@@ -290,37 +277,25 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 'knowledge': [],
                 'handoffs': [
                     {
-                        'agent_name': 'general_image_designer',
+                        'agent_name': 'image_designer',
                         'description': """
-                        Transfer user to the general_image_designer. About this agent: Specialize in generating images.
+                        Transfer user to the image_designer. About this agent: Specialize in generating images.
                         """
                     }
                 ]
             },
             {
-                'name': 'general_image_designer',
-                'system_prompt': """
-            You are a professional image designer. You should first write a design strategy plan and then generate the image based on the plan.
-            Example Design Strategy Plan:
-            ### Style
-            - Use a modern and clean style
-            ### Elements
-            - Featuring a sofa in the center, an armchair in the corner, and a table in the corner
-            ### Colors
-            - Use a combination of blue and green
-            ### Layout
-            - Place the sofa in the center of the image, with the armchair and table on either side
-            ### Details
-            - Add a small pattern to the fabric of the sofa
-            - Add a small pattern to the fabric of the armchair
-
-            """,
-                'tools': [{
-                    'name': 'generate_image',
-                    'description': "Generate an image",
-                    'tool': 'generate_image',
-                }],
+                'name': 'image_designer',
+                'tools': [
+                    {
+                        'name': 'generate_image',
+                        'description': "Generate an image",
+                        'tool': 'generate_image',
+                    }
+                ],
+                'system_prompt': system_prompt,
                 'knowledge': [],
+                'handoffs': []
             }
         ]
         agents = []
@@ -355,7 +330,7 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
         print('👇last_agent', last_agent)
         swarm = create_swarm(
             agents=agents,
-            default_active_agent=last_agent if last_agent else "planner"
+            default_active_agent=last_agent if last_agent else agent_schemas[0]['name']
         ).compile()
 
         # swarm = create_swarm(

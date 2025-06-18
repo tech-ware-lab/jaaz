@@ -37,17 +37,8 @@ async def handle_chat(data):
     canvas_id = data.get('canvas_id')
     text_model = data.get('text_model')
     image_model = data.get('image_model')
-
-
-    print('👇app_config.get("system_prompt", "")',
-          config_service.app_config.get('system_prompt', ''))
-
-    # If system prompt is configured, append it as a 'system' message
-    if config_service.app_config.get('system_prompt', ''):
-        messages.append({
-            'role': 'system',
-            'content': config_service.app_config.get('system_prompt', '')
-        })
+    # TODO: save and fetch system prompt from db or settings config
+    system_prompt = data.get('system_prompt')
 
     # If there is only one message, create a new chat session
     if len(messages) == 1:
@@ -60,7 +51,7 @@ async def handle_chat(data):
 
     # Create and start langgraph_agent task for chat processing
     task = asyncio.create_task(langgraph_multi_agent(
-        messages, canvas_id, session_id, text_model, image_model))
+        messages, canvas_id, session_id, text_model, image_model, system_prompt))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)

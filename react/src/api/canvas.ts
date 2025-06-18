@@ -28,6 +28,7 @@ export async function createCanvas(data: {
     model: string
     url: string
   }
+  system_prompt: string
 }): Promise<{ id: string }> {
   const response = await fetch('/api/canvas/create', {
     method: 'POST',
