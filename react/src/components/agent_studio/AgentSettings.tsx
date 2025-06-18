@@ -17,7 +17,7 @@ export default function AgentSettings() {
   }
   return (
     <Dialog>
-      <DialogTrigger>
+      <DialogTrigger asChild>
         <Button size={'sm'} variant="ghost">
           <BotIcon size={30} />
         </Button>
