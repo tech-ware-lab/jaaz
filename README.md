@@ -11,7 +11,6 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 <img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/6001af3a-2e2d-4bce-8112-7ee81cc75670" />
 <img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/a1c949c4-d204-4976-9103-693180e5299d" />
 
-
 ## ✨ Key Features
 
 - AI designer agent powered by LLM that can smartly write prompt and batch generate images or even a whole storyboard!
@@ -22,6 +21,7 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 - [Upcoming] Video generations through Wan2.1, Kling, and video creation and editing agent
 
 ---
+
 - Use Claude, OpenAI, Gemini via API key, or run locally with [Ollama](https://github.com/ollama/ollama) for **100% free** usage
 - Use image generation models like **GPT-4O, Recraft, Flux, Google Imagen**, etc. through Replicate API key
 
@@ -40,11 +40,9 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 
 ## Cases
 
-- Prompt: 帮我把这个角色放到6张不同的场景里，都是世界各地的地标建筑前，灯光和谐，他在世界各地拍照，写实，温暖的光线，高画质，画面比例9:16
+- Prompt: 帮我把这个角色放到 6 张不同的场景里，都是世界各地的地标建筑前，灯光和谐，他在世界各地拍照，写实，温暖的光线，高画质，画面比例 9:16
 
 ![814c563b08f6ef44de0c2c31f0fdd00b-min](https://github.com/user-attachments/assets/4e2634b3-9068-47cd-a18f-ddde8f218d25)
-
-
 
 ## API Providers
 
@@ -70,7 +68,7 @@ First git clone this repo:
 
 `cd react`
 
-`npm i && npm run dev`
+`npm install --force && npm run dev`
 
 `cd server`
 
