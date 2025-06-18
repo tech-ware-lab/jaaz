@@ -27,8 +27,6 @@ from .img_generators import (
 )
 
 # 生成唯一文件 ID
-
-
 def generate_file_id():
     return 'im_' + generate(size=8)
 
