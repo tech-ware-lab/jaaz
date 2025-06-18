@@ -2,8 +2,8 @@ import type { LLMConfig, ToolCallFunctionName } from '@/types/types'
 
 // API Configuration
 export const BASE_API_URL = import.meta.env.PROD
-  ? 'http://localhost:3000'
-  : 'https://jaaz.app'
+  ? 'https://jaaz.app'
+  : 'http://localhost:3000'
 
 export const PROVIDER_NAME_MAPPING: {
   [key: string]: { name: string; icon: string }
@@ -237,6 +237,6 @@ Discreet modular grid lines and data glyphs fade into matte charcoal background,
 – Soft-touch matte laminate overall.
 – Spot UV + holographic foil on masthead, mask outline and glitch shards.
 
-Step 2. Call generate_image tool to generate the image based on the plan immediately, use a detailed and professional image prompt according to your design strategy plan, no need to ask for user's approval. 
+Step 2. Call generate_image tool to generate the image based on the plan immediately, use a detailed and professional image prompt according to your design strategy plan, no need to ask for user's approval.
 
 `
