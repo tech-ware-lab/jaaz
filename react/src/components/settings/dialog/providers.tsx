@@ -45,6 +45,10 @@ const SettingProviders = () => {
             res[provider] = {
               ...DEFAULT_PROVIDERS_CONFIG[provider],
               ...config[provider],
+              models: {
+                ...DEFAULT_PROVIDERS_CONFIG[provider].models,
+                ...config[provider].models,
+              },
             }
           } else {
             res[provider] = DEFAULT_PROVIDERS_CONFIG[provider]

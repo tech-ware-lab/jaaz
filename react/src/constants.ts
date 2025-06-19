@@ -1,9 +1,8 @@
 import type { LLMConfig, ToolCallFunctionName } from '@/types/types'
 
 // API Configuration
-export const BASE_API_URL = import.meta.env.PROD
-  ? 'https://jaaz.app'
-  : 'http://localhost:3000'
+// export const BASE_API_URL = true ? 'https://jaaz.app' : 'http://localhost:3000'
+export const BASE_API_URL = 'https://jaaz.app'
 
 export const PROVIDER_NAME_MAPPING: {
   [key: string]: { name: string; icon: string }
@@ -75,6 +74,10 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
       // text models
       'gpt-4o': { type: 'text' },
       'gpt-4o-mini': { type: 'text' },
+      'deepseek/deepseek-chat-v3-0324:free': { type: 'text' },
+      'deepseek/deepseek-chat-v3-0324': { type: 'text' },
+      'anthropic/claude-sonnet-4': { type: 'text' },
+      'anthropic/claude-3.7-sonnet': { type: 'text' },
       // image models
       'google/imagen-4': { type: 'image' },
       'google/imagen-4-ultra': { type: 'image' },
@@ -83,6 +86,7 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
       'black-forest-labs/flux-kontext-max': { type: 'image' },
       'recraft-ai/recraft-v3': { type: 'image' },
       'ideogram-ai/ideogram-v3-balanced': { type: 'image' },
+      'openai/gpt-image-1': { type: 'image' },
     },
     url: `${BASE_API_URL}/api/v1/`,
     api_key: '',
@@ -119,74 +123,15 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
   },
 }
 
-export const PLATFORMS_CONFIG = [
-  {
-    id: 'bilibili',
-    name: 'Bilibili',
-    icon: 'https://www.bilibili.com/favicon.ico',
-    checked: true,
-  },
-  {
-    id: 'xiaohongshu',
-    name: '小红书',
-    icon: 'https://www.xiaohongshu.com/favicon.ico',
-    checked: true,
-  },
-  {
-    id: 'douyin',
-    name: '抖音',
-    icon: 'https://www.tiktok.com/favicon.ico',
-    checked: true,
-  },
-  {
-    id: 'weixin_channels',
-    name: '微信视频号',
-    icon: 'https://res.wx.qq.com/t/wx_fed/finder/helper/finder-helper-web/res/favicon-v2.ico',
-    checked: true,
-  },
-  {
-    id: 'x',
-    name: 'X',
-    icon: 'https://www.x.com/favicon.ico',
-    checked: true,
-  },
-  {
-    id: 'youtube',
-    name: 'YouTube',
-    icon: 'https://www.youtube.com/favicon.ico',
-    checked: true,
-  },
-  {
-    id: 'instagram',
-    name: 'Instagram',
-    icon: 'https://www.instagram.com/static/images/ico/favicon-192.png/68d99ba29cc8.png',
-    checked: true,
-  },
-  {
-    id: 'medium',
-    name: 'Medium',
-    icon: 'https://miro.medium.com/v2/resize:fit:1400/0*zPzAcHbkOUmfNnuB.jpeg',
-    checked: true,
-  },
-  {
-    id: 'devto',
-    name: 'DEV.to',
-    icon: 'https://d2fltix0v2e0sb.cloudfront.net/dev-badge.svg',
-    checked: true,
-  },
-  {
-    id: 'facebook',
-    name: 'Facebook',
-    icon: 'https://www.facebook.com/images/fb_icon_325x325.png',
-    checked: true,
-  },
-  {
-    id: 'producthunt',
-    name: 'Product Hunt',
-    icon: 'https://cdn.iconscout.com/icon/free/png-256/free-producthunt-logo-icon-download-in-svg-png-gif-file-formats--70-flat-social-icons-color-pack-logos-432534.png?f=webp',
-    checked: true,
-  },
-]
+export const DEFAULT_MODEL_LIST = Object.keys(DEFAULT_PROVIDERS_CONFIG).flatMap(
+  (provider) =>
+    Object.keys(DEFAULT_PROVIDERS_CONFIG[provider].models).map((model) => ({
+      provider,
+      model,
+      type: DEFAULT_PROVIDERS_CONFIG[provider].models[model].type ?? 'text',
+      url: DEFAULT_PROVIDERS_CONFIG[provider].url,
+    }))
+)
 
 // Tool call name mapping
 export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
