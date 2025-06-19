@@ -24,17 +24,6 @@ interface ModelsListProps {
   ) => void
   label?: string
 }
-const DEFAULT_JAAZ_MODELS: Record<
-  string,
-  { type?: 'text' | 'image' | 'video' }
-> = {
-  'openai/gpt-4o': { type: 'text' },
-  'openai/gpt-4o-mini': { type: 'text' },
-  'deepseek/deepseek-chat-v3-0324:free': { type: 'text' },
-  'deepseek/deepseek-chat-v3-0324': { type: 'text' },
-  'anthropic/claude-sonnet-4': { type: 'text' },
-  'anthropic/claude-3.7-sonnet': { type: 'text' },
-}
 
 export default function AddModelsList({
   models,
