@@ -36,7 +36,8 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 
 3. Start chatting with agent to generate stories or storyboards!
 
-<img width="900" alt="Screenshot 2025-06-02 at 3 58 24 AM" src="https://github.com/user-attachments/assets/e4ca2740-c3a0-4d3b-be38-32d66fb419cc" />
+<img width="1239" alt="Screenshot 2025-06-18 at 16 09 05" src="https://github.com/user-attachments/assets/eacee793-3bc4-4fa2-9e23-94efa1e1f087" />
+
 
 ## Cases
 
