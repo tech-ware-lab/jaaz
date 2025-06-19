@@ -388,7 +388,6 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                             'arguments': '{}'
                         })
                 elif hasattr(ai_message_chunk, 'tool_call_chunks'):
-                    print('👇tool_call_chunks event', ai_message_chunk)
                     tool_call_chunks = ai_message_chunk.tool_call_chunks
                     for tool_call_chunk in tool_call_chunks:
                         index: int = tool_call_chunk['index']
