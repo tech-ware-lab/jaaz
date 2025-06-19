@@ -3,6 +3,7 @@ import { useCanvas } from '@/contexts/canvas'
 import useDebounce from '@/hooks/use-debounce'
 import { useTheme } from '@/hooks/use-theme'
 import { eventBus } from '@/lib/event'
+import * as ISocket from '@/types/socket'
 import { CanvasData } from '@/types/types'
 import { Excalidraw } from '@excalidraw/excalidraw'
 import {
@@ -106,8 +107,12 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   )
 
   const handleImageGenerated = useCallback(
-    (imageData: { element: ExcalidrawImageElement; file: BinaryFileData }) => {
+    (imageData: ISocket.SessionImageGeneratedEvent) => {
       console.log('👇image_generated', imageData)
+      if (imageData.canvas_id !== canvasId) {
+        return
+      }
+
       addImageToExcalidraw(imageData.element, imageData.file)
     },
     [addImageToExcalidraw]
