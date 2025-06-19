@@ -52,7 +52,6 @@ const SettingProviders = () => {
         }
 
         setProviders(res)
-
       } catch (error) {
         console.error('Error loading configuration:', error)
         setErrorMessage(t('settings:messages.failedToLoad'))
