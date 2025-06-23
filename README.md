@@ -1,4 +1,4 @@
-# 🦄 Jaaz – AI Design Agent
+![image](https://github.com/user-attachments/assets/bafdbe36-45df-49ec-b5b8-8926cd440507)# 🦄 Jaaz – AI Design Agent
 
 [中文入门指南](https://mxnpt25l6k.feishu.cn/docx/LvcTdlVbFoRAZWxnhBYcqVydnpc)
 
@@ -6,6 +6,7 @@ AI design agent. Local and free alternative for Lovart. AI agent with ability to
 
 <div align="center"> <a href="https://github.com/11cafe/localart/releases/latest/download/Jaaz-1.0.13-arm64.dmg"> <img src="https://user-images.githubusercontent.com/37590873/219133640-8b7a0179-20a7-4e02-8887-fbbd2eaad64b.png" alt="Download for macOS" width="300"/> </a> &nbsp;&nbsp; <a href="https://github.com/11cafe/localart/releases/latest/download/Jaaz-Setup-1.0.13.exe"> <img width="300" src="https://cdn.intheloop.io/wp-content/uploads/2020/08/windows-button.png" alt="Download for Windows" /> </a> </div>
 
+<img width="900" alt="Screenshot 2025-06-02 at 3 51 56 AM" src="https://github.com/user-attachments/assets/186982a9-5e4e-4ac1-a42c-c840092fd616" />
 <img width="900" alt="Screenshot 2025-06-02 at 3 51 56 AM" src="https://github.com/user-attachments/assets/5d8efe74-99b0-41bc-aa3e-6f7b92b69c36" />
 
 <img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/6001af3a-2e2d-4bce-8112-7ee81cc75670" />
