@@ -15,16 +15,29 @@ export default function AgentSettings() {
     localStorage.setItem('system_prompt', systemPrompt)
     toast.success('System prompt saved')
   }
+
+  const handleReset = () => {
+    localStorage.setItem('system_prompt', DEFAULT_SYSTEM_PROMPT)
+    setSystemPrompt(DEFAULT_SYSTEM_PROMPT)
+    toast.success('System prompt reset to default')
+  }
   return (
     <Dialog>
-      <DialogTrigger>
+      <DialogTrigger asChild>
         <Button size={'sm'} variant="ghost">
           <BotIcon size={30} />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
-        <h3 className="text-2xl font-bold">Agent Settings</h3>
-        <p className="font-bold">System Prompt</p>
+        <div className="flex items-center justify-between">
+          <h3 className="text-2xl font-bold">Agent Settings</h3>
+        </div>
+        <div className="flex items-center justify-between">
+          <p className="font-bold">System Prompt</p>
+          <Button size={'sm'} variant={'outline'} onClick={handleReset}>
+            Reset to Default
+          </Button>
+        </div>
         <div className="flex flex-col gap-2">
           <Textarea
             placeholder="Enter your system prompt here"

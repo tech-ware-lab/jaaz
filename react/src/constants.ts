@@ -1,9 +1,9 @@
 import type { LLMConfig, ToolCallFunctionName } from '@/types/types'
 
 // API Configuration
-export const BASE_API_URL = import.meta.env.PROD
-  ? 'https://dev.jaaz.app'
-  : 'https://dev.jaaz.app'
+export const BASE_API_URL = import.meta.env.DEV
+  ? 'http://localhost:3000'
+  : 'https://jaaz.app'
 
 export const PROVIDER_NAME_MAPPING: {
   [key: string]: { name: string; icon: string }
@@ -75,14 +75,19 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
       // text models
       'gpt-4o': { type: 'text' },
       'gpt-4o-mini': { type: 'text' },
+      'deepseek/deepseek-chat-v3-0324:free': { type: 'text' },
+      'deepseek/deepseek-chat-v3-0324': { type: 'text' },
+      'anthropic/claude-sonnet-4': { type: 'text' },
+      'anthropic/claude-3.7-sonnet': { type: 'text' },
       // image models
       'google/imagen-4': { type: 'image' },
-      'google/imagen-4-ultra': { type: 'image' },
+      // 'google/imagen-4-ultra': { type: 'image' },
       'black-forest-labs/flux-1.1-pro': { type: 'image' },
       'black-forest-labs/flux-kontext-pro': { type: 'image' },
       'black-forest-labs/flux-kontext-max': { type: 'image' },
       'recraft-ai/recraft-v3': { type: 'image' },
-      'ideogram-ai/ideogram-v3-balanced': { type: 'image' },
+      // 'ideogram-ai/ideogram-v3-balanced': { type: 'image' },
+      'openai/gpt-image-1': { type: 'image' },
     },
     url: `${BASE_API_URL}/api/v1/`,
     api_key: '',
@@ -119,74 +124,15 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
   },
 }
 
-export const PLATFORMS_CONFIG = [
-  {
-    id: 'bilibili',
-    name: 'Bilibili',
-    icon: 'https://www.bilibili.com/favicon.ico',
-    checked: true,
-  },
-  {
-    id: 'xiaohongshu',
-    name: '小红书',
-    icon: 'https://www.xiaohongshu.com/favicon.ico',
-    checked: true,
-  },
-  {
-    id: 'douyin',
-    name: '抖音',
-    icon: 'https://www.tiktok.com/favicon.ico',
-    checked: true,
-  },
-  {
-    id: 'weixin_channels',
-    name: '微信视频号',
-    icon: 'https://res.wx.qq.com/t/wx_fed/finder/helper/finder-helper-web/res/favicon-v2.ico',
-    checked: true,
-  },
-  {
-    id: 'x',
-    name: 'X',
-    icon: 'https://www.x.com/favicon.ico',
-    checked: true,
-  },
-  {
-    id: 'youtube',
-    name: 'YouTube',
-    icon: 'https://www.youtube.com/favicon.ico',
-    checked: true,
-  },
-  {
-    id: 'instagram',
-    name: 'Instagram',
-    icon: 'https://www.instagram.com/static/images/ico/favicon-192.png/68d99ba29cc8.png',
-    checked: true,
-  },
-  {
-    id: 'medium',
-    name: 'Medium',
-    icon: 'https://miro.medium.com/v2/resize:fit:1400/0*zPzAcHbkOUmfNnuB.jpeg',
-    checked: true,
-  },
-  {
-    id: 'devto',
-    name: 'DEV.to',
-    icon: 'https://d2fltix0v2e0sb.cloudfront.net/dev-badge.svg',
-    checked: true,
-  },
-  {
-    id: 'facebook',
-    name: 'Facebook',
-    icon: 'https://www.facebook.com/images/fb_icon_325x325.png',
-    checked: true,
-  },
-  {
-    id: 'producthunt',
-    name: 'Product Hunt',
-    icon: 'https://cdn.iconscout.com/icon/free/png-256/free-producthunt-logo-icon-download-in-svg-png-gif-file-formats--70-flat-social-icons-color-pack-logos-432534.png?f=webp',
-    checked: true,
-  },
-]
+export const DEFAULT_MODEL_LIST = Object.keys(DEFAULT_PROVIDERS_CONFIG).flatMap(
+  (provider) =>
+    Object.keys(DEFAULT_PROVIDERS_CONFIG[provider].models).map((model) => ({
+      provider,
+      model,
+      type: DEFAULT_PROVIDERS_CONFIG[provider].models[model].type ?? 'text',
+      url: DEFAULT_PROVIDERS_CONFIG[provider].url,
+    }))
+)
 
 // Tool call name mapping
 export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
@@ -202,7 +148,7 @@ export const LOGO_URL =
   'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/jaaz.png'
 
 export const DEFAULT_SYSTEM_PROMPT = `You are a professional art design agent. You can write very professional image prompts to generate aesthetically pleasing images that best fulfilling and matching the user's request.
-You should first write a design strategy plan and then generate the image based on the plan.
+Step 1. write a design strategy plan. Write in the same language as the user's inital first prompt.
 
 Example Design Strategy Doc:
 Design Proposal for “MUSE MODULAR – Future of Identity” Cover
@@ -237,11 +183,5 @@ Discreet modular grid lines and data glyphs fade into matte charcoal background,
 – Soft-touch matte laminate overall.
 – Spot UV + holographic foil on masthead, mask outline and glitch shards.
 
-Image-Generation Prompt (copy directly)
-Generate a vertical magazine cover, 1024×1536 px, 300 ppi. Photorealistic editorial style.
-Scene: shoulders-up portrait of an androgynous, ethnically ambiguous high-fashion model against a charcoal-to-light-gray gradient background with faint modular grid lines and translucent data glyphs. Lighting: soft frontal key, subtle dual rim lights, creating high-contrast grayscale tones.
-Subject wears a semi-transparent, holographic polygonal augmented-reality mask; mask projects three slightly offset ghost faces with alternative eyes, noses, mouths, as luminous layers. Edges of the mask emit iridescent light (gradient #00eaff → #c400ff → #38ffab) and subtle pixel-sorting glitch streaks.
-Masthead “MUSE MODULAR” top-center, uppercase, extra-condensed modular sans serif, holographic foil effect, breaking plane behind model’s head. Directly below, thin italic tagline “Who are you today?”. Bottom left, small monospaced caption “Future of Identity Issue”.
-Overall palette strictly grayscale except selective holographic highlights. Emphasize negative space, pristine editorial composition, futuristic mood, crisp detail suitable for print.
-
+Step 2. Call generate_image tool to generate the image based on the plan immediately, use a detailed and professional image prompt according to your design strategy plan, no need to ask for user's approval. 
 `

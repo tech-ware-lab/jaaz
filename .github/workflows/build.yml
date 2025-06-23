@@ -36,9 +36,9 @@ jobs:
 
       - name: Install Node.js dependencies
         run: |
-          npm install
+          npm install --force
           cd react
-          npm install
+          npm install --force
 
       - name: Build Python app
         run: |

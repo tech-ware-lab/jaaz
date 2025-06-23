@@ -1,4 +1,5 @@
 import { listModels } from '@/api/model'
+import { DEFAULT_MODEL_LIST, DEFAULT_PROVIDERS_CONFIG } from '@/constants'
 import useConfigsStore from '@/stores/configs'
 import { useQuery } from '@tanstack/react-query'
 import { createContext, useContext, useEffect } from 'react'
@@ -17,11 +18,17 @@ export const ConfigsProvider = ({
   const { setTextModels, setImageModels, setTextModel, setImageModel } =
     configsStore
 
-  const { data: modelList, refetch: refreshModels } = useQuery({
+  const { data, refetch: refreshModels } = useQuery({
     queryKey: ['list_models'],
     queryFn: () => listModels(),
   })
-
+  // merge default models with the models from the server config to get the latest default models
+  const modelList = [
+    ...(data || []),
+    ...DEFAULT_MODEL_LIST.filter(
+      (m) => !data?.find((d) => d.provider == m.provider && d.model == m.model)
+    ),
+  ]
   useEffect(() => {
     if (!modelList) return
     if (modelList.length > 0) {
@@ -54,10 +61,12 @@ export const ConfigsProvider = ({
       setTextModels(textModels || [])
       setImageModels(imageModels || [])
     }
-  }, [modelList, setImageModel, setTextModel, setTextModels, setImageModels])
+  }, [data, setImageModel, setTextModel, setTextModels, setImageModels])
 
   return (
-    <ConfigsContext.Provider value={{ configsStore: useConfigsStore, refreshModels }}>
+    <ConfigsContext.Provider
+      value={{ configsStore: useConfigsStore, refreshModels }}
+    >
       {children}
     </ConfigsContext.Provider>
   )

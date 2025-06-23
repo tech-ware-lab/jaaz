@@ -33,6 +33,7 @@ import SessionSelector from './SessionSelector'
 import ChatSpinner from './Spinner'
 import ToolcallProgressUpdate from './ToolcallProgressUpdate'
 
+import { useConfigs } from '@/contexts/configs'
 import 'react-photo-view/dist/react-photo-view.css'
 import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
 
@@ -49,13 +50,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const { t } = useTranslation()
   const [session, setSession] = useState<Session | null>(null)
+  const { initCanvas, setInitCanvas } = useConfigs()
 
   const search = useSearch({ from: '/canvas/$id' }) as {
     sessionId: string
-    init?: boolean
   }
   const searchSessionId = search.sessionId || ''
-  const searchInit = search.init || false
 
   useEffect(() => {
     if (sessionList.length > 0) {
@@ -73,7 +73,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const [messages, setMessages] = useState<Message[]>([])
   const [pending, setPending] = useState<PendingType>(
-    searchInit ? 'text' : false
+    initCanvas ? 'text' : false
   )
 
   const sessionId = session?.id
@@ -188,6 +188,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       setMessages(
         produce((prev) => {
+          setPending('tool')
           const lastMessage = prev.find(
             (m) =>
               m.role === 'assistant' &&
@@ -314,10 +315,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     const resp = await fetch('/api/chat_session/' + sessionId)
     const data = await resp.json()
-    setMessages(data?.length ? data : [])
+    const msgs = data?.length ? data : []
+    setMessages(msgs)
+    if (msgs.length > 0) {
+      setInitCanvas(false)
+    }
 
     scrollToBottom()
-  }, [sessionId, scrollToBottom])
+  }, [sessionId, scrollToBottom, setInitCanvas])
 
   useEffect(() => {
     initChat()
@@ -395,7 +400,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         <ScrollArea className="h-[calc(100vh-45px)]" viewportRef={scrollRef}>
           {messages.length > 0 ? (
-            <div className="flex-1 px-4 space-y-6 pb-50 pt-15">
+            <div className="flex-1 px-4 pb-50 pt-15">
               {/* Messages */}
               {messages.map((message, idx) => (
                 <div key={`${idx}`}>
