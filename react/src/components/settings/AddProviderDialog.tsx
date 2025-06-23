@@ -23,14 +23,36 @@ interface AddProviderDialogProps {
 // Predefined provider options with their API URLs
 const PROVIDER_OPTIONS = [
   {
+    value: 'anthropic',
+    label: 'Claude',
+    data: {
+      apiUrl: 'https://api.anthropic.com/v1/',
+      models: {
+        'claude-3-7-sonnet-latest': { type: 'text' },
+      },
+    },
+  },
+  {
     value: 'OpenRouter',
     label: 'OpenRouter',
-    data: { apiUrl: 'https://openrouter.ai/api/v1/' },
+    data: {
+      apiUrl: 'https://openrouter.ai/api/v1/',
+      models: {
+        'openai/gpt-4o': { type: 'text' },
+        'deepseek/deepseek-chat-v3-0324': { type: 'text' },
+        'deepseek/deepseek-chat-v3-0324:free': { type: 'text' },
+      },
+    },
   },
   {
     value: '深度求索',
     label: '深度求索 (DeepSeek)',
-    data: { apiUrl: 'https://api.deepseek.com/v1/' },
+    data: {
+      apiUrl: 'https://api.deepseek.com/v1/',
+      models: {
+        'deepseek-chat': { type: 'text' },
+      },
+    },
   },
   {
     value: '硅基流动',
@@ -63,9 +85,10 @@ export default function AddProviderDialog({
   >({})
 
   // Handle data change when provider is selected
-  const handleProviderDataChange = (data: unknown) => {
+  const handleProviderDataChange = (data: any) => {
     if (data && typeof data === 'object' && 'apiUrl' in data) {
       setApiUrl((data as { apiUrl: string }).apiUrl)
+      setModels(data.models ?? {})
     }
   }
 

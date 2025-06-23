@@ -14,9 +14,7 @@ export default function WritePlanToolCall({ args }: { args: string }) {
 
   try {
     parsedArgs = JSON.parse(args)
-  } catch (error) {
-    console.error('Error parsing args:', error)
-  }
+  } catch (error) {}
 
   return (
     <div className="bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 rounded-md shadow-sm overflow-hidden mb-4">

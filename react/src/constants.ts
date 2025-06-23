@@ -39,14 +39,6 @@ export const PROVIDER_NAME_MAPPING: {
   },
 }
 export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
-  anthropic: {
-    models: {
-      'claude-3-7-sonnet-latest': { type: 'text' },
-    },
-    url: 'https://api.anthropic.com/v1/',
-    api_key: '',
-    max_tokens: 8192,
-  },
   openai: {
     models: {
       'gpt-4o': { type: 'text' },
@@ -109,13 +101,6 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
     url: 'http://127.0.0.1:8188',
     api_key: '',
   },
-  // huggingface: {
-  //   models: {
-  //     "dreamlike-art/dreamlike-photoreal-2.0": { type: "image" },
-  //   },
-  //   url: "https://api.replicate.com/v1/",
-  //   api_key: "",
-  // },
   ollama: {
     models: {},
     url: 'http://localhost:11434',
@@ -144,8 +129,7 @@ export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
     finish: 'Finish',
   }
 
-export const LOGO_URL =
-  'https://raw.githubusercontent.com/11cafe/jaaz/refs/heads/main/assets/icons/jaaz.png'
+export const LOGO_URL = 'https://jaaz.app/favicon.ico'
 
 export const DEFAULT_SYSTEM_PROMPT = `You are a professional art design agent. You can write very professional image prompts to generate aesthetically pleasing images that best fulfilling and matching the user's request.
 Step 1. write a design strategy plan. Write in the same language as the user's inital first prompt.
