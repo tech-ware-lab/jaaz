@@ -64,16 +64,15 @@ class JaazGenerator(ImageGenerator):
                 data['input_image'] = input_image
 
             print(
-                f'🦄 Jaaz image generation request: {prompt[:50]}... with model: {model}')
+                f'🦄 Jaaz image generation request: {url} {prompt[:50]}... with model: {model}')
 
             async with HttpClient.create() as client:
                 response = await client.post(url, headers=headers, json=data)
                 res = response.json()
 
-            print('🦄 Jaaz image generation response', res)
-
             # 从响应中获取图像 URL
             output = res.get('output', '')
+            print('🦄 Jaaz image generation response output', output)
             if isinstance(output, list) and len(output) > 0:
                 output = output[0]  # 取第一张图片
 
@@ -143,19 +142,16 @@ class JaazGenerator(ImageGenerator):
             # 如果有输入图像（编辑模式）
             if input_path:
                 if input_path.startswith('data:'):
-                    # 如果是 base64 数据，提取纯 base64 部分
-                    if ';base64,' in input_path:
-                        image_b64 = input_path.split(';base64,')[1]
-                    else:
-                        image_b64 = input_path
-                    data['image'] = image_b64
+                    print('🦄 Jaaz OpenAI image generation input_path is base64')
+                    data['input_image'] = input_path
                 else:
+                    print('🦄 Jaaz OpenAI image generation input_path is file path')
                     # 如果是文件路径，将图像转换为 base64
                     with open(input_path, 'rb') as image_file:
                         image_data = image_file.read()
                         image_b64 = base64.b64encode(
                             image_data).decode('utf-8')
-                        data['image'] = image_b64
+                        data['input_image'] = image_b64
                 data['mask'] = None  # 如果需要遮罩，可以在这里添加
 
             print(
@@ -165,7 +161,6 @@ class JaazGenerator(ImageGenerator):
                 response = await client.post(url, headers=headers, json=data)
                 res = response.json()
 
-            print('🦄 Jaaz OpenAI image generation response', res)
 
             # 检查响应格式
             if 'data' in res and len(res['data']) > 0:

@@ -1,8 +1,9 @@
 import type { LLMConfig, ToolCallFunctionName } from '@/types/types'
 
 // API Configuration
-// export const BASE_API_URL = true ? 'https://jaaz.app' : 'http://localhost:3000'
-export const BASE_API_URL = 'https://jaaz.app'
+export const BASE_API_URL = import.meta.env.DEV
+  ? 'http://localhost:3000'
+  : 'https://jaaz.app'
 
 export const PROVIDER_NAME_MAPPING: {
   [key: string]: { name: string; icon: string }
@@ -80,12 +81,12 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
       'anthropic/claude-3.7-sonnet': { type: 'text' },
       // image models
       'google/imagen-4': { type: 'image' },
-      'google/imagen-4-ultra': { type: 'image' },
+      // 'google/imagen-4-ultra': { type: 'image' },
       'black-forest-labs/flux-1.1-pro': { type: 'image' },
       'black-forest-labs/flux-kontext-pro': { type: 'image' },
       'black-forest-labs/flux-kontext-max': { type: 'image' },
       'recraft-ai/recraft-v3': { type: 'image' },
-      'ideogram-ai/ideogram-v3-balanced': { type: 'image' },
+      // 'ideogram-ai/ideogram-v3-balanced': { type: 'image' },
       'openai/gpt-image-1': { type: 'image' },
     },
     url: `${BASE_API_URL}/api/v1/`,
