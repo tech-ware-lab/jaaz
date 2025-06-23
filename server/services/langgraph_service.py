@@ -252,8 +252,8 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 ],
                 'system_prompt': """
             You are a design planning writing agent. You should do:
-            - Step 1. write a execution plan for the user's request. You should breakdown the task into high level steps for the other agents to execute.
-            - Step 2. Transfer the task to the most suitable agent who specializes in the task.
+            - Step 1. write a execution plan for the user's request using the same language as the user's prompt. You should breakdown the task into high level steps for the other agents to execute.
+            - Step 2. If it is a image generation task, transfer the task to image_designer agent to generate the image based on the plan IMMEDIATELY, no need to ask for user's approval.
 
             IMPORTANT RULES:
             1. You MUST complete the write_plan tool call and wait for its result BEFORE attempting to transfer to another agent
@@ -388,7 +388,6 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                             'arguments': '{}'
                         })
                 elif hasattr(ai_message_chunk, 'tool_call_chunks'):
-                    print('👇tool_call_chunks event', ai_message_chunk)
                     tool_call_chunks = ai_message_chunk.tool_call_chunks
                     for tool_call_chunk in tool_call_chunks:
                         index: int = tool_call_chunk['index']

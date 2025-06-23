@@ -3,6 +3,7 @@ import ChatTextarea from '@/components/chat/ChatTextarea'
 import CanvasList from '@/components/home/CanvasList'
 import HomeHeader from '@/components/home/HomeHeader'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useConfigs } from '@/contexts/configs'
 import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -19,14 +20,15 @@ export const Route = createFileRoute('/')({
 function Home() {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { setInitCanvas } = useConfigs()
 
   const { mutate: createCanvasMutation, isPending } = useMutation({
     mutationFn: createCanvas,
     onSuccess: (data) => {
+      setInitCanvas(true)
       navigate({
         to: '/canvas/$id',
         params: { id: data.id },
-        search: { init: true },
       })
     },
     onError: (error) => {
@@ -41,7 +43,7 @@ function Home() {
       <ScrollArea className="h-full">
         <HomeHeader />
 
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-460px)] pt-[60px] select-none">
+        <div className="relative flex flex-col items-center justify-center h-fit min-h-[calc(100vh-460px)] pt-[60px] select-none">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

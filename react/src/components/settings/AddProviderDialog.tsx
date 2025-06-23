@@ -25,27 +25,27 @@ const PROVIDER_OPTIONS = [
   {
     value: 'OpenRouter',
     label: 'OpenRouter',
-    data: { apiUrl: 'https://openrouter.ai/api/v1/' }
+    data: { apiUrl: 'https://openrouter.ai/api/v1/' },
   },
   {
     value: '深度求索',
     label: '深度求索 (DeepSeek)',
-    data: { apiUrl: 'https://api.deepseek.com/v1/' }
+    data: { apiUrl: 'https://api.deepseek.com/v1/' },
   },
   {
     value: '硅基流动',
     label: '硅基流动 (SiliconFlow)',
-    data: { apiUrl: 'https://api.siliconflow.cn/v1/' }
+    data: { apiUrl: 'https://api.siliconflow.cn/v1/' },
   },
   {
     value: '智谱 AI',
     label: '智谱 AI (GLM)',
-    data: { apiUrl: 'https://open.bigmodel.cn/api/paas/v4/' }
+    data: { apiUrl: 'https://open.bigmodel.cn/api/paas/v4/' },
   },
   {
     value: '月之暗面',
     label: '月之暗面 (Kimi)',
-    data: { apiUrl: 'https://api.moonshot.cn/v1/' }
+    data: { apiUrl: 'https://api.moonshot.cn/v1/' },
   },
 ]
 
