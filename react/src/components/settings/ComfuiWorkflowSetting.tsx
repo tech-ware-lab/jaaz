@@ -4,7 +4,13 @@ import { useEffect, useState } from 'react'
 import { useRef } from 'react'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
-import { DialogContent, DialogHeader, DialogTitle, Dialog } from '../ui/dialog'
+import {
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  Dialog,
+  DialogDescription,
+} from '../ui/dialog'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 
@@ -18,7 +24,7 @@ export type ComfyWorkflowInput = {
 }
 
 export type ComfyWorkflow = {
-  id: string
+  id: number
   name: string
   description: string
   api_json: Record<string, any> | null
@@ -29,8 +35,10 @@ export type ComfyWorkflow = {
 export default function ComfuiWorkflowSetting() {
   const { t } = useTranslation()
   const [showAddWorkflowDialog, setShowAddWorkflowDialog] = useState(false)
+  const [deleteWorkflowId, setDeleteWorkflowId] = useState<number | null>(null)
+
   const [workflows, setWorkflows] = useState<ComfyWorkflow[]>([])
-  useEffect(() => {
+  const loadWorkflows = async () => {
     fetch('/api/settings/comfyui/list_workflows')
       .then((res) => res.json())
       .then((data) => {
@@ -48,9 +56,41 @@ export default function ComfuiWorkflowSetting() {
         })
         setWorkflows(workflows)
       })
+  }
+  useEffect(() => {
+    loadWorkflows()
   }, [])
+  const handleDeleteWorkflow = (id: number) => {
+    fetch(`/api/settings/comfyui/delete_workflow/${id}`, {
+      method: 'DELETE',
+    })
+      .then(() => {
+        loadWorkflows()
+      })
+      .catch((err) => {
+        toast.error(`Failed to delete workflow: ${err}`)
+        console.error(err)
+      })
+      .finally(() => {
+        setDeleteWorkflowId(null)
+      })
+  }
   return (
     <div className="space-y-4">
+      {deleteWorkflowId && (
+        <Dialog
+          open={!!deleteWorkflowId}
+          onOpenChange={() => setDeleteWorkflowId(null)}
+        >
+          <DialogContent>
+            <p> Are you sure you want to delete this workflow?</p>
+
+            <Button onClick={() => handleDeleteWorkflow(deleteWorkflowId)}>
+              Delete
+            </Button>
+          </DialogContent>
+        </Dialog>
+      )}
       <div className="flex items-center gap-2">
         <PaletteIcon className="w-5 h-5" />
         <p className="text-sm font-bold">{t('settings:comfyui.workflows')}</p>
@@ -81,7 +121,13 @@ export default function ComfuiWorkflowSetting() {
                     {workflow.description}
                   </p>
                 </div>
-                <Button variant="ghost" size="icon">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setDeleteWorkflowId(workflow.id)
+                  }}
+                >
                   <TrashIcon />
                 </Button>
               </div>
@@ -254,7 +300,7 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
                             )
                           )
                         }}
-                        className="border-none bg-transparent w-full"
+                        className="border-none bg-transparent w-full font-mono"
                       />
                       <Input
                         type="text"
@@ -265,6 +311,7 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
                         placeholder="Please enter your description of the input"
                         value={input.description}
                         className="border-none bg-transparent w-full"
+                        style={{ fontSize: '0.95rem' }}
                         onChange={(e) => {
                           setInputs(
                             inputs.map((i) =>

@@ -5,12 +5,9 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import aiosqlite
 from .config_service import USER_DATA_DIR
-from .migrations.manager import MigrationManager
+from .migrations.manager import MigrationManager, CURRENT_VERSION
 
 DB_PATH = os.path.join(USER_DATA_DIR, "localmanus.db")
-
-# Database version
-CURRENT_VERSION = 2
 
 class DatabaseService:
     def __init__(self):
