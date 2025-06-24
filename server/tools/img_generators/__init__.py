@@ -4,6 +4,7 @@ from .comfyui import ComfyUIGenerator
 from .wavespeed import WavespeedGenerator
 from .jaaz import JaazGenerator
 from .openai import OpenAIGenerator
+from .volces import VolcesImageGenerator
 
 __all__ = [
     'ImageGenerator',
@@ -12,4 +13,5 @@ __all__ = [
     'WavespeedGenerator',
     'JaazGenerator',
     'OpenAIGenerator',
+    'VolcesImageGenerator',
 ]
