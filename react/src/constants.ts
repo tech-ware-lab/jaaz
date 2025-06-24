@@ -33,6 +33,10 @@ export const PROVIDER_NAME_MAPPING: {
     name: 'WaveSpeedAi',
     icon: 'https://www.wavespeed.ai/favicon.ico',
   },
+  volces: {
+    name: 'Volces',
+    icon: 'https://portal.volccdn.com/obj/volcfe/misc/favicon.png',
+  },
   comfyui: {
     name: 'ComfyUI',
     icon: 'https://framerusercontent.com/images/3cNQMWKzIhIrQ5KErBm7dSmbd2w.png',
@@ -67,6 +71,17 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
       'stability-ai/sdxl': { type: 'image' },
     },
     url: 'https://api.replicate.com/v1/',
+    api_key: '',
+    max_tokens: 8192,
+  },
+  volces: {
+    models: {
+      'doubao-seed-1-6-250615': { type: 'text' },
+      'doubao-seed-1-6-thinking-250615': { type: 'text' },
+      'doubao-seed-1-6-flash-250615': { type: 'text' },
+      'doubao-seedream-3-0-t2i-250415': { type: 'image' },
+    },
+    url: 'https://ark.cn-beijing.volces.com/api/v3/',
     api_key: '',
     max_tokens: 8192,
   },
