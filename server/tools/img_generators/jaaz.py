@@ -28,6 +28,7 @@ class JaazGenerator(ImageGenerator):
                 prompt=prompt,
                 model=model,
                 input_path=input_image,
+                aspect_ratio=aspect_ratio,
                 **kwargs
             )
 
@@ -116,6 +117,7 @@ class JaazGenerator(ImageGenerator):
         prompt: str,
         model: str,
         input_path: Optional[str] = None,
+        aspect_ratio: str = "1:1",
         **kwargs
     ) -> tuple[str, int, int, str]:
         """
@@ -143,11 +145,13 @@ class JaazGenerator(ImageGenerator):
             }
 
             # 构建请求数据
+            prompt = f"{prompt} Aspect ratio: {aspect_ratio}"
+            print('🦄 Jaaz OpenAI image generation prompt', prompt)
             data = {
                 "model": model,
                 "prompt": prompt,
                 "n": kwargs.get("num_images", 1),
-                "size": kwargs.get("size", "1024x1024"),
+                "size": 'auto',
             }
 
             # 如果有输入图像（编辑模式）
