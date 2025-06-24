@@ -25,7 +25,8 @@ class VolcesImageGenerator(ImageGenerator):
             client = OpenAI(api_key=api_key, base_url=url)
 
             # Process ratio
-            w_ratio, h_ratio = aspect_ratio.split(':')
+            w_ratio, h_ratio = map(int, aspect_ratio.split(':'))
+
             factor = (1024 ** 2 / (w_ratio * h_ratio)) ** 0.5
 
             width = int((factor * w_ratio) / 64) * 64
