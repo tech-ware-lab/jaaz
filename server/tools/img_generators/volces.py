@@ -57,7 +57,3 @@ class VolcesImageGenerator(ImageGenerator):
             print('Error generating image with Volces:', e)
             traceback.print_exc()
             raise e
-
-class VolcesVideoGenerator(VolcesImageGenerator):
-    """Volceengine video generator implementation"""
-    pass
