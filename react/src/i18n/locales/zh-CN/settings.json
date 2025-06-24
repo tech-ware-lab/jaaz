@@ -34,7 +34,8 @@
     "imageGeneration": "🎨 图像生成",
     "delete": "删除",
     "save": "保存",
-    "cancel": "取消"
+    "cancel": "取消",
+    "noModelsSelected": "请添加至少一个模型"
   },
   "proxy": {
     "title": "代理设置",
