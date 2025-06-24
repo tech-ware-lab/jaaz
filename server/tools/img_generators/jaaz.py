@@ -68,6 +68,17 @@ class JaazGenerator(ImageGenerator):
 
             async with HttpClient.create() as client:
                 response = await client.post(url, headers=headers, json=data)
+                print('🦄 Jaaz image generation response', response)
+                # Check HTTP status first
+                if response.status_code != 200:
+                    error_msg = f"HTTP {response.status_code}: {response.text}"
+                    print(f'🦄 Jaaz API error: {error_msg}')
+                    raise Exception(f'Image generation failed: {error_msg}')
+                
+                # Check if response has content before parsing JSON
+                if not response.content:
+                    raise Exception('Image generation failed: Empty response from server')
+                
                 res = response.json()
 
             # 从响应中获取图像 URL
