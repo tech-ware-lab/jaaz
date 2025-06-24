@@ -79,5 +79,9 @@
     "notLoggedIn": "未登录",
     "balance": "余额",
     "recharge": "充值"
+  },
+  "socket": {
+    "connectionError": "连接错误 ({{current}}/{{max}}): {{error}}",
+    "maxRetriesReached": "连接失败，请重启应用重试"
   }
 }
