@@ -153,6 +153,14 @@ export class SocketIOManager {
   getSocket(): Socket | null {
     return this.socket
   }
+
+  getReconnectAttempts(): number {
+    return this.reconnectAttempts
+  }
+
+  isMaxReconnectAttemptsReached(): boolean {
+    return this.reconnectAttempts >= this.maxReconnectAttempts
+  }
 }
 
 export const socketManager = new SocketIOManager({
