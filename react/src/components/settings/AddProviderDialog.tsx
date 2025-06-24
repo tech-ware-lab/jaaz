@@ -13,6 +13,7 @@ import { LLMConfig } from '@/types/types'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import AddModelsList from './AddModelsList'
+import { toast } from 'sonner'
 
 interface AddProviderDialogProps {
   open: boolean
@@ -55,6 +56,20 @@ const PROVIDER_OPTIONS = [
     },
   },
   {
+    value: 'volces',
+    label: '火山引擎 (Volces)',
+    data: {
+      apiUrl: 'https://ark.cn-beijing.volces.com/api/v3/',
+      models: {
+        'doubao-seed-1-6-250615': { type: 'text' },
+        'doubao-seed-1-6-thinking-250615': { type: 'text' },
+        'doubao-seed-1-6-flash-250615': { type: 'text' },
+        'doubao-seedream-3-0-t2i-250415': { type: 'image' },
+      },
+    },
+  },
+
+  {
     value: '硅基流动',
     label: '硅基流动 (SiliconFlow)',
     data: { apiUrl: 'https://api.siliconflow.cn/v1/' },
@@ -94,6 +109,10 @@ export default function AddProviderDialog({
 
   const handleSave = () => {
     if (!providerName.trim() || !apiUrl.trim()) {
+      return
+    }
+    if (Object.keys(models).length === 0) {
+      toast.error(t('settings:provider.noModelsSelected'))
       return
     }
 
