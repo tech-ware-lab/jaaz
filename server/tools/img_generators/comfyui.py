@@ -75,7 +75,7 @@ class ComfyUIGenerator(ImageGenerator):
             # sd 1.5, basic is 512, but acceopt 768 for better quality
             pixel_count = 768 ** 2
 
-        w_ratio, h_ratio = aspect_ratio.split(':')
+        w_ratio, h_ratio = map(int, aspect_ratio.split(':'))
         factor = (pixel_count / (w_ratio * h_ratio)) ** 0.5
 
         width = int((factor * w_ratio) / 64) * 64
