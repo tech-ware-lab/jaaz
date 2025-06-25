@@ -29,6 +29,7 @@ from services.db_service import db_service
 from services.config_service import config_service
 from services.websocket_service import send_to_websocket
 from tools.image_generators import generate_image
+from tools.comfy_dynamic import DYNAMIC_COMFY_TOOLS, DYNAMIC_COMFY_TOOLS_DESCRIPTIONS
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langgraph_swarm import create_swarm
@@ -46,6 +47,7 @@ def create_tool(tool_json: dict):
         'generate_image': generate_image,
         'write_plan': write_plan_tool,
     }
+    TOOL_MAP.update(DYNAMIC_COMFY_TOOLS)
     return TOOL_MAP.get(tool_json.get('tool', ''), None)
 
 async def langgraph_agent(messages, canvas_id, session_id, text_model, image_model):
@@ -75,9 +77,11 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
                 http_client=http_client,
                 http_async_client=http_async_client
             )
+        agent_tools = [generate_image, DYNAMIC_COMFY_TOOLS.values()]
+        print('agent_tools', agent_tools)
         agent = create_react_agent(
             model=model,
-            tools=[generate_image],
+            tools=agent_tools,
             prompt='You are a profession design agent, specializing in visual design.'
         )
         ctx = {
@@ -291,8 +295,8 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                         'name': 'generate_image',
                         'description': "Generate an image",
                         'tool': 'generate_image',
-                    }
-                ],
+                    },
+                ].append(DYNAMIC_COMFY_TOOLS_DESCRIPTIONS),
                 'system_prompt': system_prompt,
                 'knowledge': [],
                 'handoffs': []
