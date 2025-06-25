@@ -12,7 +12,7 @@ The world's first open-source, locally deployed creative AI design tool, support
 <img width="900" alt="Screenshot 2025-06-02 at 3 51 56 AM" src="https://github.com/user-attachments/assets/186982a9-5e4e-4ac1-a42c-c840092fd616" />
 
 <img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/b8508efd-def8-40ed-8ab5-62ed3c26de67" />
-<img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/a1c949c4-d204-4976-9103-693180e5299d" />
+
 
 ## ✨ Key Features
 
