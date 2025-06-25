@@ -11,11 +11,25 @@ import { ScrollArea } from '../ui/scroll-area'
 import { Search, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
 import {
   getKnowledgeList,
-  getEnabledKnowledgeIds,
-  saveEnabledKnowledgeIds,
+  saveEnabledKnowledgeDataToSettings,
   type KnowledgeBase,
-  type KnowledgeListParams
+  type KnowledgeListParams,
+  getKnowledgeById
 } from '@/api/knowledge'
+
+// 获取本地设置的API
+async function getSettings(): Promise<{ enabled_knowledge_data?: KnowledgeBase[] }> {
+  try {
+    const response = await fetch('/api/settings')
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    return await response.json()
+  } catch (error) {
+    console.error('Failed to get settings:', error)
+    return {}
+  }
+}
 
 export default function Knowledge() {
   const { t } = useTranslation()
@@ -32,17 +46,21 @@ export default function Knowledge() {
 
   const pageSize = 12
 
-  // Load enabled knowledge from localStorage
+  // Load enabled knowledge from settings
   useEffect(() => {
-    const enabledIds = getEnabledKnowledgeIds()
-    setEnabledKnowledge(new Set(enabledIds))
-  }, [])
+    const loadEnabledKnowledge = async () => {
+      try {
+        const settings = await getSettings()
+        const enabledData = settings.enabled_knowledge_data || []
+        const enabledIds = enabledData.map(kb => kb.id)
+        setEnabledKnowledge(new Set(enabledIds))
+      } catch (error) {
+        console.error('Failed to load enabled knowledge from settings:', error)
+      }
+    }
 
-  // Save enabled knowledge to localStorage
-  const saveEnabledKnowledge = (enabled: Set<string>) => {
-    saveEnabledKnowledgeIds([...enabled])
-    setEnabledKnowledge(enabled)
-  }
+    loadEnabledKnowledge()
+  }, [])
 
   // Fetch knowledge list
   const fetchKnowledgeList = async (params: KnowledgeListParams = {}) => {
@@ -85,14 +103,58 @@ export default function Knowledge() {
   }
 
   // Toggle knowledge enable/disable
-  const toggleKnowledge = (knowledgeId: string, enabled: boolean) => {
+  const toggleKnowledge = async (knowledgeId: string, enabled: boolean) => {
     const newEnabled = new Set(enabledKnowledge)
     if (enabled) {
       newEnabled.add(knowledgeId)
     } else {
       newEnabled.delete(knowledgeId)
     }
-    saveEnabledKnowledge(newEnabled)
+
+    // Update local state immediately for UI responsiveness
+    setEnabledKnowledge(newEnabled)
+
+    // Get full knowledge data for enabled items and save to settings
+    try {
+      const enabledKnowledgeData: KnowledgeBase[] = []
+
+      for (const id of newEnabled) {
+        // Find in current list first
+        let kb = knowledgeList.find(k => k.id === id)
+
+        // If not found or missing content, fetch full data
+        if (!kb || !kb.content) {
+          try {
+            console.log(`Fetching full data for knowledge: ${id}`)
+            kb = await getKnowledgeById(id)
+          } catch (error) {
+            console.error(`Failed to fetch knowledge ${id}:`, error)
+            // Use partial data if available
+            kb = knowledgeList.find(k => k.id === id)
+          }
+        }
+
+        if (kb) {
+          enabledKnowledgeData.push(kb)
+        }
+      }
+
+      // Save complete data to settings
+      await saveEnabledKnowledgeDataToSettings(enabledKnowledgeData)
+      console.log(`Saved ${enabledKnowledgeData.length} enabled knowledge items to settings`)
+      toast.success('知识库设置已保存')
+    } catch (error) {
+      console.error('Failed to save knowledge data to settings:', error)
+      toast.error('保存知识库设置失败')
+      // Revert UI state on error
+      const revertedEnabled = new Set(enabledKnowledge)
+      if (enabled) {
+        revertedEnabled.delete(knowledgeId)
+      } else {
+        revertedEnabled.add(knowledgeId)
+      }
+      setEnabledKnowledge(revertedEnabled)
+    }
   }
 
   // Show knowledge detail

@@ -213,37 +213,35 @@ export async function deleteKnowledge(id: string): Promise<ApiResponse> {
   }
 }
 
-// Local storage key for enabled knowledge bases
-const ENABLED_KNOWLEDGE_KEY = 'jaaz_enabled_knowledge'
-
 /**
- * 获取客户端已启用的知识库ID列表
- * @returns string[] 已启用的知识库ID数组
+ * 将启用的知识库完整数据存储到本地设置
+ * @param knowledgeData 完整的知识库数据数组
+ * @returns Promise<ApiResponse>
  */
-export function getEnabledKnowledgeIds(): string[] {
+export async function saveEnabledKnowledgeDataToSettings(
+  knowledgeData: KnowledgeBase[]
+): Promise<ApiResponse> {
   try {
-    const saved = localStorage.getItem(ENABLED_KNOWLEDGE_KEY)
-    return saved ? JSON.parse(saved) : []
+    // 调用本地服务器API，不需要BASE_API_URL和认证
+    const response = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        enabled_knowledge_data: knowledgeData,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return await response.json()
   } catch (error) {
-    console.error('Failed to parse enabled knowledge:', error)
-    return []
+    console.error('Failed to save knowledge data to settings:', error)
+    throw new Error(
+      error instanceof Error ? error.message : 'Failed to save knowledge data'
+    )
   }
-}
-
-/**
- * 保存已启用的知识库ID列表
- * @param knowledgeIds 知识库ID数组
- */
-export function saveEnabledKnowledgeIds(knowledgeIds: string[]): void {
-  localStorage.setItem(ENABLED_KNOWLEDGE_KEY, JSON.stringify(knowledgeIds))
-}
-
-/**
- * 检查指定知识库是否已启用
- * @param knowledgeId 知识库ID
- * @returns boolean
- */
-export function isKnowledgeEnabled(knowledgeId: string): boolean {
-  const enabledIds = getEnabledKnowledgeIds()
-  return enabledIds.includes(knowledgeId)
 }
