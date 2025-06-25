@@ -105,7 +105,6 @@ export default function ComfyuiSetting({
       return
     }
 
-    // Validate URL format first
     if (!isValidUrl(comfyUrl)) {
       console.log('Invalid ComfyUI URL format:', comfyUrl)
       setComfyUIStatus('not-running')
@@ -113,10 +112,17 @@ export default function ComfyuiSetting({
     }
 
     try {
-      console.log('Checking ComfyUI status at:', comfyUrl)
-      const response = await fetch(`${comfyUrl}/system_stats`, {
-        method: 'GET',
-        signal: AbortSignal.timeout(5000), // 5 second timeout
+      console.log('Checking ComfyUI status via proxy...')
+      // 通过服务端代理接口转发请求
+      const response = await fetch(`/api/settings/comfyui/proxy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: comfyUrl,  // 传递用户配置的ComfyUI地址
+          path: '/system_stats'  // 目标路径
+        }),
       })
 
       if (response.ok) {
