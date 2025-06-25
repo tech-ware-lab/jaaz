@@ -1,5 +1,6 @@
 import { socketManager } from '@/lib/socket'
 import React, { createContext, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface SocketContextType {
   connected: boolean
@@ -18,6 +19,7 @@ interface SocketProviderProps {
 }
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
+  const { t } = useTranslation()
   const [connected, setConnected] = useState(false)
   const [socketId, setSocketId] = useState<string>()
   const [connecting, setConnecting] = useState(true)
@@ -111,7 +113,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
       {error && (
         <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-3 py-2 rounded-md shadow-lg">
-          Connection error: {error}
+          {socketManager.isMaxReconnectAttemptsReached()
+            ? t('socket.maxRetriesReached')
+            : t('socket.connectionError', {
+              current: socketManager.getReconnectAttempts(),
+              max: 5,
+              error
+            })}
         </div>
       )}
     </SocketContext.Provider>

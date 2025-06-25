@@ -23,7 +23,8 @@ from .img_generators import (
     ComfyUIGenerator,
     WavespeedGenerator,
     JaazGenerator,
-    OpenAIGenerator
+    OpenAIGenerator,
+    VolcesImageGenerator,
 )
 
 # 生成唯一文件 ID
@@ -47,6 +48,7 @@ PROVIDERS = {
     'wavespeed': WavespeedGenerator(),
     'jaaz': JaazGenerator(),
     'openai': OpenAIGenerator(),
+    'volces': VolcesImageGenerator(),
 }
 
 
@@ -60,6 +62,19 @@ async def generate_image(
     tool_call_id: Annotated[str, InjectedToolCallId],
     input_image: Optional[str] = None,
 ) -> str:
+    """
+    Generate an image using the specified provider.
+
+    Args:
+        prompt (str): The prompt for image generation.
+        aspect_ratio (str): Aspect ratio of the image.
+        config (RunnableConfig): The configuration for the runnable.
+        tool_call_id (Annotated[str, InjectedToolCallId]): The ID of the tool call.
+        input_image (Optional[str], optional): The input image for reference. Defaults to None.
+
+    Returns:
+        str: The ID of the generated image.
+    """
     print('🛠️ tool_call_id', tool_call_id)
     ctx = config.get('configurable', {})
     canvas_id = ctx.get('canvas_id', '')
@@ -142,7 +157,7 @@ async def generate_image(
 
         image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
 
-        print('🛠️canvas_data', canvas_data)
+        # print('🛠️canvas_data', canvas_data)
 
         await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data['data']))
 
