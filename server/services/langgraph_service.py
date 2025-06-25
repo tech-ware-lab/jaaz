@@ -220,6 +220,9 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
         provider = text_model.get('provider')
         url = text_model.get('url')
         api_key = config_service.app_config.get(provider, {}).get("api_key", "")
+        image_model_name = image_model.get('model', '')
+        is_jaaz_gpt_model = image_model_name.startswith('openai') and provider == 'jaaz'
+
         # TODO: Verify if max token is working
         max_tokens = text_model.get('max_tokens', 8148)
         if provider == 'ollama':
@@ -241,7 +244,6 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 http_client=http_client,
                 http_async_client=http_async_client
             )
-        is_jaaz_gpt_model = model.startswith('openai') and provider == 'jaaz'
         agent_schemas = [
             {
                 'name': 'planner',
