@@ -54,9 +54,11 @@ To use deepseek as a provider, setup as below
 
 <img width="900" alt="Screenshot 2025-06-10 at 12 05 35" src="https://github.com/user-attachments/assets/61cb1b87-065f-4376-b853-b0032d4d3be8" />
 
-##Stay Updated
+## Stay Updated
+
 Star Jaaz on GitHub to receive instant noifications about new version releases.
-<gif width="426" alt="Screenshot 2025-06-10 at 12 05 35" src="https://github.com/user-attachments/assets/e8779c10-dffd-46c3-bce6-88051cdc6c5e" />
+
+<img width="426" alt="Screenshot 2025-06-10 at 12 05 35" src="https://github.com/user-attachments/assets/e8779c10-dffd-46c3-bce6-88051cdc6c5e" />
 
 ## Manual Install (For Linux or local builds)
 
