@@ -22,6 +22,7 @@ Settings Router - 设置路由模块
 import json
 import os
 import shutil
+import httpx
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 from services.db_service import db_service
 from services.settings_service import settings_service
@@ -256,3 +257,26 @@ async def list_workflows():
 @router.delete("/comfyui/delete_workflow/{id}")
 async def delete_workflow(id: int):
     return await db_service.delete_comfy_workflow(id)
+
+@router.post("/comfyui/proxy")
+async def comfyui_proxy(request: Request):
+    try:
+        # 从请求中获取ComfyUI的目标URL和路径
+        data = await request.json()
+        target_url = data.get("url")  # 前端传递的ComfyUI地址（如http://127.0.0.1:8188）
+        path = data.get("path", "")   # 请求的路径（如/system_stats）
+        
+        if not target_url or not path:
+            raise HTTPException(status_code=400, detail="Missing 'url' or 'path' in request body")
+
+        # 构造完整的ComfyUI请求URL
+        full_url = f"{target_url}{path}"
+        
+        # 使用httpx转发请求（支持GET/POST等方法，这里示例用GET）
+        async with httpx.AsyncClient() as client:
+            response = await client.get(full_url)
+            # 将ComfyUI的响应原样返回给前端
+            return response.json()
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Proxy request failed: {str(e)}")
