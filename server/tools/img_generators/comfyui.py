@@ -1,5 +1,6 @@
 from typing import Optional, Dict, Any
 import os
+import random
 import json
 import sys
 import copy
@@ -10,7 +11,9 @@ from routers.comfyui_execution import execute
 
 
 def get_asset_path(filename):
-    # To get the correct path for pyinstaller bundled application
+    """
+    To get the correct path for pyinstaller bundled application
+    """
     if getattr(sys, 'frozen', False):
         # If the application is run as a bundle, the path is relative to the executable
         base_path = sys._MEIPASS
@@ -33,12 +36,13 @@ class ComfyUIGenerator(ImageGenerator):
 
         self.flux_comfy_workflow = None
         self.basic_comfy_t2i_workflow = None
+        self.comfy_websocket_client = None
 
         try:
             self.flux_comfy_workflow = json.load(open(asset_dir, 'r'))
             self.basic_comfy_t2i_workflow = json.load(
                 open(basic_comfy_t2i_workflow, 'r'))
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
 
     async def generate(
@@ -49,8 +53,11 @@ class ComfyUIGenerator(ImageGenerator):
         input_image: Optional[str] = None,
         **kwargs
     ) -> tuple[str, int, int, str]:
+        """
+        Generate an image by calling offical ComfyUI Client
+        """
         if not self.flux_comfy_workflow:
-            raise Exception('Flux workflow json not found')
+            raise FileNotFoundError('Flux workflow json not found')
 
         # Get context from kwargs
         ctx = kwargs.get('ctx', {})
@@ -60,14 +67,34 @@ class ComfyUIGenerator(ImageGenerator):
         host = api_url.split(':')[0]
         port = api_url.split(':')[1]
 
+        # Process ratio
+        if 'flux' in model:
+            # Flux generate images around 1M pixel (1024x1024)
+            pixel_count = 1024 ** 2
+        else:
+            # sd 1.5, basic is 512, but acceopt 768 for better quality
+            pixel_count = 768 ** 2
+
+        w_ratio, h_ratio = map(int, aspect_ratio.split(':'))
+        factor = (pixel_count / (w_ratio * h_ratio)) ** 0.5
+
+        width = int((factor * w_ratio) / 64) * 64
+        height = int((factor * h_ratio) / 64) * 64
+
         if 'flux' in model:
             workflow = copy.deepcopy(self.flux_comfy_workflow)
             workflow['6']['inputs']['text'] = prompt
             workflow['30']['inputs']['ckpt_name'] = model
+            workflow['27']['inputs']['width'] = width
+            workflow['27']['inputs']['height'] = height
+            workflow['31']['inputs']['seed'] = random.randint(1, 2 ** 32)
         else:
             workflow = copy.deepcopy(self.basic_comfy_t2i_workflow)
             workflow['6']['inputs']['text'] = prompt
             workflow['4']['inputs']['ckpt_name'] = model
+            workflow['5']['inputs']['width'] = width
+            workflow['5']['inputs']['height'] = height
+            workflow['3']['inputs']['seed'] = random.randint(1, 2 ** 32)
 
         execution = await execute(workflow, host, port, ctx=ctx)
         print('🦄image execution outputs', execution.outputs)

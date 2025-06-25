@@ -34,7 +34,8 @@
     "imageGeneration": "🎨 Image Generation",
     "delete": "Delete",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "noModelsSelected": "Please add at least one model"
   },
   "proxy": {
     "title": "Proxy Settings",

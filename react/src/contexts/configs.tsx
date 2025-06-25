@@ -1,5 +1,5 @@
 import { listModels } from '@/api/model'
-import { DEFAULT_MODEL_LIST, DEFAULT_PROVIDERS_CONFIG } from '@/constants'
+import { DEFAULT_MODEL_LIST } from '@/constants'
 import useConfigsStore from '@/stores/configs'
 import { useQuery } from '@tanstack/react-query'
 import { createContext, useContext, useEffect } from 'react'

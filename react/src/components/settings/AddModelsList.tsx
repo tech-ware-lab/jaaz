@@ -2,13 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Plus, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog'
 
@@ -31,21 +24,16 @@ export default function AddModelsList({
   label = 'Models',
 }: ModelsListProps) {
   const [modelItems, setModelItems] = useState<ModelItem[]>([])
-  const [isInitialized, setIsInitialized] = useState(false)
   const [newModelName, setNewModelName] = useState('')
   const [openAddModelDialog, setOpenAddModelDialog] = useState(false)
 
-  // Initialize state only once when models prop changes from outside
   useEffect(() => {
-    if (!isInitialized) {
-      const items = Object.entries(models).map(([name, config]) => ({
-        name,
-        type: (config.type || 'text') as 'text' | 'image' | 'video',
-      }))
-      setModelItems(items.length > 0 ? items : [])
-      setIsInitialized(true)
-    }
-  }, [models, isInitialized])
+    const modelItems = Object.entries(models).map(([name, config]) => ({
+      name,
+      type: (config.type || 'text') as 'text' | 'image' | 'video',
+    }))
+    setModelItems(modelItems.length > 0 ? modelItems : [])
+  }, [models])
 
   const notifyChange = useCallback(
     (items: ModelItem[]) => {
@@ -85,22 +73,6 @@ export default function AddModelsList({
       notifyChange(newItems)
     }
   }
-
-  const handleModelChange = (
-    index: number,
-    field: keyof ModelItem,
-    value: string
-  ) => {
-    const newItems = [...modelItems]
-    if (field === 'type') {
-      newItems[index][field] = value as 'text' | 'image' | 'video'
-    } else {
-      newItems[index][field] = value
-    }
-    setModelItems(newItems)
-    notifyChange(newItems)
-  }
-
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -138,22 +110,8 @@ export default function AddModelsList({
         {modelItems.map((model, index) => (
           <div key={index} className="flex items-center justify-between">
             <p className="w-[50%]">{model.name}</p>
-            <div className="flex items-center gap-2">
-              <Select
-                value={model.type}
-                onValueChange={(value) =>
-                  handleModelChange(index, 'type', value)
-                }
-              >
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="text">text</SelectItem>
-                  <SelectItem value="image">image</SelectItem>
-                  <SelectItem value="video">video</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-6">
+              <p>{model.type}</p>
               {modelItems.length > 1 && (
                 <Button
                   type="button"

@@ -1,12 +1,12 @@
-import importlib
-import inspect
-import pkgutil
 from typing import List, Type
 import sqlite3
 from services.migrations.v1_initial_schema import V1InitialSchema
 from services.migrations.v2_add_canvases import V2AddCanvases
 from services.migrations.v3_add_comfy_workflow import V3AddComfyWorkflow
 from . import Migration
+
+# Database version
+CURRENT_VERSION = 3
 
 ALL_MIGRATIONS = [
     {
@@ -17,11 +17,10 @@ ALL_MIGRATIONS = [
         'version': 2,
         'migration': V2AddCanvases,
     },
-    # Will add this migration in the future
-    # {
-    #     'version': 3,
-    #     'migration': V3AddComfyWorkflow,
-    # },
+    {
+        'version': 3,
+        'migration': V3AddComfyWorkflow,
+    },
 ]
 class MigrationManager:
     def get_migrations_to_apply(self, current_version: int, target_version: int) -> List[Type[Migration]]:

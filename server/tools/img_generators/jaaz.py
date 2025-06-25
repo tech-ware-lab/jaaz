@@ -28,6 +28,7 @@ class JaazGenerator(ImageGenerator):
                 prompt=prompt,
                 model=model,
                 input_path=input_image,
+                aspect_ratio=aspect_ratio,
                 **kwargs
             )
 
@@ -68,6 +69,17 @@ class JaazGenerator(ImageGenerator):
 
             async with HttpClient.create() as client:
                 response = await client.post(url, headers=headers, json=data)
+                print('🦄 Jaaz image generation response', response)
+                # Check HTTP status first
+                if response.status_code != 200:
+                    error_msg = f"HTTP {response.status_code}: {response.text}"
+                    print(f'🦄 Jaaz API error: {error_msg}')
+                    raise Exception(f'Image generation failed: {error_msg}')
+                
+                # Check if response has content before parsing JSON
+                if not response.content:
+                    raise Exception('Image generation failed: Empty response from server')
+                
                 res = response.json()
 
             # 从响应中获取图像 URL
@@ -105,6 +117,7 @@ class JaazGenerator(ImageGenerator):
         prompt: str,
         model: str,
         input_path: Optional[str] = None,
+        aspect_ratio: str = "1:1",
         **kwargs
     ) -> tuple[str, int, int, str]:
         """
@@ -132,11 +145,13 @@ class JaazGenerator(ImageGenerator):
             }
 
             # 构建请求数据
+            prompt = f"{prompt} Aspect ratio: {aspect_ratio}"
+            print('🦄 Jaaz OpenAI image generation prompt', prompt)
             data = {
                 "model": model,
                 "prompt": prompt,
                 "n": kwargs.get("num_images", 1),
-                "size": kwargs.get("size", "1024x1024"),
+                "size": 'auto',
             }
 
             # 如果有输入图像（编辑模式）
@@ -159,6 +174,11 @@ class JaazGenerator(ImageGenerator):
 
             async with HttpClient.create() as client:
                 response = await client.post(url, headers=headers, json=data)
+                if response.status_code != 200:
+                    error_msg = f"HTTP {response.status_code}: {response.text}"
+                    print(f'🦄 Jaaz API error: {error_msg}')
+                    raise Exception(f'Image generation failed: {error_msg}')
+                
                 res = response.json()
 
 

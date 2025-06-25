@@ -82,7 +82,7 @@ function App() {
           </ConfigsProvider>
         </AuthProvider>
       </QueryClientProvider>
-      <Toaster position="bottom-center" />
+      <Toaster position="bottom-center" richColors />
     </ThemeProvider>
   )
 }
