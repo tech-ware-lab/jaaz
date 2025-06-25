@@ -26,7 +26,7 @@ class WavespeedGenerator(ImageGenerator):
             headers = {
                 'Authorization': f'Bearer {api_key}',
                 'Content-Type': 'application/json',
-                'channel': os.environ.get('WAVESPEED_CHANNEL', ''),
+                'channel': os.environ.get('WAVESPEED_CHANNEL', 'jaaz_main'),
             }
 
             if input_image:
