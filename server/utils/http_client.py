@@ -56,7 +56,7 @@ class HttpClient:
         # 默认超时配置，适合大多数 AI API 调用
         default_timeout = httpx.Timeout(
             connect=20.0,   # 连接超时 20 秒
-            read=120.0,     # 读取超时 2 分钟
+            read=300.0,     # 读取超时 5 分钟
             write=30.0,     # 写入超时 30 秒
             pool=60.0       # 连接池超时 60 秒
         )

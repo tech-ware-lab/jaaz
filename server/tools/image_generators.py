@@ -10,12 +10,11 @@ from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_core.runnables import RunnableConfig
 import aiofiles
-from nanoid import generate
-
 from common import DEFAULT_PORT
 from services.config_service import FILES_DIR
 from services.db_service import db_service
 from services.websocket_service import send_to_websocket, broadcast_session_update
+from tools.image_generation_utils import generate_new_image_element, generate_file_id
 
 # Import all generators
 from .img_generators import (
@@ -26,11 +25,6 @@ from .img_generators import (
     OpenAIGenerator,
     VolcesImageGenerator,
 )
-
-# 生成唯一文件 ID
-def generate_file_id():
-    return 'im_' + generate(size=8)
-
 
 class GenerateImageInputSchema(BaseModel):
     prompt: str = Field(
@@ -62,19 +56,6 @@ async def generate_image(
     tool_call_id: Annotated[str, InjectedToolCallId],
     input_image: Optional[str] = None,
 ) -> str:
-    """
-    Generate an image using the specified provider.
-
-    Args:
-        prompt (str): The prompt for image generation.
-        aspect_ratio (str): Aspect ratio of the image.
-        config (RunnableConfig): The configuration for the runnable.
-        tool_call_id (Annotated[str, InjectedToolCallId]): The ID of the tool call.
-        input_image (Optional[str], optional): The input image for reference. Defaults to None.
-
-    Returns:
-        str: The ID of the generated image.
-    """
     print('🛠️ tool_call_id', tool_call_id)
     ctx = config.get('configurable', {})
     canvas_id = ctx.get('canvas_id', '')
@@ -180,58 +161,3 @@ async def generate_image(
         return f"image generation failed: {str(e)}"
 
 print('🛠️', generate_image.args_schema.model_json_schema())
-
-async def generate_new_image_element(canvas_id: str, fileid: str, image_data: dict):
-    canvas = await db_service.get_canvas_data(canvas_id)
-    canvas_data = canvas.get('data', {})
-    elements = canvas_data.get('elements', [])
-
-    # find the last image element
-    last_x = 0
-    last_y = 0
-    last_width = 0
-    last_height = 0
-    image_elements = [
-        element for element in elements if element.get('type') == 'image']
-    last_image_element = image_elements[-1] if len(
-        image_elements) > 0 else None
-    if last_image_element is not None:
-        last_x = last_image_element.get('x', 0)
-        last_y = last_image_element.get('y', 0)
-        last_width = last_image_element.get('width', 0)
-        last_height = last_image_element.get('height', 0)
-
-    new_x = last_x + last_width + 20
-
-    return {
-        'type': 'image',
-        'id': fileid,
-        'x': new_x,
-        'y': last_y,
-        'width': image_data.get('width', 0),
-        'height': image_data.get('height', 0),
-        'angle': 0,
-        'fileId': fileid,
-        'strokeColor': '#000000',
-        'fillStyle': 'solid',
-        'strokeStyle': 'solid',
-        'boundElements': None,
-        'roundness': None,
-        'frameId': None,
-        'backgroundColor': 'transparent',
-        'strokeWidth': 1,
-        'roughness': 0,
-        'opacity': 100,
-        'groupIds': [],
-        'seed': int(random.random() * 1000000),
-        'version': 1,
-        'versionNonce': int(random.random() * 1000000),
-        'isDeleted': False,
-        'index': None,
-        'updated': 0,
-        'link': None,
-        'locked': False,
-        'status': 'saved',
-        'scale': [1, 1],
-        'crop': None,
-    }
