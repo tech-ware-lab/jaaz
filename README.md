@@ -44,19 +44,23 @@ Intelligently invoke custom comfyui workflows
 
 ## Usage
 
-1. Add LLM API key like OpenAI or Claude, or install [Ollama](https://ollama.com/) to use local models
-2. Add image generations API key like [Replicate](https://replicate.com/)
+1. Click on the "Log in" button at the top right corner of the program's home page, and then you can use the apis of each model. By paying a low price, you can smoothly use the API models
+
+<img width="1485" alt="Screenshot 2025-06-02 at 3 08 51 PM" src="https://github.com/user-attachments/assets/0055557d-c247-4801-ac3f-01ed4fa775ae" />
+
+2. You can also customize the binding API,Add LLM API key like OpenAI or Claude, or install [Ollama](https://ollama.com/) to use local models
+3. Add image generations API key like [Replicate](https://replicate.com/)
 
 <img width="1485" alt="Screenshot 2025-06-02 at 3 08 51 PM" src="https://github.com/user-attachments/assets/80bf76b1-229b-4491-893e-3f5102062a37" />
 
-3. Start chatting with agent to generate stories or storyboards!
+4. Start chatting with agent to generate stories or storyboards!
 
 <img width="1239" alt="Screenshot 2025-06-18 at 16 09 05" src="https://github.com/user-attachments/assets/eacee793-3bc4-4fa2-9e23-94efa1e1f087" />
 
 
 ## Cases
 
-- Prompt: 帮我把这个角色放到 6 张不同的场景里，都是世界各地的地标建筑前，灯光和谐，他在世界各地拍照，写实，温暖的光线，高画质，画面比例 9:16
+- Prompt: Help me place this character in six different scenes, all in front of landmark buildings from around the world. The lighting is harmonious. He takes photos from all over the world, realistic, with warm light, high picture quality, and a picture ratio of 9:16
 
 ![814c563b08f6ef44de0c2c31f0fdd00b-min](https://github.com/user-attachments/assets/4e2634b3-9068-47cd-a18f-ddde8f218d25)
 
