@@ -16,6 +16,7 @@ class JaazGenerator(ImageGenerator):
         model: str,
         aspect_ratio: str = "1:1",
         input_image: Optional[str] = None,
+        input_images: Optional[list[str]] = None,
         **kwargs
     ) -> tuple[str, int, int, str]:
         """
@@ -27,7 +28,7 @@ class JaazGenerator(ImageGenerator):
             return await self.generate_openai_image(
                 prompt=prompt,
                 model=model,
-                input_path=input_image,
+                input_images=input_images,
                 aspect_ratio=aspect_ratio,
                 **kwargs
             )
@@ -116,7 +117,7 @@ class JaazGenerator(ImageGenerator):
         self,
         prompt: str,
         model: str,
-        input_path: Optional[str] = None,
+        input_images: Optional[list[str]] = None,
         aspect_ratio: str = "1:1",
         **kwargs
     ) -> tuple[str, int, int, str]:
@@ -152,22 +153,9 @@ class JaazGenerator(ImageGenerator):
                 "prompt": prompt,
                 "n": kwargs.get("num_images", 1),
                 "size": 'auto',
+                "input_images": input_images,
+                "mask": None,  # 如果需要遮罩，可以在这里添加
             }
-
-            # 如果有输入图像（编辑模式）
-            if input_path:
-                if input_path.startswith('data:'):
-                    print('🦄 Jaaz OpenAI image generation input_path is base64')
-                    data['input_image'] = input_path
-                else:
-                    print('🦄 Jaaz OpenAI image generation input_path is file path')
-                    # 如果是文件路径，将图像转换为 base64
-                    with open(input_path, 'rb') as image_file:
-                        image_data = image_file.read()
-                        image_b64 = base64.b64encode(
-                            image_data).decode('utf-8')
-                        data['input_image'] = image_b64
-                data['mask'] = None  # 如果需要遮罩，可以在这里添加
 
             print(
                 f'🦄 Jaaz OpenAI image generation request: {prompt[:50]}... with model: {model}')
