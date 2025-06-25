@@ -46,7 +46,7 @@ Intelligently invoke custom comfyui workflows
 
 1. Click on the "Log in" button at the top right corner of the program's home page, and then you can use the apis of each model. By paying a low price, you can smoothly use the API models
 
-<img width="1485" alt="Screenshot 2025-06-02 at 3 08 51 PM" src="https://github.com/user-attachments/assets/0055557d-c247-4801-ac3f-01ed4fa775ae" />
+<img width="400" alt="Screenshot 2025-06-02 at 3 08 51 PM" src="https://github.com/user-attachments/assets/0055557d-c247-4801-ac3f-01ed4fa775ae" />
 
 2. You can also customize the binding API,Add LLM API key like OpenAI or Claude, or install [Ollama](https://ollama.com/) to use local models
 3. Add image generations API key like [Replicate](https://replicate.com/)
@@ -55,7 +55,7 @@ Intelligently invoke custom comfyui workflows
 
 4. Start chatting with agent to generate stories or storyboards!
 
-<img width="1239" alt="Screenshot 2025-06-18 at 16 09 05" src="https://github.com/user-attachments/assets/eacee793-3bc4-4fa2-9e23-94efa1e1f087" />
+<img width="900" alt="Screenshot 2025-06-18 at 16 09 05" src="https://github.com/user-attachments/assets/eacee793-3bc4-4fa2-9e23-94efa1e1f087" />
 
 
 ## Cases
