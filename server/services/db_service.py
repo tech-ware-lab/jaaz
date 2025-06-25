@@ -193,5 +193,72 @@ class DatabaseService:
             await db.execute("DELETE FROM comfy_workflows WHERE id = ?", (id,))
             await db.commit()
 
+    # ------------------------------------------------------------------
+    # ComfyUI execution helper
+    # ------------------------------------------------------------------
+    async def run_comfy_workflow(
+        self,
+        workflow_id: int,
+        inputs: dict,
+        ctx: dict | None = None,
+        host: str = "127.0.0.1",
+        port: int = 8188,
+    ) -> dict:
+        """
+        Execute the ComfyUI workflow saved in the database.
+
+        This is a minimal baseline implementation so that dynamically
+        registered LangChain tools do not fail.  You can refine the
+        parameter-injection logic (or route through your own service)
+        as needed.
+        """
+        # Lazy import to avoid heavy or circular imports at module load.
+        from routers import comfyui_execution
+
+        # 1. Fetch workflow JSON from DB
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = sqlite3.Row
+            cursor = await db.execute(
+                "SELECT api_json FROM comfy_workflows WHERE id = ?", (workflow_id,)
+            )
+            row = await cursor.fetchone()
+
+        if row is None:
+            raise ValueError(f"No comfy workflow with id={workflow_id}")
+
+        try:
+            workflow_json = (
+                row["api_json"]
+                if isinstance(row["api_json"], dict)
+                else json.loads(row["api_json"])
+            )
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Stored workflow api_json is not valid JSON: {exc}")
+
+        # 2. Naively inject user inputs into matching node input fields
+        #    (You may wish to implement a more robust mapping.)
+        for k, v in inputs.items():
+            for node in workflow_json.values():
+                node_inputs = node.get("inputs", {})
+                if k in node_inputs:
+                    node_inputs[k] = v
+
+        # 3. Execute through the comfyui_execution helper
+        execution = await comfyui_execution.execute(
+            workflow_json,
+            host=host,
+            port=port,
+            wait=True,
+            verbose=False,
+            local_paths=False,
+            timeout=300,
+            ctx=ctx or {},
+        )
+
+        return {
+            "prompt_id": execution.prompt_id,
+            "outputs": execution.outputs,
+        }
+
 # Create a singleton instance
-db_service = DatabaseService() 
+db_service = DatabaseService()
