@@ -212,3 +212,38 @@ export async function deleteKnowledge(id: string): Promise<ApiResponse> {
     )
   }
 }
+
+// Local storage key for enabled knowledge bases
+const ENABLED_KNOWLEDGE_KEY = 'jaaz_enabled_knowledge'
+
+/**
+ * 获取客户端已启用的知识库ID列表
+ * @returns string[] 已启用的知识库ID数组
+ */
+export function getEnabledKnowledgeIds(): string[] {
+  try {
+    const saved = localStorage.getItem(ENABLED_KNOWLEDGE_KEY)
+    return saved ? JSON.parse(saved) : []
+  } catch (error) {
+    console.error('Failed to parse enabled knowledge:', error)
+    return []
+  }
+}
+
+/**
+ * 保存已启用的知识库ID列表
+ * @param knowledgeIds 知识库ID数组
+ */
+export function saveEnabledKnowledgeIds(knowledgeIds: string[]): void {
+  localStorage.setItem(ENABLED_KNOWLEDGE_KEY, JSON.stringify(knowledgeIds))
+}
+
+/**
+ * 检查指定知识库是否已启用
+ * @param knowledgeId 知识库ID
+ * @returns boolean
+ */
+export function isKnowledgeEnabled(knowledgeId: string): boolean {
+  const enabledIds = getEnabledKnowledgeIds()
+  return enabledIds.includes(knowledgeId)
+}
