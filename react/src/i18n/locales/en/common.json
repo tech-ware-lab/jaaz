@@ -73,5 +73,9 @@
     "notLoggedIn": "Not logged in",
     "balance": "Balance",
     "recharge": "Recharge"
+  },
+  "socket": {
+    "connectionError": "Connection error ({{current}}/{{max}}): {{error}}",
+    "maxRetriesReached": "Connection failed, please restart the application"
   }
 }
