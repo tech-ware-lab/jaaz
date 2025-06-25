@@ -26,6 +26,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 from services.db_service import db_service
 from services.settings_service import settings_service
+from tools.comfy_dynamic import register_comfy_tools
 from services.config_service import USER_DATA_DIR
 from pydantic import BaseModel
 
@@ -246,6 +247,7 @@ async def create_workflow(request: CreateWorkflowRequest):
         inputs = json.dumps(request.inputs)
         outputs = json.dumps(request.outputs)
         await db_service.create_comfy_workflow(request.name, api_json, request.description, inputs, outputs)
+        await register_comfy_tools()
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to create workflow: {str(e)}")

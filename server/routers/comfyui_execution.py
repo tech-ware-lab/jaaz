@@ -261,3 +261,23 @@ class WorkflowExecution:
             'error': json.dumps(data, indent=2)
         })
         raise Exception(json.dumps(data, indent=2))
+
+async def upload_image(image, host, port):
+    files = {"image": image}
+    data = {'type': 'input', 'overwrite': 'false'}
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(f"http://{host}:{port}/upload/image", files=files, data=data)
+            body = response.json()
+            image_name = body["name"]
+            return image_name
+        except httpx.HTTPStatusError as e:
+            message = "An unknown error occurred"
+            if e.response.status_code == 500:
+                message = e.response.text
+            elif e.response.status_code == 400:
+                body = e.response.json()
+                if body["node_errors"].keys():
+                    message = json.dumps(body["node_errors"], indent=2)
+            pprint(f"[bold red]Error uploading image\n{message}[/bold red]")
+            raise Exception(message)

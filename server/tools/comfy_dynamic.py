@@ -18,15 +18,25 @@ If `run_comfy_workflow` is not yet implemented it will still work
 """
 from __future__ import annotations
 
+import os
+import traceback
+from io import BytesIO
 import asyncio
 import json
+import time
 from typing import Annotated, Any, Dict, List
 
 from pydantic import BaseModel, Field, create_model
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_core.runnables import RunnableConfig
+from routers.comfyui_execution import upload_image
+from services.config_service import config_service, FILES_DIR
+from .img_generators import ComfyUIWorkflowRunner
 
+from common import DEFAULT_PORT
 from services.db_service import db_service
+from services.websocket_service import send_to_websocket, broadcast_session_update
+from .image_generators import generate_file_id, generate_new_image_element
 
 # --------------------------------------------------------------------------- #
 # helpers
@@ -95,18 +105,110 @@ def _build_tool(wf: Dict[str, Any]):
         **kwargs,
     ) -> str:
         """
-        Forward the call to db_service.run_comfy_workflow and
-        return its JSON-serialised response.
+        code to call comfyui generating image.
         """
-        ctx = dict(config.get("configurable", {}))
-        ctx["tool_call_id"] = tool_call_id
-        result = await db_service.run_comfy_workflow(
-            workflow_id=wf["id"],
-            inputs=kwargs,
-            ctx=ctx,
+        print('🛠️ tool_call_id', tool_call_id)
+        ctx = config.get('configurable', {})
+        canvas_id = ctx.get('canvas_id', '')
+        session_id = ctx.get('session_id', '')
+        print('🛠️canvas_id', canvas_id, 'session_id', session_id)
+        # Inject the tool call id into the context
+        ctx['tool_call_id'] = tool_call_id
+        api_url = (
+            config_service.app_config.get("comfyui", {})
+            .get("url", "")
+            .replace("http://", "")
+            .replace("https://", "")
         )
-        # LangChain tools must return string-serialisable values.
-        return json.dumps(result, ensure_ascii=False)
+        host, port = map(str, api_url.split(":"))
+
+        # if there's image, upload it!
+        # First, let's fliter all values endswith .jpg .png etc
+        image_format = (
+            ".png", ".jpg", ".jpeg", ".webp",  # 基础格式
+            ".bmp", ".tiff", ".tif"   # 其他常见格式
+        )
+        required_data = dict(kwargs)
+        for key, value in required_data.items():
+            if isinstance(value, str) and value.lower().endswith(image_format):
+                # Image!
+                image_path = os.path.join(FILES_DIR, value)
+                if not os.path.exists(image_path):
+                    continue
+                with open(image_path, "rb") as image_file:
+                    image_bytes = image_file.read()
+                image_stream = BytesIO(image_bytes)
+                image_name = await upload_image(image_stream, host, port)
+                required_data[key] = image_name
+        
+        workflow_dict = await db_service.get_comfy_workflow(wf["id"])
+
+        for k, v in required_data.items():
+            for node in workflow_dict.values():
+                node_inputs = node.get("inputs", {})
+                if k in node_inputs:
+                    node_inputs[k] = v
+
+        try:
+            generator = ComfyUIWorkflowRunner(workflow_dict)
+            extra_kwargs = {}
+            extra_kwargs['ctx'] = ctx
+
+            mime_type, width, height, filename = await generator.generate(
+                **extra_kwargs
+            )
+            file_id = generate_file_id()
+
+            url = f'/api/file/{filename}'
+
+            file_data = {
+                'mimeType': mime_type,
+                'id': file_id,
+                'dataURL': url,
+                'created': int(time.time() * 1000),
+            }
+
+            new_image_element = await generate_new_image_element(canvas_id, file_id, {
+                'width': width,
+                'height': height,
+            })
+
+            # update the canvas data, add the new image element
+            canvas_data = await db_service.get_canvas_data(canvas_id)
+            if 'data' not in canvas_data:
+                canvas_data['data'] = {}
+            if 'elements' not in canvas_data['data']:
+                canvas_data['data']['elements'] = []
+            if 'files' not in canvas_data['data']:
+                canvas_data['data']['files'] = {}
+
+            canvas_data['data']['elements'].append(new_image_element)
+            canvas_data['data']['files'][file_id] = file_data
+
+            image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
+
+            # print('🛠️canvas_data', canvas_data)
+
+            await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data['data']))
+
+            await broadcast_session_update(session_id, canvas_id, {
+                'type': 'image_generated',
+                'element': new_image_element,
+                'file': file_data,
+                'image_url': image_url,
+            })
+
+            return f"image generated successfully ![image_id: {filename}]({image_url})"
+    
+        except Exception as e:
+            print(f"Error generating image: {str(e)}") 
+            traceback.print_exc()
+            await send_to_websocket(session_id, {
+                'type': 'error',
+                'error': str(e)
+            })
+            return f"image generation failed: {str(e)}"
+        
 
     return _run
 
@@ -119,11 +221,13 @@ DYNAMIC_COMFY_TOOLS: Dict = {}  # populated at runtime
 
 DYNAMIC_COMFY_TOOLS_DESCRIPTIONS: list = []
 
-async def _register_all():
+async def register_comfy_tools():
     """
     Fetch all workflows from DB and build tool callables.
     Run inside the current event loop.
     """
+    DYNAMIC_COMFY_TOOLS.clear()
+    DYNAMIC_COMFY_TOOLS_DESCRIPTIONS.clear()
     try:
         workflows = await db_service.list_comfy_workflows()
     except Exception as exc:  # pragma: no cover
@@ -148,7 +252,7 @@ async def _register_all():
 
 def _ensure_async_registration():
     """
-    Schedule _register_all() in the current (or newly created) event loop.
+    Schedule register_comfy_tools() in the current (or newly created) event loop.
     Top-level awaits are not allowed in import time, so we create a task.
     """
     try:
@@ -160,10 +264,10 @@ def _ensure_async_registration():
 
     # if loop already running, just create a task
     if loop.is_running():
-        loop.create_task(_register_all())
+        loop.create_task(register_comfy_tools())
     else:
         # For synchronous contexts (e.g. CLI startup), run until complete
-        loop.run_until_complete(_register_all())
+        loop.run_until_complete(register_comfy_tools())
 
 
 # trigger registration at import
