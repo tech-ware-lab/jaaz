@@ -33,6 +33,7 @@ from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langgraph_swarm import create_swarm
 from langchain_core.tools import BaseTool, InjectedToolCallId, tool
+from tools.generate_image_by_gpt import generate_image_by_gpt
 from langchain_core.runnables import RunnableConfig
 
 class InputParam(BaseModel):
@@ -44,6 +45,7 @@ class InputParam(BaseModel):
 def create_tool(tool_json: dict):
     TOOL_MAP = {
         'generate_image': generate_image,
+        'generate_image_by_gpt': generate_image_by_gpt,
         'write_plan': write_plan_tool,
     }
     return TOOL_MAP.get(tool_json.get('tool', ''), None)
@@ -68,7 +70,7 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
             model = ChatOpenAI(
                 model=model,
                 api_key=api_key,
-                timeout=15,
+                # timeout=15,
                 base_url=url,
                 temperature=0,
                 max_tokens=max_tokens,
@@ -218,6 +220,9 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
         provider = text_model.get('provider')
         url = text_model.get('url')
         api_key = config_service.app_config.get(provider, {}).get("api_key", "")
+        image_model_name = image_model.get('model', '')
+        is_jaaz_gpt_model = image_model_name.startswith('openai') and provider == 'jaaz'
+
         # TODO: Verify if max token is working
         max_tokens = text_model.get('max_tokens', 8148)
         if provider == 'ollama':
@@ -288,6 +293,10 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 'name': 'image_designer',
                 'tools': [
                     {
+                        'name': 'generate_image_by_gpt',
+                        'description': "Generate an image by gpt image model using text prompt or optionally pass images for reference or for editing. Use this model if you need to use multiple input images as reference.",
+                        'tool': 'generate_image_by_gpt',
+                    } if is_jaaz_gpt_model else {
                         'name': 'generate_image',
                         'description': "Generate an image",
                         'tool': 'generate_image',
