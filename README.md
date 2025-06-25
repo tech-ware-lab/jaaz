@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/bafdbe36-45df-49ec-b5b8-8926cd440507)# 🦄 Jaaz – AI Design Agent
+# 🦄 Jaaz – AI Design Agent
 
 [中文入门指南](https://mxnpt25l6k.feishu.cn/docx/LvcTdlVbFoRAZWxnhBYcqVydnpc)
 
