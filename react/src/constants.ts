@@ -41,6 +41,10 @@ export const PROVIDER_NAME_MAPPING: {
     name: 'ComfyUI',
     icon: 'https://framerusercontent.com/images/3cNQMWKzIhIrQ5KErBm7dSmbd2w.png',
   },
+  fal: {
+    name: 'Fal AI',
+    icon: 'https://storage.googleapis.com/fal-bucket/favicon.ico',
+  },
 }
 export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
   openai: {
@@ -110,6 +114,20 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
     url: 'http://localhost:11434',
     api_key: '',
     max_tokens: 8192,
+  },
+  fal: {
+    models: {
+      'flux/dev': { type: 'image', name: 'FLUX.1 [dev]' },
+      'flux-pro': { type: 'image', name: 'FLUX.1 Pro' },
+      'flux-pro-ultra': { type: 'image', name: 'FLUX.1 Pro Ultra' },
+      'recraft-v3': { type: 'image', name: 'Recraft V3' },
+      'stable-diffusion-v3-5-large': { type: 'image', name: 'Stable Diffusion 3.5 Large' },
+      'ideogram-v2': { type: 'image', name: 'Ideogram V2' },
+      'hidream-i1': { type: 'image', name: 'HiDream I1' },
+    },
+    url: 'https://fal.run/',
+    api_key: '',
+    max_tokens: 2000,
   },
 }
 
