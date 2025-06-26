@@ -1,9 +1,16 @@
 import { Button } from '@/components/ui/button'
-import { PaletteIcon, PlusIcon, TrashIcon, UploadIcon } from 'lucide-react'
+import {
+  PaletteIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+  UploadIcon,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRef } from 'react'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
+import { Checkbox } from '../ui/checkbox'
 import {
   DialogContent,
   DialogHeader,
@@ -21,13 +28,23 @@ export type ComfyWorkflowInput = {
   node_id: string
   node_input_name: string
   default_value: string | number | boolean
+  required: boolean
+}
+
+type ComfyWorkflowFromAPI = {
+  id: number
+  name: string
+  description: string
+  api_json: string
+  inputs: string
+  outputs: string
 }
 
 export type ComfyWorkflow = {
   id: number
   name: string
   description: string
-  api_json: Record<string, any> | null
+  api_json: Record<string, ComfyUIAPINode> | null
   inputs: ComfyWorkflowInput[] | null
   // outputs: ComfyWorkflowOutput[]
 }
@@ -36,24 +53,29 @@ export default function ComfuiWorkflowSetting() {
   const { t } = useTranslation()
   const [showAddWorkflowDialog, setShowAddWorkflowDialog] = useState(false)
   const [deleteWorkflowId, setDeleteWorkflowId] = useState<number | null>(null)
+  const [editingWorkflow, setEditingWorkflow] = useState<ComfyWorkflow | null>(
+    null
+  )
 
   const [workflows, setWorkflows] = useState<ComfyWorkflow[]>([])
   const loadWorkflows = async () => {
     fetch('/api/settings/comfyui/list_workflows')
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: ComfyWorkflowFromAPI[]) => {
         console.log('ComfyUI workflows:', data)
-        const workflows: ComfyWorkflow[] = data.map((workflow: any) => {
-          const inputs = JSON.parse(workflow.inputs ?? [])
-          const outputs = JSON.parse(workflow.outputs ?? [])
-          const api_json = JSON.parse(workflow.api_json)
-          return {
-            ...workflow,
-            inputs: inputs,
-            outputs: outputs,
-            api_json: api_json,
+        const workflows: ComfyWorkflow[] = data.map(
+          (workflow: ComfyWorkflowFromAPI) => {
+            const inputs = JSON.parse(workflow.inputs ?? '[]')
+            const outputs = JSON.parse(workflow.outputs ?? '[]')
+            const api_json = JSON.parse(workflow.api_json)
+            return {
+              ...workflow,
+              inputs: inputs,
+              outputs: outputs,
+              api_json: api_json,
+            }
           }
-        })
+        )
         setWorkflows(workflows)
       })
   }
@@ -91,7 +113,7 @@ export default function ComfuiWorkflowSetting() {
           </DialogContent>
         </Dialog>
       )}
-      {/* <div className="flex items-center gap-2">
+      { <div className="flex items-center gap-2">
         <PaletteIcon className="w-5 h-5" />
         <p className="text-sm font-bold">{t('settings:comfyui.workflows')}</p>
         <Button
@@ -102,10 +124,17 @@ export default function ComfuiWorkflowSetting() {
           <PlusIcon className="w-4 h-4" />
           Add Workflow
         </Button>
-        {showAddWorkflowDialog && (
-          <AddWorkflowDialog onClose={() => setShowAddWorkflowDialog(false)} />
+        {(showAddWorkflowDialog || editingWorkflow) && (
+          <AddWorkflowDialog
+            workflow={editingWorkflow}
+            onClose={() => {
+              setShowAddWorkflowDialog(false)
+              setEditingWorkflow(null)
+              loadWorkflows()
+            }}
+          />
         )}
-      </div> */}
+      </div> }
       {/* Workflows */}
       {workflows.length > 0 && (
         <div className="space-y-2">
@@ -121,15 +150,26 @@ export default function ComfuiWorkflowSetting() {
                     {workflow.description}
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setDeleteWorkflowId(workflow.id)
-                  }}
-                >
-                  <TrashIcon />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setEditingWorkflow(workflow)
+                    }}
+                  >
+                    <PencilIcon className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setDeleteWorkflowId(workflow.id)
+                    }}
+                  >
+                    <TrashIcon />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -141,18 +181,28 @@ export default function ComfuiWorkflowSetting() {
 
 type ComfyUIAPINode = {
   class_type: string
-  inputs: Record<string, any>
+  inputs: Record<string, string | number | boolean | string[] | number[]>
 }
-function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
+function AddWorkflowDialog({
+  onClose,
+  workflow,
+}: {
+  onClose: () => void
+  workflow: ComfyWorkflow | null
+}) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const [workflowName, setWorkflowName] = useState('')
+  const [workflowName, setWorkflowName] = useState(workflow?.name ?? '')
   const [workflowJson, setWorkflowJson] = useState<Record<
     string,
     ComfyUIAPINode
-  > | null>(null)
-  const [inputs, setInputs] = useState<ComfyWorkflowInput[]>([])
+  > | null>(workflow?.api_json ?? null)
+  const [inputs, setInputs] = useState<ComfyWorkflowInput[]>(
+    workflow?.inputs ?? []
+  )
   const [error, setError] = useState('')
-  const [workflowDescription, setWorkflowDescription] = useState('')
+  const [workflowDescription, setWorkflowDescription] = useState(
+    workflow?.description ?? ''
+  )
   const [outputs, setOutputs] = useState<
     {
       name: string
@@ -203,7 +253,7 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
       // })
     }
   }
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!workflowJson) {
       setError('Please upload a workflow API JSON file')
       return
@@ -216,25 +266,49 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
       setError('Please enter a workflow name')
       return
     }
-    fetch('/api/settings/comfyui/create_workflow', {
+    const payload = {
+      name: workflowName,
+      api_json: workflowJson,
+      description: workflowDescription,
+      inputs: inputs,
+    }
+    console.log('发送到后端的数据：', payload)
+
+    if (workflow) {
+      // 先删除
+      const deleteRes = await fetch(
+        `/api/settings/comfyui/delete_workflow/${workflow.id}`,
+        {
+          method: 'DELETE',
+        }
+      )
+      if (!deleteRes.ok) {
+        const data = await deleteRes.json()
+        toast.error(`Failed to delete old workflow: ${data.message}`)
+        return
+      }
+    }
+
+    // 再创建
+    const createRes = await fetch('/api/settings/comfyui/create_workflow', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        name: workflowName,
-        api_json: workflowJson,
-        description: workflowDescription,
-        inputs: inputs,
-      }),
-    }).then(async (res) => {
-      if (res.ok) {
-        toast.success('Workflow created successfully')
-      } else {
-        const data = await res.json()
-        toast.error(`Failed to create workflow: ${data.message}`)
-      }
+      body: JSON.stringify(payload),
     })
+
+    if (createRes.ok) {
+      toast.success(
+        `Workflow ${workflow ? 'updated' : 'created'} successfully`
+      )
+      onClose()
+    } else {
+      const data = await createRes.json()
+      toast.error(
+        `Failed to ${workflow ? 'update' : 'create'} workflow: ${data.message}`
+      )
+    }
   }
   return (
     <Dialog
@@ -251,8 +325,12 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
       >
         <DialogHeader>
           <div className="flex items-center gap-2 justify-between">
-            <DialogTitle>Add Workflow</DialogTitle>
-            <Button onClick={handleSubmit}>Submit</Button>
+            <DialogTitle>
+              {workflow ? 'Edit Workflow' : 'Add Workflow'}
+            </DialogTitle>
+            <Button onClick={handleSubmit}>
+              {workflow ? 'Save' : 'Submit'}
+            </Button>
           </div>
           {error && <p className="text-red-500">{error}</p>}
         </DialogHeader>
@@ -284,22 +362,18 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
             <p className="font-bold mb-2">Inputs</p>
             <div className="ml-1">
               {inputs.length > 0 ? (
-                inputs.map((input) => (
-                  <div key={input.name} className="flex items-center gap-2">
+                inputs.map((input, index) => (
+                  <div
+                    key={`${input.node_input_name}_${input.node_id}`}
+                    className="flex items-center gap-2"
+                  >
                     <div className="flex flex-col gap-1 flex-1">
                       <input
                         type="text"
+                        // 自动生成唯一名称（node_id + node_input_name）
                         value={input.name}
                         placeholder="Input Name"
-                        onChange={(e) => {
-                          setInputs(
-                            inputs.map((i) =>
-                              i.name === input.name
-                                ? { ...i, name: e.target.value }
-                                : i
-                            )
-                          )
-                        }}
+                        readOnly
                         className="border-none bg-transparent w-full font-mono"
                       />
                       <Input
@@ -313,21 +387,36 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
                         className="border-none bg-transparent w-full"
                         style={{ fontSize: '0.95rem' }}
                         onChange={(e) => {
-                          setInputs(
-                            inputs.map((i) =>
-                              i.name === input.name
-                                ? { ...i, description: e.target.value }
-                                : i
-                            )
-                          )
+                          const newInputs = [...inputs]
+                          newInputs[index].description = e.target.value
+                          setInputs(newInputs)
                         }}
                       />
+                      <div className="flex items-center space-x-2 pt-2">
+                        <Checkbox
+                          id={`required-${index}`}
+                          checked={input.required}
+                          onCheckedChange={(checked) => {
+                            const newInputs = [...inputs]
+                            newInputs[index].required = !!checked
+                            setInputs(newInputs)
+                          }}
+                        />
+                        <label
+                          htmlFor={`required-${index}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Required
+                        </label>
+                      </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        setInputs(inputs.filter((i) => i.name !== input.name))
+                        const newInputs = [...inputs]
+                        newInputs.splice(index, 1)
+                        setInputs(newInputs)
                       }}
                     >
                       <TrashIcon className="w-4 h-4" />
@@ -389,7 +478,7 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
                                   i.node_input_name !== inputKey
                               ),
                               {
-                                name: inputKey,
+                                name: `${inputKey}_${nodeID}`,
                                 type: typeof inputValue as
                                   | 'string'
                                   | 'number'
@@ -398,6 +487,7 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
                                 node_id: nodeID,
                                 node_input_name: inputKey,
                                 default_value: inputValue,
+                                required: false,
                               },
                             ])
                           }}
