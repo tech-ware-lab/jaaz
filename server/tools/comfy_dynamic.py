@@ -19,6 +19,7 @@ If `run_comfy_workflow` is not yet implemented it will still work
 from __future__ import annotations
 
 import os
+import random
 import traceback
 from io import BytesIO
 import asyncio
@@ -38,10 +39,6 @@ from services.db_service import db_service
 from services.websocket_service import send_to_websocket, broadcast_session_update
 from .image_generators import generate_file_id, generate_new_image_element
 
-# --------------------------------------------------------------------------- #
-# helpers
-# --------------------------------------------------------------------------- #
-
 
 def _python_type(param_type: str, default: Any):
     """Map simple param types to Python types."""
@@ -50,7 +47,7 @@ def _python_type(param_type: str, default: Any):
         if isinstance(default, int):
             return int
         return float
-    if param_type == "boolean":
+    if param_type == "boolean" or param_type == "bool":
         return bool
     # Treat unknown / string / image / file / path all as str
     return str
@@ -140,7 +137,7 @@ def _build_tool(wf: Dict[str, Any]):
                 image_stream = BytesIO(image_bytes)
                 image_name = await upload_image(image_stream, host, port)
                 required_data[key] = image_name
-        
+
         workflow_dict = await db_service.get_comfy_workflow(wf["id"])
 
         for k, v in required_data.items():
@@ -148,6 +145,18 @@ def _build_tool(wf: Dict[str, Any]):
                 node_inputs = node.get("inputs", {})
                 if k in node_inputs:
                     node_inputs[k] = v
+
+        # Process seed if has seed
+        if 'seed' in str(required_data):
+            # index the node which has seed
+            seed_nodes = [] # If the workflow has multi KSampler Nodes
+            for node_id, node in workflow_dict.items():
+                if 'seed' in node.get('inputs', {}):
+                    seed_nodes.append(node_id)
+                    break
+
+            for node_id in seed_nodes:
+                workflow_dict[node_id]['inputs']['seed'] = random.randint(1, 2 ** 32)
 
         try:
             generator = ComfyUIWorkflowRunner(workflow_dict)
@@ -199,7 +208,7 @@ def _build_tool(wf: Dict[str, Any]):
             })
 
             return f"image generated successfully ![image_id: {filename}]({image_url})"
-    
+
         except Exception as e:
             print(f"Error generating image: {str(e)}") 
             traceback.print_exc()
@@ -208,7 +217,7 @@ def _build_tool(wf: Dict[str, Any]):
                 'error': str(e)
             })
             return f"image generation failed: {str(e)}"
-        
+
 
     return _run
 
