@@ -82,15 +82,18 @@ async def get_models():
     # Handle ComfyUI models separately
     comfyui_config = config.get('comfyui', {})
     comfyui_url = comfyui_config.get('url', '').strip()
+    comfyui_config_models = comfyui_config.get('models', {})
+    print('👇comfyui_config_models', comfyui_config_models)
     if comfyui_url:
         comfyui_models = await get_comfyui_model_list(comfyui_url)
         for comfyui_model in comfyui_models:
-            res.append({
-                'provider': 'comfyui',
-                'model': comfyui_model,
-                'url': comfyui_url,
-                'type': 'image'
-            })
+            if comfyui_model in comfyui_config_models:            
+                res.append({
+                    'provider': 'comfyui',
+                    'model': comfyui_model,
+                    'url': comfyui_url,
+                    'type': 'image'
+                })
 
     # Handle providers that are not ollama or comfyui
     for provider in config.keys():
