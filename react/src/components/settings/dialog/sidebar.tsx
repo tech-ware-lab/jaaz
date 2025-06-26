@@ -9,7 +9,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
-import { PlugZap, Network } from 'lucide-react'
+import { PlugZap, Network, ChevronLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 export type SettingSidebarType = 'provider' | 'proxy'
@@ -17,9 +17,10 @@ export type SettingSidebarType = 'provider' | 'proxy'
 type SettingSidebar = {
   current: SettingSidebarType
   setCurrent: (current: SettingSidebarType) => void
+  onClose?: () => void
 }
 
-const SettingSidebar: React.FC<SettingSidebar> = ({ current, setCurrent }) => {
+const SettingSidebar: React.FC<SettingSidebar> = ({ current, setCurrent, onClose }) => {
   const { t } = useTranslation()
 
   // Menu items.
@@ -44,9 +45,20 @@ const SettingSidebar: React.FC<SettingSidebar> = ({ current, setCurrent }) => {
     <Sidebar className="h-full rounded-l-lg overflow-hidden">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-lg font-bold select-none mb-2">
-            {t('settings:title')}
-          </SidebarGroupLabel>
+          <div className="flex items-center justify-between mb-2">
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="rounded-md p-1 opacity-70 ring-offset-background transition-all hover:opacity-100 hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none cursor-pointer"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">关闭</span>
+              </button>
+            )}
+            <SidebarGroupLabel className="text-lg font-bold select-none">
+              {t('settings:title')}
+            </SidebarGroupLabel>
+          </div>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
