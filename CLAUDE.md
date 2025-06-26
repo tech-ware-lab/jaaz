@@ -37,7 +37,11 @@ Jaaz is an open-source AI design agent desktop application built with Electron, 
 # Install dependencies for all components
 npm install                    # Root Electron dependencies
 cd react && npm install       # Frontend dependencies
-cd ../server && pip install -r requirements.txt  # Backend dependencies
+
+# Backend dependencies (use existing venv)
+cd ../server
+source venv/bin/activate       # Activate existing virtual environment
+pip install -r requirements.txt  # Backend dependencies
 
 # Start development servers
 npm run dev                    # Starts both React and Electron in development mode
@@ -58,8 +62,15 @@ npm run preview               # Preview production build
 ### Backend Development (Python)
 ```bash
 cd server
+# IMPORTANT: Always activate the existing virtual environment first
+source venv/bin/activate      # Activate existing virtual environment
 python main.py                # Start FastAPI server (port 57988)
 # The server automatically serves the React build at runtime
+
+# If venv doesn't exist, create it once:
+# python3 -m venv venv
+# source venv/bin/activate
+# pip install -r requirements.txt
 ```
 
 ### Testing

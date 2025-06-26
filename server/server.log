@@ -1,0 +1,83 @@
+INFO:     Started server process [26061]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:57988 (Press CTRL+C to quit)
+local db version (3,) latest version 3
+🛠️ {'properties': {'prompt': {'description': 'Required. The prompt for image generation. If you want to edit an image, please describe what you want to edit in the prompt.', 'title': 'Prompt', 'type': 'string'}, 'aspect_ratio': {'description': 'Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4', 'title': 'Aspect Ratio', 'type': 'string'}, 'input_image': {'anyOf': [{'type': 'string'}, {'type': 'null'}], 'default': None, 'description': "Optional; Image to use as reference. Pass image_id here, e.g. 'im_jurheut7.png'. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc.", 'title': 'Input Image'}, 'tool_call_id': {'title': 'Tool Call Id', 'type': 'string'}}, 'required': ['prompt', 'aspect_ratio', 'tool_call_id'], 'title': 'GenerateImageInputSchema', 'type': 'object'}
+🎬 {'properties': {'prompt': {'description': 'Required. The prompt for video generation describing the motion or animation you want to see.', 'title': 'Prompt', 'type': 'string'}, 'image_url': {'description': "Required. The image URL or image_id to use as the starting frame for video generation. Pass image_id here, e.g. 'im_jurheut7.png'.", 'title': 'Image Url', 'type': 'string'}, 'duration': {'default': '6', 'description': "Optional. Video duration in seconds. Options: '6' or '10'. Default is '6'.", 'title': 'Duration', 'type': 'string'}, 'tool_call_id': {'title': 'Tool Call Id', 'type': 'string'}}, 'required': ['prompt', 'image_url', 'tool_call_id'], 'title': 'GenerateVideoInputSchema', 'type': 'object'}
+🌟Starting server, UI_DIST_DIR: None
+Broadcasted init_done to all clients
+INFO:     127.0.0.1:55628 - "POST /api/canvas/ot-0EwO3dlWXi0BBHIiSj/save HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_xAWNAwO6.png
+INFO:     127.0.0.1:55630 - "GET /api/file/im_xAWNAwO6.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34332 - "POST /api/canvas/ot-0EwO3dlWXi0BBHIiSj/save HTTP/1.1" 200 OK
+👇last_agent image_designer
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_xAWNAwO6.png
+INFO:     127.0.0.1:48270 - "GET /api/file/im_xAWNAwO6.png HTTP/1.1" 200 OK
+😘tool_call event [{'name': 'generate_image', 'args': {}, 'id': 'call_owCbdCIM3DVnNQ0eLOWt20z2', 'type': 'tool_call'}]
+🛠️ tool_call_id call_owCbdCIM3DVnNQ0eLOWt20z2
+🛠️canvas_id ot-0EwO3dlWXi0BBHIiSj session_id SsMFGHx07sZdS9P3N12gN
+INFO:     127.0.0.1:48272 - "POST /api/canvas/ot-0EwO3dlWXi0BBHIiSj/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53624 - "POST /api/canvas/ot-0EwO3dlWXi0BBHIiSj/save HTTP/1.1" 200 OK
+🦄image generation image_id im_iALC-p8E
+🦄image saved to file_path /home/zdhpe/jaaz/server/user_data/files/im_iALC-p8E.png
+👇tool_call_results image generated successfully ![image_id: im_iALC-p8E.png](http://localhost:57988/api/file/im_iALC-p8E.png)
+INFO:     127.0.0.1:48266 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33036 - "POST /api/canvas/ot-0EwO3dlWXi0BBHIiSj/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51518 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44618 - "POST /api/canvas/ot-0EwO3dlWXi0BBHIiSj/save HTTP/1.1" 200 OK
+Error querying Ollama: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/tags (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f530a75a330>: Failed to establish a new connection: [Errno 111] Connection refused'))
+👇ollama_models []
+INFO:     127.0.0.1:40524 - "GET /api/list_models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /socket.io/?EIO=4&transport=polling&t=fww0i9xv HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /socket.io/?EIO=4&transport=polling&t=fww4wtmv HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /socket.io/?EIO=4&transport=polling&t=fww52dl8 HTTP/1.1" 200 OK
+Client 7jgTqEMhVkHuqtC6AAAD connected
+New connection added: 7jgTqEMhVkHuqtC6AAAD, total connections: 1
+INFO:     127.0.0.1:40534 - "POST /socket.io/?EIO=4&transport=polling&t=fwwdnlrp&sid=rwDPqjkqT7sUz7xNAAAC HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /socket.io/?EIO=4&transport=polling&t=fwwdolfi&sid=rwDPqjkqT7sUz7xNAAAC HTTP/1.1" 200 OK
+INFO:     connection rejected (400 Bad Request)
+INFO:     connection closed
+INFO:     127.0.0.1:40590 - "GET /api/canvas/list HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_xAWNAwO6.png
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_uGvsNmiv.png
+INFO:     127.0.0.1:40604 - "GET /api/file/im_xAWNAwO6.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40620 - "GET /api/file/im_uGvsNmiv.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40624 - "GET /api/canvas/ot-0EwO3dlWXi0BBHIiSj HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40636 - "GET /api/canvas/ot-0EwO3dlWXi0BBHIiSj HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40640 - "GET /api/chat_session/SsMFGHx07sZdS9P3N12gN HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_xAWNAwO6.png
+INFO:     127.0.0.1:40642 - "GET /api/file/im_xAWNAwO6.png HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_Gl_VTZBR.jpeg
+INFO:     127.0.0.1:40652 - "GET /api/file/im_Gl_VTZBR.jpeg HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_xAWNAwO6.png
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_iALC-p8E.png
+INFO:     127.0.0.1:40670 - "GET /api/file/im_iALC-p8E.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40660 - "GET /api/file/im_xAWNAwO6.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40684 - "POST /api/canvas/ot-0EwO3dlWXi0BBHIiSj/save HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_iALC-p8E.png
+INFO:     127.0.0.1:40680 - "GET /api/file/im_iALC-p8E.png HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_Gl_VTZBR.jpeg
+INFO:     127.0.0.1:40680 - "GET /api/file/im_Gl_VTZBR.jpeg HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_xAWNAwO6.png
+INFO:     127.0.0.1:51110 - "GET /api/file/im_xAWNAwO6.png HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_xAWNAwO6.png
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_iALC-p8E.png
+INFO:     127.0.0.1:51128 - "GET /api/file/im_xAWNAwO6.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40680 - "GET /api/file/im_iALC-p8E.png HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_Gl_VTZBR.jpeg
+INFO:     127.0.0.1:51116 - "GET /api/file/im_Gl_VTZBR.jpeg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54614 - "POST /api/canvas/ot-0EwO3dlWXi0BBHIiSj/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /socket.io/?EIO=4&transport=polling&t=fwwxxicy&sid=rwDPqjkqT7sUz7xNAAAC HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "POST /socket.io/?EIO=4&transport=polling&t=fxha1jxu&sid=rwDPqjkqT7sUz7xNAAAC HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54624 - "POST /api/canvas/ot-0EwO3dlWXi0BBHIiSj/save HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_iALC-p8E.png
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_xAWNAwO6.png
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_Gl_VTZBR.jpeg
+INFO:     127.0.0.1:54636 - "GET /api/file/im_xAWNAwO6.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54650 - "GET /api/file/im_Gl_VTZBR.jpeg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54628 - "GET /api/file/im_iALC-p8E.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36660 - "POST /api/canvas/ot-0EwO3dlWXi0BBHIiSj/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53086 - "POST /api/canvas/ot-0EwO3dlWXi0BBHIiSj/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40550 - "GET /socket.io/?EIO=4&transport=polling&t=fxha1l1y&sid=rwDPqjkqT7sUz7xNAAAC HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40550 - "POST /socket.io/?EIO=4&transport=polling&t=fy2ln646&sid=rwDPqjkqT7sUz7xNAAAC HTTP/1.1" 200 OK
