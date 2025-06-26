@@ -16,6 +16,7 @@ cd server
 cat > .env << 'EOF'
 FAL_KEY=your_fal_ai_api_key_here
 REPLICATE_API_TOKEN=your_replicate_api_token_here
+OPENAI_API_KEY=your_openai_api_key_here
 EOF
 ```
 
@@ -67,9 +68,10 @@ python main.py
 5. Your API keys will be automatically loaded from .env
 6. Configure additional models if needed
 
-**Both providers are now auto-configured:**
+**All three providers are now auto-configured:**
 - **Fal AI:** 7 models + video generation
 - **Replicate:** Additional models for variety
+- **OpenAI:** DALL-E and GPT models
 
 ### Via Multi-Agent Workflow
 1. Start a new chat session
