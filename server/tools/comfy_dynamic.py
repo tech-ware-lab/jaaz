@@ -14,30 +14,30 @@ Importing this module will:
        tools = [..., *DYNAMIC_COMFY_TOOLS]
 
 If `run_comfy_workflow` is not yet implemented it will still work
-(actually return a stub dict) so callers won’t crash.
+(actually return a stub dict) so callers won't crash.
 """
 from __future__ import annotations
 
-import os
-import random
-import traceback
-from io import BytesIO
 import asyncio
 import json
+import os
+import random
 import time
+import traceback
+from io import BytesIO
 from typing import Annotated, Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, create_model
-from langchain_core.tools import tool, InjectedToolCallId
-from langchain_core.runnables import RunnableConfig
-from routers.comfyui_execution import upload_image
-from services.config_service import config_service, FILES_DIR
-from .img_generators import ComfyUIWorkflowRunner
-
 from common import DEFAULT_PORT
+from image_generation_utils import generate_file_id, generate_new_image_element
+from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import InjectedToolCallId, tool
+from pydantic import BaseModel, Field, create_model
+from routers.comfyui_execution import upload_image
+from services.config_service import FILES_DIR, config_service
 from services.db_service import db_service
-from services.websocket_service import send_to_websocket, broadcast_session_update
-from .image_generation_utils import generate_file_id, generate_new_image_element
+from services.websocket_service import broadcast_session_update, send_to_websocket
+
+from .img_generators import ComfyUIWorkflowRunner
 
 
 def _python_type(param_type: str, default: Any):
@@ -96,12 +96,12 @@ def _build_input_schema(wf: Dict[str, Any]) -> type[BaseModel]:
 
 def _build_tool(wf: Dict[str, Any]):
     """Return an @tool function for the given workflow record."""
-    InputSchema = _build_input_schema(wf)
+    input_schema = _build_input_schema(wf)
 
     @tool(
         wf["name"],
         description=wf.get("description") or f"Run ComfyUI workflow {wf['id']}",
-        args_schema=InputSchema,
+        args_schema=input_schema,
     )
     async def _run(
         config: RunnableConfig,
@@ -234,7 +234,7 @@ def _build_tool(wf: Dict[str, Any]):
             return f"image generated successfully ![image_id: {filename}]({image_url})"
 
         except Exception as e:
-            print(f"Error generating image: {str(e)}") 
+            print(f"Error generating image: {str(e)}")
             traceback.print_exc()
             await send_to_websocket(session_id, {
                 'type': 'error',
