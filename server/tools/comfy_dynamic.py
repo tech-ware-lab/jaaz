@@ -37,7 +37,7 @@ from .img_generators import ComfyUIWorkflowRunner
 from common import DEFAULT_PORT
 from services.db_service import db_service
 from services.websocket_service import send_to_websocket, broadcast_session_update
-from .image_generators import generate_file_id, generate_new_image_element
+from .image_generation_utils import generate_file_id, generate_new_image_element
 
 
 def _python_type(param_type: str, default: Any):
