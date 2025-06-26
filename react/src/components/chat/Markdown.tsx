@@ -22,40 +22,16 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
   const { t } = useTranslation()
   const [isThinkExpanded, setIsThinkExpanded] = useState(false)
 
-  const hasUnclosedThinkTags = (text: string): boolean => {
-    const openTags = (text.match(/<think>/g) || []).length
-    const closeTags = (text.match(/<\/think>/g) || []).length
-    return openTags > closeTags
-  }
-
- 
-  const fixUnclosedThinkTags = (text: string): string => {
-    const openTags = (text.match(/<think>/g) || []).length
-    const closeTags = (text.match(/<\/think>/g) || []).length
-    
-    if (openTags > closeTags) {
-      return text + '</think>'.repeat(openTags - closeTags)
-    }
-    return text
-  }
-
-
-  const shouldAutoExpand = hasUnclosedThinkTags(children)
-  
-
-  useEffect(() => {
-    if (shouldAutoExpand) {
-      setIsThinkExpanded(true)
-    } else {
-      setIsThinkExpanded(false)
-    }
-  }, [shouldAutoExpand])
-
-
+  // Main function to process think tags
   const processThinkTags = (content: string) => {
-    // 首先移除所有空的think标签（包括只含空格的）
+    // Remove empty think tags and fix unclosed tags
     const cleanedContent = content.replace(/<think>\s*<\/think>/g, '')
-    const fixedContent = fixUnclosedThinkTags(cleanedContent)
+    const openTags = (cleanedContent.match(/<think>/g) || []).length
+    const closeTags = (cleanedContent.match(/<\/think>/g) || []).length
+    const fixedContent = openTags > closeTags 
+      ? cleanedContent + '</think>'.repeat(openTags - closeTags)
+      : cleanedContent
+
     const thinkRegex = /<think>([\s\S]*?)<\/think>/g
     const parts = []
     let lastIndex = 0
@@ -73,7 +49,6 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
       if (thinkContent) {
         parts.push({ type: 'think', content: thinkContent })
       }
-      // 不显示空的think标签
       lastIndex = match.index + match[0].length
     }
     
@@ -90,8 +65,17 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
     
     console.log('Think tags processing:', { parts, originalContent: children.substring(0, 100) })
     
-    return parts
+    return { parts, hasUnclosed: openTags > closeTags }
   }
+
+  // Check if it should auto-expand
+  const { parts, hasUnclosed } = children.includes('<think>') 
+    ? processThinkTags(children) 
+    : { parts: [], hasUnclosed: false }
+
+  useEffect(() => {
+    setIsThinkExpanded(hasUnclosed)
+  }, [hasUnclosed])
 
   const handleImagePositioning = (id: string) => {
     excalidrawAPI?.scrollToContent(id, { animate: true })
@@ -244,11 +228,8 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
       )
     },
   }
-
-  // 如果内容包含think标签，进行特殊处理
+  // Special handling if content contains think tags
   if (children.includes('<think>')) {
-    const parts = processThinkTags(children)
-    
     return (
       <div className="space-y-3 flex flex-col w-full max-w-full">
         {parts.map((part, index) => (

@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { ChevronUpIcon } from 'lucide-react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -35,12 +35,11 @@ const TextFoldTag: React.FC<TextFoldTagProps> = ({
             {buttonText || t('chat:thinking.title')}
           </p>
         </div>
-        <ChevronUpIcon
-          className={cn(
-            isExpanded && 'rotate-180',
-            'h-4 w-4 text-[rgb(161,98,7)] dark:text-[rgb(253,224,71)] transition-transform duration-300'
-          )}
-        />
+        {isExpanded ? (
+          <ChevronDown className="h-4 w-4 text-[rgb(161,98,7)] dark:text-[rgb(253,224,71)]" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-[rgb(161,98,7)] dark:text-[rgb(253,224,71)]" />
+        )}
       </div>
 
       <AnimatePresence>
