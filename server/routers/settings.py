@@ -258,7 +258,9 @@ async def list_workflows():
 
 @router.delete("/comfyui/delete_workflow/{id}")
 async def delete_workflow(id: int):
-    return await db_service.delete_comfy_workflow(id)
+    result = await db_service.delete_comfy_workflow(id)
+    await register_comfy_tools()
+    return result
 
 @router.post("/comfyui/proxy")
 async def comfyui_proxy(request: Request):
