@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRef } from 'react'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
+import { Checkbox } from '../ui/checkbox'
 import {
   DialogContent,
   DialogHeader,
@@ -21,6 +22,7 @@ export type ComfyWorkflowInput = {
   node_id: string
   node_input_name: string
   default_value: string | number | boolean
+  required: boolean
 }
 
 export type ComfyWorkflow = {
@@ -316,6 +318,23 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
                           setInputs(newInputs)
                         }}
                       />
+                      <div className="flex items-center space-x-2 pt-2">
+                        <Checkbox
+                          id={`required-${index}`}
+                          checked={input.required}
+                          onCheckedChange={(checked) => {
+                            const newInputs = [...inputs]
+                            newInputs[index].required = !!checked
+                            setInputs(newInputs)
+                          }}
+                        />
+                        <label
+                          htmlFor={`required-${index}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Required
+                        </label>
+                      </div>
                     </div>
                     <Button
                       variant="ghost"
@@ -394,6 +413,7 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
                                 node_id: nodeID,
                                 node_input_name: inputKey,
                                 default_value: inputValue,
+                                required: false,
                               },
                             ])
                           }}

@@ -25,7 +25,7 @@ from io import BytesIO
 import asyncio
 import json
 import time
-from typing import Annotated, Any, Dict, List
+from typing import Annotated, Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, create_model
 from langchain_core.tools import tool, InjectedToolCallId
@@ -74,14 +74,21 @@ def _build_input_schema(wf: Dict[str, Any]) -> type[BaseModel]:
         py_t = _python_type(param.get("type"), param.get("default_value"))
         default_val = param.get("default_value")
         desc = param.get("description", "")
-        fields[name] = (
-            py_t,
-            Field(default=default_val, description=desc),
-        )
-        # add a tool_call_id
-        fields['tool_call_id'] = (
-            Annotated[str, InjectedToolCallId]
-        )
+        is_required = param.get("required", False)
+
+        if is_required:
+            desc = f"Required. {desc}"
+            fields[name] = (py_t, Field(description=desc))
+        else:
+            desc = f"Optional. {desc}"
+            fields[name] = (
+                Optional[py_t],
+                Field(default=default_val, description=desc),
+            )
+    # add a tool_call_id
+    fields['tool_call_id'] = (
+        Annotated[str, InjectedToolCallId]
+    )
 
     model_name = f"{wf['name'].title().replace(' ', '')}InputSchema"
     return create_model(model_name, __base__=BaseModel, **fields)
