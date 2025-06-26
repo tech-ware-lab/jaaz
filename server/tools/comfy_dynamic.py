@@ -28,7 +28,7 @@ from io import BytesIO
 from typing import Annotated, Any, Dict, List, Optional
 
 from common import DEFAULT_PORT
-from image_generation_utils import generate_file_id, generate_new_image_element
+from .image_generation_utils import generate_file_id, generate_new_image_element
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import InjectedToolCallId, tool
 from pydantic import BaseModel, Field, create_model
