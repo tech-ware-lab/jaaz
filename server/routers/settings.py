@@ -294,9 +294,6 @@ async def comfyui_proxy(request: Request):
             return response.json()
 
     except Exception as e:
-<<<<<<< main
-        raise HTTPException(status_code=500, detail=f"Proxy request failed: {str(e)}")
-=======
         raise HTTPException(
             status_code=500, detail=f"Proxy request failed: {str(e)}")
 
@@ -322,4 +319,3 @@ async def get_enabled_knowledge():
             "error": str(e),
             "data": []
         }
->>>>>>> dev
