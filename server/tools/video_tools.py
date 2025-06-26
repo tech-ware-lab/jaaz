@@ -65,9 +65,15 @@ async def generate_video(
     ctx['tool_call_id'] = tool_call_id
 
     # Get video model configuration
-    video_model = ctx.get('model_info', {}).get('video', {})
-    if video_model is None:
-        raise ValueError("Video model is not selected")
+    model_info = ctx.get('model_info', {})
+    video_model = model_info.get('video')
+    
+    # Always use default Fal AI Hailuo model if no video model is configured
+    if not video_model or video_model is None:
+        video_model = {
+            'model': 'minimax/hailuo-02',
+            'provider': 'fal'
+        }
     
     model = video_model.get('model', 'minimax/hailuo-02')
     provider = video_model.get('provider', 'fal')

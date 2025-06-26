@@ -370,7 +370,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   const onSendMessages = useCallback(
-    (data: Message[], configs: { textModel: Model; imageModel: Model }) => {
+    (data: Message[], configs: { textModel: Model; imageModel: Model; videoModel?: Model }) => {
       setPending('text')
       setMessages(data)
 
@@ -380,6 +380,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         newMessages: data,
         textModel: configs.textModel,
         imageModel: configs.imageModel,
+        videoModel: configs.videoModel,
         systemPrompt:
           localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
       })
