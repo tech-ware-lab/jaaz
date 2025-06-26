@@ -249,10 +249,11 @@ async def create_workflow(request: CreateWorkflowRequest):
     if not request.inputs:
         raise HTTPException(status_code=400, detail="Inputs are required")
     try:
+        name = request.name.replace(" ", "_")
         api_json = json.dumps(request.api_json)
         inputs = json.dumps(request.inputs)
         outputs = json.dumps(request.outputs)
-        await db_service.create_comfy_workflow(request.name, api_json, request.description, inputs, outputs)
+        await db_service.create_comfy_workflow(name, api_json, request.description, inputs, outputs)
         await register_comfy_tools()
         return {"success": True}
     except Exception as e:
