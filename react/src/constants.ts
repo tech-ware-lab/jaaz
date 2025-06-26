@@ -113,16 +113,6 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
   },
 }
 
-export const DEFAULT_MODEL_LIST = Object.keys(DEFAULT_PROVIDERS_CONFIG).flatMap(
-  (provider) =>
-    Object.keys(DEFAULT_PROVIDERS_CONFIG[provider].models).map((model) => ({
-      provider,
-      model,
-      type: DEFAULT_PROVIDERS_CONFIG[provider].models[model].type ?? 'text',
-      url: DEFAULT_PROVIDERS_CONFIG[provider].url,
-    }))
-)
-
 // Tool call name mapping
 export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
   {
@@ -171,5 +161,5 @@ Discreet modular grid lines and data glyphs fade into matte charcoal background,
 – Soft-touch matte laminate overall.
 – Spot UV + holographic foil on masthead, mask outline and glitch shards.
 
-Step 2. Call generate_image tool to generate the image based on the plan immediately, use a detailed and professional image prompt according to your design strategy plan, no need to ask for user's approval. 
+Step 2. Call generate_image tool to generate the image based on the plan immediately, use a detailed and professional image prompt according to your design strategy plan, no need to ask for user's approval.
 `
