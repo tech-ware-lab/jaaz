@@ -1,5 +1,11 @@
 import { Button } from '@/components/ui/button'
-import { PaletteIcon, PlusIcon, TrashIcon, UploadIcon } from 'lucide-react'
+import {
+  PaletteIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+  UploadIcon,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRef } from 'react'
 import { Input } from '../ui/input'
@@ -25,11 +31,20 @@ export type ComfyWorkflowInput = {
   required: boolean
 }
 
+type ComfyWorkflowFromAPI = {
+  id: number
+  name: string
+  description: string
+  api_json: string
+  inputs: string
+  outputs: string
+}
+
 export type ComfyWorkflow = {
   id: number
   name: string
   description: string
-  api_json: Record<string, any> | null
+  api_json: Record<string, ComfyUIAPINode> | null
   inputs: ComfyWorkflowInput[] | null
   // outputs: ComfyWorkflowOutput[]
 }
@@ -38,24 +53,29 @@ export default function ComfuiWorkflowSetting() {
   const { t } = useTranslation()
   const [showAddWorkflowDialog, setShowAddWorkflowDialog] = useState(false)
   const [deleteWorkflowId, setDeleteWorkflowId] = useState<number | null>(null)
+  const [editingWorkflow, setEditingWorkflow] = useState<ComfyWorkflow | null>(
+    null
+  )
 
   const [workflows, setWorkflows] = useState<ComfyWorkflow[]>([])
   const loadWorkflows = async () => {
     fetch('/api/settings/comfyui/list_workflows')
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: ComfyWorkflowFromAPI[]) => {
         console.log('ComfyUI workflows:', data)
-        const workflows: ComfyWorkflow[] = data.map((workflow: any) => {
-          const inputs = JSON.parse(workflow.inputs ?? [])
-          const outputs = JSON.parse(workflow.outputs ?? [])
-          const api_json = JSON.parse(workflow.api_json)
-          return {
-            ...workflow,
-            inputs: inputs,
-            outputs: outputs,
-            api_json: api_json,
+        const workflows: ComfyWorkflow[] = data.map(
+          (workflow: ComfyWorkflowFromAPI) => {
+            const inputs = JSON.parse(workflow.inputs ?? '[]')
+            const outputs = JSON.parse(workflow.outputs ?? '[]')
+            const api_json = JSON.parse(workflow.api_json)
+            return {
+              ...workflow,
+              inputs: inputs,
+              outputs: outputs,
+              api_json: api_json,
+            }
           }
-        })
+        )
         setWorkflows(workflows)
       })
   }
@@ -104,8 +124,15 @@ export default function ComfuiWorkflowSetting() {
           <PlusIcon className="w-4 h-4" />
           Add Workflow
         </Button>
-        {showAddWorkflowDialog && (
-          <AddWorkflowDialog onClose={() => setShowAddWorkflowDialog(false)} />
+        {(showAddWorkflowDialog || editingWorkflow) && (
+          <AddWorkflowDialog
+            workflow={editingWorkflow}
+            onClose={() => {
+              setShowAddWorkflowDialog(false)
+              setEditingWorkflow(null)
+              loadWorkflows()
+            }}
+          />
         )}
       </div> }
       {/* Workflows */}
@@ -123,15 +150,26 @@ export default function ComfuiWorkflowSetting() {
                     {workflow.description}
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setDeleteWorkflowId(workflow.id)
-                  }}
-                >
-                  <TrashIcon />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setEditingWorkflow(workflow)
+                    }}
+                  >
+                    <PencilIcon className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setDeleteWorkflowId(workflow.id)
+                    }}
+                  >
+                    <TrashIcon />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -143,18 +181,28 @@ export default function ComfuiWorkflowSetting() {
 
 type ComfyUIAPINode = {
   class_type: string
-  inputs: Record<string, any>
+  inputs: Record<string, string | number | boolean | string[] | number[]>
 }
-function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
+function AddWorkflowDialog({
+  onClose,
+  workflow,
+}: {
+  onClose: () => void
+  workflow: ComfyWorkflow | null
+}) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const [workflowName, setWorkflowName] = useState('')
+  const [workflowName, setWorkflowName] = useState(workflow?.name ?? '')
   const [workflowJson, setWorkflowJson] = useState<Record<
     string,
     ComfyUIAPINode
-  > | null>(null)
-  const [inputs, setInputs] = useState<ComfyWorkflowInput[]>([])
+  > | null>(workflow?.api_json ?? null)
+  const [inputs, setInputs] = useState<ComfyWorkflowInput[]>(
+    workflow?.inputs ?? []
+  )
   const [error, setError] = useState('')
-  const [workflowDescription, setWorkflowDescription] = useState('')
+  const [workflowDescription, setWorkflowDescription] = useState(
+    workflow?.description ?? ''
+  )
   const [outputs, setOutputs] = useState<
     {
       name: string
@@ -205,7 +253,7 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
       // })
     }
   }
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!workflowJson) {
       setError('Please upload a workflow API JSON file')
       return
@@ -225,20 +273,42 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
       inputs: inputs,
     }
     console.log('发送到后端的数据：', payload)
-    fetch('/api/settings/comfyui/create_workflow', {
+
+    if (workflow) {
+      // 先删除
+      const deleteRes = await fetch(
+        `/api/settings/comfyui/delete_workflow/${workflow.id}`,
+        {
+          method: 'DELETE',
+        }
+      )
+      if (!deleteRes.ok) {
+        const data = await deleteRes.json()
+        toast.error(`Failed to delete old workflow: ${data.message}`)
+        return
+      }
+    }
+
+    // 再创建
+    const createRes = await fetch('/api/settings/comfyui/create_workflow', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
-    }).then(async (res) => {
-      if (res.ok) {
-        toast.success('Workflow created successfully')
-      } else {
-        const data = await res.json()
-        toast.error(`Failed to create workflow: ${data.message}`)
-      }
     })
+
+    if (createRes.ok) {
+      toast.success(
+        `Workflow ${workflow ? 'updated' : 'created'} successfully`
+      )
+      onClose()
+    } else {
+      const data = await createRes.json()
+      toast.error(
+        `Failed to ${workflow ? 'update' : 'create'} workflow: ${data.message}`
+      )
+    }
   }
   return (
     <Dialog
@@ -255,8 +325,12 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
       >
         <DialogHeader>
           <div className="flex items-center gap-2 justify-between">
-            <DialogTitle>Add Workflow</DialogTitle>
-            <Button onClick={handleSubmit}>Submit</Button>
+            <DialogTitle>
+              {workflow ? 'Edit Workflow' : 'Add Workflow'}
+            </DialogTitle>
+            <Button onClick={handleSubmit}>
+              {workflow ? 'Save' : 'Submit'}
+            </Button>
           </div>
           {error && <p className="text-red-500">{error}</p>}
         </DialogHeader>
