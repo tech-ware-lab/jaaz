@@ -12,11 +12,14 @@ The easiest way to configure your Fal AI API key:
 # Navigate to the server directory
 cd server
 
-# Create .env file with your API key
-echo "FAL_KEY=your_fal_ai_api_key_here" > .env
+# Create .env file with your API keys
+cat > .env << 'EOF'
+FAL_KEY=your_fal_ai_api_key_here
+REPLICATE_API_TOKEN=your_replicate_api_token_here
+EOF
 ```
 
-**Your API key:** `858ab84a-c3a6-4d28-a428-c163b3d4e1df:99593f43b6f54ea334422319360dd31d`
+**Note:** Replace the placeholder values with your actual API keys.
 
 ### 2. Install Dependencies
 
@@ -60,9 +63,13 @@ python main.py
 1. Open Jaaz application
 2. Go to Settings → Providers
 3. Click "Add Provider"
-4. Select "Fal AI" from the dropdown
-5. Your API key will be automatically loaded from .env
+4. Select "Fal AI" or "Replicate" from the dropdown
+5. Your API keys will be automatically loaded from .env
 6. Configure additional models if needed
+
+**Both providers are now auto-configured:**
+- **Fal AI:** 7 models + video generation
+- **Replicate:** Additional models for variety
 
 ### Via Multi-Agent Workflow
 1. Start a new chat session
