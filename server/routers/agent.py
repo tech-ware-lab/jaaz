@@ -1,6 +1,7 @@
 import os
 from fastapi import APIRouter
 import requests
+import httpx
 from services.config_service import config_service
 from services.db_service import db_service
 
@@ -34,6 +35,19 @@ def get_ollama_model_list():
         print(f"Error querying Ollama: {e}")
         return []
 
+async def check_comfyui_running(comfyui_url: str) -> bool:
+    """Check if ComfyUI is running by testing the connection"""
+    if not comfyui_url:
+        return False
+    
+    try:
+        timeout = httpx.Timeout(5.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(f"{comfyui_url}/api/prompt")
+            return response.status_code == 200
+    except Exception as e:
+        print(f"ComfyUI connection check failed: {str(e)}")
+        return False
 
 @router.get("/list_models")
 async def get_models():
@@ -57,6 +71,13 @@ async def get_models():
                 continue
             if provider != 'comfyui' and config[provider].get('api_key', '') == '':
                 continue
+            
+            # For ComfyUI, check if it's running
+            if provider == 'comfyui':
+                comfyui_url = config[provider].get('url', '')
+                if not comfyui_url or not await check_comfyui_running(comfyui_url):
+                    continue
+            
             model = models[model_name]
             res.append({
                 'provider': provider,
