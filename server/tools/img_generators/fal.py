@@ -6,6 +6,13 @@ from .base import ImageGenerator, get_image_info_and_save, generate_image_id
 from services.config_service import config_service, FILES_DIR
 import fal_client
 
+# Ensure environment variables are loaded
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not available, environment variables should be set externally
+
 
 class FalAIGenerator(ImageGenerator):
     """Fal AI image generator implementation"""
