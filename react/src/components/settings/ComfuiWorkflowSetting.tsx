@@ -216,17 +216,19 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
       setError('Please enter a workflow name')
       return
     }
+    const payload = {
+      name: workflowName,
+      api_json: workflowJson,
+      description: workflowDescription,
+      inputs: inputs,
+    }
+    console.log('发送到后端的数据：', payload)
     fetch('/api/settings/comfyui/create_workflow', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        name: workflowName,
-        api_json: workflowJson,
-        description: workflowDescription,
-        inputs: inputs,
-      }),
+      body: JSON.stringify(payload),
     }).then(async (res) => {
       if (res.ok) {
         toast.success('Workflow created successfully')
@@ -284,22 +286,18 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
             <p className="font-bold mb-2">Inputs</p>
             <div className="ml-1">
               {inputs.length > 0 ? (
-                inputs.map((input) => (
-                  <div key={input.name} className="flex items-center gap-2">
+                inputs.map((input, index) => (
+                  <div
+                    key={`${input.node_id}-${input.node_input_name}`}
+                    className="flex items-center gap-2"
+                  >
                     <div className="flex flex-col gap-1 flex-1">
                       <input
                         type="text"
+                        // 自动生成唯一名称（node_id + node_input_name）
                         value={input.name}
                         placeholder="Input Name"
-                        onChange={(e) => {
-                          setInputs(
-                            inputs.map((i) =>
-                              i.name === input.name
-                                ? { ...i, name: e.target.value }
-                                : i
-                            )
-                          )
-                        }}
+                        readOnly
                         className="border-none bg-transparent w-full font-mono"
                       />
                       <Input
@@ -313,13 +311,9 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
                         className="border-none bg-transparent w-full"
                         style={{ fontSize: '0.95rem' }}
                         onChange={(e) => {
-                          setInputs(
-                            inputs.map((i) =>
-                              i.name === input.name
-                                ? { ...i, description: e.target.value }
-                                : i
-                            )
-                          )
+                          const newInputs = [...inputs]
+                          newInputs[index].description = e.target.value
+                          setInputs(newInputs)
                         }}
                       />
                     </div>
@@ -327,7 +321,9 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        setInputs(inputs.filter((i) => i.name !== input.name))
+                        const newInputs = [...inputs]
+                        newInputs.splice(index, 1)
+                        setInputs(newInputs)
                       }}
                     >
                       <TrashIcon className="w-4 h-4" />
@@ -389,7 +385,7 @@ function AddWorkflowDialog({ onClose }: { onClose: () => void }) {
                                   i.node_input_name !== inputKey
                               ),
                               {
-                                name: inputKey,
+                                name: `${nodeID}-${inputKey}`,
                                 type: typeof inputValue as
                                   | 'string'
                                   | 'number'
