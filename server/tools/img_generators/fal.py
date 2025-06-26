@@ -16,8 +16,18 @@ class FalAIGenerator(ImageGenerator):
         self.base_url = "https://fal.run/"
         
     def _get_api_key(self):
-        """Get API key from configuration"""
-        return config_service.app_config.get('fal', {}).get('api_key', '')
+        """Get API key from configuration or environment variable"""
+        # First try to get from user configuration
+        config_key = config_service.app_config.get('fal', {}).get('api_key', '')
+        if config_key:
+            return config_key
+        
+        # Fallback to environment variable
+        env_key = os.environ.get('FAL_KEY', '')
+        if env_key:
+            return env_key
+            
+        return ''
     
     def _get_size_from_aspect_ratio(self, aspect_ratio: str, model: str = ""):
         """Convert aspect ratio to Fal AI size format"""
