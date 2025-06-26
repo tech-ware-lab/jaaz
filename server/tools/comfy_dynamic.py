@@ -170,16 +170,17 @@ def _build_tool(wf: Dict[str, Any]):
                         node_inputs[node_input_name] = value
 
         # Process seed if has seed
-        if 'seed' in str(required_data):
-            # index the node which has seed
-            seed_nodes = [] # If the workflow has multi KSampler Nodes
-            for node_id, node in workflow_dict.items():
-                if 'seed' in node.get('inputs', {}):
-                    seed_nodes.append(node_id)
-                    break
+        # 改为直接遍历节点输入检测seed字段，替代字符串匹配
+        seed_nodes = []
+        for node_id, node in workflow_dict.items():
+            if 'seed' in node.get('inputs', {}):  # 直接检查节点输入是否有seed字段
+                seed_nodes.append(node_id)  # 收集所有含seed的节点，不移除break
 
+        if len(seed_nodes) > 0:  # 仅在存在种子节点时执行
             for node_id in seed_nodes:
-                workflow_dict[node_id]['inputs']['seed'] = random.randint(1, 2 ** 32)
+                # 使用更大的随机范围（0到2^32-1更符合常见种子范围）
+                workflow_dict[node_id]['inputs']['seed'] = random.randint(1, (1 << 32) - 1)
+
 
         try:
             generator = ComfyUIWorkflowRunner(workflow_dict)
