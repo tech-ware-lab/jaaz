@@ -140,11 +140,27 @@ def _build_tool(wf: Dict[str, Any]):
 
         workflow_dict = await db_service.get_comfy_workflow(wf["id"])
 
-        for k, v in required_data.items():
-            for node in workflow_dict.values():
-                node_inputs = node.get("inputs", {})
-                if k in node_inputs:
-                    node_inputs[k] = v
+        try:
+            input_defs: List[Dict[str, Any]] = (
+                wf["inputs"] if isinstance(wf["inputs"], list) else json.loads(wf["inputs"])
+            )
+        except Exception:
+            input_defs = []
+
+        for param in input_defs:
+            param_name = param.get("name")
+            node_id = param.get("node_id")
+            node_input_name = param.get("node_input_name")
+
+            if not (param_name and node_id and node_input_name):
+                continue
+
+            if param_name in required_data:
+                value = required_data[param_name]
+                if node_id in workflow_dict:
+                    node_inputs = workflow_dict[node_id].get("inputs", {})
+                    if node_input_name in node_inputs:
+                        node_inputs[node_input_name] = value
 
         # Process seed if has seed
         if 'seed' in str(required_data):
