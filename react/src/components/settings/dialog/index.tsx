@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import SettingProviders from './providers'
 import SettingProxy from './proxy'
 import SettingSidebar, { SettingSidebarType } from './sidebar'
+import { X } from 'lucide-react'
 
 const SettingsDialog = () => {
   const { showSettingsDialog: open, setShowSettingsDialog } = useConfigs()
@@ -33,7 +34,11 @@ const SettingsDialog = () => {
         className="flex flex-col p-0 gap-0 w-screen! h-screen! max-h-[100vh]! max-w-[100vw]! rounded-none! border-none! shadow-none!"
       >
         <SidebarProvider className="h-[calc(100vh-60px)]! min-h-[calc(100vh-60px)]! flex-1 relative">
-          <SettingSidebar current={current} setCurrent={setCurrent} />
+          <SettingSidebar 
+            current={current} 
+            setCurrent={setCurrent} 
+            onClose={() => setShowSettingsDialog(false)}
+          />
           <ScrollArea className="max-h-[calc(100vh-50px)]! w-full">
             {renderContent()}
           </ScrollArea>
