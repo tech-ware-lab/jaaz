@@ -92,17 +92,34 @@ async def generate_video(
             'message': f'Generating {duration}s video...'
         })
 
-        # Prepare image URL
+        # Prepare image URL - convert local image to base64 data URL for Fal AI
         if image_url.startswith('im_') and not image_url.startswith('http'):
-            # Convert image_id to full URL
+            # Convert image_id to base64 data URL
             image_file_path = os.path.join(FILES_DIR, image_url)
             if not os.path.exists(image_file_path):
                 raise ValueError(f"Image file not found: {image_url}")
-            # For now, we'll use the local file path approach
-            # In production, you might want to serve this via HTTP
-            full_image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{image_url}"
+            
+            # Read image file and convert to base64 data URL
+            import base64
+            import mimetypes
+            
+            with open(image_file_path, 'rb') as image_file:
+                image_data = image_file.read()
+                
+            # Determine MIME type
+            mime_type, _ = mimetypes.guess_type(image_file_path)
+            if not mime_type:
+                # Default to JPEG if we can't determine the type
+                mime_type = 'image/jpeg'
+            
+            # Create base64 data URL
+            base64_data = base64.b64encode(image_data).decode('utf-8')
+            full_image_url = f"data:{mime_type};base64,{base64_data}"
+            print(f"🎬 Converted {image_url} to base64 data URL (length: {len(full_image_url)} chars)")
+            
         else:
             full_image_url = image_url
+            print(f"🎬 Using original image_url: {full_image_url}")
 
         # Generate video using the appropriate provider
         mime_type, filename, actual_duration = await generator.generate_video(

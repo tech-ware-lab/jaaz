@@ -113,6 +113,8 @@ class FalAIVideoGenerator(VideoGenerator):
                 "prompt_optimizer": kwargs.get('prompt_optimizer', True),
             }
             
+            print(f"🎬 Fal AI arguments: prompt={prompt}, image_url={image_url[:100]}{'...' if len(image_url) > 100 else ''}, duration={duration}")
+            
             # Make API call
             endpoint = "fal-ai/minimax/hailuo-02/standard/image-to-video"
             result = await asyncio.get_event_loop().run_in_executor(

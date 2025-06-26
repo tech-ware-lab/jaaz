@@ -1,4 +1,4 @@
-INFO:     Started server process [39145]
+INFO:     Started server process [44396]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:57988 (Press CTRL+C to quit)
@@ -7,59 +7,129 @@ local db version (3,) latest version 3
 🎬 {'properties': {'prompt': {'description': 'Required. The prompt for video generation describing the motion or animation you want to see.', 'title': 'Prompt', 'type': 'string'}, 'image_url': {'description': "Required. The image URL or image_id to use as the starting frame for video generation. Pass image_id here, e.g. 'im_jurheut7.png'.", 'title': 'Image Url', 'type': 'string'}, 'duration': {'default': '6', 'description': "Optional. Video duration in seconds. Options: '6' or '10'. Default is '6'.", 'title': 'Duration', 'type': 'string'}, 'tool_call_id': {'title': 'Tool Call Id', 'type': 'string'}}, 'required': ['prompt', 'image_url', 'tool_call_id'], 'title': 'GenerateVideoInputSchema', 'type': 'object'}
 🌟Starting server, UI_DIST_DIR: None
 Broadcasted init_done to all clients
-INFO:     127.0.0.1:46562 - "GET /socket.io/?EIO=4&transport=polling&t=h79ozwtw HTTP/1.1" 200 OK
-Client av5qOhX9yjSlqlT0AAAB connected
-New connection added: av5qOhX9yjSlqlT0AAAB, total connections: 1
-INFO:     127.0.0.1:46562 - "POST /socket.io/?EIO=4&transport=polling&t=h7aou1f1&sid=_1WTEvs4xTluQbTAAAAA HTTP/1.1" 200 OK
-INFO:     127.0.0.1:46562 - "GET /socket.io/?EIO=4&transport=polling&t=h7aovo29&sid=_1WTEvs4xTluQbTAAAAA HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37990 - "GET /socket.io/?EIO=4&transport=polling&t=hoat9ick HTTP/1.1" 200 OK
+Client FI4v0eJtHE2qTeW5AAAB connected
+New connection added: FI4v0eJtHE2qTeW5AAAB, total connections: 1
+INFO:     127.0.0.1:37990 - "POST /socket.io/?EIO=4&transport=polling&t=hob28v4f&sid=GbC7_GlgMq-4Mwj1AAAA HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37990 - "GET /socket.io/?EIO=4&transport=polling&t=hob2am7h&sid=GbC7_GlgMq-4Mwj1AAAA HTTP/1.1" 200 OK
 INFO:     connection rejected (400 Bad Request)
 INFO:     connection closed
-INFO:     127.0.0.1:46562 - "GET /socket.io/?EIO=4&transport=polling&t=h7ap3hmc&sid=_1WTEvs4xTluQbTAAAAA HTTP/1.1" 200 OK
-INFO:     127.0.0.1:46562 - "POST /socket.io/?EIO=4&transport=polling&t=h7vt9781&sid=_1WTEvs4xTluQbTAAAAA HTTP/1.1" 200 OK
-INFO:     127.0.0.1:32970 - "POST /api/canvas/WU5WRK1OGnhb9wT411g9z/save HTTP/1.1" 200 OK
-INFO:     127.0.0.1:32986 - "GET /api/config HTTP/1.1" 200 OK
-INFO:     127.0.0.1:32992 - "GET /api/config HTTP/1.1" 200 OK
-INFO:     127.0.0.1:32996 - "GET /api/settings/comfyui/list_workflows HTTP/1.1" 200 OK
-ComfyUI connection error: All connection attempts failed
-INFO:     127.0.0.1:33012 - "POST /api/comfyui/object_info HTTP/1.1" 503 Service Unavailable
-ComfyUI connection error: All connection attempts failed
-INFO:     127.0.0.1:33032 - "POST /api/comfyui/object_info HTTP/1.1" 503 Service Unavailable
-INFO:     127.0.0.1:33018 - "GET /api/settings/comfyui/list_workflows HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59754 - "POST /api/config HTTP/1.1" 200 OK
-Error querying Ollama: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/tags (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7da361f661b0>: Failed to establish a new connection: [Errno 111] Connection refused'))
+INFO:     127.0.0.1:49534 - "POST /api/canvas/WU5WRK1OGnhb9wT411g9z/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40890 - "POST /api/canvas/WU5WRK1OGnhb9wT411g9z/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40898 - "POST /api/canvas/WU5WRK1OGnhb9wT411g9z/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40914 - "POST /api/canvas/WU5WRK1OGnhb9wT411g9z/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48336 - "POST /api/canvas/WU5WRK1OGnhb9wT411g9z/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48346 - "POST /api/canvas/WU5WRK1OGnhb9wT411g9z/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37990 - "GET /socket.io/?EIO=4&transport=polling&t=hob2hqxu&sid=GbC7_GlgMq-4Mwj1AAAA HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37990 - "POST /socket.io/?EIO=4&transport=polling&t=how8qh2i&sid=GbC7_GlgMq-4Mwj1AAAA HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48350 - "POST /api/canvas/WU5WRK1OGnhb9wT411g9z/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48364 - "POST /api/canvas/WU5WRK1OGnhb9wT411g9z/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48378 - "POST /api/canvas/WU5WRK1OGnhb9wT411g9z/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38024 - "GET /socket.io/?EIO=4&transport=polling&t=hp2uwuf6 HTTP/1.1" 200 OK
+Client Hw9L1_IQ9ZvYuR1sAAAD connected
+New connection added: Hw9L1_IQ9ZvYuR1sAAAD, total connections: 2
+INFO:     127.0.0.1:38024 - "POST /socket.io/?EIO=4&transport=polling&t=hp2whd02&sid=RklHSNxDe76PHD6hAAAC HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38024 - "GET /socket.io/?EIO=4&transport=polling&t=hp2wi5tx&sid=RklHSNxDe76PHD6hAAAC HTTP/1.1" 200 OK
+Error querying Ollama: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/tags (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7cddce820b30>: Failed to establish a new connection: [Errno 111] Connection refused'))
 👇ollama_models []
-INFO:     127.0.0.1:59766 - "GET /api/list_models HTTP/1.1" 200 OK
-INFO:     127.0.0.1:46562 - "GET /socket.io/?EIO=4&transport=polling&t=h7vtawun&sid=_1WTEvs4xTluQbTAAAAA HTTP/1.1" 200 OK
-INFO:     127.0.0.1:46562 - "POST /socket.io/?EIO=4&transport=polling&t=h8gxtvze&sid=_1WTEvs4xTluQbTAAAAA HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51306 - "POST /api/canvas/WU5WRK1OGnhb9wT411g9z/save HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35276 - "POST /api/canvas/WU5WRK1OGnhb9wT411g9z/save HTTP/1.1" 200 OK
-Error querying Ollama: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/tags (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7da361eeee40>: Failed to establish a new connection: [Errno 111] Connection refused'))
-👇ollama_models []
-INFO:     127.0.0.1:35284 - "GET /api/list_models HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35300 - "GET /socket.io/?EIO=4&transport=polling&t=h8xw1q6y HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35300 - "GET /socket.io/?EIO=4&transport=polling&t=h8y01d33 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35300 - "GET /socket.io/?EIO=4&transport=polling&t=h8y0cck5 HTTP/1.1" 200 OK
-Client gqg0Ji4eCrjMHIqkAAAF connected
-New connection added: gqg0Ji4eCrjMHIqkAAAF, total connections: 2
-INFO:     127.0.0.1:35300 - "POST /socket.io/?EIO=4&transport=polling&t=h8y8viia&sid=PKzFozw8-yyIrY_OAAAE HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35316 - "GET /socket.io/?EIO=4&transport=polling&t=h8y8wxsr&sid=PKzFozw8-yyIrY_OAAAE HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33936 - "GET /api/list_models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38024 - "GET /socket.io/?EIO=4&transport=polling&t=hp2yt96u HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38024 - "GET /socket.io/?EIO=4&transport=polling&t=hp2yzes9 HTTP/1.1" 200 OK
 INFO:     connection rejected (400 Bad Request)
 INFO:     connection closed
-INFO:     127.0.0.1:35364 - "GET /api/canvas/list HTTP/1.1" 200 OK
+Client Hw9L1_IQ9ZvYuR1sAAAD disconnected
+Connection removed: Hw9L1_IQ9ZvYuR1sAAAD, total connections: 1
+INFO:     127.0.0.1:38024 - "POST /socket.io/?EIO=4&transport=polling&t=hp38j1y6&sid=RklHSNxDe76PHD6hAAAC HTTP/1.1" 200 OK
+Client TrX3Whke-m_0MY3QAAAG connected
+New connection added: TrX3Whke-m_0MY3QAAAG, total connections: 2
+INFO:     127.0.0.1:38024 - "POST /socket.io/?EIO=4&transport=polling&t=hp38ml11&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hp38o1xh&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     connection rejected (400 Bad Request)
+INFO:     connection closed
+INFO:     127.0.0.1:33986 - "GET /api/canvas/list HTTP/1.1" 200 OK
 🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_zibvhdWJ.jpeg
 🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_Qk_oyl-a.png
 🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_uGvsNmiv.png
-INFO:     127.0.0.1:40842 - "GET /api/file/im_Qk_oyl-a.png HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40836 - "GET /api/file/im_zibvhdWJ.jpeg HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40844 - "GET /api/file/im_uGvsNmiv.png HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35316 - "GET /socket.io/?EIO=4&transport=polling&t=h8yujh7q&sid=PKzFozw8-yyIrY_OAAAE HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35316 - "POST /socket.io/?EIO=4&transport=polling&t=h9j85dng&sid=PKzFozw8-yyIrY_OAAAE HTTP/1.1" 200 OK
-Client av5qOhX9yjSlqlT0AAAB disconnected
-Connection removed: av5qOhX9yjSlqlT0AAAB, total connections: 1
-INFO:     127.0.0.1:35332 - "GET /socket.io/?EIO=4&transport=polling&t=h9j86k6r&sid=PKzFozw8-yyIrY_OAAAE HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35332 - "POST /socket.io/?EIO=4&transport=polling&t=ha4d2yaa&sid=PKzFozw8-yyIrY_OAAAE HTTP/1.1" 200 OK
-INFO:     127.0.0.1:34838 - "GET /api/config HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35338 - "GET /socket.io/?EIO=4&transport=polling&t=ha4d2w9p&sid=PKzFozw8-yyIrY_OAAAE HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35338 - "POST /socket.io/?EIO=4&transport=polling&t=hapid8t8&sid=PKzFozw8-yyIrY_OAAAE HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35338 - "GET /socket.io/?EIO=4&transport=polling&t=hapiez0n&sid=PKzFozw8-yyIrY_OAAAE HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35338 - "POST /socket.io/?EIO=4&transport=polling&t=hbarlgtq&sid=PKzFozw8-yyIrY_OAAAE HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33990 - "GET /api/file/im_zibvhdWJ.jpeg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34002 - "GET /api/file/im_Qk_oyl-a.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34012 - "GET /api/file/im_uGvsNmiv.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34024 - "GET /api/canvas/J28MrU6eXC7VyGjqNUZAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34038 - "GET /api/canvas/J28MrU6eXC7VyGjqNUZAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34052 - "GET /api/chat_session/aJ9LE-b-08vAiq-bCp0jx HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_uGvsNmiv.png
+INFO:     127.0.0.1:34060 - "GET /api/file/im_uGvsNmiv.png HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_d92LZO8_.png
+INFO:     127.0.0.1:34070 - "GET /api/file/im_d92LZO8_.png HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_IrG8yNmS.png
+INFO:     127.0.0.1:34078 - "GET /api/file/im_IrG8yNmS.png HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_uGvsNmiv.png
+INFO:     127.0.0.1:34094 - "GET /api/file/im_uGvsNmiv.png HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_d92LZO8_.png
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_IrG8yNmS.png
+INFO:     127.0.0.1:34106 - "GET /api/file/im_d92LZO8_.png HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_edIsBZvP.png
+INFO:     127.0.0.1:34120 - "GET /api/file/im_IrG8yNmS.png HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_kjAU7pTy.png
+INFO:     127.0.0.1:34130 - "GET /api/file/im_edIsBZvP.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34140 - "GET /api/file/im_kjAU7pTy.png HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_edIsBZvP.png
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_kjAU7pTy.png
+INFO:     127.0.0.1:34146 - "GET /api/file/im_edIsBZvP.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34150 - "GET /api/file/im_kjAU7pTy.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44930 - "POST /api/canvas/J28MrU6eXC7VyGjqNUZAF/save HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_kjAU7pTy.png
+INFO:     127.0.0.1:44942 - "GET /api/file/im_kjAU7pTy.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44948 - "POST /api/canvas/J28MrU6eXC7VyGjqNUZAF/save HTTP/1.1" 200 OK
+👇last_agent image_designer
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hp3t28q8&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+🦄get_file file_path /home/zdhpe/jaaz/server/user_data/files/im_kjAU7pTy.png
+INFO:     127.0.0.1:44968 - "GET /api/file/im_kjAU7pTy.png HTTP/1.1" 200 OK
+😘tool_call event [{'name': 'transfer_to_video_designer', 'args': {}, 'id': 'call_ao44t1fhptO9xxwtLpGEOHDw', 'type': 'tool_call'}]
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpi5u8ib&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpk1y8zj&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpk7gwq8&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+😘tool_call event [{'name': 'generate_video', 'args': {}, 'id': 'call_3YNYnua0BKTtHfoISr4xI1rO', 'type': 'tool_call'}]
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpkcccc9&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpknd9y3&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpkr5jql&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpks11xg&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpkssxnx&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpktub4j&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpkzlaxo&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpl4t2zq&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hplactgc&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpld5kop&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hple5e58&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hplew7bd&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hplfubav&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hplgirak&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hplhakng&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hplhz8j3&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpliu5hn&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpljjon1&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hplka8k5&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hplkzuik&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpllut75&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hplqdas9&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+🎬 video tool_call_id call_3YNYnua0BKTtHfoISr4xI1rO
+🎬 canvas_id J28MrU6eXC7VyGjqNUZAF session_id aJ9LE-b-08vAiq-bCp0jx
+🎬 Converted im_kjAU7pTy.png to base64 data URL (length: 1887822 chars)
+🎬 Fal AI arguments: prompt=The dragon flaps its purple wings slowly, creating a gentle breeze that rustles the surrounding vegetation. The camera pans around the dragon, showcasing its majestic form and the intricate details of its scales. The misty landscape in the background shifts subtly, enhancing the mystical atmosphere., image_url=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA3AAAASgCAIAAAA2ET0hAAFyq2NhQlgAAXKranVtYgAAAB5qdW1kYz..., duration=10
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hplvmgl8&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpm01asv&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33962 - "POST /socket.io/?EIO=4&transport=polling&t=hpo7sc77&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52986 - "POST /api/canvas/J28MrU6eXC7VyGjqNUZAF/save HTTP/1.1" 200 OK
+Client FI4v0eJtHE2qTeW5AAAB disconnected
+Connection removed: FI4v0eJtHE2qTeW5AAAB, total connections: 1
+INFO:     127.0.0.1:33962 - "GET /socket.io/?EIO=4&transport=polling&t=hpo7t3we&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51778 - "POST /socket.io/?EIO=4&transport=polling&t=hq9hpkr4&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+Error querying Ollama: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/tags (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7cddc461d3a0>: Failed to establish a new connection: [Errno 111] Connection refused'))
+👇ollama_models []
+INFO:     127.0.0.1:51808 - "GET /api/list_models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51788 - "GET /socket.io/?EIO=4&transport=polling&t=hq9hqp59&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51788 - "POST /socket.io/?EIO=4&transport=polling&t=hqv223vz&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+Error querying Ollama: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/tags (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7cddc461e3f0>: Failed to establish a new connection: [Errno 111] Connection refused'))
+👇ollama_models []
+INFO:     127.0.0.1:34976 - "GET /api/list_models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51796 - "GET /socket.io/?EIO=4&transport=polling&t=hqv22syr&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51796 - "POST /socket.io/?EIO=4&transport=polling&t=hrgdgbpd&sid=GEF6qSAl3tl8nrjAAAAF HTTP/1.1" 200 OK
