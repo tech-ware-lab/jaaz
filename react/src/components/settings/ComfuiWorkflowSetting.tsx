@@ -205,7 +205,7 @@ function AddWorkflowDialog({
   )
   const [outputs, setOutputs] = useState<
     {
-      name: string
+      name: stringcreate_workflow
       type: 'string' | 'number' | 'boolean'
       description: string
     }[]
