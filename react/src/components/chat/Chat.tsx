@@ -227,6 +227,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     [canvasId, sessionId]
   )
 
+  const handleVideoGenerated = useCallback(
+    (data: TEvents['Socket::Session::VideoGenerated']) => {
+      if (
+        data.canvas_id &&
+        data.canvas_id !== canvasId &&
+        data.session_id !== sessionId
+      ) {
+        return
+      }
+
+      console.log('🎬dispatching video_generated', data)
+      setPending('image') // Use same pending state for video
+    },
+    [canvasId, sessionId]
+  )
+
   const handleAllMessages = useCallback(
     (data: TEvents['Socket::Session::AllMessages']) => {
       if (data.session_id && data.session_id !== sessionId) {
@@ -285,6 +301,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     eventBus.on('Socket::Session::ToolCall', handleToolCall)
     eventBus.on('Socket::Session::ToolCallArguments', handleToolCallArguments)
     eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
+    eventBus.on('Socket::Session::VideoGenerated', handleVideoGenerated)
     eventBus.on('Socket::Session::AllMessages', handleAllMessages)
     eventBus.on('Socket::Session::Done', handleDone)
     eventBus.on('Socket::Session::Error', handleError)
@@ -299,6 +316,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         handleToolCallArguments
       )
       eventBus.off('Socket::Session::ImageGenerated', handleImageGenerated)
+      eventBus.off('Socket::Session::VideoGenerated', handleVideoGenerated)
       eventBus.off('Socket::Session::AllMessages', handleAllMessages)
       eventBus.off('Socket::Session::Done', handleDone)
       eventBus.off('Socket::Session::Error', handleError)
