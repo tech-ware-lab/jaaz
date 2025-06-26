@@ -4,7 +4,7 @@ import requests
 from services.config_service import config_service
 from services.db_service import db_service
 
-#services
+# services
 from services.files_service import download_file
 from services.websocket_service import broadcast_init_done
 
@@ -14,13 +14,16 @@ router = APIRouter(prefix="/api")
 # async def workspace_list():
 #     return [{"name": entry.name, "is_dir": entry.is_dir(), "path": str(entry)} for entry in Path(WORKSPACE_ROOT).iterdir()]
 
+
 async def initialize():
     # await initialize_mcp()
     await broadcast_init_done()
 
+
 @router.get("/workspace_download")
 async def workspace_download(path: str):
     return download_file(path)
+
 
 def get_ollama_model_list():
     base_url = config_service.get_config().get('ollama', {}).get(
@@ -39,31 +42,49 @@ def get_ollama_model_list():
 async def get_models():
     config = config_service.get_config()
     res = []
-    ollama_models = get_ollama_model_list()
+
+    # Handle Ollama models separately
     ollama_url = config_service.get_config().get('ollama', {}).get(
         'url', os.getenv('OLLAMA_HOST', 'http://localhost:11434'))
-    print('👇ollama_models', ollama_models)
-    for ollama_model in ollama_models:
-        res.append({
-            'provider': 'ollama',
-            'model': ollama_model,
-            'url': ollama_url,
-            'type': 'text'
-        })
+
+    # Add Ollama models if URL is available
+    if ollama_url and ollama_url.strip():
+        ollama_models = get_ollama_model_list()
+        for ollama_model in ollama_models:
+            res.append({
+                'provider': 'ollama',
+                'model': ollama_model,
+                'url': ollama_url,
+                'type': 'text'
+            })
+
+    # Handle providers that are not ollama
     for provider in config.keys():
-        models = config[provider].get('models', {})
+        if provider == 'ollama':
+            continue
+
+        provider_config = config[provider]
+        provider_url = provider_config.get('url', '').strip()
+        provider_api_key = provider_config.get('api_key', '').strip()
+
+        # Skip provider if URL is empty
+        if not provider_url:
+            continue
+
+        # Skip provider if API key is required and empty (ollama and comfyui don't need API key)
+        if provider not in ['ollama', 'comfyui'] and not provider_api_key:
+            continue
+
+        models = provider_config.get('models', {})
         for model_name in models:
-            if provider == 'ollama':
-                continue
-            if provider != 'comfyui' and config[provider].get('api_key', '') == '':
-                continue
             model = models[model_name]
             res.append({
                 'provider': provider,
                 'model': model_name,
-                'url': config[provider].get('url', ''),
+                'url': provider_url,
                 'type': model.get('type', 'text')
             })
+
     return res
 
 
