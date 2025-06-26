@@ -97,6 +97,7 @@ const PROVIDER_OPTIONS = [
         'stable-diffusion-v3-5-large': { type: 'image', name: 'Stable Diffusion 3.5 Large' },
         'ideogram-v2': { type: 'image', name: 'Ideogram V2' },
         'hidream-i1': { type: 'image', name: 'HiDream I1' },
+        'minimax/hailuo-02': { type: 'video', name: 'Hailuo Image-to-Video' },
       },
     },
   },

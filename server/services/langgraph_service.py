@@ -29,6 +29,7 @@ from services.db_service import db_service
 from services.config_service import config_service
 from services.websocket_service import send_to_websocket
 from tools.image_generators import generate_image
+from tools.video_tools import generate_video
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langgraph_swarm import create_swarm
@@ -44,11 +45,12 @@ class InputParam(BaseModel):
 def create_tool(tool_json: dict):
     TOOL_MAP = {
         'generate_image': generate_image,
+        'generate_video': generate_video,
         'write_plan': write_plan_tool,
     }
     return TOOL_MAP.get(tool_json.get('tool', ''), None)
 
-async def langgraph_agent(messages, canvas_id, session_id, text_model, image_model):
+async def langgraph_agent(messages, canvas_id, session_id, text_model, image_model, video_model=None):
     try:
         model = text_model.get('model')
         provider = text_model.get('provider')
@@ -84,7 +86,8 @@ async def langgraph_agent(messages, canvas_id, session_id, text_model, image_mod
             'canvas_id': canvas_id,
             'session_id': session_id,
             'model_info': {
-                'image': image_model
+                'image': image_model,
+                'video': video_model
             },
         }
         tool_calls: list[ToolCall] = []
@@ -212,7 +215,7 @@ def create_handoff_tool(
     handoff_to_agent.metadata = {METADATA_KEY_HANDOFF_DESTINATION: agent_name}
     return handoff_to_agent
 
-async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, image_model, system_prompt: str = None):
+async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, image_model, system_prompt: str = None, video_model=None):
     try:
         model = text_model.get('model')
         provider = text_model.get('provider')
@@ -295,6 +298,38 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 ],
                 'system_prompt': system_prompt,
                 'knowledge': [],
+                'handoffs': [
+                    {
+                        'agent_name': 'video_designer',
+                        'description': """
+                        Transfer user to the video_designer. About this agent: Specialize in generating videos from images.
+                        """
+                    }
+                ]
+            },
+            {
+                'name': 'video_designer',
+                'tools': [
+                    {
+                        'name': 'generate_video',
+                        'description': "Generate a video from an image and prompt",
+                        'tool': 'generate_video',
+                    }
+                ],
+                'system_prompt': """You are a professional video design agent. You specialize in generating videos from images using AI video generation models.
+                
+When generating videos:
+1. Use the generate_video tool with a clear motion prompt describing what should happen in the video
+2. Always specify an existing image_id as the starting frame (e.g., 'im_abc123.png')
+3. Choose appropriate duration (6s for quick animations, 10s for more complex sequences)
+4. Focus on describing motion, camera movement, and animation rather than static descriptions
+
+Example prompts:
+- "The woman slowly turns her head to look at the camera, with gentle wind blowing through her hair"
+- "Camera slowly zooms out to reveal the full scene, with subtle parallax movement"
+- "The product rotates 360 degrees showcasing all angles with professional lighting"
+""",
+                'knowledge': [],
                 'handoffs': []
             }
         ]
@@ -342,7 +377,8 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
             'canvas_id': canvas_id,
             'session_id': session_id,
             'model_info': {
-                'image': image_model
+                'image': image_model,
+                'video': video_model
             },
         }
         tool_calls: list[ToolCall] = []

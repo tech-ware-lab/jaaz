@@ -124,6 +124,7 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
       'stable-diffusion-v3-5-large': { type: 'image', name: 'Stable Diffusion 3.5 Large' },
       'ideogram-v2': { type: 'image', name: 'Ideogram V2' },
       'hidream-i1': { type: 'image', name: 'HiDream I1' },
+      'minimax/hailuo-02': { type: 'video', name: 'Hailuo Image-to-Video' },
     },
     url: 'https://fal.run/',
     api_key: '',
@@ -145,6 +146,7 @@ export const DEFAULT_MODEL_LIST = Object.keys(DEFAULT_PROVIDERS_CONFIG).flatMap(
 export const TOOL_CALL_NAME_MAPPING: { [key in ToolCallFunctionName]: string } =
   {
     generate_image: 'Generate Image',
+    generate_video: 'Generate Video',
     prompt_user_multi_choice: 'Prompt Multi-Choice',
     prompt_user_single_choice: 'Prompt Single-Choice',
     write_plan: 'Write Plan',

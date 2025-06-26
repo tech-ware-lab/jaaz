@@ -47,19 +47,67 @@ class FalAIGenerator(ImageGenerator):
         
         # FLUX models support
         if 'flux' in model.lower():
+            # Inference steps (default: 28 for dev, 25 for pro)
             if 'num_inference_steps' in kwargs:
-                args['num_inference_steps'] = kwargs['num_inference_steps']
+                args['num_inference_steps'] = int(kwargs['num_inference_steps'])
+            elif 'dev' in model.lower():
+                args['num_inference_steps'] = 28
+            else:
+                args['num_inference_steps'] = 25
+                
+            # Guidance scale (default: 3.5)
             if 'guidance_scale' in kwargs:
-                args['guidance_scale'] = kwargs['guidance_scale']
-            if 'lora_path' in kwargs:
+                args['guidance_scale'] = float(kwargs['guidance_scale'])
+            else:
+                args['guidance_scale'] = 3.5
+                
+            # LoRA support
+            if 'lora_path' in kwargs and kwargs['lora_path']:
                 args['lora_path'] = kwargs['lora_path']
+            if 'lora_scale' in kwargs:
+                args['lora_scale'] = float(kwargs['lora_scale'])
+                
+            # Seed for reproducibility
+            if 'seed' in kwargs:
+                args['seed'] = int(kwargs['seed'])
+                
+            # Safety checker
+            if 'enable_safety_checker' in kwargs:
+                args['enable_safety_checker'] = bool(kwargs['enable_safety_checker'])
+            else:
+                args['enable_safety_checker'] = True
                 
         # Recraft V3 specific parameters
         elif 'recraft' in model.lower():
             if 'style' in kwargs:
-                args['style'] = kwargs['style']
+                args['style'] = kwargs['style']  # realistic_image, digital_illustration, vector_illustration
             if 'substyle' in kwargs:
                 args['substyle'] = kwargs['substyle']
+            if 'colors' in kwargs:
+                args['colors'] = kwargs['colors']  # Array of color names
+                
+        # Ideogram V2 parameters
+        elif 'ideogram' in model.lower():
+            if 'style_type' in kwargs:
+                args['style_type'] = kwargs['style_type']  # AUTO, GENERAL, REALISTIC, DESIGN, RENDER_3D, ANIME
+            if 'magic_prompt_option' in kwargs:
+                args['magic_prompt_option'] = kwargs['magic_prompt_option']  # AUTO, ON, OFF
+                
+        # HiDream I1 parameters
+        elif 'hidream' in model.lower():
+            if 'steps' in kwargs:
+                args['steps'] = int(kwargs['steps'])
+            if 'cfg_scale' in kwargs:
+                args['cfg_scale'] = float(kwargs['cfg_scale'])
+                
+        # Stable Diffusion 3.5 parameters
+        elif 'stable-diffusion' in model.lower():
+            if 'num_inference_steps' in kwargs:
+                args['num_inference_steps'] = int(kwargs['num_inference_steps'])
+            if 'guidance_scale' in kwargs:
+                args['guidance_scale'] = float(kwargs['guidance_scale'])
+            if 'seed' in kwargs:
+                args['seed'] = int(kwargs['seed'])
                 
         return args
 
