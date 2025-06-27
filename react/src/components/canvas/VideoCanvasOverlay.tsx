@@ -34,6 +34,18 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
   const [dragging, setDragging] = useState<{ id: string; startX: number; startY: number; offsetX: number; offsetY: number } | null>(null)
   const { excalidrawAPI } = useCanvas()
 
+  // Debug video state changes
+  const prevVideoCount = useRef(0)
+  useEffect(() => {
+    if (videoElements.length !== prevVideoCount.current) {
+      console.log(`🎬 Video count changed: ${prevVideoCount.current} -> ${videoElements.length}`)
+      if (videoElements.length < prevVideoCount.current) {
+        console.warn('⚠️ Videos were removed! Previous:', prevVideoCount.current, 'Current:', videoElements.length)
+      }
+      prevVideoCount.current = videoElements.length
+    }
+  }, [videoElements.length])
+
   // Get canvas transform for positioning videos correctly
   const getCanvasTransform = useCallback(() => {
     if (!excalidrawAPI) {
@@ -201,13 +213,22 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
   }, [selectedVideoId, excalidrawAPI])
 
   // Handle video selection
-  const handleVideoSelect = useCallback((videoId: string) => {
+  const handleVideoSelect = useCallback((videoId: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    console.log('🎯 Video selected:', videoId)
     setSelectedVideoId(videoId)
   }, [])
 
   // Handle drag start
   const handleDragStart = useCallback((videoId: string, event: React.MouseEvent) => {
     event.preventDefault()
+    event.stopPropagation()
+    
+    console.log('🚀 Drag start for video:', videoId)
+    
     const rect = event.currentTarget.getBoundingClientRect()
     const offsetX = event.clientX - rect.left
     const offsetY = event.clientY - rect.top
@@ -421,7 +442,16 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
             position: 'absolute',
             overflow: 'hidden'
           }}
-          onMouseDown={(e) => handleDragStart(video.id, e)}
+          onMouseDown={(e) => {
+            console.log('📱 Mouse down on video container:', video.id)
+            handleDragStart(video.id, e)
+          }}
+          onClick={(e) => {
+            console.log('🖱️ Click on video container:', video.id)
+            e.preventDefault()
+            e.stopPropagation()
+            handleVideoSelect(video.id, e)
+          }}
         >
           <CanvasVideoElement
             elementId={video.id}
@@ -432,7 +462,14 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
             height={video.transformedHeight}
             duration={video.duration}
             isSelected={selectedVideoId === video.id}
-            onSelect={() => handleVideoSelect(video.id)}
+            onSelect={(e) => {
+              console.log('🎬 CanvasVideoElement clicked:', video.id)
+              if (e) {
+                e.preventDefault()
+                e.stopPropagation()
+              }
+              handleVideoSelect(video.id)
+            }}
           />
           
           {/* Controls when selected */}

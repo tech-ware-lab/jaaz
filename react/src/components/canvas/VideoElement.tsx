@@ -109,7 +109,12 @@ export const CanvasVideoElement: React.FC<{
         'w-full h-full cursor-pointer transition-all',
         isSelected && 'ring-2 ring-blue-500 ring-offset-2'
       )}
-      onClick={onSelect}
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        console.log('🎯 CanvasVideoElement div clicked')
+        onSelect?.(e)
+      }}
     >
       <VideoElement
         src={src}
@@ -119,7 +124,10 @@ export const CanvasVideoElement: React.FC<{
         isPreview={false}
         muted={true}
         autoPlay={false}
-        onClick={onSelect}
+        onClick={(e) => {
+          console.log('🎬 VideoElement clicked')
+          // Don't call onSelect again - already handled by parent div
+        }}
       />
     </div>
   )
