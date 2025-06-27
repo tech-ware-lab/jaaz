@@ -16,6 +16,7 @@ Importing this module will:
 If `run_comfy_workflow` is not yet implemented it will still work
 (actually return a stub dict) so callers won't crash.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -87,9 +88,9 @@ def _build_input_schema(wf: Dict[str, Any]) -> type[BaseModel]:
                 Field(default=default_val, description=desc),
             )
     # add a tool_call_id - fix the field definition format
-    fields['tool_call_id'] = (
-        Annotated[str, InjectedToolCallId], 
-        Field(description="Tool call identifier")
+    fields["tool_call_id"] = (
+        Annotated[str, InjectedToolCallId],
+        Field(description="Tool call identifier"),
     )
 
     model_name = f"{wf['name'].title().replace(' ', '')}InputSchema"
@@ -113,28 +114,45 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
         """
         code to call comfyui generating image.
         """
-        print('🛠️ tool_call_id', tool_call_id)
-        ctx = config.get('configurable', {})
-        canvas_id = ctx.get('canvas_id', '')
-        session_id = ctx.get('session_id', '')
-        print('🛠️canvas_id', canvas_id, 'session_id', session_id)
+        print("🛠️ tool_call_id", tool_call_id)
+        ctx = config.get("configurable", {})
+        canvas_id = ctx.get("canvas_id", "")
+        session_id = ctx.get("session_id", "")
+        print("🛠️canvas_id", canvas_id, "session_id", session_id)
         # Inject the tool call id into the context
-        ctx['tool_call_id'] = tool_call_id
+        ctx["tool_call_id"] = tool_call_id
         api_url = (
             config_service.app_config.get("comfyui", {})
             .get("url", "")
             .replace("http://", "")
             .replace("https://", "")
         )
-        host, port = map(str, api_url.split(":"))
+        if ":" in api_url:
+            host, port = map(str, api_url.split(":"))
+        else:
+            host = api_url
+            port = (
+                443
+                if (
+                    "https"
+                    in config_service.app_config.get("comfyui", {}).get("url", "")
+                )
+                else 80
+            )
 
         # if there's image, upload it!
         # First, let's fliter all values endswith .jpg .png etc
         image_format = (
-            ".png", ".jpg", ".jpeg", ".webp",  # 基础格式
-            ".bmp", ".tiff", ".tif"   # 其他常见格式
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".webp",  # 基础格式
+            ".bmp",
+            ".tiff",
+            ".tif",  # 其他常见格式
         )
         required_data = dict(kwargs)
+        # BUG: Image cannot be uploaded
         for key, value in required_data.items():
             if isinstance(value, str) and value.lower().endswith(image_format):
                 # Image!
@@ -151,7 +169,9 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
 
         try:
             input_defs: List[Dict[str, Any]] = (
-                wf["inputs"] if isinstance(wf["inputs"], list) else json.loads(wf["inputs"])
+                wf["inputs"]
+                if isinstance(wf["inputs"], list)
+                else json.loads(wf["inputs"])
             )
         except Exception:
             input_defs = []
@@ -175,75 +195,82 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
         # 改为直接遍历节点输入检测seed字段，替代字符串匹配
         seed_nodes = []
         for node_id, node in workflow_dict.items():
-            if 'seed' in node.get('inputs', {}):  # 直接检查节点输入是否有seed字段
+            if "seed" in node.get("inputs", {}):  # 直接检查节点输入是否有seed字段
                 seed_nodes.append(node_id)  # 收集所有含seed的节点，不移除break
 
         if len(seed_nodes) > 0:  # 仅在存在种子节点时执行
             for node_id in seed_nodes:
                 # 使用更大的随机范围（0到2^32-1更符合常见种子范围）
-                workflow_dict[node_id]['inputs']['seed'] = random.randint(1, (1 << 32) - 1)
-
+                workflow_dict[node_id]["inputs"]["seed"] = random.randint(
+                    1, (1 << 32) - 1
+                )
 
         try:
             generator = ComfyUIWorkflowRunner(workflow_dict)
             extra_kwargs = {}
-            extra_kwargs['ctx'] = ctx
+            extra_kwargs["ctx"] = ctx
 
             mime_type, width, height, filename = await generator.generate(
                 **extra_kwargs
             )
             file_id = generate_file_id()
 
-            url = f'/api/file/{filename}'
+            url = f"/api/file/{filename}"
 
             file_data = {
-                'mimeType': mime_type,
-                'id': file_id,
-                'dataURL': url,
-                'created': int(time.time() * 1000),
+                "mimeType": mime_type,
+                "id": file_id,
+                "dataURL": url,
+                "created": int(time.time() * 1000),
             }
 
-            new_image_element = await generate_new_image_element(canvas_id, file_id, {
-                'width': width,
-                'height': height,
-            })
+            new_image_element = await generate_new_image_element(
+                canvas_id,
+                file_id,
+                {
+                    "width": width,
+                    "height": height,
+                },
+            )
 
             # update the canvas data, add the new image element
             canvas_data = await db_service.get_canvas_data(canvas_id)
-            if 'data' not in canvas_data:
-                canvas_data['data'] = {}
-            if 'elements' not in canvas_data['data']:
-                canvas_data['data']['elements'] = []
-            if 'files' not in canvas_data['data']:
-                canvas_data['data']['files'] = {}
+            if "data" not in canvas_data:
+                canvas_data["data"] = {}
+            if "elements" not in canvas_data["data"]:
+                canvas_data["data"]["elements"] = []
+            if "files" not in canvas_data["data"]:
+                canvas_data["data"]["files"] = {}
 
-            canvas_data['data']['elements'].append(new_image_element)
-            canvas_data['data']['files'][file_id] = file_data
+            canvas_data["data"]["elements"].append(new_image_element)
+            canvas_data["data"]["files"][file_id] = file_data
 
             image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
 
             # print('🛠️canvas_data', canvas_data)
 
-            await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data['data']))
+            await db_service.save_canvas_data(
+                canvas_id, json.dumps(canvas_data["data"])
+            )
 
-            await broadcast_session_update(session_id, canvas_id, {
-                'type': 'image_generated',
-                'element': new_image_element,
-                'file': file_data,
-                'image_url': image_url,
-            })
+            await broadcast_session_update(
+                session_id,
+                canvas_id,
+                {
+                    "type": "image_generated",
+                    "element": new_image_element,
+                    "file": file_data,
+                    "image_url": image_url,
+                },
+            )
 
             return f"image generated successfully ![image_id: {filename}]({image_url})"
 
         except Exception as e:
             print(f"Error generating image: {str(e)}")
             traceback.print_exc()
-            await send_to_websocket(session_id, {
-                'type': 'error',
-                'error': str(e)
-            })
+            await send_to_websocket(session_id, {"type": "error", "error": str(e)})
             return f"image generation failed: {str(e)}"
-
 
     return _run
 
@@ -251,6 +278,7 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
 # --------------------------------------------------------------------------- #
 # registration
 # --------------------------------------------------------------------------- #
+
 
 async def register_comfy_tools() -> Dict[str, BaseTool]:
     """
@@ -274,7 +302,9 @@ async def register_comfy_tools() -> Dict[str, BaseTool]:
             tool_service.register_tool(unique_name, tool_fn)
         except Exception as exc:  # pragma: no cover
             traceback.print_stack()
-            print(f"[comfy_dynamic] Failed to create tool for workflow {wf.get('id')}: {exc}")
+            print(
+                f"[comfy_dynamic] Failed to create tool for workflow {wf.get('id')}: {exc}"
+            )
     return dynamic_comfy_tools
 
 

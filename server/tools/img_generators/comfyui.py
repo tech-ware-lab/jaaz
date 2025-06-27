@@ -123,7 +123,18 @@ class ComfyUIWorkflowRunner(ImageGenerator):
             .replace("http://", "")
             .replace("https://", "")
         )
-        self.host, self.port = map(str, api_url.split(":"))
+        if ":" in api_url:
+            self.host, self.port = map(str, api_url.split(":"))
+        else:
+            self.host = api_url
+            self.port = (
+                443
+                if (
+                    "https"
+                    in config_service.app_config.get("comfyui", {}).get("url", "")
+                )
+                else 80
+            )
 
     async def generate(
         self,
@@ -135,7 +146,9 @@ class ComfyUIWorkflowRunner(ImageGenerator):
         # Get context from kwargs
         ctx = kwargs.get("ctx", {})
 
-        execution = await execute(self.workflow, self.host, self.port, local_paths=True, ctx=ctx)
+        execution = await execute(
+            self.workflow, self.host, self.port, local_paths=True, ctx=ctx
+        )
         print("🦄image execution outputs", execution.outputs)
         url = execution.outputs[0]
 
