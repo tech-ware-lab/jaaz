@@ -9,7 +9,8 @@ from tools.comfy_dynamic import register_comfy_tools
 # services
 from services.files_service import download_file
 from services.websocket_service import broadcast_init_done
-from typing import List, Literal, TypedDict
+from models.config_model import ModelInfo
+from typing import List
 
 router = APIRouter(prefix="/api")
 
@@ -60,12 +61,6 @@ async def get_comfyui_model_list(base_url: str):
         print(f"Error querying ComfyUI: {e}")
         return []
 
-
-class ModelInfo(TypedDict):
-    provider: str
-    model: str # For tool type, it is the function name
-    url: str
-    type: Literal['text', 'image', 'tool']
 
 @router.get("/list_models")
 async def get_models():

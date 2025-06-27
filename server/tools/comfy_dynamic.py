@@ -28,6 +28,7 @@ from io import BytesIO
 from typing import Annotated, Any, Dict, List, Optional
 
 from common import DEFAULT_PORT
+from services.tool_service import tool_service
 from .image_generation_utils import generate_file_id, generate_new_image_element
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import InjectedToolCallId, tool, BaseTool
@@ -251,17 +252,12 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
 # registration
 # --------------------------------------------------------------------------- #
 
-DYNAMIC_COMFY_TOOLS: Dict[str, BaseTool] = {}  # populated at runtime
-
-DYNAMIC_COMFY_TOOLS_DESCRIPTIONS: List[Dict[str, str]] = []
-
 async def register_comfy_tools() -> Dict[str, BaseTool]:
     """
     Fetch all workflows from DB and build tool callables.
     Run inside the current event loop.
     """
-    DYNAMIC_COMFY_TOOLS.clear()
-    DYNAMIC_COMFY_TOOLS_DESCRIPTIONS.clear()
+    dynamic_comfy_tools: Dict[str, BaseTool] = {}
     try:
         workflows = await db_service.list_comfy_workflows()
     except Exception as exc:  # pragma: no cover
@@ -273,18 +269,13 @@ async def register_comfy_tools() -> Dict[str, BaseTool]:
         try:
             tool_fn = _build_tool(wf)
             # Export with a unique python identifier so that `dir(module)` works
-            unique_name = f"comfyui_tool_{wf['id']}_{wf['name']}"
-            DYNAMIC_COMFY_TOOLS[wf['name']] = tool_fn
-            DYNAMIC_COMFY_TOOLS_DESCRIPTIONS.append({
-                'name': wf['name'],
-                'description': wf.get('description') or f"Run ComfyUI workflow {wf['id']}",
-                'tool': unique_name
-            })
-            print('🛠️', tool_fn.args_schema.model_json_schema())
+            unique_name = f"comfyui_{wf['name']}"
+            dynamic_comfy_tools[unique_name] = tool_fn
+            tool_service.register_tool(unique_name, tool_fn)
         except Exception as exc:  # pragma: no cover
             traceback.print_stack()
             print(f"[comfy_dynamic] Failed to create tool for workflow {wf.get('id')}: {exc}")
-    return DYNAMIC_COMFY_TOOLS
+    return dynamic_comfy_tools
 
 
 def _ensure_async_registration():
