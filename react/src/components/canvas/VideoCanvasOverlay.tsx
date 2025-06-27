@@ -257,8 +257,8 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
           : video
       )
       
-      // Debounce app state updates during drag
-      if (excalidrawAPI && Math.abs(deltaX) + Math.abs(deltaY) > 10) {
+      // Much less frequent app state updates during drag to prevent conflicts
+      if (excalidrawAPI && Math.abs(deltaX) + Math.abs(deltaY) > 100) {
         try {
           const currentElements = excalidrawAPI.getSceneElements()
           const appState = excalidrawAPI.getAppState()
@@ -306,15 +306,16 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
 
   // Monitor excalidrawAPI changes and restore videos if lost
   useEffect(() => {
-    if (excalidrawAPI && videoElements.length > 0) {
+    if (excalidrawAPI && videoElements.length > 0 && !dragging && !selectedVideoId) {
       const checkAndRestoreVideos = () => {
         try {
           const appState = excalidrawAPI.getAppState()
           const savedVideos = appState.videoElements || []
           
           // If app state has fewer videos than our component state, restore them
+          // But only if we're not currently dragging or interacting with videos
           if (savedVideos.length < videoElements.length) {
-            console.log('🔄 Restoring videos to app state')
+            console.log('🔄 Restoring videos to app state (safe to do so)')
             const updatedAppState = {
               ...appState,
               videoElements: videoElements
@@ -330,11 +331,11 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
         }
       }
       
-      // Check after a short delay to allow other updates to complete
-      const timer = setTimeout(checkAndRestoreVideos, 100)
+      // Much longer delay and only when not interacting with videos
+      const timer = setTimeout(checkAndRestoreVideos, 2000)
       return () => clearTimeout(timer)
     }
-  }, [excalidrawAPI, videoElements])
+  }, [excalidrawAPI, videoElements, dragging, selectedVideoId])
 
   // Handle video deselection when clicking outside
   const handleCanvasClick = useCallback((event: React.MouseEvent) => {
@@ -384,11 +385,14 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
       transformedHeight: minHeight
     }
     
-    console.log('👇 Video transform:', {
-      original: { x: safeX, y: safeY, w: safeWidth, h: safeHeight },
-      canvas: { zoom: safeZoom, scrollX: safeScrollX, scrollY: safeScrollY },
-      transformed: { x: transformed.transformedX, y: transformed.transformedY, w: transformed.transformedWidth, h: transformed.transformedHeight }
-    })
+    // Only log transform details occasionally to prevent console spam
+    if (Math.random() < 0.1) {
+      console.log('👇 Video transform:', {
+        original: { x: safeX, y: safeY, w: safeWidth, h: safeHeight },
+        canvas: { zoom: safeZoom, scrollX: safeScrollX, scrollY: safeScrollY },
+        transformed: { x: transformed.transformedX, y: transformed.transformedY, w: transformed.transformedWidth, h: transformed.transformedHeight }
+      })
+    }
     
     return transformed
   })
