@@ -36,7 +36,7 @@ class VideoGenerator(ABC):
         Args:
             prompt: Text prompt for video generation
             image_url: Input image URL for image-to-video generation
-            duration: Video duration in seconds (e.g., "6", "10")
+            duration: Video duration in seconds (supported: "6", "10" only)
             progress_callback: Optional callback function for progress updates
             **kwargs: Additional provider-specific parameters
             
@@ -101,6 +101,10 @@ class FalAIVideoGenerator(VideoGenerator):
         """Generate video using Fal AI Hailuo model"""
         
         try:
+            # Validate duration - Fal AI Hailuo only supports 6 and 10 seconds
+            if duration not in ["6", "10"]:
+                print(f"⚠️ Invalid duration '{duration}', defaulting to 6 seconds")
+                duration = "6"
             # Progress: Starting
             if progress_callback:
                 await progress_callback("🔧 Initializing video generation...")

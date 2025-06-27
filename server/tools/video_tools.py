@@ -28,7 +28,7 @@ class GenerateVideoInputSchema(BaseModel):
         description="Required. The image URL or image_id to use as the starting frame for video generation. Pass image_id here, e.g. 'im_jurheut7.png'.")
     duration: str = Field(
         default="6",
-        description="Optional. Video duration in seconds. Options: '6' or '10'. Default is '6'.")
+        description="Optional. Video duration in seconds. Options: '6' or '10' (Fal AI limitation). Default is '6' for faster generation.")
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
