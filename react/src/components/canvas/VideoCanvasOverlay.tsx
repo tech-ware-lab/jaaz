@@ -370,9 +370,21 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
     let transformedWidth = safeWidth * safeZoom
     let transformedHeight = safeHeight * safeZoom
     
-    // Fallback positioning if video would be outside visible area
-    if (transformedX < 0 || transformedX > 2000 || transformedY < 0 || transformedY > 2000) {
-      console.log('👇 Video outside visible area, using fallback positioning')
+    // Use more reasonable bounds check - only fallback if truly outside reasonable area
+    const viewportWidth = window.innerWidth || 1920
+    const viewportHeight = window.innerHeight || 1080
+    const isOutsideReasonableBounds = (
+      transformedX < -transformedWidth || 
+      transformedX > viewportWidth + transformedWidth ||
+      transformedY < -transformedHeight || 
+      transformedY > viewportHeight + transformedHeight
+    )
+    
+    if (isOutsideReasonableBounds) {
+      // Only log occasionally to prevent spam
+      if (Math.random() < 0.05) {
+        console.log('👇 Video outside reasonable bounds, using fallback positioning')
+      }
       transformedX = 200 + (videoElements.indexOf(video) * 60)
       transformedY = 200 + (videoElements.indexOf(video) * 60)
       transformedWidth = 480  // Larger default size
@@ -431,14 +443,16 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
         left: 0, 
         right: 0, 
         bottom: 0,
-        zIndex: 1000
+        zIndex: 1000,
+        // Allow clicks to pass through to canvas when not on videos
+        pointerEvents: 'none'
       }}
     >
       
       {transformedVideos.map(video => (
         <div
           key={video.id}
-          className="absolute pointer-events-auto cursor-move"
+          className="absolute cursor-move"
           style={{
             left: `${Math.max(0, video.transformedX)}px`,
             top: `${Math.max(0, video.transformedY)}px`,
@@ -450,7 +464,9 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
             background: 'rgba(0, 0, 0, 0.05)',
             position: 'absolute',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            // Enable pointer events only on video containers
+            pointerEvents: 'auto'
           }}
           onMouseDown={(e) => {
             console.log('📱 Mouse down on video container:', video.id)

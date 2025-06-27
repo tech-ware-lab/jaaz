@@ -195,8 +195,8 @@ async def generate_new_video_element(canvas_id: str, fileid: str, video_data: di
     elements = canvas_data.get('elements', [])
 
     # Find the last video element to position the new one
-    last_x = 0
-    last_y = 0
+    last_x = 100  # Better default starting position
+    last_y = 100
     last_width = 0
     last_height = 0
     video_elements = [
@@ -204,12 +204,20 @@ async def generate_new_video_element(canvas_id: str, fileid: str, video_data: di
     last_video_element = video_elements[-1] if len(video_elements) > 0 else None
     
     if last_video_element is not None:
-        last_x = last_video_element.get('x', 0)
-        last_y = last_video_element.get('y', 0)
+        last_x = last_video_element.get('x', 100)
+        last_y = last_video_element.get('y', 100)
         last_width = last_video_element.get('width', 0)
         last_height = last_video_element.get('height', 0)
 
-    new_x = last_x + last_width + 20
+    # Position videos in a reasonable grid layout
+    video_count = len(video_elements)
+    if video_count == 0:
+        new_x = 100
+        new_y = 100
+    else:
+        # Stack videos diagonally for better visibility
+        new_x = 100 + (video_count * 60)
+        new_y = 100 + (video_count * 60)
 
     # Default video dimensions (16:9 aspect ratio)
     video_width = 320
@@ -219,7 +227,7 @@ async def generate_new_video_element(canvas_id: str, fileid: str, video_data: di
         'type': 'video',
         'id': fileid,
         'x': new_x,
-        'y': last_y,
+        'y': new_y,
         'width': video_width,
         'height': video_height,
         'angle': 0,
