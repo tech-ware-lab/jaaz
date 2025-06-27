@@ -154,18 +154,43 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
   // Transform video positions based on canvas zoom and scroll
   const transformedVideos = videoElements.map(video => {
     const { zoom, scrollX, scrollY } = getCanvasTransform()
+    
+    // Ensure we have valid numbers and reasonable bounds
+    const safeZoom = Math.max(0.1, Math.min(5, zoom || 1))
+    const safeScrollX = scrollX || 0
+    const safeScrollY = scrollY || 0
+    const safeX = video.x || 0
+    const safeY = video.y || 0
+    const safeWidth = video.width || 320
+    const safeHeight = video.height || 180
+    
     const transformed = {
       ...video,
-      transformedX: (video.x + scrollX) * zoom,
-      transformedY: (video.y + scrollY) * zoom,
-      transformedWidth: video.width * zoom,
-      transformedHeight: video.height * zoom
+      transformedX: (safeX + safeScrollX) * safeZoom,
+      transformedY: (safeY + safeScrollY) * safeZoom,
+      transformedWidth: safeWidth * safeZoom,
+      transformedHeight: safeHeight * safeZoom
     }
+    
     console.log('👇 Video transform:', {
-      original: { x: video.x, y: video.y, w: video.width, h: video.height },
-      canvas: { zoom, scrollX, scrollY },
+      original: { x: safeX, y: safeY, w: safeWidth, h: safeHeight },
+      canvas: { zoom: safeZoom, scrollX: safeScrollX, scrollY: safeScrollY },
       transformed: { x: transformed.transformedX, y: transformed.transformedY, w: transformed.transformedWidth, h: transformed.transformedHeight }
     })
+    
+    // Ensure transformed values are reasonable (not NaN or extremely large)
+    if (isNaN(transformed.transformedX) || isNaN(transformed.transformedY) || 
+        Math.abs(transformed.transformedX) > 10000 || Math.abs(transformed.transformedY) > 10000) {
+      console.warn('👇 Invalid transform detected, using fallback positioning')
+      return {
+        ...video,
+        transformedX: safeX,
+        transformedY: safeY,
+        transformedWidth: safeWidth,
+        transformedHeight: safeHeight
+      }
+    }
+    
     return transformed
   })
 
@@ -187,11 +212,13 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
           key={video.id}
           className="absolute pointer-events-auto"
           style={{
-            left: video.transformedX,
-            top: video.transformedY,
-            width: video.transformedWidth,
-            height: video.transformedHeight,
-            zIndex: selectedVideoId === video.id ? 1000 : 999
+            left: Math.max(0, video.transformedX),
+            top: Math.max(0, video.transformedY),
+            width: Math.max(100, video.transformedWidth),
+            height: Math.max(50, video.transformedHeight),
+            zIndex: selectedVideoId === video.id ? 1000 : 999,
+            border: '2px solid rgba(0, 255, 0, 0.5)', // Debug border
+            background: 'rgba(0, 0, 0, 0.1)' // Debug background
           }}
         >
           <CanvasVideoElement
