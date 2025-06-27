@@ -88,8 +88,7 @@ async def generate_video(
         await broadcast_session_update(session_id, canvas_id, {
             'type': 'tool_call_progress',
             'tool_call_id': tool_call_id,
-            'status': 'generating_video',
-            'message': f'Generating {duration}s video...'
+            'update': f'🎬 Starting {duration}s video generation...'
         })
 
         # Prepare image URL - convert local image to base64 data URL for Fal AI
@@ -121,11 +120,20 @@ async def generate_video(
             full_image_url = image_url
             print(f"🎬 Using original image_url: {full_image_url}")
 
+        # Create progress callback to send updates via WebSocket
+        async def progress_callback(message: str):
+            await broadcast_session_update(session_id, canvas_id, {
+                'type': 'tool_call_progress',
+                'tool_call_id': tool_call_id,
+                'update': message  # Frontend expects 'update' field
+            })
+
         # Generate video using the appropriate provider
         mime_type, filename, actual_duration = await generator.generate_video(
             prompt=prompt,
             image_url=full_image_url,
-            duration=duration
+            duration=duration,
+            progress_callback=progress_callback
         )
 
         file_id = generate_file_id()

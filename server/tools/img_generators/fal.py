@@ -38,24 +38,14 @@ class FalAIGenerator(ImageGenerator):
     
     def _get_size_from_aspect_ratio(self, aspect_ratio: str, model: str = ""):
         """Convert aspect ratio to Fal AI size format"""
-        # High-resolution models (Pro Ultra, etc.)
-        if 'ultra' in model.lower():
-            aspect_map = {
-                "1:1": "square_hd",      # 1024x1024
-                "16:9": "landscape_16_9", # 1920x1080
-                "9:16": "portrait_9_16",  # 1080x1920
-                "4:3": "landscape_4_3",
-                "3:4": "portrait_3_4"
-            }
-        else:
-            # Standard resolution models
-            aspect_map = {
-                "1:1": "square_hd",
-                "16:9": "landscape_16_9", 
-                "9:16": "portrait_9_16",
-                "4:3": "landscape_4_3",
-                "3:4": "portrait_3_4"
-            }
+        # Map aspect ratios to valid Fal AI size parameters
+        aspect_map = {
+            "1:1": "square_hd",      # 1024x1024
+            "16:9": "landscape_16_9", # 1920x1080
+            "9:16": "portrait_16_9",  # 1080x1920 (corrected from portrait_9_16)
+            "4:3": "landscape_4_3",
+            "3:4": "portrait_4_3"    # Use portrait_4_3 instead of invalid portrait_3_4
+        }
         return aspect_map.get(aspect_ratio, "square_hd")
     
     def _prepare_model_specific_args(self, model: str, **kwargs):
