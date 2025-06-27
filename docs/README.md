@@ -9,6 +9,7 @@ This documentation folder contains comprehensive guides for understanding and wo
 - **[Folder Structure](./folder-structure.md)** - Detailed explanation of the codebase organization
 - **[Development Guide](./development-guide.md)** - Setup, workflow, and development practices
 - **[AI Integration](./ai-integration.md)** - AI services, models, and integration patterns
+- **[Canvas Features](./canvas-features.md)** - Canvas system, video overlay, and interactive media features
 
 ## About Jaaz
 
@@ -24,10 +25,12 @@ Jaaz is an open-source, locally deployed AI design agent that combines:
 2. **Architecture**: Read [Architecture Overview](./architecture-overview.md) to understand system design
 3. **Code Organization**: Reference [Folder Structure](./folder-structure.md) for navigating the codebase
 4. **AI Features**: Learn about AI integration in [AI Integration](./ai-integration.md)
+5. **Canvas System**: Explore canvas and video features in [Canvas Features](./canvas-features.md)
 
 ## Key Features
 
 - **Interactive Canvas**: Design and iterate with unlimited canvas space
+- **Video Integration**: AI-generated videos with drag, resize, and positioning controls
 - **AI Chat Interface**: Conversational AI for design assistance and content generation
 - **Multi-Provider AI**: Seamless integration with local and cloud AI models
 - **Real-time Collaboration**: WebSocket-based real-time updates

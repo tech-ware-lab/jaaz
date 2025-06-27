@@ -58,6 +58,7 @@ Jaaz follows a **three-tier client-server architecture** designed for local depl
 - Internationalization (i18n)
 - Theme management
 - Canvas rendering (Excalidraw, tldraw)
+- Video overlay system with interactive controls
 - Chat interface with AI
 
 **Technologies**: React 19, TypeScript, Vite, TailwindCSS, Radix UI
@@ -71,6 +72,7 @@ Jaaz follows a **three-tier client-server architecture** designed for local depl
 - AI agent orchestration (LangGraph)
 - Database operations (SQLite)
 - Image processing and generation
+- Video generation and processing
 - Multi-provider AI integration
 - Configuration management
 - File upload and storage
