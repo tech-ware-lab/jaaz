@@ -28,3 +28,7 @@ server/.env
 # Log files
 *.log
 server/server.log
+
+# Database files
+*.db
+server/*.db
