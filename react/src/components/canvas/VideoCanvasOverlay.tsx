@@ -98,7 +98,7 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
             const file = files[element.fileId]
             return {
               id: element.id,
-              src: `http://localhost:57988${file?.dataURL || `/api/file/${element.fileId}.mp4`}`,
+              src: file?.dataURL || `/api/file/${element.fileId}.mp4`,
               x: element.x,
               y: element.y,
               width: element.width,
