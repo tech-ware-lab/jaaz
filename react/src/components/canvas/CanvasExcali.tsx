@@ -102,8 +102,28 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       excalidrawAPI.addFiles([file])
 
       console.log('👇 Adding new image element to canvas:', imageElement.id)
+      console.log('👇 Image element properties:', {
+        id: imageElement.id,
+        type: imageElement.type,
+        locked: imageElement.locked,
+        groupIds: imageElement.groupIds,
+        isDeleted: imageElement.isDeleted,
+        x: imageElement.x,
+        y: imageElement.y,
+        width: imageElement.width,
+        height: imageElement.height
+      })
+      
+      // Ensure image is not locked and can be manipulated
+      const unlockedImageElement = {
+        ...imageElement,
+        locked: false,
+        groupIds: [],
+        isDeleted: false
+      }
+      
       excalidrawAPI.updateScene({
-        elements: [...(currentElements || []), imageElement],
+        elements: [...(currentElements || []), unlockedImageElement],
       })
 
       localStorage.setItem(
@@ -159,6 +179,13 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
           }
         }
         return data || null
+      }}
+      // Ensure interactive mode is enabled
+      viewModeEnabled={false}
+      zenModeEnabled={false}
+      // Allow element manipulation
+      onPointerUpdate={(payload) => {
+        console.log('👇 Pointer update:', payload)
       }}
     />
   )
