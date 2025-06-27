@@ -185,8 +185,8 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       zenModeEnabled={false}
       // Allow element manipulation  
       onPointerUpdate={(payload) => {
-        // Reduced logging to prevent spam
-        if (payload.button === 'down') {
+        // Minimal logging - only log significant pointer events
+        if (payload.button === 'down' && Math.random() < 0.05) {
           console.log('👇 Pointer down on:', payload.pointer.x, payload.pointer.y)
         }
       }}

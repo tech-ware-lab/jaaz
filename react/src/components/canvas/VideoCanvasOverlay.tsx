@@ -32,6 +32,7 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
   const [videoElements, setVideoElements] = useState<VideoElement[]>([])
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null)
   const [dragging, setDragging] = useState<{ id: string; startX: number; startY: number; offsetX: number; offsetY: number } | null>(null)
+  const [userInteracting, setUserInteracting] = useState(false)
   const { excalidrawAPI } = useCanvas()
 
   // Debug video state changes
@@ -49,7 +50,6 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
   // Get canvas transform for positioning videos correctly
   const getCanvasTransform = useCallback(() => {
     if (!excalidrawAPI) {
-      console.log('👇 No excalidrawAPI, using default transform')
       return { zoom: 1, scrollX: 0, scrollY: 0 }
     }
     
@@ -59,7 +59,6 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
       scrollX: appState.scrollX || 0,
       scrollY: appState.scrollY || 0
     }
-    console.log('👇 Canvas transform:', transform)
     return transform
   }, [excalidrawAPI])
 
@@ -220,6 +219,10 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
     }
     console.log('🎯 Video selected:', videoId)
     setSelectedVideoId(videoId)
+    setUserInteracting(true)
+    
+    // Clear interaction state after a delay
+    setTimeout(() => setUserInteracting(false), 1000)
   }, [])
 
   // Handle drag start
@@ -228,6 +231,7 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
     event.stopPropagation()
     
     console.log('🚀 Drag start for video:', videoId)
+    setUserInteracting(true)
     
     const rect = event.currentTarget.getBoundingClientRect()
     const offsetX = event.clientX - rect.left
@@ -290,6 +294,8 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
   // Handle drag end
   const handleDragEnd = useCallback(() => {
     setDragging(null)
+    // Clear interaction state after drag ends
+    setTimeout(() => setUserInteracting(false), 500)
   }, [])
 
   // Add drag event listeners
@@ -306,7 +312,7 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
 
   // Monitor excalidrawAPI changes and restore videos if lost
   useEffect(() => {
-    if (excalidrawAPI && videoElements.length > 0 && !dragging && !selectedVideoId) {
+    if (excalidrawAPI && videoElements.length > 0 && !dragging && !selectedVideoId && !userInteracting) {
       const checkAndRestoreVideos = () => {
         try {
           const appState = excalidrawAPI.getAppState()
@@ -315,7 +321,7 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
           // If app state has fewer videos than our component state, restore them
           // But only if we're not currently dragging or interacting with videos
           if (savedVideos.length < videoElements.length) {
-            console.log('🔄 Restoring videos to app state (safe to do so)')
+            console.log('🔄 Restoring videos to app state (user not interacting)')
             const updatedAppState = {
               ...appState,
               videoElements: videoElements
@@ -332,10 +338,10 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
       }
       
       // Much longer delay and only when not interacting with videos
-      const timer = setTimeout(checkAndRestoreVideos, 2000)
+      const timer = setTimeout(checkAndRestoreVideos, 3000)
       return () => clearTimeout(timer)
     }
-  }, [excalidrawAPI, videoElements, dragging, selectedVideoId])
+  }, [excalidrawAPI, videoElements, dragging, selectedVideoId, userInteracting])
 
   // Handle video deselection when clicking outside
   const handleCanvasClick = useCallback((event: React.MouseEvent) => {
