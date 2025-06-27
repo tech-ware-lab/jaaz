@@ -80,7 +80,7 @@ export default function FileList({
                 {file.is_dir && <FolderIcon />}
 
                 <span className="truncate">
-                  {!!file.name ? file.name : 'Untitled'}
+                  {file.name ? file.name : 'Untitled'}
                 </span>
               </Button>
             </ContextMenuTrigger>

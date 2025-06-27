@@ -229,15 +229,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleImageGenerated = useCallback(
     (data: TEvents['Socket::Session::ImageGenerated']) => {
-      if (
-        data.canvas_id &&
-        data.canvas_id !== canvasId &&
-        data.session_id !== sessionId
-      ) {
+      // Only handle if it's for this canvas and session
+      if (data.canvas_id !== canvasId || data.session_id !== sessionId) {
         return
       }
 
-      console.log('⭐️dispatching image_generated', data)
+      // Don't handle if this is actually a video (mislabeled event)
+      if (data.file?.mimeType?.startsWith('video/') || data.video_url) {
+        console.log('👇 Chat: Video event mislabeled as image, ignoring')
+        return
+      }
+
+      console.log('⭐️ Chat: handling image_generated', data)
       setPending('image')
     },
     [canvasId, sessionId]
@@ -245,16 +248,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleVideoGenerated = useCallback(
     (data: TEvents['Socket::Session::VideoGenerated']) => {
-      if (
-        data.canvas_id &&
-        data.canvas_id !== canvasId &&
-        data.session_id !== sessionId
-      ) {
+      // Only handle if it's for this canvas and session
+      if (data.canvas_id !== canvasId || data.session_id !== sessionId) {
         return
       }
 
-      console.log('🎬dispatching video_generated', data)
-      setPending('image') // Use same pending state for video
+      console.log('🎬 Chat: handling video_generated', data)
+      setPending('video') // Use video pending state
     },
     [canvasId, sessionId]
   )

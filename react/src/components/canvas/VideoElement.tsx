@@ -106,15 +106,9 @@ export const CanvasVideoElement: React.FC<{
   return (
     <div
       className={cn(
-        'absolute cursor-pointer transition-all',
+        'w-full h-full cursor-pointer transition-all',
         isSelected && 'ring-2 ring-blue-500 ring-offset-2'
       )}
-      style={{
-        left: x,
-        top: y,
-        width: width,
-        height: height,
-      }}
       onClick={onSelect}
     >
       <VideoElement

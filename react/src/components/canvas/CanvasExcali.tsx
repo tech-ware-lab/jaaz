@@ -90,10 +90,18 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     async (imageElement: ExcalidrawImageElement, file: BinaryFileData) => {
       if (!excalidrawAPI) return
 
+      // Check if element already exists to prevent duplicates
+      const currentElements = excalidrawAPI.getSceneElements()
+      const existingElement = currentElements.find(el => el.id === imageElement.id)
+      
+      if (existingElement) {
+        console.log('👇 Image element already exists, skipping duplicate:', imageElement.id)
+        return
+      }
+
       excalidrawAPI.addFiles([file])
 
-      const currentElements = excalidrawAPI.getSceneElements()
-      console.log('👇 adding to currentElements', currentElements)
+      console.log('👇 Adding new image element to canvas:', imageElement.id)
       excalidrawAPI.updateScene({
         elements: [...(currentElements || []), imageElement],
       })
@@ -108,14 +116,23 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
 
   const handleImageGenerated = useCallback(
     (imageData: ISocket.SessionImageGeneratedEvent) => {
-      console.log('👇image_generated', imageData)
+      console.log('👇 CanvasExcali received image_generated:', imageData)
+      
+      // Only handle if it's for this canvas
       if (imageData.canvas_id !== canvasId) {
+        console.log('👇 Image not for this canvas, ignoring')
+        return
+      }
+
+      // Check if this is actually a video generation event that got mislabeled
+      if (imageData.file?.mimeType?.startsWith('video/') || imageData.video_url) {
+        console.log('👇 This appears to be a video, not an image. Ignoring in image handler.')
         return
       }
 
       addImageToExcalidraw(imageData.element, imageData.file)
     },
-    [addImageToExcalidraw]
+    [addImageToExcalidraw, canvasId]
   )
 
   useEffect(() => {

@@ -97,11 +97,19 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
           console.log('👇 All elements:', elements.map(e => ({type: e.type, id: e.id})))
           
           // Find video elements
-          const videoElements = elements.filter((e: any) => e.type === 'video')
+          const videoElements = elements.filter((e: { type: string }) => e.type === 'video')
           console.log('👇 Loading existing videos:', videoElements.length)
           console.log('👇 Video elements found:', videoElements)
           
-          const videos = videoElements.map((element: any) => {
+          const videos = videoElements.map((element: { 
+            id: string; 
+            fileId: string; 
+            x: number; 
+            y: number; 
+            width: number; 
+            height: number; 
+            duration?: number;
+          }) => {
             const file = files[element.fileId]
             return {
               id: element.id,
@@ -162,29 +170,31 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
   const transformedVideos = videoElements.map(video => {
     const { zoom, scrollX, scrollY } = getCanvasTransform()
     
-    // Ensure we have valid numbers and reasonable bounds
-    const safeZoom = Math.max(0.1, Math.min(5, zoom || 1))
-    const safeScrollX = scrollX || 0
-    const safeScrollY = scrollY || 0
-    const safeX = video.x || 0
-    const safeY = video.y || 0
-    const safeWidth = video.width || 320
-    const safeHeight = video.height || 180
+    // Use simpler, more reliable positioning
+    const safeZoom = isNaN(zoom) || zoom <= 0 ? 1 : Math.max(0.1, Math.min(5, zoom))
+    const safeScrollX = isNaN(scrollX) ? 0 : scrollX
+    const safeScrollY = isNaN(scrollY) ? 0 : scrollY
+    const safeX = isNaN(video.x) ? 100 : video.x
+    const safeY = isNaN(video.y) ? 100 : video.y
+    const safeWidth = isNaN(video.width) || video.width <= 0 ? 320 : video.width
+    const safeHeight = isNaN(video.height) || video.height <= 0 ? 180 : video.height
     
-    // Calculate transformed size with minimum size constraints
-    const baseTransformedWidth = safeWidth * safeZoom
-    const baseTransformedHeight = safeHeight * safeZoom
+    // Simpler transform calculation
+    const transformedX = safeX * safeZoom + safeScrollX
+    const transformedY = safeY * safeZoom + safeScrollY
+    const transformedWidth = safeWidth * safeZoom
+    const transformedHeight = safeHeight * safeZoom
     
-    // Ensure minimum visible size (especially when zoomed out)
-    const minWidth = 200  // Minimum 200px width
-    const minHeight = 112 // Maintain 16:9 aspect ratio
+    // Ensure minimum size for visibility
+    const minWidth = Math.max(200, transformedWidth)
+    const minHeight = Math.max(112, transformedHeight)
     
     const transformed = {
       ...video,
-      transformedX: (safeX + safeScrollX) * safeZoom,
-      transformedY: (safeY + safeScrollY) * safeZoom,
-      transformedWidth: Math.max(minWidth, baseTransformedWidth),
-      transformedHeight: Math.max(minHeight, baseTransformedHeight)
+      transformedX: Math.max(0, transformedX),
+      transformedY: Math.max(0, transformedY),
+      transformedWidth: minWidth,
+      transformedHeight: minHeight
     }
     
     console.log('👇 Video transform:', {
@@ -193,49 +203,55 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
       transformed: { x: transformed.transformedX, y: transformed.transformedY, w: transformed.transformedWidth, h: transformed.transformedHeight }
     })
     
-    // Ensure transformed values are reasonable (not NaN or extremely large)
-    if (isNaN(transformed.transformedX) || isNaN(transformed.transformedY) || 
-        Math.abs(transformed.transformedX) > 10000 || Math.abs(transformed.transformedY) > 10000) {
-      console.warn('👇 Invalid transform detected, using fallback positioning')
-      return {
-        ...video,
-        transformedX: safeX,
-        transformedY: safeY,
-        transformedWidth: safeWidth,
-        transformedHeight: safeHeight
-      }
-    }
-    
     return transformed
   })
 
   // Debug log when rendering
-  if (videoElements.length > 0) {
-    console.log('👇 Rendering videos:', videoElements.length, 'transformed:', transformedVideos.length)
-  }
+  console.log('👇 VideoCanvasOverlay render:', {
+    canvasId,
+    videoElementsCount: videoElements.length,
+    transformedVideosCount: transformedVideos.length,
+    videoElements: videoElements.map(v => ({ id: v.id, src: v.src, x: v.x, y: v.y })),
+    transformedVideos: transformedVideos.map(v => ({ 
+      id: v.id, 
+      transformedX: v.transformedX, 
+      transformedY: v.transformedY,
+      transformedWidth: v.transformedWidth,
+      transformedHeight: v.transformedHeight
+    }))
+  })
 
   return (
     <div 
       className={cn(
-        'absolute inset-0 pointer-events-none',
+        'absolute inset-0 pointer-events-none z-10',
         className
       )}
       onClick={handleCanvasClick}
+      style={{ 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0
+      }}
     >
       {transformedVideos.map(video => (
         <div
           key={video.id}
           className="absolute pointer-events-auto"
           style={{
-            left: Math.max(0, video.transformedX),
-            top: Math.max(0, video.transformedY),
-            width: video.transformedWidth,
-            height: video.transformedHeight,
+            left: `${Math.max(0, video.transformedX)}px`,
+            top: `${Math.max(0, video.transformedY)}px`,
+            width: `${video.transformedWidth}px`,
+            height: `${video.transformedHeight}px`,
             zIndex: selectedVideoId === video.id ? 1000 : 999,
             border: selectedVideoId === video.id ? '3px solid #007bff' : '2px solid rgba(0, 255, 0, 0.7)',
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            background: 'rgba(0, 0, 0, 0.05)'
+            background: 'rgba(0, 0, 0, 0.05)',
+            position: 'absolute',
+            overflow: 'hidden'
           }}
         >
           <CanvasVideoElement

@@ -73,7 +73,7 @@ export default function LeftSidebar({
                 }}
               >
                 <span className="truncate">
-                  {!!session.title ? session.title : 'Untitled'}
+                  {session.title ? session.title : 'Untitled'}
                 </span>
               </Button>
             ))}
