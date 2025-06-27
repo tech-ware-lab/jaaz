@@ -113,28 +113,30 @@ export default function ComfuiWorkflowSetting() {
           </DialogContent>
         </Dialog>
       )}
-      { <div className="flex items-center gap-2">
-        <PaletteIcon className="w-5 h-5" />
-        <p className="text-sm font-bold">{t('settings:comfyui.workflows')}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowAddWorkflowDialog(true)}
-        >
-          <PlusIcon className="w-4 h-4" />
-          Add Workflow
-        </Button>
-        {(showAddWorkflowDialog || editingWorkflow) && (
-          <AddWorkflowDialog
-            workflow={editingWorkflow}
-            onClose={() => {
-              setShowAddWorkflowDialog(false)
-              setEditingWorkflow(null)
-              loadWorkflows()
-            }}
-          />
-        )}
-      </div> }
+      {
+        <div className="flex items-center gap-2">
+          <PaletteIcon className="w-5 h-5" />
+          <p className="text-sm font-bold">{t('settings:comfyui.workflows')}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddWorkflowDialog(true)}
+          >
+            <PlusIcon className="w-4 h-4" />
+            Add Workflow
+          </Button>
+          {(showAddWorkflowDialog || editingWorkflow) && (
+            <AddWorkflowDialog
+              workflow={editingWorkflow}
+              onClose={() => {
+                setShowAddWorkflowDialog(false)
+                setEditingWorkflow(null)
+                loadWorkflows()
+              }}
+            />
+          )}
+        </div>
+      }
       {/* Workflows */}
       {workflows.length > 0 && (
         <div className="space-y-2">
@@ -299,9 +301,7 @@ function AddWorkflowDialog({
     })
 
     if (createRes.ok) {
-      toast.success(
-        `Workflow ${workflow ? 'updated' : 'created'} successfully`
-      )
+      toast.success(`Workflow ${workflow ? 'updated' : 'created'} successfully`)
       onClose()
     } else {
       const data = await createRes.json()
@@ -368,14 +368,33 @@ function AddWorkflowDialog({
                     className="flex items-center gap-2"
                   >
                     <div className="flex flex-col gap-1 flex-1">
-                      <input
-                        type="text"
-                        // 自动生成唯一名称（node_id + node_input_name）
-                        value={input.name}
-                        placeholder="Input Name"
-                        readOnly
-                        className="border-none bg-transparent w-full font-mono"
-                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <input
+                          type="text"
+                          // 自动生成唯一名称（node_id + node_input_name）
+                          value={input.name}
+                          placeholder="Input Name"
+                          readOnly
+                          className="border-none bg-transparent w-full font-mono"
+                        />
+                        <div className="flex items-center space-x-2 pt-2">
+                          <Checkbox
+                            id={`required-${index}`}
+                            checked={input.required}
+                            onCheckedChange={(checked) => {
+                              const newInputs = [...inputs]
+                              newInputs[index].required = !!checked
+                              setInputs(newInputs)
+                            }}
+                          />
+                          <label
+                            htmlFor={`required-${index}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Required
+                          </label>
+                        </div>
+                      </div>
                       <Input
                         type="text"
                         value={input.default_value.toString()}
@@ -392,23 +411,6 @@ function AddWorkflowDialog({
                           setInputs(newInputs)
                         }}
                       />
-                      <div className="flex items-center space-x-2 pt-2">
-                        <Checkbox
-                          id={`required-${index}`}
-                          checked={input.required}
-                          onCheckedChange={(checked) => {
-                            const newInputs = [...inputs]
-                            newInputs[index].required = !!checked
-                            setInputs(newInputs)
-                          }}
-                        />
-                        <label
-                          htmlFor={`required-${index}`}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          Required
-                        </label>
-                      </div>
                     </div>
                     <Button
                       variant="ghost"
