@@ -80,6 +80,47 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
     addVideo: addVideoElement
   }), [addVideoElement])
 
+  // Load existing videos from canvas data on mount
+  useEffect(() => {
+    const loadExistingVideos = async () => {
+      try {
+        const response = await fetch(`/api/canvas/${canvasId}`)
+        if (response.ok) {
+          const canvasData = await response.json()
+          const elements = canvasData.data?.elements || []
+          const files = canvasData.data?.files || {}
+          
+          // Find video elements
+          const videoElements = elements.filter((e: any) => e.type === 'video')
+          console.log('👇 Loading existing videos:', videoElements.length)
+          
+          const videos = videoElements.map((element: any) => {
+            const file = files[element.fileId]
+            return {
+              id: element.id,
+              src: `http://localhost:57988${file?.dataURL || `/api/file/${element.fileId}.mp4`}`,
+              x: element.x,
+              y: element.y,
+              width: element.width,
+              height: element.height,
+              duration: element.duration || file?.duration,
+              canvasId
+            }
+          })
+          
+          if (videos.length > 0) {
+            console.log('👇 Setting existing videos:', videos)
+            setVideoElements(videos)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load existing videos:', error)
+      }
+    }
+    
+    loadExistingVideos()
+  }, [canvasId])
+
   // Listen for video generated events
   useEffect(() => {
     eventBus.on('Socket::Session::VideoGenerated', handleVideoGenerated)
