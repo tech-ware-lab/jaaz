@@ -225,22 +225,17 @@ function AddWorkflowDialog({
         // Parse the JSON content
         const jsonContent = JSON.parse(fileContent)
         console.log('Parsed workflow JSON:', jsonContent)
-        setWorkflowJson(jsonContent)
-        setWorkflowName(file.name.replace('.json', ''))
         for (const key in jsonContent) {
           const node: ComfyUIAPINode = jsonContent[key]
           if (!node.class_type) {
-            throw new Error('No class_type found in workflow JSON')
+            toast.error(
+              'Invalid API JSON format. You need to export API JSON, not workflow JSON in ComfyUI. Please go to ComfyUI Menu -> Workflow -> Export (API) JSON and try again.'
+            )
+            return
           }
-          const classType = node.class_type
-          // if (classType === 'SaveImage') {
-          //   setOutputs(node.inputs.required.model_name.map((model: string) => ({
-          //     name: model,
-          //     type: 'string',
-          //     description: '',
-          //   })))
-          // }
         }
+        setWorkflowJson(jsonContent)
+        setWorkflowName(file.name.replace('.json', ''))
       } catch (error) {
         console.error(error)
         toast.error(
@@ -248,15 +243,6 @@ function AddWorkflowDialog({
             error
         )
       }
-
-      // const formData = new FormData()
-      // formData.append('file', file)
-      // formData.append('workflow_name', workflowName)
-
-      // await fetch('/api/settings/comfyui/upload_workflow', {
-      //   method: 'POST',
-      //   body: formData,
-      // })
     }
   }
   const handleSubmit = async () => {

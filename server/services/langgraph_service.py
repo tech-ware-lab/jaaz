@@ -262,10 +262,14 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: Mod
             else:
                 # Access the AIMessageChunk
                 ai_message_chunk: AIMessageChunk = chunk[1][0]
-                # print('👇ai_message_chunk', ai_message_chunk)
+                print('👇ai_message_chunk', ai_message_chunk)
                 content = ai_message_chunk.content  # Get the content from the AIMessageChunk
                 if isinstance(ai_message_chunk, ToolMessage):
                     print('👇tool_call_results', ai_message_chunk.content)
+                    await send_to_websocket(session_id, {
+                        'type': 'error',
+                        'error': content
+                    })
                 elif content:
                     await send_to_websocket(session_id, {
                         'type': 'delta',
