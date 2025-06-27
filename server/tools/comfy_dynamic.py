@@ -156,7 +156,14 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
         for key, value in required_data.items():
             if isinstance(value, str) and value.lower().endswith(image_format):
                 # Image!
-                image_path = os.path.join(FILES_DIR, value)
+                # Extract filename from potential API path like "/api/file/filename.png"
+                if value.startswith("/api/file/"):
+                    filename = value.split("/")[
+                        -1
+                    ]  # Get the last part after the last "/"
+                else:
+                    filename = value
+                image_path = os.path.join(FILES_DIR, filename)
                 if not os.path.exists(image_path):
                     continue
                 with open(image_path, "rb") as image_file:
