@@ -1,7 +1,15 @@
 {
   "python.languageServer": "Pylance",
-  "python.analysis.typeCheckingMode": "off",
-  "python.analysis.extraPaths":["server/"],
+  "python.analysis.typeCheckingMode": "strict",
+  "python.analysis.extraPaths": ["server/"],
+  // "[python]": {
+  //   "editor.defaultFormatter": "ms-python.black-formatter"
+  // },
+  // "editor.codeActionsOnSave": {
+  //   "source.fixAll": true,
+  //   "source.fixAll.ruff": true
+  // },
+  "editor.formatOnSave": true,
 
   "prettier.enable": true,
   "prettier.singleQuote": true,

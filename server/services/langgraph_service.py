@@ -17,7 +17,8 @@ langgraph_service.py
 - routers.image_tools
 """
 from pydantic import BaseModel, Field
-from tools.write_plan import write_plan_tool
+from models.config_model import ModelInfo
+from services.tool_service import tool_service
 from utils.http_client import HttpClient
 
 import asyncio
@@ -29,7 +30,6 @@ from services.db_service import db_service
 from services.config_service import config_service
 from services.websocket_service import send_to_websocket
 from tools.image_generators import generate_image
-from tools.comfy_dynamic import DYNAMIC_COMFY_TOOLS, DYNAMIC_COMFY_TOOLS_DESCRIPTIONS
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langgraph_swarm import create_swarm
@@ -43,133 +43,13 @@ class InputParam(BaseModel):
     required: bool
     default: str
 
-def create_tool(tool_json: dict):
-    TOOL_MAP = {
-        'generate_image': generate_image,
-        'generate_image_by_gpt': generate_image_by_gpt,
-        'write_plan': write_plan_tool,
-    }
-    TOOL_MAP.update(DYNAMIC_COMFY_TOOLS) # for comfyui workflow
-    return TOOL_MAP.get(tool_json.get('tool', ''), None)
-
-async def langgraph_agent(messages, canvas_id, session_id, text_model, image_model):
-    try:
-        model = text_model.get('model')
-        provider = text_model.get('provider')
-        url = text_model.get('url')
-        api_key = config_service.app_config.get(provider, {}).get("api_key", "")
-        # TODO: Verify if max token is working
-        max_tokens = text_model.get('max_tokens', 8148)
-        if provider == 'ollama':
-            model = ChatOllama(
-                model=model,
-                base_url=url,
-            )
-        else:
-            # Create httpx client with SSL configuration for ChatOpenAI
-            http_client = HttpClient.create_sync_client(timeout=15)
-            http_async_client = HttpClient.create_async_client(timeout=15)
-            model = ChatOpenAI(
-                model=model,
-                api_key=api_key,
-                # timeout=15,
-                base_url=url,
-                temperature=0,
-                max_tokens=max_tokens,
-                http_client=http_client,
-                http_async_client=http_async_client
-            )
-        agent_tools = [generate_image, *DYNAMIC_COMFY_TOOLS.values()]
-        print('agent_tools', agent_tools)
-        agent = create_react_agent(
-            model=model,
-            tools=agent_tools,
-            prompt='You are a profession design agent, specializing in visual design.'
-        )
-        ctx = {
-            'canvas_id': canvas_id,
-            'session_id': session_id,
-            'model_info': {
-                'image': image_model
-            },
-        }
-        tool_calls: list[ToolCall] = []
-        async for chunk in agent.astream(
-            {"messages": messages},
-            config=ctx,
-            stream_mode=["updates", "messages", "custom"]
-        ):
-            chunk_type = chunk[0]
-
-            if chunk_type == 'updates':
-                all_messages = chunk[1].get(
-                    'agent', chunk[1].get('tools')).get('messages', [])
-                oai_messages = convert_to_openai_messages(all_messages)
-                # new_message = oai_messages[-1]
-
-                messages.extend(oai_messages)
-                await send_to_websocket(session_id, {
-                    'type': 'all_messages',
-                    'messages': messages
-                })
-                for new_message in oai_messages:
-                    await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
-            else:
-                # Access the AIMessageChunk
-                ai_message_chunk: AIMessageChunk = chunk[1][0]
-                # print('👇ai_message_chunk', ai_message_chunk)
-                content = ai_message_chunk.content  # Get the content from the AIMessageChunk
-                if isinstance(ai_message_chunk, ToolMessage):
-                    print('👇tool_call_results', ai_message_chunk.content)
-                elif content:
-                    await send_to_websocket(session_id, {
-                        'type': 'delta',
-                        'text': content
-                    })
-                elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
-                    tool_calls = [tc for tc in ai_message_chunk.tool_calls if tc.get('name')]
-                    print('😘tool_call event', ai_message_chunk.tool_calls)
-                    for tool_call in tool_calls:
-                        await send_to_websocket(session_id, {
-                            'type': 'tool_call',
-                            'id': tool_call.get('id'),
-                            'name': tool_call.get('name'),
-                            'arguments': '{}'
-                        })
-                elif hasattr(ai_message_chunk, 'tool_call_chunks'):
-                    tool_call_chunks = ai_message_chunk.tool_call_chunks
-                    for tool_call_chunk in tool_call_chunks:
-                        index: int = tool_call_chunk['index']
-                        if index < len(tool_calls):
-                            for_tool_call: ToolCall = tool_calls[index]
-                            await send_to_websocket(session_id, {
-                                'type': 'tool_call_arguments',
-                                'id': for_tool_call.get('id'),
-                                'text': tool_call_chunk.get('args')
-                            })
-                else:
-                    print('👇no tool_call_chunks', chunk)
-
-        # 发送完成事件
-        await send_to_websocket(session_id, {
-            'type': 'done'
-        })
-
-    except Exception as e:
-        print('Error in langgraph_agent', e)
-        traceback.print_exc()
-        await send_to_websocket(session_id, {
-            'type': 'error',
-            'error': str(e)
-        })
-
 from langgraph_swarm.handoff import _normalize_agent_name, METADATA_KEY_HANDOFF_DESTINATION
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import BaseTool, InjectedToolCallId, tool
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import InjectedState, ToolNode
 from langgraph.types import Command
-from typing import Annotated
+from typing import Annotated, List, Optional
 
 def create_handoff_tool(
     *, agent_name: str, name: str | None = None, description: str | None = None
@@ -218,14 +98,21 @@ def create_handoff_tool(
     handoff_to_agent.metadata = {METADATA_KEY_HANDOFF_DESTINATION: agent_name}
     return handoff_to_agent
 
-async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, image_model, system_prompt: str = None):
+async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: ModelInfo, image_model: ModelInfo, system_prompt: Optional[str] = None):
     try:
         model = text_model.get('model')
         provider = text_model.get('provider')
         url = text_model.get('url')
         api_key = config_service.app_config.get(provider, {}).get("api_key", "")
         image_model_name = image_model.get('model', '')
+        
+        tool_name = 'generate_image'
+
         is_jaaz_gpt_model = image_model_name.startswith('openai') and provider == 'jaaz'
+        if is_jaaz_gpt_model:
+            tool_name = 'generate_image_by_gpt'
+        if image_model.get('type') == 'tool':
+            tool_name = image_model.get('model')
 
         # TODO: Verify if max token is working
         max_tokens = text_model.get('max_tokens', 8148)
@@ -297,15 +184,9 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 'name': 'image_designer',
                 'tools': [
                     {
-                        'name': 'generate_image_by_gpt',
-                        'description': "Generate an image by gpt image model using text prompt or optionally pass images for reference or for editing. Use this model if you need to use multiple input images as reference.",
-                        'tool': 'generate_image_by_gpt',
-                    } if is_jaaz_gpt_model else {
-                        'name': 'generate_image',
-                        'description': "Generate an image",
-                        'tool': 'generate_image',
+                        'tool': tool_name,
                     },
-                ] + list(DYNAMIC_COMFY_TOOLS_DESCRIPTIONS),
+                ],
                 'system_prompt': system_prompt,
                 'knowledge': [],
                 'handoffs': []
@@ -321,9 +202,9 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model, ima
                 )
                 if hf:
                     handoff_tools.append(hf)
-            tools = []
+            tools: List[BaseTool] = []
             for tool_json in ag_schema.get('tools', []):
-                tool = create_tool(tool_json)
+                tool = tool_service.get_tool(tool_json.get('tool', ''))
                 if tool:
                     tools.append(tool)
             agent = create_react_agent(
