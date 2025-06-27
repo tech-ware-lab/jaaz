@@ -5,10 +5,12 @@ import httpx
 from services.config_service import config_service
 from services.db_service import db_service
 from utils.http_client import HttpClient
-
+from tools.comfy_dynamic import register_comfy_tools
 # services
 from services.files_service import download_file
 from services.websocket_service import broadcast_init_done
+from models.config_model import ModelInfo
+from typing import List
 
 router = APIRouter(prefix="/api")
 
@@ -63,7 +65,7 @@ async def get_comfyui_model_list(base_url: str):
 @router.get("/list_models")
 async def get_models():
     config = config_service.get_config()
-    res = []
+    res: List[ModelInfo] = []
 
     # Handle Ollama models separately
     ollama_url = config.get('ollama', {}).get(
@@ -83,7 +85,6 @@ async def get_models():
     comfyui_config = config.get('comfyui', {})
     comfyui_url = comfyui_config.get('url', '').strip()
     comfyui_config_models = comfyui_config.get('models', {})
-    print('👇comfyui_config_models', comfyui_config_models)
     if comfyui_url:
         comfyui_models = await get_comfyui_model_list(comfyui_url)
         for comfyui_model in comfyui_models:
@@ -94,7 +95,16 @@ async def get_models():
                     'url': comfyui_url,
                     'type': 'image'
                 })
-
+    # Handle ComfyUI workflows separately
+    comfyui_workflows = await register_comfy_tools()
+    print('🛠️ dynamic comfyui workflow tools', comfyui_workflows)
+    for workflow in comfyui_workflows:
+        res.append({
+            'provider': 'comfyui',
+            'model': workflow,
+            'url': comfyui_url,
+            'type': 'tool'
+        })
     # Handle providers that are not ollama or comfyui
     for provider in config.keys():
         if provider in ['ollama', 'comfyui']:
