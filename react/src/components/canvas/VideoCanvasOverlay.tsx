@@ -80,9 +80,11 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
         const appState = excalidrawAPI.getAppState()
         
         // Add video metadata to app state for persistence
+        // Ensure we don't overwrite existing videos
+        const existingVideos = appState.videoElements || []
         const updatedAppState = {
           ...appState,
-          videoElements: [...(appState.videoElements || []), newVideo]
+          videoElements: [...existingVideos.filter(v => v.id !== newVideo.id), newVideo]
         }
         
         excalidrawAPI.updateScene({
@@ -281,6 +283,38 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
     }
   }, [dragging, handleDragMove, handleDragEnd])
 
+  // Monitor excalidrawAPI changes and restore videos if lost
+  useEffect(() => {
+    if (excalidrawAPI && videoElements.length > 0) {
+      const checkAndRestoreVideos = () => {
+        try {
+          const appState = excalidrawAPI.getAppState()
+          const savedVideos = appState.videoElements || []
+          
+          // If app state has fewer videos than our component state, restore them
+          if (savedVideos.length < videoElements.length) {
+            console.log('🔄 Restoring videos to app state')
+            const updatedAppState = {
+              ...appState,
+              videoElements: videoElements
+            }
+            
+            excalidrawAPI.updateScene({
+              elements: excalidrawAPI.getSceneElements(),
+              appState: updatedAppState
+            })
+          }
+        } catch (error) {
+          console.error('Failed to restore videos:', error)
+        }
+      }
+      
+      // Check after a short delay to allow other updates to complete
+      const timer = setTimeout(checkAndRestoreVideos, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [excalidrawAPI, videoElements])
+
   // Handle video deselection when clicking outside
   const handleCanvasClick = useCallback((event: React.MouseEvent) => {
     // Only deselect if clicking on the overlay itself, not on a video
@@ -338,24 +372,19 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
     return transformed
   })
 
-  // Debug log when rendering
-  console.log('🎬 VideoCanvasOverlay RENDER START:', {
-    canvasId,
-    videoElementsCount: videoElements.length,
-    transformedVideosCount: transformedVideos.length
-  })
-  
-  if (videoElements.length > 0) {
-    console.log('🎬 VideoCanvasOverlay has videos:', {
-      videoElements: videoElements.map(v => ({ id: v.id, src: v.src, x: v.x, y: v.y })),
-      transformedVideos: transformedVideos.map(v => ({ 
-        id: v.id, 
-        transformedX: v.transformedX, 
-        transformedY: v.transformedY,
-        transformedWidth: v.transformedWidth,
-        transformedHeight: v.transformedHeight
-      }))
+  // Debug log when rendering - reduced frequency
+  if (videoElements.length !== transformedVideos.length || videoElements.length === 0) {
+    console.log('🎬 VideoCanvasOverlay RENDER:', {
+      canvasId,
+      videoElementsCount: videoElements.length,
+      transformedVideosCount: transformedVideos.length,
+      hasExcalidrawAPI: !!excalidrawAPI
     })
+  }
+  
+  // Log when videos disappear unexpectedly
+  if (videoElements.length === 0 && transformedVideos.length === 0) {
+    console.warn('⚠️ No videos found in VideoCanvasOverlay - checking for data loss')
   }
 
   return (

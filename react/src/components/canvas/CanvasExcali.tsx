@@ -183,9 +183,12 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       // Ensure interactive mode is enabled
       viewModeEnabled={false}
       zenModeEnabled={false}
-      // Allow element manipulation
+      // Allow element manipulation  
       onPointerUpdate={(payload) => {
-        console.log('👇 Pointer update:', payload)
+        // Reduced logging to prevent spam
+        if (payload.button === 'down') {
+          console.log('👇 Pointer down on:', payload.pointer.x, payload.pointer.y)
+        }
       }}
     />
   )
