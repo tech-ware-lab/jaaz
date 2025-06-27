@@ -122,8 +122,9 @@ export const CanvasVideoElement: React.FC<{
         width={width}
         height={height}
         duration={duration}
-        isPreview={true}
+        isPreview={false}
         muted={true}
+        autoPlay={false}
         onClick={onSelect}
       />
     </div>
