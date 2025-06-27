@@ -32,6 +32,7 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
   const [videoElements, setVideoElements] = useState<VideoElement[]>([])
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null)
   const [dragging, setDragging] = useState<{ id: string; startX: number; startY: number; offsetX: number; offsetY: number } | null>(null)
+  const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; startWidth: number; startHeight: number } | null>(null)
   const [userInteracting, setUserInteracting] = useState(false)
   const { excalidrawAPI } = useCanvas()
 
@@ -298,6 +299,78 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
     setTimeout(() => setUserInteracting(false), 500)
   }, [])
 
+  // Handle resize start
+  const handleResizeStart = useCallback((videoId: string, event: React.MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    
+    console.log('📏 Resize start for video:', videoId)
+    setUserInteracting(true)
+    
+    const video = videoElements.find(v => v.id === videoId)
+    if (!video) return
+    
+    setResizing({
+      id: videoId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startWidth: video.width,
+      startHeight: video.height
+    })
+    setSelectedVideoId(videoId)
+  }, [videoElements])
+
+  // Handle resize move
+  const handleResizeMove = useCallback((event: MouseEvent) => {
+    if (!resizing) return
+    
+    const deltaX = event.clientX - resizing.startX
+    const deltaY = event.clientY - resizing.startY
+    
+    // Calculate new dimensions maintaining minimum size
+    const minWidth = 200
+    const minHeight = 112
+    const newWidth = Math.max(minWidth, resizing.startWidth + deltaX)
+    const newHeight = Math.max(minHeight, resizing.startHeight + deltaY)
+    
+    setVideoElements(prev => {
+      const updatedVideos = prev.map(video => 
+        video.id === resizing.id
+          ? { ...video, width: newWidth, height: newHeight }
+          : video
+      )
+      
+      // Update app state with new dimensions
+      if (excalidrawAPI) {
+        try {
+          const currentElements = excalidrawAPI.getSceneElements()
+          const appState = excalidrawAPI.getAppState()
+          
+          const updatedAppState = {
+            ...appState,
+            videoElements: updatedVideos
+          }
+          
+          excalidrawAPI.updateScene({
+            elements: currentElements,
+            appState: updatedAppState
+          })
+        } catch (error) {
+          console.error('Failed to update video dimensions:', error)
+        }
+      }
+      
+      return updatedVideos
+    })
+  }, [resizing, excalidrawAPI])
+
+  // Handle resize end
+  const handleResizeEnd = useCallback(() => {
+    setResizing(null)
+    // Clear interaction state after resize ends
+    setTimeout(() => setUserInteracting(false), 500)
+  }, [])
+
   // Add drag event listeners
   useEffect(() => {
     if (dragging) {
@@ -310,9 +383,21 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
     }
   }, [dragging, handleDragMove, handleDragEnd])
 
+  // Add resize event listeners
+  useEffect(() => {
+    if (resizing) {
+      document.addEventListener('mousemove', handleResizeMove)
+      document.addEventListener('mouseup', handleResizeEnd)
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove)
+        document.removeEventListener('mouseup', handleResizeEnd)
+      }
+    }
+  }, [resizing, handleResizeMove, handleResizeEnd])
+
   // Monitor excalidrawAPI changes and restore videos if lost
   useEffect(() => {
-    if (excalidrawAPI && videoElements.length > 0 && !dragging && !selectedVideoId && !userInteracting) {
+    if (excalidrawAPI && videoElements.length > 0 && !dragging && !resizing && !selectedVideoId && !userInteracting) {
       const checkAndRestoreVideos = () => {
         try {
           const appState = excalidrawAPI.getAppState()
@@ -341,7 +426,7 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
       const timer = setTimeout(checkAndRestoreVideos, 3000)
       return () => clearTimeout(timer)
     }
-  }, [excalidrawAPI, videoElements, dragging, selectedVideoId, userInteracting])
+  }, [excalidrawAPI, videoElements, dragging, resizing, selectedVideoId, userInteracting])
 
   // Handle video deselection when clicking outside
   const handleCanvasClick = useCallback((event: React.MouseEvent) => {
@@ -519,7 +604,7 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
                 title="Resize video"
                 onMouseDown={(e) => {
                   e.stopPropagation()
-                  // TODO: Implement resize functionality
+                  handleResizeStart(video.id, e)
                 }}
               />
               
