@@ -111,6 +111,8 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
           if (videos.length > 0) {
             console.log('👇 Setting existing videos:', videos)
             setVideoElements(videos)
+          } else {
+            console.log('👇 No videos found to load')
           }
         }
       } catch (error) {
@@ -152,14 +154,25 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
   // Transform video positions based on canvas zoom and scroll
   const transformedVideos = videoElements.map(video => {
     const { zoom, scrollX, scrollY } = getCanvasTransform()
-    return {
+    const transformed = {
       ...video,
       transformedX: (video.x + scrollX) * zoom,
       transformedY: (video.y + scrollY) * zoom,
       transformedWidth: video.width * zoom,
       transformedHeight: video.height * zoom
     }
+    console.log('👇 Video transform:', {
+      original: { x: video.x, y: video.y, w: video.width, h: video.height },
+      canvas: { zoom, scrollX, scrollY },
+      transformed: { x: transformed.transformedX, y: transformed.transformedY, w: transformed.transformedWidth, h: transformed.transformedHeight }
+    })
+    return transformed
   })
+
+  // Debug log when rendering
+  if (videoElements.length > 0) {
+    console.log('👇 Rendering videos:', videoElements.length, 'transformed:', transformedVideos.length)
+  }
 
   return (
     <div 
