@@ -20,6 +20,10 @@ import {
 } from '../ui/dialog'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/card'
+import { Badge } from '../ui/badge'
+import { Label } from '../ui/label'
+import { Separator } from '../ui/separator'
 
 export type ComfyWorkflowInput = {
   name: string
@@ -268,6 +272,10 @@ function AddWorkflowDialog({
       setError('Please enter a workflow name')
       return
     }
+    if (workflowDescription === '') {
+      setError('Please enter a workflow description')
+      return
+    }
     const payload = {
       name: workflowName,
       api_json: workflowJson,
@@ -358,88 +366,133 @@ function AddWorkflowDialog({
           className="hidden"
         />
         {workflowJson && (
-          <div className="flex flex-col bg-accent p-2 rounded-md">
-            <p className="font-bold mb-2">Inputs</p>
-            <div className="ml-1">
+          <Card className="border-2 border-dashed border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-primary"></div>
+                Workflow Inputs Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
               {inputs.length > 0 ? (
-                inputs.map((input, index) => (
-                  <div
-                    key={`${input.node_input_name}_${input.node_id}`}
-                    className="flex items-center gap-2"
-                  >
-                    <div className="flex flex-col gap-1 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <input
-                          type="text"
-                          // 自动生成唯一名称（node_id + node_input_name）
-                          value={input.name}
-                          placeholder="Input Name"
-                          readOnly
-                          className="border-none bg-transparent w-full font-mono"
-                        />
-                        <div className="flex items-center space-x-2 pt-2">
-                          <Checkbox
-                            id={`required-${index}`}
-                            checked={input.required}
-                            onCheckedChange={(checked) => {
-                              const newInputs = [...inputs]
-                              newInputs[index].required = !!checked
-                              setInputs(newInputs)
-                            }}
-                          />
-                          <label
-                            htmlFor={`required-${index}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                          >
-                            Required
-                          </label>
-                        </div>
-                      </div>
-                      <Input
-                        type="text"
-                        value={input.default_value.toString()}
-                        disabled
-                      />
-                      <textarea
-                        placeholder="Please enter your description of the input"
-                        value={input.description}
-                        className="border-none bg-transparent w-full"
-                        style={{ fontSize: '0.95rem' }}
-                        onChange={(e) => {
-                          const newInputs = [...inputs]
-                          newInputs[index].description = e.target.value
-                          setInputs(newInputs)
-                        }}
-                      />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        const newInputs = [...inputs]
-                        newInputs.splice(index, 1)
-                        setInputs(newInputs)
-                      }}
+                <div className="space-y-2">
+                  {inputs.map((input, index) => (
+                    <Card
+                      key={`${input.node_input_name}_${input.node_id}`}
+                      className="bg-background/50 border border-border/50"
                     >
-                      <TrashIcon className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground text-center">
-                  Please add your workflow inputs from below. Choose at lease
-                  one input.
-                </p>
-              )}
-            </div>
-            {/* <p className="font-bold">Outputs</p>
-              {outputs.map((input) => (
-                <div key={input.name}>
-                  <p>{input.name}</p>
-                  <p>{input.description}</p>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 space-y-3">
+                            {/* Input Name and Required Badge */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Label className="font-mono text-sm bg-muted px-2 py-1 rounded">
+                                {input.name}
+                              </Label>
+                              <Badge
+                                variant={
+                                  input.required ? 'default' : 'secondary'
+                                }
+                                className="text-xs"
+                              >
+                                {input.required ? 'Required' : 'Optional'}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {input.type}
+                              </Badge>
+                            </div>
+
+                            <Separator className="my-2" />
+
+                            {/* Default Value */}
+                            <div className="space-y-2">
+                              <Label className="text-xs text-muted-foreground">
+                                Default Value
+                              </Label>
+                              <Input
+                                type="text"
+                                value={input.default_value.toString()}
+                                disabled
+                                className="bg-muted/50 text-sm"
+                              />
+                            </div>
+
+                            {/* Description */}
+                            <div className="space-y-2">
+                              {/* <Label className="text-xs text-muted-foreground">
+                                Description for Users
+                              </Label> */}
+                              <Textarea
+                                placeholder="Describe what this input does so that LLM can understand it and pass in the correct value..."
+                                value={input.description}
+                                onChange={(e) => {
+                                  const newInputs = [...inputs]
+                                  newInputs[index].description = e.target.value
+                                  setInputs(newInputs)
+                                }}
+                                className="min-h-[80px] text-sm resize-none"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Controls */}
+                          <div className="flex flex-col items-end gap-2">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`required-${index}`}
+                                checked={input.required}
+                                onCheckedChange={(checked) => {
+                                  const newInputs = [...inputs]
+                                  newInputs[index].required = !!checked
+                                  setInputs(newInputs)
+                                }}
+                              />
+                              <Label
+                                htmlFor={`required-${index}`}
+                                className="text-xs"
+                              >
+                                Required
+                              </Label>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                const newInputs = [...inputs]
+                                newInputs.splice(index, 1)
+                                setInputs(newInputs)
+                              }}
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              ))} */}
-          </div>
+              ) : (
+                <Card className="border-dashed border-2 border-muted-foreground/25">
+                  <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="rounded-full bg-muted p-3 mb-4">
+                      <PlusIcon className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-medium text-foreground mb-2">
+                      No inputs configured
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+                      Add workflow inputs from the node parameters below. Choose
+                      at least one input to make this workflow interactive.
+                    </p>
+                    <Badge variant="outline" className="text-xs">
+                      Select parameters from the workflow nodes below
+                    </Badge>
+                  </CardContent>
+                </Card>
+              )}
+            </CardContent>
+          </Card>
         )}
         {workflowJson &&
           Object.keys(workflowJson).map((nodeID) => {
