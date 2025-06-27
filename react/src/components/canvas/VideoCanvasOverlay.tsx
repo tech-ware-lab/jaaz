@@ -84,15 +84,22 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
   useEffect(() => {
     const loadExistingVideos = async () => {
       try {
-        const response = await fetch(`/api/canvas/${canvasId}`)
+        const url = `/api/canvas/${canvasId}?t=${Date.now()}`
+        console.log('👇 Fetching canvas data from:', url)
+        const response = await fetch(url)
         if (response.ok) {
           const canvasData = await response.json()
+          console.log('👇 Received canvas data:', canvasData)
           const elements = canvasData.data?.elements || []
           const files = canvasData.data?.files || {}
+          
+          console.log('👇 Canvas elements:', elements.length)
+          console.log('👇 All elements:', elements.map(e => ({type: e.type, id: e.id})))
           
           // Find video elements
           const videoElements = elements.filter((e: any) => e.type === 'video')
           console.log('👇 Loading existing videos:', videoElements.length)
+          console.log('👇 Video elements found:', videoElements)
           
           const videos = videoElements.map((element: any) => {
             const file = files[element.fileId]
