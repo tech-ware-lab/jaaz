@@ -171,12 +171,20 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
     const safeWidth = video.width || 320
     const safeHeight = video.height || 180
     
+    // Calculate transformed size with minimum size constraints
+    const baseTransformedWidth = safeWidth * safeZoom
+    const baseTransformedHeight = safeHeight * safeZoom
+    
+    // Ensure minimum visible size (especially when zoomed out)
+    const minWidth = 200  // Minimum 200px width
+    const minHeight = 112 // Maintain 16:9 aspect ratio
+    
     const transformed = {
       ...video,
       transformedX: (safeX + safeScrollX) * safeZoom,
       transformedY: (safeY + safeScrollY) * safeZoom,
-      transformedWidth: safeWidth * safeZoom,
-      transformedHeight: safeHeight * safeZoom
+      transformedWidth: Math.max(minWidth, baseTransformedWidth),
+      transformedHeight: Math.max(minHeight, baseTransformedHeight)
     }
     
     console.log('👇 Video transform:', {
@@ -221,11 +229,13 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
           style={{
             left: Math.max(0, video.transformedX),
             top: Math.max(0, video.transformedY),
-            width: Math.max(100, video.transformedWidth),
-            height: Math.max(50, video.transformedHeight),
+            width: video.transformedWidth,
+            height: video.transformedHeight,
             zIndex: selectedVideoId === video.id ? 1000 : 999,
-            border: '2px solid rgba(0, 255, 0, 0.5)', // Debug border
-            background: 'rgba(0, 0, 0, 0.1)' // Debug background
+            border: selectedVideoId === video.id ? '3px solid #007bff' : '2px solid rgba(0, 255, 0, 0.7)',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            background: 'rgba(0, 0, 0, 0.05)'
           }}
         >
           <CanvasVideoElement
