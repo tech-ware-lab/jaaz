@@ -87,12 +87,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         })
         .catch((error) => {
           console.error('Failed to load chat session:', error)
-          setMessages([])
+          // Only clear messages if we're not in the middle of generation
+          if (pending !== 'video' && pending !== 'image' && pending !== 'tool') {
+            setMessages([])
+          }
         })
     } else {
-      setMessages([])
+      // Only clear messages if we're not in the middle of generation
+      if (pending !== 'video' && pending !== 'image' && pending !== 'tool') {
+        setMessages([])
+      }
     }
-  }, [sessionId])
+  }, [sessionId, pending])
 
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
@@ -265,8 +271,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         return
       }
 
-      setMessages(() => {
-        console.log('👇all_messages', data.messages)
+      // Only update messages if we actually have new messages
+      // Don't clear the chat log if we get an empty or shorter message list
+      setMessages((prev) => {
+        console.log('👇all_messages received:', data.messages?.length || 0, 'messages')
+        console.log('👇current messages:', prev.length)
+        
+        // If we receive fewer messages than we currently have, keep the current messages
+        // This prevents chat log from disappearing during video generation
+        if (!data.messages || data.messages.length < prev.length) {
+          console.log('👇 Keeping existing messages to prevent chat log disappearing')
+          return prev
+        }
+        
+        // Only replace if we have more or equal messages
+        console.log('👇 Updating with new messages')
         return data.messages
       })
       scrollToBottom()
@@ -280,6 +299,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         return
       }
 
+      console.log('👇 Chat: session done, clearing pending state')
       setPending(false)
       scrollToBottom()
     },
@@ -345,18 +365,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       return
     }
 
+    // Don't reload messages if we're in the middle of generating content
+    if (pending === 'video' || pending === 'image' || pending === 'tool') {
+      console.log('👇 Skipping initChat during pending operation:', pending)
+      return
+    }
+
     sessionIdRef.current = sessionId
 
     const resp = await fetch('/api/chat_session/' + sessionId)
     const data = await resp.json()
     const msgs = data?.length ? data : []
+    
+    console.log('👇 initChat: loading', msgs.length, 'messages')
     setMessages(msgs)
     if (msgs.length > 0) {
       setInitCanvas(false)
     }
 
     scrollToBottom()
-  }, [sessionId, scrollToBottom, setInitCanvas])
+  }, [sessionId, pending, scrollToBottom, setInitCanvas])
 
   useEffect(() => {
     initChat()
