@@ -68,24 +68,29 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
 
     setVideoElements(prev => [...prev, newVideo])
     
-    // Also add to Excalidraw canvas if we have API access
-    if (excalidrawAPI && videoData.element) {
-      console.log('👇 Adding video element to Excalidraw canvas')
+    // Save video data separately - don't add to Excalidraw elements
+    // Videos are managed by the overlay system, not Excalidraw
+    console.log('👇 Video added to overlay system (not Excalidraw canvas)')
+    
+    // Trigger a canvas save to include video data in metadata
+    if (excalidrawAPI) {
       try {
+        // Save current Excalidraw state to trigger canvas save with video metadata
         const currentElements = excalidrawAPI.getSceneElements()
-        const videoElement = {
-          ...videoData.element,
-          type: 'video',
-          src: newVideo.src,
-          fileId: videoData.file?.id,
-          videoUrl: videoData.video_url
+        const appState = excalidrawAPI.getAppState()
+        
+        // Add video metadata to app state for persistence
+        const updatedAppState = {
+          ...appState,
+          videoElements: [...(appState.videoElements || []), newVideo]
         }
         
         excalidrawAPI.updateScene({
-          elements: [...currentElements, videoElement]
+          elements: currentElements,
+          appState: updatedAppState
         })
       } catch (error) {
-        console.error('Failed to add video to Excalidraw:', error)
+        console.error('Failed to save video metadata:', error)
       }
     }
   }, [canvasId, excalidrawAPI])
@@ -117,51 +122,32 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
         if (response.ok) {
           const canvasData = await response.json()
           console.log('👇 Received canvas data:', canvasData)
-          const elements = canvasData.data?.elements || []
-          const files = canvasData.data?.files || {}
           
-          console.log('👇 Canvas elements:', elements.length)
-          console.log('👇 All elements:', elements.map(e => ({type: e.type, id: e.id})))
+          // Look for videos in app state instead of elements
+          const appState = canvasData.data?.appState || {}
+          const savedVideoElements = appState.videoElements || []
           
-          // Find video elements
-          const videoElements = elements.filter((e: { type: string }) => e.type === 'video')
-          console.log('👇 Loading existing videos:', videoElements.length)
-          console.log('👇 Video elements found:', videoElements)
+          console.log('👇 Found saved videos in app state:', savedVideoElements.length)
           
-          const videos = videoElements.map((element: any) => {
-            const file = files[element.fileId]
-            // Try multiple fallback approaches for video URL
-            const videoSrc = element.src || 
-                           element.videoUrl || 
-                           file?.dataURL || 
-                           `/api/file/${element.fileId}` ||
-                           `/api/file/${element.fileId}.mp4`
+          if (savedVideoElements.length > 0) {
+            // Filter videos for this canvas and ensure they have valid data
+            const validVideos = savedVideoElements
+              .filter((video: any) => video.canvasId === canvasId)
+              .map((video: any) => ({
+                id: video.id,
+                src: video.src,
+                x: video.x || 200,
+                y: video.y || 200,
+                width: video.width || 480,
+                height: video.height || 270,
+                duration: video.duration,
+                canvasId: video.canvasId
+              }))
             
-            console.log('👇 Processing video element:', {
-              elementId: element.id,
-              fileId: element.fileId,
-              hasFile: !!file,
-              src: videoSrc,
-              element
-            })
-            
-            return {
-              id: element.id,
-              src: videoSrc,
-              x: element.x || 200,
-              y: element.y || 200,
-              width: element.width || 480,
-              height: element.height || 270,
-              duration: element.duration || file?.duration,
-              canvasId
-            }
-          })
-          
-          if (videos.length > 0) {
-            console.log('👇 Setting existing videos:', videos)
-            setVideoElements(videos)
+            console.log('👇 Loading valid videos:', validVideos)
+            setVideoElements(validVideos)
           } else {
-            console.log('👇 No videos found to load')
+            console.log('👇 No videos found in app state')
           }
         }
       } catch (error) {
@@ -181,11 +167,36 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
 
   // Remove video element
   const removeVideoElement = useCallback((videoId: string) => {
-    setVideoElements(prev => prev.filter(video => video.id !== videoId))
+    setVideoElements(prev => {
+      const updatedVideos = prev.filter(video => video.id !== videoId)
+      
+      // Update app state to persist removal
+      if (excalidrawAPI) {
+        try {
+          const currentElements = excalidrawAPI.getSceneElements()
+          const appState = excalidrawAPI.getAppState()
+          
+          const updatedAppState = {
+            ...appState,
+            videoElements: updatedVideos
+          }
+          
+          excalidrawAPI.updateScene({
+            elements: currentElements,
+            appState: updatedAppState
+          })
+        } catch (error) {
+          console.error('Failed to update video metadata on removal:', error)
+        }
+      }
+      
+      return updatedVideos
+    })
+    
     if (selectedVideoId === videoId) {
       setSelectedVideoId(null)
     }
-  }, [selectedVideoId])
+  }, [selectedVideoId, excalidrawAPI])
 
   // Handle video selection
   const handleVideoSelect = useCallback((videoId: string) => {
@@ -216,18 +227,42 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
     const deltaX = event.clientX - dragging.startX
     const deltaY = event.clientY - dragging.startY
     
-    setVideoElements(prev => prev.map(video => 
-      video.id === dragging.id
-        ? { ...video, x: video.x + deltaX, y: video.y + deltaY }
-        : video
-    ))
+    setVideoElements(prev => {
+      const updatedVideos = prev.map(video => 
+        video.id === dragging.id
+          ? { ...video, x: video.x + deltaX, y: video.y + deltaY }
+          : video
+      )
+      
+      // Debounce app state updates during drag
+      if (excalidrawAPI && Math.abs(deltaX) + Math.abs(deltaY) > 10) {
+        try {
+          const currentElements = excalidrawAPI.getSceneElements()
+          const appState = excalidrawAPI.getAppState()
+          
+          const updatedAppState = {
+            ...appState,
+            videoElements: updatedVideos
+          }
+          
+          excalidrawAPI.updateScene({
+            elements: currentElements,
+            appState: updatedAppState
+          })
+        } catch (error) {
+          console.error('Failed to update video position:', error)
+        }
+      }
+      
+      return updatedVideos
+    })
     
     setDragging(prev => prev ? {
       ...prev,
       startX: event.clientX,
       startY: event.clientY
     } : null)
-  }, [dragging])
+  }, [dragging, excalidrawAPI])
 
   // Handle drag end
   const handleDragEnd = useCallback(() => {
