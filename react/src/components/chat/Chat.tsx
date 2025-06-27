@@ -1,4 +1,4 @@
-import { sendMessages } from '@/api/chat'
+import { sendMessages, getChatSession } from '@/api/chat'
 import Blur from '@/components/common/Blur'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { eventBus, TEvents } from '@/lib/event'
@@ -77,6 +77,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const sessionId = session?.id
+
+  // Load messages when session changes
+  useEffect(() => {
+    if (sessionId) {
+      getChatSession(sessionId)
+        .then((sessionMessages) => {
+          setMessages(sessionMessages || [])
+        })
+        .catch((error) => {
+          console.error('Failed to load chat session:', error)
+          setMessages([])
+        })
+    } else {
+      setMessages([])
+    }
+  }, [sessionId])
 
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
