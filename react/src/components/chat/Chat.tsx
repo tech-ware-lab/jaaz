@@ -260,7 +260,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
 
       console.log('🎬 Chat: handling video_generated', data)
-      setPending('video') // Use video pending state
+      // Don't change pending state - let Done event handle it
+      // This prevents premature clearing of protection
     },
     [canvasId, sessionId]
   )
@@ -274,23 +275,42 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       // Only update messages if we actually have new messages
       // Don't clear the chat log if we get an empty or shorter message list
       setMessages((prev) => {
-        console.log('👇all_messages received:', data.messages?.length || 0, 'messages')
-        console.log('👇current messages:', prev.length)
+        console.log('🔄 all_messages event:', {
+          received: data.messages?.length || 0,
+          current: prev.length,
+          pending: pending,
+          sessionId: data.session_id
+        })
         
-        // If we receive fewer messages than we currently have, keep the current messages
-        // This prevents chat log from disappearing during video generation
-        if (!data.messages || data.messages.length < prev.length) {
-          console.log('👇 Keeping existing messages to prevent chat log disappearing')
+        // Enhanced protection: don't replace messages during any pending operation
+        // or if we receive significantly fewer messages
+        if (pending !== false || !data.messages || data.messages.length < prev.length) {
+          console.log('🛡️ PROTECTING CHAT: Keeping existing messages', {
+            reason: pending !== false ? 'pending operation' : 'fewer messages',
+            pending,
+            receivedCount: data.messages?.length || 0,
+            currentCount: prev.length
+          })
           return prev
         }
         
-        // Only replace if we have more or equal messages
-        console.log('👇 Updating with new messages')
+        // Additional safety: don't replace if the difference is too large (potential data loss)
+        if (data.messages.length > 0 && prev.length > 0 && data.messages.length < prev.length * 0.5) {
+          console.log('🛡️ PROTECTING CHAT: Suspicious message count drop', {
+            received: data.messages.length,
+            current: prev.length,
+            ratio: data.messages.length / prev.length
+          })
+          return prev
+        }
+        
+        // Only replace if we have more or equal messages and no pending operations
+        console.log('✅ Updating with new messages:', data.messages.length)
         return data.messages
       })
       scrollToBottom()
     },
-    [sessionId, scrollToBottom]
+    [sessionId, pending, scrollToBottom]
   )
 
   const handleDone = useCallback(
@@ -299,11 +319,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         return
       }
 
-      console.log('👇 Chat: session done, clearing pending state')
+      console.log('✅ Chat: session done, clearing pending state', {
+        sessionId: data.session_id,
+        currentPending: pending,
+        messageCount: messages.length
+      })
       setPending(false)
       scrollToBottom()
     },
-    [sessionId, scrollToBottom]
+    [sessionId, pending, messages.length, scrollToBottom]
   )
 
   const handleError = useCallback((data: TEvents['Socket::Session::Error']) => {
@@ -366,24 +390,45 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
 
     // Don't reload messages if we're in the middle of generating content
-    if (pending === 'video' || pending === 'image' || pending === 'tool') {
-      console.log('👇 Skipping initChat during pending operation:', pending)
+    if (pending !== false) {
+      console.log('🛡️ PROTECTING: Skipping initChat during pending operation:', pending)
       return
     }
 
     sessionIdRef.current = sessionId
 
-    const resp = await fetch('/api/chat_session/' + sessionId)
-    const data = await resp.json()
-    const msgs = data?.length ? data : []
-    
-    console.log('👇 initChat: loading', msgs.length, 'messages')
-    setMessages(msgs)
-    if (msgs.length > 0) {
-      setInitCanvas(false)
-    }
+    try {
+      const resp = await fetch('/api/chat_session/' + sessionId)
+      const data = await resp.json()
+      const msgs = data?.length ? data : []
+      
+      // Additional protection: only update if we have a reasonable number of messages
+      setMessages((prev) => {
+        console.log('🔄 initChat: comparing message counts', {
+          fetched: msgs.length,
+          current: prev.length,
+          pending
+        })
+        
+        // If we already have messages and the fetched count is much lower, keep existing
+        if (prev.length > 0 && msgs.length < prev.length * 0.5) {
+          console.log('🛡️ PROTECTING: initChat keeping existing messages due to suspicious count')
+          return prev
+        }
+        
+        console.log('✅ initChat: updating with fetched messages')
+        return msgs
+      })
+      
+      if (msgs.length > 0) {
+        setInitCanvas(false)
+      }
 
-    scrollToBottom()
+      scrollToBottom()
+    } catch (error) {
+      console.error('Failed to fetch chat session:', error)
+      // Don't clear messages on error
+    }
   }, [sessionId, pending, scrollToBottom, setInitCanvas])
 
   useEffect(() => {
