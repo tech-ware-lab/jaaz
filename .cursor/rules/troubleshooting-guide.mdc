@@ -1,5 +1,5 @@
 ---
-description:
+description: Common issues and solutions for Jaaz including video integration troubleshooting
 globs:
 alwaysApply: false
 ---
@@ -123,6 +123,100 @@ def debug_database():
 - Verify write permissions in user data directory
 - Monitor large file handling (images/videos)
 - Clean up temporary files periodically
+
+### Video Integration Issues
+
+#### Video Not Appearing on Canvas
+1. **Check Console Logs**:
+   ```javascript
+   // Look for these debug messages in browser console
+   console.log('🎬 VideoCanvasOverlay RENDER START')
+   console.log('👇 Adding video to canvas')
+   console.log('👇 Loading existing videos')
+   ```
+
+2. **Verify Video Generation**:
+   - Check for `video_generated` WebSocket event
+   - Verify video file URL is accessible: `/api/file/vid_xxxxx.mp4`
+   - Ensure video element has valid dimensions (width > 0, height > 0)
+
+3. **Canvas Integration**:
+   ```javascript
+   // Debug video overlay state
+   const debugVideoOverlay = () => {
+     const overlay = document.querySelector('[class*="VideoCanvasOverlay"]')
+     console.log('Video overlay found:', !!overlay)
+     console.log('Video elements in DOM:', document.querySelectorAll('video').length)
+   }
+   ```
+
+#### Video Drag and Drop Not Working
+1. **Mouse Event Issues**:
+   - Check for JavaScript errors blocking event handlers
+   - Verify `cursor-move` class is applied to video containers
+   - Ensure `pointer-events-auto` is set on video elements
+
+2. **Debug Drag State**:
+   ```javascript
+   // Check if dragging state is being set
+   const video = document.querySelector('[class*="video-container"]')
+   video.addEventListener('mousedown', (e) => {
+     console.log('Mouse down on video:', e.target)
+   })
+   ```
+
+#### Video Chat Log Disappearing
+1. **Event Protection**:
+   - Check for `🛡️ PROTECTING CHAT` messages in console
+   - Verify pending state is maintained during video generation
+   - Monitor `all_messages` events with message count logging
+
+2. **State Management**:
+   ```javascript
+   // Debug chat protection
+   const checkChatProtection = () => {
+     console.log('Current pending state:', pending)
+     console.log('Message count:', messages.length)
+     console.log('Session ID:', sessionId)
+   }
+   ```
+
+#### Video Persistence Issues
+1. **Canvas Data Storage**:
+   - Verify videos are added to Excalidraw elements array
+   - Check canvas save operation includes video elements
+   - Monitor `/api/canvas/save` requests in Network tab
+
+2. **Video Loading on Refresh**:
+   ```javascript
+   // Debug video loading from canvas data
+   const debugVideoLoad = async (canvasId) => {
+     const response = await fetch(`/api/canvas/${canvasId}`)
+     const data = await response.json()
+     const videoElements = data.data?.elements?.filter(e => e.type === 'video') || []
+     console.log('Videos in saved canvas:', videoElements.length)
+   }
+   ```
+
+#### Video Sizing and Positioning
+1. **Transform Calculation Issues**:
+   - Check canvas zoom and scroll values
+   - Verify video transform calculations in console logs
+   - Look for fallback positioning messages
+
+2. **Size Constraints**:
+   ```javascript
+   // Debug video sizing
+   const checkVideoSizes = () => {
+     document.querySelectorAll('video').forEach((video, i) => {
+       console.log(`Video ${i}:`, {
+         width: video.clientWidth,
+         height: video.clientHeight,
+         style: video.style.cssText
+       })
+     })
+   }
+   ```
 
 ### Frontend Specific Issues
 

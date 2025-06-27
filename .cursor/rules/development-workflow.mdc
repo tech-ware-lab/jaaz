@@ -78,6 +78,12 @@ npm run test:watch
 
 # Run tests once
 npm run test:run
+
+# Organized test structure
+tests/
+├── debug/          # Debug utilities and scripts
+├── video/          # Video integration and canvas tests  
+└── frontend/       # Frontend debugging and testing files
 ```
 
 ## Project Structure Rules
@@ -85,10 +91,35 @@ npm run test:run
 ### File Organization
 - Keep components small and focused (< 200 lines)
 - Group related functionality in directories
+- **Organize tests by functionality in appropriate subdirectories**
 - Use consistent naming conventions:
   - `PascalCase` for components and types
   - `camelCase` for functions and variables
   - `kebab-case` for file names when appropriate
+
+### Test Organization
+```
+tests/
+├── debug/
+│   └── debug_video_injection.js         # Video debugging utilities
+├── video/
+│   ├── test_canvas_video.py             # Canvas video integration tests
+│   ├── test_final_verification.js       # Final verification tests
+│   ├── test_video_overlay.js            # Video overlay functionality tests
+│   ├── test_video_drag.js               # Video drag interaction tests
+│   ├── test_video_persistence.js        # Video save/load persistence tests
+│   └── server_test_video_direct.html    # Direct video testing
+└── frontend/
+    ├── test_frontend_debug.html          # Frontend debugging interface
+    └── server_test_frontend_debug.html   # Server-side frontend debug
+```
+
+### Video Development Workflow
+1. **Generate Video**: Use chat interface to create videos from images
+2. **Test Interaction**: Verify drag, select, and delete functionality
+3. **Check Persistence**: Refresh page to ensure videos reload properly
+4. **Debug Issues**: Use extensive console logging for troubleshooting
+5. **Validate Chat**: Ensure chat history remains during video operations
 
 ### Import Organization
 ```typescript

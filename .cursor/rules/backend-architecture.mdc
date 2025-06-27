@@ -22,7 +22,7 @@ Located in `server/routers/`, each router handles specific functionality:
 - **workspace.py** - Workspace and project management
 - **canvas.py** - Canvas operations and infinite workspace
 - **image_tools.py** - Image processing and generation tools
-- **video_tools.py** - Video generation and processing (upcoming)
+- **video_tools.py** - **Video generation and processing with canvas integration**
 - **comfyui_execution.py** - ComfyUI workflow execution
 - **chat_router.py** - Chat interface and conversation management
 - **websocket_router.py** - WebSocket connections for real-time updates
@@ -36,6 +36,32 @@ Located in `server/services/`, services provide business logic:
 - **chat_service.py** - Chat history and conversation management
 - **websocket_service.py** - Real-time communication handling
 - **config_service.py** - Application configuration management
+
+### Video Integration
+The backend supports comprehensive video functionality:
+
+#### Video Tools ([server/tools/video_tools.py](mdc:server/tools/video_tools.py))
+- **Video Element Generation**: Create canvas-compatible video elements
+- **Canvas Integration**: Position videos within infinite canvas space
+- **File Management**: Handle video file storage and retrieval
+- **Transform Calculations**: Support for zoom/scroll-aware positioning
+
+#### Video Canvas Elements
+```python
+# Generate new video element for canvas
+async def generate_new_video_element(canvas_id: str, fileid: str, video_data: dict):
+    # Creates video element with proper positioning (default 480x270)
+    # Supports 16:9 aspect ratio and canvas coordinates
+    # Integrates with existing canvas element system
+    # Persists video data in canvas storage for refresh persistence
+    # Supports drag/drop positioning and interactive controls
+```
+
+#### Video Integration Features
+- **Canvas Persistence**: Videos are saved as part of canvas data structure
+- **File Management**: Video files stored with proper URL resolution
+- **Transform Support**: Backend provides positioning data for canvas transforms
+- **Event Broadcasting**: WebSocket events for real-time video generation updates
 
 ### Key Patterns
 

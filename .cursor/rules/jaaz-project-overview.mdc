@@ -8,11 +8,12 @@ alwaysApply: false
 ## What is Jaaz?
 Jaaz is the world's first open-source, locally deployed creative AI design tool that supports:
 - Image generation and editing with unlimited canvas rapid iteration
+- **Video generation and canvas integration** with real-time video overlay
 - Integration with both local models (Ollama, ComfyUI) and cloud APIs (OpenAI, Claude, Replicate)
 - Smart prompt agent powered by LLMs for optimized image/storyboard creation
 - Interactive image editing with advanced operations (object insertion, style transfer, multi-character coherence)
-- Infinite canvas & storyboarding capabilities
-- Upcoming video generation and editing features
+- Infinite canvas & storyboarding capabilities with **video element support**
+- **Active video generation and editing features** with canvas integration
 
 ## Architecture Overview
 
@@ -21,12 +22,14 @@ This is an Electron-based desktop application with three main parts:
 
 1. **Backend Server** ([server/main.py](mdc:server/main.py)): FastAPI-based Python server
    - Handles AI model integrations and API communication
-   - Manages workspace and canvas operations
+   - Manages workspace and canvas operations with **video element support**
    - Provides WebSocket for real-time communication
+   - **Video tools and generation** ([server/tools/video_tools.py](mdc:server/tools/video_tools.py))
 
 2. **Frontend React App** ([react/src/App.tsx](mdc:react/src/App.tsx)): Modern React/TypeScript UI
    - Built with Vite, TanStack Router, and TanStack Query
    - Uses shadcn/ui components and Tailwind CSS
+   - **Video canvas integration** ([react/src/components/canvas/VideoCanvasOverlay.tsx](mdc:react/src/components/canvas/VideoCanvasOverlay.tsx))
    - Supports theming and internationalization
 
 3. **Electron Wrapper** ([electron/main.js](mdc:electron/main.js)): Desktop app shell
@@ -38,6 +41,10 @@ This is an Electron-based desktop application with three main parts:
 - `server/` - Python FastAPI backend with routers, services, and models
 - `react/src/` - React frontend with components, hooks, stores, and API clients
 - `electron/` - Electron main process, IPC handlers, and ComfyUI management
+- **`tests/` - Organized test structure:**
+  - **`tests/debug/` - Debug utilities and scripts**
+  - **`tests/video/` - Video integration and canvas tests**
+  - **`tests/frontend/` - Frontend debugging and testing files**
 - `docs/` - Documentation and guides
 - `assets/` - Static assets and icons
 - `scripts/` - Build and deployment scripts
@@ -47,9 +54,20 @@ This is an Electron-based desktop application with three main parts:
 - Frontend: `cd react && npm run dev` (Vite dev server)
 - Electron: `npm run dev` (concurrent React + Electron development)
 - Full build: `npm run start` (builds React, then starts Electron)
+- **Testing: Organized test files in `tests/debug/`, `tests/video/`, `tests/frontend/`**
 
 ## Key Technologies
 - **Backend**: Python, FastAPI, SQLAlchemy, WebSockets, LangGraph
 - **Frontend**: React, TypeScript, Vite, TanStack Router/Query, Tailwind CSS
 - **Desktop**: Electron, electron-builder, auto-updater
 - **AI Integration**: Ollama, ComfyUI, Replicate API, OpenAI API, Claude API
+- **Video Processing**: Canvas video overlay, video element integration, real-time video positioning
+
+## Recent Features
+- **Complete Video Integration**: Full video generation, display, and interaction on infinite canvas
+- **Interactive Video Controls**: Drag, resize, delete, and select videos with mouse interaction
+- **Video Persistence**: Videos save to canvas data and persist across page refreshes
+- **Enhanced Chat Protection**: Robust protection against chat log disappearing during video generation
+- **Video UI Components**: Professional video player with controls and overlay management
+- **Canvas Transform Support**: Videos properly scale and position with canvas zoom/scroll
+- **Event System Integration**: Seamless WebSocket event handling for video generation workflows

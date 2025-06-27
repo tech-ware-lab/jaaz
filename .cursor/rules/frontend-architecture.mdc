@@ -28,6 +28,9 @@ The frontend is a modern React application ([react/src/App.tsx](mdc:react/src/Ap
 Reusable UI components organized by feature:
 - `auth/` - Authentication components (LoginDialog)
 - `canvas/` - Infinite canvas and drawing tools
+  - `VideoCanvasOverlay.tsx` - Real-time video overlay integration
+  - `VideoElement.tsx` - Canvas video element components
+  - `CanvasExcali.tsx` - Main Excalidraw canvas integration
 - `chat/` - Chat interface and message components
 - `comfyui/` - ComfyUI integration components
 - `common/` - Shared components (UpdateNotificationDialog)
@@ -72,6 +75,31 @@ TypeScript type definitions:
 - Shared interfaces
 
 ### Key Patterns
+
+#### Video Canvas Integration
+Real-time video overlay with full interaction capabilities:
+```tsx
+// Video canvas overlay with drag and resize support
+<VideoCanvasOverlay 
+  canvasId={id} 
+  ref={videoOverlayRef}
+/>
+
+// Canvas with video integration
+<div className="relative w-full h-full">
+  <CanvasExcali canvasId={id} initialData={canvas?.data} />
+  <VideoCanvasOverlay canvasId={id} />
+  <CanvasMenu />
+</div>
+```
+
+**Video Features:**
+- **Full Drag Support**: Videos can be dragged around the canvas with mouse interaction
+- **Persistent Storage**: Videos integrate with Excalidraw canvas data for persistence across refreshes
+- **Interactive Controls**: Selection, deletion, and resize handles when videos are selected
+- **Transform-Aware Positioning**: Videos respect canvas zoom and scroll transformations
+- **Event Handling**: Proper mouse event management for drag operations
+- **Chat Integration**: Video generation doesn't interfere with chat message history
 
 #### Context Providers
 Multiple providers wrap the app for different concerns:
