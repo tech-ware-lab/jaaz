@@ -64,10 +64,9 @@ class ComfyUIGenerator(ImageGenerator):
         # Get context from kwargs
         ctx = kwargs.get("ctx", {})
 
-        api_url = config_service.app_config.get("comfyui", {}).get("url", "")
-        api_url = api_url.replace("http://", "").replace("https://", "")
-        host = api_url.split(":")[0]
-        port = api_url.split(":")[1]
+        api_url = str(
+            config_service.app_config.get("comfyui", {}).get("url", "")
+        ).rstrip("/")
 
         # Process ratio
         if "flux" in model:
@@ -98,7 +97,7 @@ class ComfyUIGenerator(ImageGenerator):
             workflow["5"]["inputs"]["height"] = height
             workflow["3"]["inputs"]["seed"] = random.randint(1, 2**32)
 
-        execution = await execute(workflow, host, port, ctx=ctx)
+        execution = await execute(workflow, api_url, ctx=ctx)
         print("🦄image execution outputs", execution.outputs)
         url = execution.outputs[0]
 
@@ -114,27 +113,10 @@ class ComfyUIGenerator(ImageGenerator):
 class ComfyUIWorkflowRunner(ImageGenerator):
     """ComfyUI image generator implementation"""
 
-    def __init__(self, workflow_dict):
+    def __init__(self, workflow_dict, base_url):
         # Load workflows
         self.workflow = workflow_dict
-        api_url = (
-            config_service.app_config.get("comfyui", {})
-            .get("url", "")
-            .replace("http://", "")
-            .replace("https://", "")
-        )
-        if ":" in api_url:
-            self.host, self.port = map(str, api_url.split(":"))
-        else:
-            self.host = api_url
-            self.port = (
-                443
-                if (
-                    "https"
-                    in config_service.app_config.get("comfyui", {}).get("url", "")
-                )
-                else 80
-            )
+        self.base_url = base_url
 
     async def generate(
         self,
@@ -147,7 +129,7 @@ class ComfyUIWorkflowRunner(ImageGenerator):
         ctx = kwargs.get("ctx", {})
 
         execution = await execute(
-            self.workflow, self.host, self.port, local_paths=True, ctx=ctx
+            self.workflow, self.base_url, local_paths=True, ctx=ctx
         )
         print("🦄image execution outputs", execution.outputs)
         url = execution.outputs[0]
