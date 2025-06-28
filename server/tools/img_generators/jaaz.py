@@ -1,11 +1,21 @@
-from typing import Optional
+from typing import Optional, List
 import os
 import traceback
 import base64
+from pydantic import BaseModel
 from .base import ImageGenerator, get_image_info_and_save, generate_image_id
 from services.config_service import config_service, FILES_DIR
 from utils.http_client import HttpClient
-from openai.types import ImagesResponse, Image
+from openai.types import Image
+
+
+class JaazImagesResponse(BaseModel):
+    """图像响应类， Jaaz API 返回格式，与 OpenAI 一致"""
+    created: int
+    """The Unix timestamp (in seconds) of when the image was created."""
+
+    data: Optional[List[Image]] = None
+    """The list of generated images."""
 
 
 class JaazGenerator(ImageGenerator):
@@ -36,15 +46,16 @@ class JaazGenerator(ImageGenerator):
             "Content-Type": "application/json"
         }
 
-    async def _make_request(self, url: str, headers: dict[str, str], data: dict) -> ImagesResponse:
+    async def _make_request(self, url: str, headers: dict[str, str], data: dict) -> JaazImagesResponse:
         """
         发送 HTTP 请求并处理响应
 
         Returns:
-            ImagesResponse: OpenAI 兼容的图像响应对象
+            JaazImagesResponse: Jaaz 兼容的图像响应对象
         """
         async with HttpClient.create() as client:
-            print(f'🦄 Jaaz API request: {url}, model: {data["model"]}, prompt: {data["prompt"]}')
+            print(
+                f'🦄 Jaaz API request: {url}, model: {data["model"]}, prompt: {data["prompt"]}')
             response = await client.post(url, headers=headers, json=data)
 
             if response.status_code != 200:
@@ -56,12 +67,13 @@ class JaazGenerator(ImageGenerator):
                 raise Exception(
                     'Image generation failed: Empty response from server')
 
-            # 解析 JSON 并转换为 ImagesResponse 对象
+                # 解析 JSON 数据
             json_data = response.json()
             print('🦄 Jaaz API response', json_data)
-            return ImagesResponse(**json_data)
 
-    async def _process_response(self, res: ImagesResponse, error_prefix: str = "Jaaz") -> tuple[str, int, int, str]:
+            return JaazImagesResponse(**json_data)
+
+    async def _process_response(self, res: JaazImagesResponse, error_prefix: str = "Jaaz") -> tuple[str, int, int, str]:
         """
         处理 ImagesResponse 并保存图像
 
