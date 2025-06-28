@@ -140,7 +140,7 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
             if isinstance(value, str) and value.lower().endswith(image_format):
                 # Image!
                 # Extract filename from potential API path like "/api/file/filename.png"
-                if value.startswith("/api/file/"):
+                if "/" in value:
                     filename = value.split("/")[
                         -1
                     ]  # Get the last part after the last "/"
