@@ -1,3 +1,9 @@
+from langgraph_swarm.handoff import _normalize_agent_name, METADATA_KEY_HANDOFF_DESTINATION
+from typing import Annotated, List, Optional
+from langgraph.types import Command
+from langgraph.prebuilt import InjectedState, ToolNode
+from langgraph.graph.state import CompiledStateGraph
+from langchain_core.messages import ToolMessage
 from pydantic import BaseModel
 from models.config_model import ModelInfo
 from services.tool_service import tool_service
@@ -14,19 +20,13 @@ from langchain_openai import ChatOpenAI
 from langgraph_swarm import create_swarm
 from langchain_core.tools import BaseTool, InjectedToolCallId, tool
 
+
 class InputParam(BaseModel):
     type: str
     description: str
     required: bool
     default: str
 
-from langgraph_swarm.handoff import _normalize_agent_name, METADATA_KEY_HANDOFF_DESTINATION
-from langchain_core.messages import ToolMessage
-from langchain_core.tools import BaseTool, InjectedToolCallId, tool
-from langgraph.graph.state import CompiledStateGraph
-from langgraph.prebuilt import InjectedState, ToolNode
-from langgraph.types import Command
-from typing import Annotated, List, Optional
 
 def create_handoff_tool(
     *, agent_name: str, name: str | None = None, description: str | None = None
@@ -69,23 +69,27 @@ def create_handoff_tool(
         return Command(
             goto=agent_name,
             graph=Command.PARENT,
-            update={"messages": state["messages"] + [tool_message], "active_agent": agent_name},
+            update={"messages": state["messages"] +
+                    [tool_message], "active_agent": agent_name},
         )
 
     handoff_to_agent.metadata = {METADATA_KEY_HANDOFF_DESTINATION: agent_name}
     return handoff_to_agent
+
 
 async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: ModelInfo, image_model: ModelInfo, system_prompt: Optional[str] = None):
     try:
         model = text_model.get('model')
         provider = text_model.get('provider')
         url = text_model.get('url')
-        api_key = config_service.app_config.get(provider, {}).get("api_key", "")
+        api_key = config_service.app_config.get(
+            provider, {}).get("api_key", "")
         image_model_name = image_model.get('model', '')
-        
+
         tool_name = 'generate_image'
 
-        is_jaaz_gpt_model = image_model_name.startswith('openai') and provider == 'jaaz'
+        is_jaaz_gpt_model = image_model_name.startswith(
+            'openai') and provider == 'jaaz'
         if is_jaaz_gpt_model:
             tool_name = 'generate_image_by_gpt'
         if image_model.get('type') == 'tool':
@@ -117,11 +121,11 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: Mod
                 'name': 'planner',
                 'tools': [
                     {
-                    'name': 'write_plan',
-                    'description': "Write a execution plan for the user's request",
-                    'type': 'system',
-                    'tool': 'write_plan',
-                }
+                        'name': 'write_plan',
+                        'description': "Write a execution plan for the user's request",
+                        'type': 'system',
+                        'tool': 'write_plan',
+                    }
                 ],
                 'system_prompt': """
             You are a design planning writing agent. You should do:
@@ -164,7 +168,24 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: Mod
                         'tool': tool_name,
                     },
                 ],
-                'system_prompt': system_prompt,
+                'system_prompt': (system_prompt or "") + """
+
+ERROR HANDLING INSTRUCTIONS:
+When image generation fails, you MUST:
+1. Acknowledge the failure and explain the specific reason to the user
+2. If the error mentions "sensitive content" or "flagged content", advise the user to:
+   - Use more appropriate and less sensitive descriptions
+   - Avoid potentially controversial, violent, or inappropriate content
+   - Try rephrasing with more neutral language
+3. If it's an API error (HTTP 500, etc.), suggest:
+   - Trying again in a moment
+   - Using different wording in the prompt
+   - Checking if the service is temporarily unavailable
+4. Always provide helpful suggestions for alternative approaches
+5. Maintain a supportive and professional tone
+
+IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with helpful guidance for the user.
+""",
                 'knowledge': [],
                 'handoffs': []
             }
@@ -224,9 +245,9 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: Mod
                 all_messages = chunk[1].get('messages', [])
                 oai_messages = convert_to_openai_messages(all_messages)
                 await send_to_websocket(session_id, {
-                        'type': 'all_messages',
-                        'messages': oai_messages
-                    })
+                    'type': 'all_messages',
+                    'messages': oai_messages
+                })
                 for i in range(last_saved_message_index + 1, len(oai_messages)):
                     new_message = oai_messages[i]
                     await db_service.create_message(session_id, new_message.get('role', 'user'), json.dumps(new_message)) if len(messages) > 0 else None
@@ -245,7 +266,8 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: Mod
                         'text': content
                     })
                 elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
-                    tool_calls = [tc for tc in ai_message_chunk.tool_calls if tc.get('name')]
+                    tool_calls = [
+                        tc for tc in ai_message_chunk.tool_calls if tc.get('name')]
                     print('😘tool_call event', ai_message_chunk.tool_calls)
                     for tool_call in tool_calls:
                         await send_to_websocket(session_id, {
