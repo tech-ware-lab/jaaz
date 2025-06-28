@@ -121,7 +121,9 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
         print("🛠️canvas_id", canvas_id, "session_id", session_id)
         # Inject the tool call id into the context
         ctx["tool_call_id"] = tool_call_id
-        api_url = config_service.app_config.get("comfyui", {}).get("url", "")
+        api_url = str(
+            config_service.app_config.get("comfyui", {}).get("url", "")
+        ).rstrip("/")
 
         # if there's image, upload it!
         # First, let's fliter all values endswith .jpg .png etc

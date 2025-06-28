@@ -64,7 +64,9 @@ class ComfyUIGenerator(ImageGenerator):
         # Get context from kwargs
         ctx = kwargs.get("ctx", {})
 
-        api_url = config_service.app_config.get("comfyui", {}).get("url", "")
+        api_url = str(
+            config_service.app_config.get("comfyui", {}).get("url", "")
+        ).rstrip("/")
 
         # Process ratio
         if "flux" in model:
