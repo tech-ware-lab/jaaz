@@ -35,7 +35,7 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import InjectedToolCallId, tool, BaseTool
 from pydantic import BaseModel, Field, create_model
 from routers.comfyui_execution import upload_image
-from services.config_service import FILES_DIR, config_service
+from services.config_service import FILES_DIR, config_service, IMAGE_FORMATS
 from services.db_service import db_service
 from services.websocket_service import broadcast_session_update, send_to_websocket
 
@@ -142,19 +142,10 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
 
         # if there's image, upload it!
         # First, let's fliter all values endswith .jpg .png etc
-        image_format = (
-            ".png",
-            ".jpg",
-            ".jpeg",
-            ".webp",  # 基础格式
-            ".bmp",
-            ".tiff",
-            ".tif",  # 其他常见格式
-        )
+
         required_data = dict(kwargs)
-        # BUG: Image cannot be uploaded
         for key, value in required_data.items():
-            if isinstance(value, str) and value.lower().endswith(image_format):
+            if isinstance(value, str) and value.lower().endswith(IMAGE_FORMATS):
                 # Image!
                 # Extract filename from potential API path like "/api/file/filename.png"
                 if value.startswith("/api/file/"):

@@ -16,28 +16,43 @@ from rich.progress import BarColumn, Column, Progress, Table, TimeElapsedColumn
 
 from services.websocket_service import send_to_websocket
 
+
 async def check_comfy_server_running(port, host):
     async with httpx.AsyncClient(timeout=10) as client:
-        url = f'http://{host}:{port}/api/prompt'
+        url = f"http://{host}:{port}/api/prompt"
         response = await client.get(url)
         return response.status_code == 200
 
-async def execute(workflow: dict, host, port, wait=True, verbose=False, local_paths=False, timeout=300, ctx: dict = {}):
+
+async def execute(
+    workflow: dict,
+    host,
+    port,
+    wait=True,
+    verbose=False,
+    local_paths=False,
+    timeout=300,
+    ctx: dict = {},
+):
     if not await check_comfy_server_running(port, host):
-        pprint(f"[bold red]ComfyUI not running on specified address ({host}:{port})[/bold red]")
+        pprint(
+            f"[bold red]ComfyUI not running on specified address ({host}:{port})[/bold red]"
+        )
         raise typer.Exit(code=1)
 
     progress = None
     start = time.time()
     if wait:
-        pprint(f"Executing comfyui workflow")
+        pprint("Executing comfyui workflow")
         progress = ExecutionProgress()
         # Remove or comment out the line below to avoid starting the live display
         # progress.start()
     else:
-        print(f"Queuing comfyui workflow")
+        print("Queuing comfyui workflow")
 
-    execution = WorkflowExecution(workflow, host, port, verbose, progress, local_paths, timeout, ctx=ctx)
+    execution = WorkflowExecution(
+        workflow, host, port, verbose, progress, local_paths, timeout, ctx=ctx
+    )
 
     try:
         if wait:
@@ -56,7 +71,9 @@ async def execute(workflow: dict, host, port, wait=True, verbose=False, local_pa
                     pprint(f)
 
             elapsed = timedelta(seconds=end - start)
-            pprint(f"[bold green]\nWorkflow execution completed ({elapsed})[/bold green]")
+            pprint(
+                f"[bold green]\nWorkflow execution completed ({elapsed})[/bold green]"
+            )
         else:
             pprint("[bold green]Workflow queued[/bold green]")
     finally:
@@ -68,22 +85,40 @@ async def execute(workflow: dict, host, port, wait=True, verbose=False, local_pa
 class ExecutionProgress(Progress):
     def get_renderables(self):
         table_columns = (
-            (Column(no_wrap=True) if isinstance(_column, str) else _column.get_table_column().copy())
+            (
+                Column(no_wrap=True)
+                if isinstance(_column, str)
+                else _column.get_table_column().copy()
+            )
             for _column in self.columns
         )
 
         for task in self.tasks:
             percent = "[progress.percentage]{task.percentage:>3.0f}%".format(task=task)
             if task.fields.get("progress_type") == "overall":
-                overall_table = Table.grid(*table_columns, padding=(0, 1), expand=self.expand)
-                overall_table.add_row(BarColumn().render(task), percent, TimeElapsedColumn().render(task))
+                overall_table = Table.grid(
+                    *table_columns, padding=(0, 1), expand=self.expand
+                )
+                overall_table.add_row(
+                    BarColumn().render(task), percent, TimeElapsedColumn().render(task)
+                )
                 yield overall_table
             else:
                 yield self.make_tasks_table([task])
 
 
 class WorkflowExecution:
-    def __init__(self, workflow, host, port, verbose, progress, local_paths, timeout=30, ctx: dict = {}):
+    def __init__(
+        self,
+        workflow,
+        host,
+        port,
+        verbose,
+        progress,
+        local_paths,
+        timeout=30,
+        ctx: dict = {},
+    ):
         self.workflow = workflow
         self.host = host
         self.port = port
@@ -95,7 +130,9 @@ class WorkflowExecution:
         self.remaining_nodes = set(self.workflow.keys())
         self.total_nodes = len(self.remaining_nodes)
         if progress:
-            self.overall_task = self.progress.add_task("", total=self.total_nodes, progress_type="overall")
+            self.overall_task = self.progress.add_task(
+                "", total=self.total_nodes, progress_type="overall"
+            )
         self.current_node = None
         self.progress_task = None
         self.progress_node = None
@@ -105,13 +142,17 @@ class WorkflowExecution:
         self.ctx = ctx
 
     async def connect(self):
-        self.ws = await websockets.connect(f"ws://{self.host}:{self.port}/ws?clientId={self.client_id}")
+        self.ws = await websockets.connect(
+            f"ws://{self.host}:{self.port}/ws?clientId={self.client_id}"
+        )
 
     async def queue(self):
         data = {"prompt": self.workflow, "client_id": self.client_id}
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.post(f"http://{self.host}:{self.port}/prompt", json=data)
+                response = await client.post(
+                    f"http://{self.host}:{self.port}/prompt", json=data
+                )
                 body = response.json()
                 self.prompt_id = body["prompt_id"]
             except httpx.HTTPStatusError as e:
@@ -126,10 +167,9 @@ class WorkflowExecution:
                 self.progress.stop()
 
                 pprint(f"[bold red]Error running workflow\n{message}[/bold red]")
-                await send_to_websocket(self.ctx.get('session_id'), {
-                    'type': 'error',
-                    'error': message
-                })
+                await send_to_websocket(
+                    self.ctx.get("session_id"), {"type": "error", "error": message}
+                )
                 raise Exception(message)
 
     async def watch_execution(self):
@@ -140,7 +180,9 @@ class WorkflowExecution:
                     break
 
     def update_overall_progress(self):
-        self.progress.update(self.overall_task, completed=self.total_nodes - len(self.remaining_nodes))
+        self.progress.update(
+            self.overall_task, completed=self.total_nodes - len(self.remaining_nodes)
+        )
 
     def get_node_title(self, node_id):
         node = self.workflow[node_id]
@@ -197,13 +239,16 @@ class WorkflowExecution:
                 self.update_overall_progress()
             self.current_node = data["node"]
             self.log_node("Executing", data["node"])
-            if self.ctx.get('session_id'):
-                await send_to_websocket(self.ctx.get('session_id'), {
-                    'type': 'tool_call_progress',
-                    'tool_call_id': self.ctx.get('tool_call_id'),
-                    'session_id': self.ctx.get('session_id'),
-                    'update': f'Executing {self.get_node_title(data["node"])}'
-                })
+            if self.ctx.get("session_id"):
+                await send_to_websocket(
+                    self.ctx.get("session_id"),
+                    {
+                        "type": "tool_call_progress",
+                        "tool_call_id": self.ctx.get("tool_call_id"),
+                        "session_id": self.ctx.get("session_id"),
+                        "update": f"Executing {self.get_node_title(data['node'])}",
+                    },
+                )
         return True
 
     async def on_cached(self, data):
@@ -215,13 +260,16 @@ class WorkflowExecution:
 
     async def on_progress(self, data):
         node = data["node"]
-        if self.ctx.get('session_id'):
-            await send_to_websocket(self.ctx.get('session_id'), {
-                    'type': 'tool_call_progress',
-                    'tool_call_id': self.ctx.get('tool_call_id'),
-                    'session_id': self.ctx.get('session_id'),
-                    'update': f'Executing {self.get_node_title(node)} {data["value"] / data["max"] * 100}%'
-            })
+        if self.ctx.get("session_id"):
+            await send_to_websocket(
+                self.ctx.get("session_id"),
+                {
+                    "type": "tool_call_progress",
+                    "tool_call_id": self.ctx.get("tool_call_id"),
+                    "session_id": self.ctx.get("session_id"),
+                    "update": f"Executing {self.get_node_title(node)} {data['value'] / data['max'] * 100}%",
+                },
+            )
         if self.progress_node != node:
             self.progress_node = node
             if self.progress_task:
@@ -242,32 +290,44 @@ class WorkflowExecution:
 
         output = data["output"]
 
-        if output is None or "images" not in output:
+        if output is None:
             return
 
-        for img in output["images"]:
+        for img in output.get("images", []):
             self.outputs.append(self.format_image_path(img))
-        await send_to_websocket(self.ctx.get('session_id'), {
-            'type': 'tool_call_progress',
-            'tool_call_id': self.ctx.get('tool_call_id'),
-            'session_id': self.ctx.get('session_id'),
-            'update': '' # clear the progress update section by send empty string
-        })
+
+        for gif in output.get("gifs", []):
+            self.outputs.append(self.format_image_path(gif))
+
+        await send_to_websocket(
+            self.ctx.get("session_id"),
+            {
+                "type": "tool_call_progress",
+                "tool_call_id": self.ctx.get("tool_call_id"),
+                "session_id": self.ctx.get("session_id"),
+                "update": "",  # clear the progress update section by send empty string
+            },
+        )
 
     async def on_error(self, data):
-        pprint(f"[bold red]Error running workflow\n{json.dumps(data, indent=2)}[/bold red]")
-        await send_to_websocket(self.ctx.get('session_id'), {
-            'type': 'error',
-            'error': json.dumps(data, indent=2)
-        })
+        pprint(
+            f"[bold red]Error running workflow\n{json.dumps(data, indent=2)}[/bold red]"
+        )
+        await send_to_websocket(
+            self.ctx.get("session_id"),
+            {"type": "error", "error": json.dumps(data, indent=2)},
+        )
         raise Exception(json.dumps(data, indent=2))
+
 
 async def upload_image(image, host, port):
     files = {"image": image}
-    data = {'type': 'input', 'overwrite': 'false'}
+    data = {"type": "input", "overwrite": "false"}
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.post(f"http://{host}:{port}/upload/image", files=files, data=data)
+            response = await client.post(
+                f"http://{host}:{port}/upload/image", files=files, data=data
+            )
             body = response.json()
             image_name = body["name"]
             return image_name
