@@ -1,27 +1,7 @@
-"""
-langgraph_service.py
-
-本模块封装了 langgraph_agent 异步函数，用于执行 LangGraph + LangChain 构建的 React 风格语言 Agent。
-功能包括：
-- 初始化对应的语言模型客户端（OpenAI / Ollama 等）
-- 创建并运行带工具链的 React Agent
-- 处理 Agent 流式返回结果（消息、工具调用、工具调用参数）
-- 将更新通过 websocket 推送给前端
-- 持久化聊天记录到数据库
-
-依赖模块：
-- langgraph, langchain_core, langchain_openai, langchain_ollama
-- services.db_service
-- services.config_service
-- routers.websocket
-- routers.image_tools
-"""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from models.config_model import ModelInfo
 from services.tool_service import tool_service
 from utils.http_client import HttpClient
-
-import asyncio
 import json
 import traceback
 from langchain_core.messages import AIMessageChunk, ToolCall, convert_to_openai_messages, ToolMessage
@@ -29,13 +9,10 @@ from langgraph.prebuilt import create_react_agent
 from services.db_service import db_service
 from services.config_service import config_service
 from services.websocket_service import send_to_websocket
-from tools.image_generators import generate_image
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langgraph_swarm import create_swarm
 from langchain_core.tools import BaseTool, InjectedToolCallId, tool
-from tools.generate_image_by_gpt import generate_image_by_gpt
-from langchain_core.runnables import RunnableConfig
 
 class InputParam(BaseModel):
     type: str
@@ -227,11 +204,6 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: Mod
             default_active_agent=last_agent if last_agent else agent_schemas[0]['name']
         ).compile()
 
-        # swarm = create_swarm(
-        #     agents=agents,
-        #     default_active_agent=agent_schemas[0]['name']
-        # ).compile()
-
         ctx = {
             'canvas_id': canvas_id,
             'session_id': session_id,
@@ -265,11 +237,8 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: Mod
                 print('👇ai_message_chunk', ai_message_chunk)
                 content = ai_message_chunk.content  # Get the content from the AIMessageChunk
                 if isinstance(ai_message_chunk, ToolMessage):
+                    # this tool call result is already sent to the frontend in check_type == values
                     print('👇tool_call_results', ai_message_chunk.content)
-                    await send_to_websocket(session_id, {
-                        'type': 'error',
-                        'error': content
-                    })
                 elif content:
                     await send_to_websocket(session_id, {
                         'type': 'delta',
