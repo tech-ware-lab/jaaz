@@ -7,8 +7,9 @@ import sys
 import copy
 import traceback
 from .base import ImageGenerator, get_image_info_and_save, generate_image_id
-from services.config_service import config_service, FILES_DIR
+from services.config_service import config_service, FILES_DIR, IMAGE_FORMATS
 from routers.comfyui_execution import execute
+from routers.video_generators import get_video_info_and_save
 
 
 def get_asset_path(filename):
@@ -131,13 +132,23 @@ class ComfyUIWorkflowRunner(ImageGenerator):
         execution = await execute(
             self.workflow, self.base_url, local_paths=True, ctx=ctx
         )
-        print("🦄image execution outputs", execution.outputs)
+        print("🦄workflow execution outputs", execution.outputs)
+
         url = execution.outputs[0]
 
-        # get image dimensions
+        # get image id
         image_id = generate_image_id()
-        mime_type, width, height, extension = await get_image_info_and_save(
+
+        # check is video or image.
+        get_info_func = (
+            get_image_info_and_save
+            if url.lower().endswith(IMAGE_FORMATS)
+            else get_video_info_and_save
+        )
+
+        mime_type, width, height, extension = await get_info_func(
             url, os.path.join(FILES_DIR, f"{image_id}")
         )
+
         filename = f"{image_id}.{extension}"
         return mime_type, width, height, filename

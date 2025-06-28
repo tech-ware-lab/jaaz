@@ -18,10 +18,20 @@ import {
   BinaryFiles,
   ExcalidrawInitialDataState,
 } from '@excalidraw/excalidraw/types'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import '@/assets/style/canvas.css'
+
+type VideoElement = {
+  id: string
+  src: string
+  x: number
+  y: number
+  width: number
+  height: number
+  playing: boolean
+}
 
 type LastImagePosition = {
   x: number
@@ -41,6 +51,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   initialData,
 }) => {
   const { excalidrawAPI, setExcalidrawAPI } = useCanvas()
+  const [videos, setVideos] = useState<VideoElement[]>([])
 
   const { i18n } = useTranslation()
 
@@ -53,6 +64,12 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       if (elements.length === 0 || !appState) {
         return
       }
+
+      // 更新视频位置
+      setVideos(v => v.map(video => {
+        const el = elements.find(e => e.id === video.id)
+        return el ? { ...video, x: el.x, y: el.y } : video
+      }))
 
       const data: CanvasData = {
         elements,
@@ -90,6 +107,21 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     async (imageElement: ExcalidrawImageElement, file: BinaryFileData) => {
       if (!excalidrawAPI) return
 
+      // 处理视频文件
+      if (file.mimeType?.startsWith('video/')) {
+        setVideos(v => [...v, {
+          id: imageElement.id,
+          src: file.dataURL,
+          x: imageElement.x,
+          y: imageElement.y,
+          width: imageElement.width,
+          height: imageElement.height,
+          playing: false
+        }])
+        return
+      }
+
+      // 原有图片处理逻辑
       excalidrawAPI.addFiles([file])
 
       const currentElements = excalidrawAPI.getSceneElements()
@@ -125,25 +157,64 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   }, [handleImageGenerated])
 
   return (
-    <Excalidraw
-      theme={theme as Theme}
-      langCode={i18n.language}
-      excalidrawAPI={(api) => {
-        setExcalidrawAPI(api)
-      }}
-      onChange={handleChange}
-      initialData={() => {
-        const data = initialData
-        console.log('👇initialData', data)
-        if (data?.appState) {
-          data.appState = {
-            ...data.appState,
-            collaborators: undefined!,
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <Excalidraw
+        theme={theme as Theme}
+        langCode={i18n.language}
+        excalidrawAPI={(api) => {
+          setExcalidrawAPI(api)
+        }}
+        onChange={handleChange}
+        initialData={() => {
+          const data = initialData
+          console.log('👇initialData', data)
+          if (data?.appState) {
+            data.appState = {
+              ...data.appState,
+              collaborators: undefined!,
+            }
           }
-        }
-        return data || null
-      }}
-    />
+          return data || null
+        }}
+      />
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        pointerEvents: 'none',
+        width: '100%',
+        height: '100%'
+      }}>
+        {videos.map(video => (
+          <video
+            key={video.id}
+            src={video.src}
+            style={{
+              position: 'absolute',
+              left: video.x,
+              top: video.y,
+              width: video.width,
+              height: video.height,
+              pointerEvents: 'auto'
+            }}
+            autoPlay={video.playing}
+            muted
+            onMouseEnter={() => setVideos(v => v.map(v =>
+              v.id === video.id ? { ...v, playing: true } : { ...v, playing: false }
+            ))}
+            onClick={() => setVideos(v => v.map(v =>
+              v.id === video.id ? { ...v, playing: !v.playing } : v
+            ))}
+            onMouseLeave={() => setVideos(v => v.map(v =>
+              v.id === video.id ? { ...v, playing: false } : v
+            ))}
+            onPause={(e) => {
+              if (!video.playing) e.currentTarget.currentTime = 0
+            }}
+          />
+        ))}
+      </div>
+    </div>
   )
 }
 export default CanvasExcali
