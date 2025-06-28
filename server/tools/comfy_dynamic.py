@@ -308,10 +308,11 @@ async def register_comfy_tools() -> Dict[str, BaseTool]:
             dynamic_comfy_tools[unique_name] = tool_fn
             tool_service.register_tool(unique_name, tool_fn)
         except Exception as exc:  # pragma: no cover
-            traceback.print_stack()
             print(
                 f"[comfy_dynamic] Failed to create tool for workflow {wf.get('id')}: {exc}"
             )
+            print(traceback.print_stack())
+
     return dynamic_comfy_tools
 
 
