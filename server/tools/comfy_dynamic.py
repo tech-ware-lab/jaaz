@@ -121,24 +121,7 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
         print("🛠️canvas_id", canvas_id, "session_id", session_id)
         # Inject the tool call id into the context
         ctx["tool_call_id"] = tool_call_id
-        api_url = (
-            config_service.app_config.get("comfyui", {})
-            .get("url", "")
-            .replace("http://", "")
-            .replace("https://", "")
-        )
-        if ":" in api_url:
-            host, port = map(str, api_url.split(":"))
-        else:
-            host = api_url
-            port = (
-                443
-                if (
-                    "https"
-                    in config_service.app_config.get("comfyui", {}).get("url", "")
-                )
-                else 80
-            )
+        api_url = config_service.app_config.get("comfyui", {}).get("url", "")
 
         # if there's image, upload it!
         # First, let's fliter all values endswith .jpg .png etc
@@ -169,7 +152,7 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
                 with open(image_path, "rb") as image_file:
                     image_bytes = image_file.read()
                 image_stream = BytesIO(image_bytes)
-                image_name = await upload_image(image_stream, host, port)
+                image_name = await upload_image(image_stream, api_url)
                 required_data[key] = image_name
 
         workflow_dict = await db_service.get_comfy_workflow(wf["id"])
@@ -213,7 +196,7 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
                 )
 
         try:
-            generator = ComfyUIWorkflowRunner(workflow_dict)
+            generator = ComfyUIWorkflowRunner(workflow_dict, api_url)
             extra_kwargs = {}
             extra_kwargs["ctx"] = ctx
 
