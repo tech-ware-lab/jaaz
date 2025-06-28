@@ -262,7 +262,9 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
                 },
             )
 
-            return f"image generated successfully ![image_id: {filename}]({image_url})"
+            return (
+                f"workflow executed successfully ![image_id: {filename}]({image_url})"
+            )
 
         except Exception as e:
             print(f"Error generating image: {str(e)}")
