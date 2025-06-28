@@ -1,14 +1,109 @@
-from typing import Optional
+from typing import Optional, List
 import os
 import traceback
 import base64
+from pydantic import BaseModel
 from .base import ImageGenerator, get_image_info_and_save, generate_image_id
 from services.config_service import config_service, FILES_DIR
 from utils.http_client import HttpClient
+from openai.types import Image
+
+
+class JaazImagesResponse(BaseModel):
+    """图像响应类， Jaaz API 返回格式，与 OpenAI 一致"""
+    created: int
+    """The Unix timestamp (in seconds) of when the image was created."""
+
+    data: Optional[List[Image]] = None
+    """The list of generated images."""
 
 
 class JaazGenerator(ImageGenerator):
     """Jaaz Cloud image generator implementation"""
+
+    def _get_api_config(self) -> tuple[str, str]:
+        """获取 API 配置"""
+        jaaz_config = config_service.app_config.get('jaaz', {})
+        api_url = jaaz_config.get('url', '')
+        api_token = jaaz_config.get('api_key', '')
+
+        if not api_url or not api_token:
+            raise ValueError("Jaaz API URL or token is not configured")
+
+        return api_url, api_token
+
+    def _build_url(self, api_url: str) -> str:
+        """构建请求 URL"""
+        if api_url.rstrip('/').endswith('/api/v1'):
+            return f"{api_url.rstrip('/')}/image/generations"
+        else:
+            return f"{api_url.rstrip('/')}/api/v1/image/generations"
+
+    def _build_headers(self, api_token: str) -> dict[str, str]:
+        """构建请求头"""
+        return {
+            "Authorization": f"Bearer {api_token}",
+            "Content-Type": "application/json"
+        }
+
+    async def _make_request(self, url: str, headers: dict[str, str], data: dict) -> JaazImagesResponse:
+        """
+        发送 HTTP 请求并处理响应
+
+        Returns:
+            JaazImagesResponse: Jaaz 兼容的图像响应对象
+        """
+        async with HttpClient.create() as client:
+            print(
+                f'🦄 Jaaz API request: {url}, model: {data["model"]}, prompt: {data["prompt"]}')
+            response = await client.post(url, headers=headers, json=data)
+
+            if response.status_code != 200:
+                error_msg = f"HTTP {response.status_code}: {response.text}"
+                print(f'🦄 Jaaz API error: {error_msg}')
+                raise Exception(f'Image generation failed: {error_msg}')
+
+            if not response.content:
+                raise Exception(
+                    'Image generation failed: Empty response from server')
+
+                # 解析 JSON 数据
+            json_data = response.json()
+            print('🦄 Jaaz API response', json_data)
+
+            return JaazImagesResponse(**json_data)
+
+    async def _process_response(self, res: JaazImagesResponse, error_prefix: str = "Jaaz") -> tuple[str, int, int, str]:
+        """
+        处理 ImagesResponse 并保存图像
+
+        Args:
+            res: OpenAI ImagesResponse 对象
+            error_prefix: 错误消息前缀
+
+        Returns:
+            tuple[str, int, int, str]: (mime_type, width, height, filename)
+        """
+        if res.data and len(res.data) > 0:
+            image_data = res.data[0]
+            if hasattr(image_data, 'url') and image_data.url:
+                image_url = image_data.url
+                image_id = generate_image_id()
+                mime_type, width, height, extension = await get_image_info_and_save(
+                    image_url,
+                    os.path.join(FILES_DIR, f'{image_id}')
+                )
+
+                # 确保 mime_type 不为 None
+                if mime_type is None:
+                    raise Exception('Failed to determine image MIME type')
+
+                filename = f'{image_id}.{extension}'
+                return mime_type, width, height, filename
+
+        # 如果没有找到有效的图像数据
+        raise Exception(
+            f'{error_prefix} image generation failed: No valid image data in response')
 
     async def generate(
         self,
@@ -22,10 +117,13 @@ class JaazGenerator(ImageGenerator):
         """
         使用 Jaaz API 服务生成图像
         支持 Replicate 格式和 OpenAI 格式的模型
+
+        Returns:
+            tuple[str, int, int, str]: (mime_type, width, height, filename)
         """
         # 检查是否是 OpenAI 模型
         if model.startswith('openai/'):
-            return await self.generate_openai_image(
+            return await self._generate_openai_image(
                 prompt=prompt,
                 model=model,
                 input_images=input_images,
@@ -33,26 +131,28 @@ class JaazGenerator(ImageGenerator):
                 **kwargs
             )
 
-        # 原有的 Replicate 兼容逻辑
+        # Replicate 兼容逻辑
+        return await self._generate_replicate_image(
+            prompt=prompt,
+            model=model,
+            aspect_ratio=aspect_ratio,
+            input_image=input_image,
+            **kwargs
+        )
+
+    async def _generate_replicate_image(
+        self,
+        prompt: str,
+        model: str,
+        aspect_ratio: str = "1:1",
+        input_image: Optional[str] = None,
+        **kwargs
+    ) -> tuple[str, int, int, str]:
+        """生成 Replicate 格式的图像"""
         try:
-            # 从配置中获取 API 设置
-            jaaz_config = config_service.app_config.get('jaaz', {})
-            api_url = jaaz_config.get('url', '')
-            api_token = jaaz_config.get('api_key', '')
-
-            if not api_url or not api_token:
-                raise ValueError("Jaaz API URL or token is not configured")
-
-            # 构建请求 URL
-            if api_url.rstrip('/').endswith('/api/v1'):
-                url = f"{api_url.rstrip('/')}/image/generations"
-            else:
-                url = f"{api_url.rstrip('/')}/api/v1/image/generations"
-
-            headers = {
-                "Authorization": f"Bearer {api_token}",
-                "Content-Type": "application/json"
-            }
+            api_url, api_token = self._get_api_config()
+            url = self._build_url(api_url)
+            headers = self._build_headers(api_token)
 
             # 构建请求数据，与 Replicate 格式一致
             data = {
@@ -65,55 +165,16 @@ class JaazGenerator(ImageGenerator):
             if input_image:
                 data['input_image'] = input_image
 
-            print(
-                f'🦄 Jaaz image generation request: {url} {prompt[:50]}... with model: {model}')
+            res = await self._make_request(url, headers, data)
 
-            async with HttpClient.create() as client:
-                response = await client.post(url, headers=headers, json=data)
-                print('🦄 Jaaz image generation response', response)
-                # Check HTTP status first
-                if response.status_code != 200:
-                    error_msg = f"HTTP {response.status_code}: {response.text}"
-                    print(f'🦄 Jaaz API error: {error_msg}')
-                    raise Exception(f'Image generation failed: {error_msg}')
-                
-                # Check if response has content before parsing JSON
-                if not response.content:
-                    raise Exception('Image generation failed: Empty response from server')
-                
-                res = response.json()
-
-            # 从响应中获取图像 URL
-            output = res.get('output', '')
-            print('🦄 Jaaz image generation response output', output)
-            if isinstance(output, list) and len(output) > 0:
-                output = output[0]  # 取第一张图片
-
-            if not output:
-                error_detail = res.get(
-                    'detail', res.get('error', 'Unknown error'))
-                raise Exception(
-                    f'Jaaz image generation failed: {error_detail}')
-
-            # 生成唯一图像 ID
-            image_id = generate_image_id()
-            print(f'🦄 Jaaz image generation image_id: {image_id}')
-
-            # 下载并保存图像
-            mime_type, width, height, extension = await get_image_info_and_save(
-                output,
-                os.path.join(FILES_DIR, f'{image_id}')
-            )
-
-            filename = f'{image_id}.{extension}'
-            return mime_type, width, height, filename
+            return await self._process_response(res, "Jaaz")
 
         except Exception as e:
             print('Error generating image with Jaaz:', e)
             traceback.print_exc()
             raise e
 
-    async def generate_openai_image(
+    async def _generate_openai_image(
         self,
         prompt: str,
         model: str,
@@ -124,81 +185,30 @@ class JaazGenerator(ImageGenerator):
         """
         使用 Jaaz API 服务调用 OpenAI 模型生成图像
         兼容 OpenAI 图像生成 API
+
+        Returns:
+            tuple[str, int, int, str]: (mime_type, width, height, filename)
         """
         try:
-            # 从配置中获取 Jaaz API 设置
-            jaaz_config = config_service.app_config.get('jaaz', {})
-            api_url = jaaz_config.get('url', '')
-            api_token = jaaz_config.get('api_key', '')
-
-            if not api_url or not api_token:
-                raise ValueError("Jaaz API URL or token is not configured")
-
-            # 构建请求 URL - 检查是否已经包含 /api/v1
-            if api_url.rstrip('/').endswith('/api/v1'):
-                url = f"{api_url.rstrip('/')}/image/generations"
-            else:
-                url = f"{api_url.rstrip('/')}/api/v1/image/generations"
-
-            headers = {
-                "Authorization": f"Bearer {api_token}",
-                "Content-Type": "application/json"
-            }
+            api_url, api_token = self._get_api_config()
+            url = self._build_url(api_url)
+            headers = self._build_headers(api_token)
 
             # 构建请求数据
-            prompt = f"{prompt} Aspect ratio: {aspect_ratio}"
-            print('🦄 Jaaz OpenAI image generation prompt', prompt)
+            enhanced_prompt = f"{prompt} Aspect ratio: {aspect_ratio}"
+
             data = {
                 "model": model,
-                "prompt": prompt,
+                "prompt": enhanced_prompt,
                 "n": kwargs.get("num_images", 1),
                 "size": 'auto',
                 "input_images": input_images,
                 "mask": None,  # 如果需要遮罩，可以在这里添加
             }
 
-            print(
-                f'🦄 Jaaz OpenAI image generation request: {prompt[:50]}... with model: {model}')
+            res = await self._make_request(url, headers, data)
 
-            async with HttpClient.create() as client:
-                response = await client.post(url, headers=headers, json=data)
-                if response.status_code != 200:
-                    error_msg = f"HTTP {response.status_code}: {response.text}"
-                    print(f'🦄 Jaaz API error: {error_msg}')
-                    raise Exception(f'Image generation failed: {error_msg}')
-                
-                res = response.json()
-
-
-            # 检查响应格式
-            if 'data' in res and len(res['data']) > 0:
-                # OpenAI 格式响应
-                image_data = res['data'][0]
-                if 'b64_json' in image_data:
-                    image_b64 = image_data['b64_json']
-                    image_id = generate_image_id()
-                    mime_type, width, height, extension = await get_image_info_and_save(
-                        image_b64,
-                        os.path.join(FILES_DIR, f'{image_id}'),
-                        is_b64=True
-                    )
-                    filename = f'{image_id}.{extension}'
-                    return mime_type, width, height, filename
-                elif 'url' in image_data:
-                    # URL 格式响应
-                    image_url = image_data['url']
-                    image_id = generate_image_id()
-                    mime_type, width, height, extension = await get_image_info_and_save(
-                        image_url,
-                        os.path.join(FILES_DIR, f'{image_id}')
-                    )
-                    filename = f'{image_id}.{extension}'
-                    return mime_type, width, height, filename
-
-            # 如果没有找到有效的图像数据
-            error_detail = res.get('error', res.get('detail', 'Unknown error'))
-            raise Exception(
-                f'Jaaz OpenAI image generation failed: {error_detail}')
+            return await self._process_response(res, "Jaaz OpenAI")
 
         except Exception as e:
             print('Error generating image with Jaaz OpenAI:', e)
