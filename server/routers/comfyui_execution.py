@@ -17,30 +17,25 @@ from rich.progress import BarColumn, Column, Progress, Table, TimeElapsedColumn
 from services.websocket_service import send_to_websocket
 
 
-async def check_comfy_server_running(port, host):
-    if port == "443":
-        http_core = "https://"
-    else:
-        http_core = "http://"
+async def check_comfy_server_running(base_url):
     async with httpx.AsyncClient(timeout=10) as client:
-        url = f"{http_core}{host}:{port}/api/prompt"
+        url = f"{base_url}/api/prompt"
         response = await client.get(url)
         return response.status_code == 200
 
 
 async def execute(
     workflow: dict,
-    host,
-    port,
+    base_url,
     wait=True,
     verbose=False,
     local_paths=False,
     timeout=300,
     ctx: dict = {},
 ):
-    if not await check_comfy_server_running(port, host):
+    if not await check_comfy_server_running(base_url):
         pprint(
-            f"[bold red]ComfyUI not running on specified address ({host}:{port})[/bold red]"
+            f"[bold red]ComfyUI not running on specified address ({base_url})[/bold red]"
         )
         raise typer.Exit(code=1)
 
@@ -55,7 +50,7 @@ async def execute(
         print("Queuing comfyui workflow")
 
     execution = WorkflowExecution(
-        workflow, host, port, verbose, progress, local_paths, timeout, ctx=ctx
+        workflow, base_url, verbose, progress, local_paths, timeout, ctx=ctx
     )
 
     try:
@@ -115,8 +110,7 @@ class WorkflowExecution:
     def __init__(
         self,
         workflow,
-        host,
-        port,
+        base_url,
         verbose,
         progress,
         local_paths,
@@ -124,8 +118,7 @@ class WorkflowExecution:
         ctx: dict = {},
     ):
         self.workflow = workflow
-        self.host = host
-        self.port = port
+        self.base_url = base_url
         self.verbose = verbose
         self.local_paths = local_paths
         self.client_id = str(uuid.uuid4())
@@ -144,24 +137,24 @@ class WorkflowExecution:
         self.ws = None
         self.timeout = timeout
         self.ctx = ctx
-        self.http_core = "https://" if self.port == "443" else "http://"
 
     async def connect(self):
-        if self.port == "443":
+        if self.base_url.startswith("https"):
             self.ws_core = "wss://"
         else:
             self.ws_core = "ws://"
+        ws_url = self.base_url.split("//")[1]
+        if "/" in ws_url:
+            ws_url = ws_url.split("/")[0]
         self.ws = await websockets.connect(
-            f"{self.ws_core}{self.host}:{self.port}/ws?clientId={self.client_id}"
+            f"{self.ws_core}{ws_url}/ws?clientId={self.client_id}"
         )
 
     async def queue(self):
         data = {"prompt": self.workflow, "client_id": self.client_id}
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.post(
-                    f"{self.http_core}{self.host}:{self.port}/prompt", json=data
-                )
+                response = await client.post(f"{self.base_url}/prompt", json=data)
                 body = response.json()
                 self.prompt_id = body["prompt_id"]
             except httpx.HTTPStatusError as e:
@@ -215,7 +208,7 @@ class WorkflowExecution:
 
     def format_image_path(self, img):
         query = urllib.parse.urlencode(img)
-        return f"{self.http_core}{self.host}:{self.port}/view?{query}"
+        return f"{self.base_url}/view?{query}"
 
     async def on_message(self, message):
         data = message["data"] if "data" in message else {}
@@ -329,17 +322,13 @@ class WorkflowExecution:
         raise Exception(json.dumps(data, indent=2))
 
 
-async def upload_image(image, host, port):
+async def upload_image(image, base_url):
     files = {"image": image}
     data = {"type": "input", "overwrite": "false"}
-    if port == "443":
-        http_core = "https://"
-    else:
-        http_core = "http://"
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
-                f"{http_core}{host}:{port}/upload/image", files=files, data=data
+                f"{base_url}/upload/image", files=files, data=data
             )
             body = response.json()
             image_name = body["name"]
