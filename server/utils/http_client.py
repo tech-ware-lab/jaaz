@@ -25,7 +25,7 @@ HTTP 客户端工厂和管理器
 import ssl
 import certifi
 import httpx
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, AsyncGenerator, Generator
 from contextlib import asynccontextmanager, contextmanager
 import logging
 
@@ -51,7 +51,7 @@ class HttpClient:
         return cls._ssl_context
 
     @classmethod
-    def _get_client_config(cls, **kwargs) -> Dict[str, Any]:
+    def _get_client_config(cls, **kwargs: Any) -> Dict[str, Any]:
         """获取客户端配置"""
         # 默认超时配置，适合大多数 AI API 调用
         default_timeout = httpx.Timeout(
@@ -79,7 +79,7 @@ class HttpClient:
 
     @classmethod
     @asynccontextmanager
-    async def create(cls, url: Optional[str] = None, **kwargs):
+    async def create(cls, url: Optional[str] = None, **kwargs: Any) -> AsyncGenerator[httpx.AsyncClient, None]:
         """创建异步客户端上下文管理器"""
         config = cls._get_client_config(**kwargs)
         client = httpx.AsyncClient(**config)
@@ -90,7 +90,7 @@ class HttpClient:
 
     @classmethod
     @contextmanager
-    def create_sync(cls, url: Optional[str] = None, **kwargs):
+    def create_sync(cls, url: Optional[str] = None, **kwargs: Any) -> Generator[httpx.Client, None, None]:
         """创建同步客户端上下文管理器"""
         config = cls._get_client_config(**kwargs)
         client = httpx.Client(**config)
@@ -100,13 +100,13 @@ class HttpClient:
             client.close()
 
     @classmethod
-    def create_async_client(cls, **kwargs) -> httpx.AsyncClient:
+    def create_async_client(cls, **kwargs: Any) -> httpx.AsyncClient:
         """直接创建异步客户端（需要手动关闭）"""
         config = cls._get_client_config(**kwargs)
         return httpx.AsyncClient(**config)
 
     @classmethod
-    def create_sync_client(cls, **kwargs) -> httpx.Client:
+    def create_sync_client(cls, **kwargs: Any) -> httpx.Client:
         """直接创建同步客户端（需要手动关闭）"""
         config = cls._get_client_config(**kwargs)
         return httpx.Client(**config)
