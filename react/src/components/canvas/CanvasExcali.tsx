@@ -22,7 +22,7 @@ import {
 } from '@excalidraw/excalidraw/types'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import VideoPlayer from './VideoPlayer'
+import { VideoElement } from './VideoElement'
 
 import '@/assets/style/canvas.css'
 
@@ -137,28 +137,93 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     [excalidrawAPI]
   )
 
-  const createVideoEmbedElement = useCallback(
-    (videoSrc: string, x: number = 100, y: number = 100, width: number = 320, height: number = 180) => {
+  const addVideoEmbed = useCallback(
+    (elementData:any, videoSrc:string) => {
       if (!excalidrawAPI) return
 
-      const videoElements = convertToExcalidrawElements([
-        {
-          type: "embeddable",
-          x,
-          y,
-          width,
-          height,
-          link: videoSrc,
-          validated: true,
+      // Function to create video element with given dimensions
+      const createVideoElement = (finalWidth: number, finalHeight: number) => {
+        console.log('👇 Video element properties:', { 
+          id: elementData.id,
+          type: elementData.type,
+          locked: elementData.locked,
+          groupIds: elementData.groupIds,
+          isDeleted: elementData.isDeleted,
+          x: elementData.x,
+          y: elementData.y,
+          width: elementData.width,
+          height: elementData.height,
+         })
+        
+        const videoElements = convertToExcalidrawElements([
+          {
+            type: "embeddable",
+            id: elementData.id,
+            x: elementData.x,
+            y: elementData.y,
+            width: elementData.width,
+            height: elementData.height,
+            link: videoSrc,
+            validated: true,
+            locked: false,
+            isDeleted: false,
+            groupIds: []
+          }
+        ])
+
+        console.log('👇 Converted video elements:', videoElements)
+
+        const currentElements = excalidrawAPI.getSceneElements()
+        const newElements = [...currentElements, ...videoElements]
+        
+        console.log('👇 Updating scene with elements count:', newElements.length)
+        
+        excalidrawAPI.updateScene({
+          elements: newElements,
+        })
+
+        console.log('👇 Added video embed element:', videoSrc, `${elementData.width}x${elementData.height}`)
+      }
+
+      // If dimensions are provided, use them directly
+      if (elementData.width && elementData.height) {
+        createVideoElement(elementData.width, elementData.height)
+        return
+      }
+
+      // Otherwise, try to get video's natural dimensions
+      const video = document.createElement('video')
+      video.crossOrigin = 'anonymous'
+      
+      video.onloadedmetadata = () => {
+        const videoWidth = video.videoWidth
+        const videoHeight = video.videoHeight
+        
+        if (videoWidth && videoHeight) {
+          // Scale down if video is too large (max 800px width)
+          const maxWidth = 800
+          let finalWidth = videoWidth
+          let finalHeight = videoHeight
+          
+          if (videoWidth > maxWidth) {
+            const scale = maxWidth / videoWidth
+            finalWidth = maxWidth
+            finalHeight = videoHeight * scale
+          }
+          
+          createVideoElement(finalWidth, finalHeight)
+        } else {
+          // Fallback to default dimensions
+          createVideoElement(320, 180)
         }
-      ])
-
-      const currentElements = excalidrawAPI.getSceneElements()
-      excalidrawAPI.updateScene({
-        elements: [...currentElements, ...videoElements],
-      })
-
-      console.log('👇 Added video embed element:', videoSrc)
+      }
+      
+      video.onerror = () => {
+        console.warn('Could not load video metadata, using default dimensions')
+        createVideoElement(320, 180)
+      }
+      
+      video.src = videoSrc
     },
     [excalidrawAPI]
   )
@@ -167,18 +232,22 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     (element: NonDeleted<ExcalidrawEmbeddableElement>, appState: AppState) => {
       const { link } = element
       
+      console.log('👇 renderEmbeddable called with:', { link, elementId: element.id, elementType: element.type })
+      
       // Check if this is a video URL
       if (link && (link.includes('.mp4') || link.includes('.webm') || link.includes('.ogg') || link.startsWith('blob:') || link.includes('video'))) {
+        console.log('👇 Rendering VideoPlayer for:', link)
         // Return the VideoPlayer component
         return (
-          <VideoPlayer 
+          <VideoElement 
             src={link}
-            width="100%"
-            height="100%"
+            width={element.width}
+            height={element.height}
           />
         )
       }
       
+      console.log('👇 Not a video URL, returning null for:', link)
       // Return null for non-video embeds to use default rendering
       return null
     },
@@ -217,17 +286,10 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       }
 
       // Create video embed element using the video URL
-      if (videoData.video_url) {
-        createVideoEmbedElement(
-          videoData.video_url,
-          100, // default x position
-          100, // default y position
-          320, // default width
-          180  // default height
-        )
-      }
+      addVideoEmbed(videoData.element, videoData.video_url)
+
     },
-    [createVideoEmbedElement, canvasId]
+    [addVideoEmbed, canvasId]
   )
 
   useEffect(() => {

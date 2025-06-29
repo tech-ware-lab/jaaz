@@ -133,6 +133,7 @@ export const VideoElement: React.FC<VideoElementProps> = ({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onClick={handleClick}
+            onPointerDown={(e) => e.stopPropagation()} // Prevent Excalidraw from taking over
         >
             <video
                 ref={videoRef}
