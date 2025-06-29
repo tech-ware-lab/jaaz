@@ -17,6 +17,15 @@ IMAGE_FORMATS = (
     ".bmp",
     ".tiff",
     ".tif",  # 其他常见格式
+    ".webp",
+)
+VIDEO_FORMATS = (
+    ".mp4",
+    ".avi",
+    ".mkv",
+    ".mov",
+    ".wmv",
+    ".flv",
 )
 
 
