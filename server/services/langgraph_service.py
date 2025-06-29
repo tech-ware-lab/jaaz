@@ -234,6 +234,7 @@ IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with he
         }
         tool_calls: list[ToolCall] = []
         last_saved_message_index = len(messages) - 1
+        last_streaming_tool_call_id: Optional[str] = None
 
         async for chunk in swarm.astream(
             {"messages": messages},
@@ -276,20 +277,21 @@ IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with he
                             'name': tool_call.get('name'),
                             'arguments': '{}'
                         })
-                elif hasattr(ai_message_chunk, 'tool_call_chunks'):
+                if hasattr(ai_message_chunk, 'tool_call_chunks'):
                     tool_call_chunks = ai_message_chunk.tool_call_chunks
                     for tool_call_chunk in tool_call_chunks:
-                        index: int = tool_call_chunk['index']
-                        if index < len(tool_calls):
-                            for_tool_call: ToolCall = tool_calls[index]
-                            # print('👇tool_call_arguments event', for_tool_call, 'chunk', tool_call_chunk)
-                            await send_to_websocket(session_id, {
-                                'type': 'tool_call_arguments',
-                                'id': for_tool_call.get('id'),
-                                'text': tool_call_chunk.get('args')
-                            })
-                else:
-                    print('👇no tool_call_chunks', chunk)
+                        if tool_call_chunk.get('id'):
+                            # This marks the start of a new streaming tool call arguments
+                            last_streaming_tool_call_id = tool_call_chunk.get('id')
+                        else:
+                            if last_streaming_tool_call_id:
+                                await send_to_websocket(session_id, {
+                                    'type': 'tool_call_arguments',
+                                    'id': last_streaming_tool_call_id,
+                                    'text': tool_call_chunk.get('args')
+                                })
+                            else:
+                                print('🟠no last_streaming_tool_call_id', tool_call_chunk)
 
         # 发送完成事件
         await send_to_websocket(session_id, {
