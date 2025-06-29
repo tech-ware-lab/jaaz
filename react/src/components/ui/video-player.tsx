@@ -150,7 +150,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
 
     return (
-        <div className={cn('relative group bg-black rounded-lg overflow-hidden', className)}>
+        <div className={cn('relative group bg-black overflow-hidden', className)}>
             <video
                 ref={videoRef}
                 src={src}
@@ -249,7 +249,7 @@ export const VideoPreview: React.FC<{
     return (
         <div
             className={cn(
-                'relative bg-black rounded-lg overflow-hidden cursor-pointer group hover:ring-2 hover:ring-blue-500',
+                'relative bg-black overflow-hidden cursor-pointer group hover:ring-2 hover:ring-blue-500',
                 className
             )}
             onClick={onClick}
