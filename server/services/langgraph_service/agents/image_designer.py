@@ -5,11 +5,7 @@ class ImageDesignerAgent(BaseAgent):
     """图像设计智能体 - 专门负责图像生成"""
 
     def __init__(self, tool_name: str, system_prompt: str = ""):
-        tools = [
-            {
-                'tool': tool_name,
-            }
-        ]
+        tools = [{'tool': tool_name}]
 
         error_handling_prompt = """
 
