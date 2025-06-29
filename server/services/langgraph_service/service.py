@@ -1,19 +1,27 @@
-from typing import Optional
+from typing import Optional, List, Dict, Any, cast
 from models.config_model import ModelInfo
 from services.db_service import db_service
 from services.config_service import config_service
-from services.websocket_service import send_to_websocket
+from services.websocket_service import send_to_websocket  # type: ignore
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
-from langgraph_swarm import create_swarm
+from langgraph_swarm import create_swarm  # type: ignore
 from utils.http_client import HttpClient
+
 import traceback
 
 from .agents import AgentManager
 from .handlers import StreamProcessor
 
 
-async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: ModelInfo, image_model: ModelInfo, system_prompt: Optional[str] = None):
+async def langgraph_multi_agent(
+    messages: List[Dict[str, Any]],
+    canvas_id: str,
+    session_id: str,
+    text_model: ModelInfo,
+    image_model: ModelInfo,
+    system_prompt: Optional[str] = None
+) -> None:
     """多智能体处理函数
 
     Args:
@@ -42,13 +50,14 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: Mod
         swarm = create_swarm(
             agents=agents,
             default_active_agent=last_agent if last_agent else agent_names[0]
-        ).compile()
+        ).compile()  # type: ignore
 
         # 4. 创建上下文
         context = _create_context(canvas_id, session_id, image_model)
 
         # 5. 流处理
-        processor = StreamProcessor(session_id, db_service, send_to_websocket)
+        processor = StreamProcessor(
+            session_id, db_service, send_to_websocket)  # type: ignore
         await processor.process_stream(swarm, messages, context)
 
     except Exception as e:
@@ -60,10 +69,11 @@ def _create_model(text_model: ModelInfo):
     model = text_model.get('model')
     provider = text_model.get('provider')
     url = text_model.get('url')
-    api_key = config_service.app_config.get(provider, {}).get("api_key", "")
+    api_key = config_service.app_config.get(  # type: ignore
+        provider, {}).get("api_key", "")
 
     # TODO: Verify if max token is working
-    max_tokens = text_model.get('max_tokens', 8148)
+    # max_tokens = text_model.get('max_tokens', 8148)
 
     if provider == 'ollama':
         return ChatOllama(
@@ -76,7 +86,7 @@ def _create_model(text_model: ModelInfo):
         http_async_client = HttpClient.create_async_client(timeout=15)
         return ChatOpenAI(
             model=model,
-            api_key=api_key,
+            api_key=api_key, # type: ignore
             timeout=15,
             base_url=url,
             temperature=0,
@@ -101,7 +111,7 @@ def _determine_tool_name(image_model: ModelInfo, provider: str) -> str:
     return tool_name
 
 
-def _create_context(canvas_id, session_id, image_model: ModelInfo):
+def _create_context(canvas_id: str, session_id: str, image_model: ModelInfo) -> Dict[str, Any]:
     """创建上下文信息"""
     return {
         'canvas_id': canvas_id,
@@ -112,14 +122,14 @@ def _create_context(canvas_id, session_id, image_model: ModelInfo):
     }
 
 
-async def _handle_error(error: Exception, session_id: str):
+async def _handle_error(error: Exception, session_id: str) -> None:
     """处理错误"""
     print('Error in langgraph_agent', error)
     tb_str = traceback.format_exc()
     print(f"Full traceback:\n{tb_str}")
     traceback.print_exc()
 
-    await send_to_websocket(session_id, {
+    await send_to_websocket(session_id, cast(Dict[str, Any], {
         'type': 'error',
         'error': str(error)
-    })
+    }))

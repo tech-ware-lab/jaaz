@@ -1,9 +1,14 @@
-from typing import Annotated, List, Optional
+from typing import Annotated, Optional, Dict, Any, Union, Sequence
 from langgraph.types import Command
 from langgraph.prebuilt import InjectedState
 from langchain_core.messages import ToolMessage
-from langchain_core.tools import BaseTool, InjectedToolCallId, tool
-from langgraph_swarm.handoff import _normalize_agent_name, METADATA_KEY_HANDOFF_DESTINATION
+from langchain_core.tools import BaseTool, InjectedToolCallId, tool  # type: ignore
+from langgraph_swarm.handoff import METADATA_KEY_HANDOFF_DESTINATION
+
+
+def _normalize_agent_name(name: str) -> str:
+    """Normalize agent name to be compatible with tool names."""
+    return name.lower().replace(" ", "_").replace("-", "_")
 
 
 def create_handoff_tool(
@@ -36,7 +41,7 @@ def create_handoff_tool(
             3. Always wait for the result of other tool calls before making this handoff call
     """)
     def handoff_to_agent(
-        state: Annotated[dict, InjectedState],
+        state: Annotated[Dict[str, Any], InjectedState],
         tool_call_id: Annotated[str, InjectedToolCallId],
     ):
         tool_message = ToolMessage(
@@ -51,20 +56,22 @@ def create_handoff_tool(
                     [tool_message], "active_agent": agent_name},
         )
 
-    handoff_to_agent.metadata = {METADATA_KEY_HANDOFF_DESTINATION: agent_name}
+    setattr(handoff_to_agent, 'metadata', {
+            METADATA_KEY_HANDOFF_DESTINATION: agent_name})
+
     return handoff_to_agent
 
 
 class BaseAgent:
     """智能体基类"""
 
-    def __init__(self, name: str, tools: List, system_prompt: str, handoffs: Optional[List] = None):
+    def __init__(self, name: str, tools: Sequence[Union[BaseTool, Dict[str, Any]]], system_prompt: str, handoffs: Optional[Sequence[Union[BaseTool, Dict[str, Any]]]] = None):
         self.name = name
         self.tools = tools
         self.system_prompt = system_prompt
         self.handoffs = handoffs or []
 
-    def get_config(self):
+    def get_config(self) -> Dict[str, Any]:
         """获取智能体配置"""
         return {
             'name': self.name,

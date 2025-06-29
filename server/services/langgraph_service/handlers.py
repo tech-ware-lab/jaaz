@@ -1,4 +1,5 @@
-from typing import Optional
+# type: ignore[import]
+from typing import Optional, List, Dict, Any, Callable, Awaitable
 from langchain_core.messages import AIMessageChunk, ToolCall, convert_to_openai_messages, ToolMessage
 import json
 
@@ -6,15 +7,15 @@ import json
 class StreamProcessor:
     """流式处理器 - 负责处理智能体的流式输出"""
 
-    def __init__(self, session_id: str, db_service, websocket_service):
+    def __init__(self, session_id: str, db_service: Any, websocket_service: Callable[[str, Dict[str, Any]], Awaitable[None]]):
         self.session_id = session_id
         self.db_service = db_service
         self.websocket_service = websocket_service
-        self.tool_calls: list[ToolCall] = []
+        self.tool_calls: List[ToolCall] = []
         self.last_saved_message_index = 0
         self.last_streaming_tool_call_id: Optional[str] = None
 
-    async def process_stream(self, swarm, messages, context):
+    async def process_stream(self, swarm: Any, messages: List[Dict[str, Any]], context: Dict[str, Any]) -> None:
         """处理整个流式响应
 
         Args:
@@ -36,7 +37,7 @@ class StreamProcessor:
             'type': 'done'
         })
 
-    async def _handle_chunk(self, chunk):
+    async def _handle_chunk(self, chunk: Any) -> None:
         """处理单个chunk"""
         chunk_type = chunk[0]
 
@@ -45,10 +46,13 @@ class StreamProcessor:
         else:
             await self._handle_message_chunk(chunk[1][0])
 
-    async def _handle_values_chunk(self, chunk_data):
+    async def _handle_values_chunk(self, chunk_data: Dict[str, Any]) -> None:
         """处理 values 类型的 chunk"""
         all_messages = chunk_data.get('messages', [])
         oai_messages = convert_to_openai_messages(all_messages)
+        # 确保 oai_messages 是列表类型
+        if not isinstance(oai_messages, list):
+            oai_messages = [oai_messages] if oai_messages else []
 
         # 发送所有消息到前端
         await self.websocket_service(self.session_id, {
@@ -67,7 +71,7 @@ class StreamProcessor:
                 )
             self.last_saved_message_index = i
 
-    async def _handle_message_chunk(self, ai_message_chunk: AIMessageChunk):
+    async def _handle_message_chunk(self, ai_message_chunk: AIMessageChunk) -> None:
         """处理消息类型的 chunk"""
         # print('👇ai_message_chunk', ai_message_chunk)
 
@@ -90,7 +94,7 @@ class StreamProcessor:
         if hasattr(ai_message_chunk, 'tool_call_chunks'):
             await self._handle_tool_call_chunks(ai_message_chunk.tool_call_chunks)
 
-    async def _handle_tool_calls(self, tool_calls):
+    async def _handle_tool_calls(self, tool_calls: List[ToolCall]) -> None:
         """处理工具调用"""
         self.tool_calls = [tc for tc in tool_calls if tc.get('name')]
         print('😘tool_call event', tool_calls)
@@ -103,7 +107,7 @@ class StreamProcessor:
                 'arguments': '{}'
             })
 
-    async def _handle_tool_call_chunks(self, tool_call_chunks):
+    async def _handle_tool_call_chunks(self, tool_call_chunks: List[Any]) -> None:
         """处理工具调用参数流"""
         for tool_call_chunk in tool_call_chunks:
             if tool_call_chunk.get('id'):
