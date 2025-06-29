@@ -109,7 +109,7 @@ export default function ComfuiWorkflowSetting() {
           onOpenChange={() => setDeleteWorkflowId(null)}
         >
           <DialogContent>
-            <p> Are you sure you want to delete this workflow?</p>
+            <p>{t('settings:comfyui.deleteWorkflowConfirmation')}</p>
 
             <Button onClick={() => handleDeleteWorkflow(deleteWorkflowId)}>
               Delete
@@ -127,7 +127,7 @@ export default function ComfuiWorkflowSetting() {
             onClick={() => setShowAddWorkflowDialog(true)}
           >
             <PlusIcon className="w-4 h-4" />
-            Add Workflow
+            {t('settings:comfyui.addWorkflow')}
           </Button>
           {(showAddWorkflowDialog || editingWorkflow) && (
             <AddWorkflowDialog
@@ -196,6 +196,7 @@ function AddWorkflowDialog({
   onClose: () => void
   workflow: ComfyWorkflow | null
 }) {
+  const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
   const [workflowName, setWorkflowName] = useState(workflow?.name ?? '')
   const [workflowJson, setWorkflowJson] = useState<Record<
@@ -229,7 +230,10 @@ function AddWorkflowDialog({
           const node: ComfyUIAPINode = jsonContent[key]
           if (!node.class_type) {
             toast.error(
-              'Invalid API JSON format. You need to export API JSON, not workflow JSON in ComfyUI. Please go to ComfyUI Menu -> Workflow -> Export (API) JSON and try again.'
+              t(
+                'settings:comfyui.invalidApiJsonFormat',
+                'Invalid API JSON format. You need to export API JSON, not workflow JSON in ComfyUI. Please go to ComfyUI Menu -> Workflow -> Export (API) JSON and try again.'
+              )
             )
             return
           }
@@ -239,27 +243,50 @@ function AddWorkflowDialog({
       } catch (error) {
         console.error(error)
         toast.error(
-          'Invalid workflow JSON, make sure you exprted API JSON in ComfyUI! ' +
-            error
+          t(
+            'settings:comfyui.invalidWorkflowJsonFormat',
+            'Invalid workflow JSON, make sure you exprted API JSON in ComfyUI!' +
+              error
+          )
         )
       }
     }
   }
   const handleSubmit = async () => {
     if (!workflowJson) {
-      setError('Please upload a workflow API JSON file')
+      setError(
+        t(
+          'settings:comfyui.pleaseUploadWorkflowApiJsonFile',
+          'Please upload a workflow API JSON file'
+        )
+      )
       return
     }
     if (inputs.length === 0) {
-      setError('Please add at least one input')
+      setError(
+        t(
+          'settings:comfyui.pleaseAddAtLeastOneInput',
+          'Please add at least one input'
+        )
+      )
       return
     }
     if (workflowName === '') {
-      setError('Please enter a workflow name')
+      setError(
+        t(
+          'settings:comfyui.pleaseEnterWorkflowName',
+          'Please enter a workflow name'
+        )
+      )
       return
     }
     if (workflowDescription === '') {
-      setError('Please enter a workflow description')
+      setError(
+        t(
+          'settings:comfyui.pleaseEnterWorkflowDescription',
+          'Please enter a workflow description'
+        )
+      )
       return
     }
     const payload = {
@@ -295,7 +322,12 @@ function AddWorkflowDialog({
     })
 
     if (createRes.ok) {
-      toast.success(`Workflow ${workflow ? 'updated' : 'created'} successfully`)
+      toast.success(
+        t(
+          'settings:comfyui.workflowUpdatedSuccessfully',
+          `Workflow ${workflow ? 'updated' : 'created'} successfully`
+        )
+      )
       onClose()
     } else {
       const data = await createRes.json()
@@ -320,10 +352,14 @@ function AddWorkflowDialog({
         <DialogHeader>
           <div className="flex items-center gap-2 justify-between">
             <DialogTitle>
-              {workflow ? 'Edit Workflow' : 'Add Workflow'}
+              {workflow
+                ? t('settings:comfyui.editWorkflow', 'Edit Workflow')
+                : t('settings:comfyui.addWorkflow', 'Add Workflow')}
             </DialogTitle>
             <Button onClick={handleSubmit}>
-              {workflow ? 'Save' : 'Submit'}
+              {workflow
+                ? t('settings:comfyui.save', 'Save')
+                : t('settings:comfyui.submit', 'Submit')}
             </Button>
           </div>
           {error && <p className="text-red-500">{error}</p>}
@@ -342,7 +378,10 @@ function AddWorkflowDialog({
         />
         <Button onClick={() => inputRef.current?.click()} variant={'outline'}>
           <UploadIcon className="w-4 h-4 mr-2" />
-          Upload Workflow API JSON
+          {t(
+            'settings:comfyui.uploadWorkflowApiJson',
+            'Upload Workflow API JSON'
+          )}
         </Button>
         <input
           type="file"
@@ -356,7 +395,10 @@ function AddWorkflowDialog({
             <CardHeader>
               <CardTitle className="flex items-center">
                 <div className="h-2 w-2 rounded-full bg-primary"></div>
-                Workflow Inputs Configuration
+                {t(
+                  'settings:comfyui.workflowInputsConfiguration',
+                  'Workflow Inputs Configuration'
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -381,7 +423,9 @@ function AddWorkflowDialog({
                                 }
                                 className="text-xs"
                               >
-                                {input.required ? 'Required' : 'Optional'}
+                                {input.required
+                                  ? t('settings:comfyui.required', 'Required')
+                                  : t('settings:comfyui.optional', 'Optional')}
                               </Badge>
                               <Badge variant="outline" className="text-xs">
                                 {input.type}
@@ -393,7 +437,10 @@ function AddWorkflowDialog({
                             {/* Default Value */}
                             <div className="space-y-2">
                               <Label className="text-xs text-muted-foreground">
-                                Default Value
+                                {t(
+                                  'settings:comfyui.defaultValue',
+                                  'Default Value'
+                                )}
                               </Label>
                               <Input
                                 type="text"
@@ -409,7 +456,10 @@ function AddWorkflowDialog({
                                 Description for Users
                               </Label> */}
                               <Textarea
-                                placeholder="Describe what this input does so that LLM can understand it and pass in the correct value..."
+                                placeholder={t(
+                                  'settings:comfyui.describeInput',
+                                  'Describe what this input does so that LLM can understand it and pass in the correct value...'
+                                )}
                                 value={input.description}
                                 onChange={(e) => {
                                   const newInputs = [...inputs]
@@ -437,7 +487,7 @@ function AddWorkflowDialog({
                                 htmlFor={`required-${index}`}
                                 className="text-xs"
                               >
-                                Required
+                                {t('settings:comfyui.required', 'Required')}
                               </Label>
                             </div>
                             <Button
@@ -465,14 +515,22 @@ function AddWorkflowDialog({
                       <PlusIcon className="w-6 h-6 text-muted-foreground" />
                     </div>
                     <h3 className="font-medium text-foreground mb-2">
-                      No inputs configured
+                      {t(
+                        'settings:comfyui.noInputsConfigured',
+                        'No inputs configured'
+                      )}
                     </h3>
                     <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-                      Add workflow inputs from the node parameters below. Choose
-                      at least one input to make this workflow interactive.
+                      {t(
+                        'settings:comfyui.addWorkflowInputsFromNodeParameters',
+                        'Add workflow inputs from the node parameters below. Choose at least one input to make this workflow interactive.'
+                      )}
                     </p>
                     <Badge variant="outline" className="text-xs">
-                      Select parameters from the workflow nodes below
+                      {t(
+                        'settings:comfyui.selectParametersFromWorkflowNodes',
+                        'Select parameters from the workflow nodes below'
+                      )}
                     </Badge>
                   </CardContent>
                 </Card>
@@ -534,7 +592,7 @@ function AddWorkflowDialog({
                           }}
                         >
                           <PlusIcon className="w-4 h-4" />
-                          Add Input
+                          {t('settings:comfyui.addInput', 'Add Input')}
                         </Button>
                       </div>
                     )
