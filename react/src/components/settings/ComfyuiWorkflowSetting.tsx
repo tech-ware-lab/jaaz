@@ -289,6 +289,16 @@ function AddWorkflowDialog({
       )
       return
     }
+    const matched = workflowName.match(/^[a-zA-Z0-9_]+$/)
+    if (!matched) {
+      setError(
+        t(
+          'settings:comfyui.workflowNameInvalid',
+          'Workflow Name only allow a-Z, 0-9, _'
+        )
+      )
+      return
+    }
     const payload = {
       name: workflowName,
       api_json: workflowJson,
@@ -367,12 +377,18 @@ function AddWorkflowDialog({
         <Input
           type="text"
           style={{ flexShrink: 0 }}
-          placeholder="Workflow Name"
+          placeholder={t(
+            'settings:comfyui.workflowName',
+            'Workflow Name, only a-Z, 0-9, _ are allowed'
+          )}
           value={workflowName}
           onChange={(e) => setWorkflowName(e.target.value)}
         />
         <Textarea
-          placeholder="Workflow Description"
+          placeholder={t(
+            'settings:comfyui.workflowDescription',
+            'Workflow Description'
+          )}
           value={workflowDescription}
           onChange={(e) => setWorkflowDescription(e.target.value)}
         />
@@ -417,16 +433,6 @@ function AddWorkflowDialog({
                               <Label className="font-mono text-sm bg-muted px-2 py-1 rounded">
                                 {input.name}
                               </Label>
-                              <Badge
-                                variant={
-                                  input.required ? 'default' : 'secondary'
-                                }
-                                className="text-xs"
-                              >
-                                {input.required
-                                  ? t('settings:comfyui.required', 'Required')
-                                  : t('settings:comfyui.optional', 'Optional')}
-                              </Badge>
                               <Badge variant="outline" className="text-xs">
                                 {input.type}
                               </Badge>
