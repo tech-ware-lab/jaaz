@@ -5,11 +5,13 @@ import { useTheme } from '@/hooks/use-theme'
 import { eventBus } from '@/lib/event'
 import * as ISocket from '@/types/socket'
 import { CanvasData } from '@/types/types'
-import { Excalidraw } from '@excalidraw/excalidraw'
+import { Excalidraw, convertToExcalidrawElements } from '@excalidraw/excalidraw'
 import {
   ExcalidrawImageElement,
+  ExcalidrawEmbeddableElement,
   OrderedExcalidrawElement,
   Theme,
+  NonDeleted,
 } from '@excalidraw/excalidraw/element/types'
 import '@excalidraw/excalidraw/index.css'
 import {
@@ -20,6 +22,7 @@ import {
 } from '@excalidraw/excalidraw/types'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import VideoPlayer from './VideoPlayer'
 
 import '@/assets/style/canvas.css'
 
@@ -134,6 +137,54 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     [excalidrawAPI]
   )
 
+  const createVideoEmbedElement = useCallback(
+    (videoSrc: string, x: number = 100, y: number = 100, width: number = 320, height: number = 180) => {
+      if (!excalidrawAPI) return
+
+      const videoElements = convertToExcalidrawElements([
+        {
+          type: "embeddable",
+          x,
+          y,
+          width,
+          height,
+          link: videoSrc,
+          validated: true,
+        }
+      ])
+
+      const currentElements = excalidrawAPI.getSceneElements()
+      excalidrawAPI.updateScene({
+        elements: [...currentElements, ...videoElements],
+      })
+
+      console.log('👇 Added video embed element:', videoSrc)
+    },
+    [excalidrawAPI]
+  )
+
+  const renderEmbeddable = useCallback(
+    (element: NonDeleted<ExcalidrawEmbeddableElement>, appState: AppState) => {
+      const { link } = element
+      
+      // Check if this is a video URL
+      if (link && (link.includes('.mp4') || link.includes('.webm') || link.includes('.ogg') || link.startsWith('blob:') || link.includes('video'))) {
+        // Return the VideoPlayer component
+        return (
+          <VideoPlayer 
+            src={link}
+            width="100%"
+            height="100%"
+          />
+        )
+      }
+      
+      // Return null for non-video embeds to use default rendering
+      return null
+    },
+    []
+  )
+
   const handleImageGenerated = useCallback(
     (imageData: ISocket.SessionImageGeneratedEvent) => {
       console.log('👇 CanvasExcali received image_generated:', imageData)
@@ -155,11 +206,38 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     [addImageToExcalidraw, canvasId]
   )
 
+  const handleVideoGenerated = useCallback(
+    (videoData: ISocket.SessionVideoGeneratedEvent) => {
+      console.log('👇 CanvasExcali received video_generated:', videoData)
+
+      // Only handle if it's for this canvas
+      if (videoData.canvas_id !== canvasId) {
+        console.log('👇 Video not for this canvas, ignoring')
+        return
+      }
+
+      // Create video embed element using the video URL
+      if (videoData.video_url) {
+        createVideoEmbedElement(
+          videoData.video_url,
+          100, // default x position
+          100, // default y position
+          320, // default width
+          180  // default height
+        )
+      }
+    },
+    [createVideoEmbedElement, canvasId]
+  )
+
   useEffect(() => {
     eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
-    return () =>
+    eventBus.on('Socket::Session::VideoGenerated', handleVideoGenerated)
+    return () => {
       eventBus.off('Socket::Session::ImageGenerated', handleImageGenerated)
-  }, [handleImageGenerated])
+      eventBus.off('Socket::Session::VideoGenerated', handleVideoGenerated)
+    }
+  }, [handleImageGenerated, handleVideoGenerated])
 
   return (
     <Excalidraw
@@ -180,6 +258,13 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
         }
         return data || null
       }}
+      renderEmbeddable={renderEmbeddable}
+      // Allow all URLs for embeddable content
+      validateEmbeddable={(url: string) => {
+        console.log('👇 Validating embeddable URL:', url)
+        // Allow all URLs - return true for everything
+        return true
+      }}
       // Ensure interactive mode is enabled
       viewModeEnabled={false}
       zenModeEnabled={false}
@@ -193,4 +278,6 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     />
   )
 }
+
+export { CanvasExcali }
 export default CanvasExcali

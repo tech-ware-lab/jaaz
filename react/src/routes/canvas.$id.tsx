@@ -3,8 +3,7 @@ import CanvasExcali from '@/components/canvas/CanvasExcali'
 import CanvasHeader from '@/components/canvas/CanvasHeader'
 import CanvasMenu from '@/components/canvas/menu'
 import CanvasPopbarWrapper from '@/components/canvas/pop-bar'
-import VideoCanvasOverlay from '@/components/canvas/VideoCanvasOverlay'
-import { VideoElement } from '@/components/canvas/VideoCanvasOverlay'
+// VideoCanvasOverlay removed - using native Excalidraw embeddable elements instead
 import ChatInterface from '@/components/chat/Chat'
 import {
   ResizableHandle,
@@ -28,7 +27,7 @@ function Canvas() {
   const [error, setError] = useState<Error | null>(null)
   const [canvasName, setCanvasName] = useState('')
   const [sessionList, setSessionList] = useState<Session[]>([])
-  const [initialVideos, setInitialVideos] = useState<VideoElement[]>([])
+  // initialVideos removed - using native Excalidraw embeddable elements instead
 
   useEffect(() => {
     let mounted = true
@@ -42,9 +41,7 @@ function Canvas() {
           setCanvas(data)
           setCanvasName(data.name)
           setSessionList(data.sessions)
-          // Extract video elements from appState
-          const videos = data.data?.appState?.videoElements || []
-          setInitialVideos(videos)
+          // Video elements now handled by native Excalidraw embeddable elements
         }
       } catch (err) {
         if (mounted) {
@@ -98,10 +95,6 @@ function Canvas() {
               ) : (
                 <div className="relative w-full h-full">
                   <CanvasExcali canvasId={id} initialData={canvas?.data} />
-                  <VideoCanvasOverlay
-                    canvasId={id}
-                    initialVideos={initialVideos}
-                  />
                   <CanvasMenu />
                   <CanvasPopbarWrapper />
                 </div>

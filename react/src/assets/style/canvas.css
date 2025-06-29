@@ -26,9 +26,10 @@
   display: none !important;
 }
 
-.excalidraw .dropdown-menu .dropdown-menu-item[data-testid='toolbar-embeddable'] {
+/* Enable embeddable tool for video integration */
+/* .excalidraw .dropdown-menu .dropdown-menu-item[data-testid='toolbar-embeddable'] {
   display: none !important;
-}
+} */
 
 .excalidraw .dropdown-menu .dropdown-menu-item[data-testid='toolbar-laser']+div {
   display: none !important;
