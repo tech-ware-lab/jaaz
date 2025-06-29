@@ -33,8 +33,8 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
 }, ref) => {
     const [videoElements, setVideoElements] = useState<VideoElement[]>(initialVideos)
     const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null)
-    const [dragging, setDragging] = useState<{ id: string; startX: number; startY: number; initialX: number; initialY: number } | null>(null)
-    const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; startWidth: number; startHeight: number } | null>(null)
+    const [dragging, setDragging] = useState<{ id: string; startX: number; startY: number; initialX: number; initialY: number; isCloning: boolean; cloneX?: number; cloneY?: number } | null>(null)
+    const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; startWidth: number; startHeight: number; direction: string } | null>(null)
     const [userInteracting, setUserInteracting] = useState(false)
     const { excalidrawAPI } = useCanvas()
     const [canvasTransform, setCanvasTransform] = useState({ zoom: 1, scrollX: 0, scrollY: 0 })
@@ -167,8 +167,12 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
 
     // Remove video element
     const removeVideoElement = useCallback((videoId: string) => {
+        console.log('🗑️ removeVideoElement called for video:', videoId)
+        console.log('🗑️ Current video count:', videoElements.length)
+
         setVideoElements(prev => {
             const updatedVideos = prev.filter(video => video.id !== videoId)
+            console.log('🗑️ Video removed, new count:', updatedVideos.length)
 
             // Update app state to persist removal
             if (excalidrawAPI) {
@@ -185,6 +189,7 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
                         elements: currentElements,
                         appState: updatedAppState
                     })
+                    console.log('🗑️ Video metadata updated in Excalidraw')
                 } catch (error) {
                     console.error('Failed to update video metadata on removal:', error)
                 }
@@ -195,8 +200,65 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
 
         if (selectedVideoId === videoId) {
             setSelectedVideoId(null)
+            console.log('🗑️ Selected video cleared')
         }
-    }, [selectedVideoId, excalidrawAPI])
+    }, [selectedVideoId, excalidrawAPI, videoElements.length])
+
+    // TODO: Paste video functionality disabled due to coordinate system confusion
+    // The current implementation has issues with coordinate transformation between
+    // screen coordinates and canvas coordinates, causing videos to be pasted in
+    // incorrect positions. Need to fix coordinate system before re-enabling.
+    
+    // Handle paste video element - DISABLED
+    // const handlePasteVideo = useCallback((videoData: any) => {
+    //     console.log('📋 Pasting video element:', videoData)
+
+    //     // Create a new video element with offset position
+    //     const newVideo: VideoElement = {
+    //         id: `video_${Date.now()}`, // Generate new ID
+    //         src: videoData.src,
+    //         x: (videoData.x || 200) + 20, // Offset by 20px from original position
+    //         y: (videoData.y || 200) + 20, // Offset by 20px from original position
+    //         width: videoData.width || 320, // Use original width or default
+    //         height: videoData.height || 180, // Use original height or default
+    //         duration: videoData.duration,
+    //         canvasId
+    //     }
+
+    //     setVideoElements(prev => {
+    //         const updatedVideos = [...prev, newVideo]
+
+    //         // Update app state to persist the new video
+    //         if (excalidrawAPI) {
+    //             try {
+    //                 const currentElements = excalidrawAPI.getSceneElements()
+    //                 const appState = excalidrawAPI.getAppState() as any
+
+    //                 const updatedAppState = {
+    //                     ...appState,
+    //                     videoElements: updatedVideos
+    //                 }
+
+    //                 excalidrawAPI.updateScene({
+    //                     elements: currentElements,
+    //                     appState: updatedAppState
+    //                 })
+    //             } catch (error) {
+    //                 console.error('Failed to update video metadata on paste:', error)
+    //             }
+    //         }
+
+    //         return updatedVideos
+    //     })
+
+    //     // Select the newly pasted video
+    //     setSelectedVideoId(newVideo.id)
+    // }, [canvasId, excalidrawAPI])
+    
+    // Placeholder function to prevent errors
+    const handlePasteVideo = useCallback((videoData: any) => {
+        console.log('📋 Paste functionality disabled - coordinate system needs fixing')
+    }, [])
 
     // Handle video selection
     const handleVideoSelect = useCallback((videoId: string, event?: React.MouseEvent) => {
@@ -217,7 +279,8 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
         event.preventDefault()
         event.stopPropagation()
 
-        console.log('🚀 Drag start for video:', videoId)
+        const isCloning = event.altKey
+        console.log('🚀 Drag start for video:', videoId, isCloning ? '(cloning mode)' : '(move mode)')
         setUserInteracting(true)
 
         const video = videoElements.find(v => v.id === videoId)
@@ -229,6 +292,7 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
             startY: event.clientY,
             initialX: video.x,
             initialY: video.y,
+            isCloning
         })
         setSelectedVideoId(videoId)
     }, [videoElements])
@@ -238,16 +302,55 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
         if (dragging && excalidrawAPI) {
             const video = videoElements.find(v => v.id === dragging.id)
             if (video) {
-                const currentElements = excalidrawAPI.getSceneElements()
-                const appState = excalidrawAPI.getAppState() as any
-                const updatedAppState = {
-                    ...appState,
-                    videoElements: videoElements.map(v => v.id === video.id ? video : v)
+                if (dragging.isCloning && dragging.cloneX !== undefined && dragging.cloneY !== undefined) {
+                    // Create a copy of the video at the clone position
+                    const clonedVideo: VideoElement = {
+                        ...video,
+                        id: `video_${Date.now()}_clone`,
+                        x: dragging.cloneX,
+                        y: dragging.cloneY
+                    }
+
+                    console.log('📋 Creating cloned video:', clonedVideo.id)
+
+                    // Add the cloned video to the state
+                    setVideoElements(prev => {
+                        const updatedVideos = [...prev, clonedVideo]
+
+                        // Update app state with the new cloned video
+                        try {
+                            const currentElements = excalidrawAPI.getSceneElements()
+                            const appState = excalidrawAPI.getAppState() as any
+                            const updatedAppState = {
+                                ...appState,
+                                videoElements: updatedVideos
+                            }
+                            excalidrawAPI.updateScene({
+                                elements: currentElements,
+                                appState: updatedAppState
+                            })
+                        } catch (error) {
+                            console.error('Failed to save cloned video:', error)
+                        }
+
+                        return updatedVideos
+                    })
+
+                    // Select the cloned video
+                    setSelectedVideoId(clonedVideo.id)
+                } else {
+                    // Normal move operation - save the new position
+                    const currentElements = excalidrawAPI.getSceneElements()
+                    const appState = excalidrawAPI.getAppState() as any
+                    const updatedAppState = {
+                        ...appState,
+                        videoElements: videoElements.map(v => v.id === video.id ? video : v)
+                    }
+                    excalidrawAPI.updateScene({
+                        elements: currentElements,
+                        appState: updatedAppState
+                    })
                 }
-                excalidrawAPI.updateScene({
-                    elements: currentElements,
-                    appState: updatedAppState
-                })
             }
         }
         setDragging(null)
@@ -255,11 +358,11 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
     }, [dragging, videoElements, excalidrawAPI])
 
     // Handle resize start
-    const handleResizeStart = useCallback((videoId: string, event: React.MouseEvent) => {
+    const handleResizeStart = useCallback((videoId: string, direction: string, event: React.MouseEvent) => {
         event.preventDefault()
         event.stopPropagation()
 
-        console.log('📏 Resize start for video:', videoId)
+        console.log('📏 Resize start for video:', videoId, 'direction:', direction)
         setUserInteracting(true)
 
         const video = videoElements.find(v => v.id === videoId)
@@ -270,7 +373,8 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
             startX: event.clientX,
             startY: event.clientY,
             startWidth: video.width,
-            startHeight: video.height
+            startHeight: video.height,
+            direction
         })
         setSelectedVideoId(videoId)
     }, [videoElements])
@@ -286,11 +390,33 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
         const deltaX = (event.clientX - resizing.startX) / safeZoom
         const deltaY = (event.clientY - resizing.startY) / safeZoom
 
-        // Calculate new dimensions maintaining minimum size in canvas space
+        // Calculate new dimensions based on resize direction
         const minWidth = 100  // Minimum canvas width
         const minHeight = 56  // Minimum canvas height (16:9)
-        const newWidth = Math.max(minWidth, resizing.startWidth + deltaX)
-        const newHeight = Math.max(minHeight, resizing.startHeight + deltaY)
+
+        let newWidth = resizing.startWidth
+        let newHeight = resizing.startHeight
+
+        // Apply resize based on direction
+        switch (resizing.direction) {
+            case 'nw': // Top-left corner
+                newWidth = Math.max(minWidth, resizing.startWidth - deltaX)
+                newHeight = Math.max(minHeight, resizing.startHeight - deltaY)
+                break
+            case 'ne': // Top-right corner
+                newWidth = Math.max(minWidth, resizing.startWidth + deltaX)
+                newHeight = Math.max(minHeight, resizing.startHeight - deltaY)
+                break
+            case 'sw': // Bottom-left corner
+                newWidth = Math.max(minWidth, resizing.startWidth - deltaX)
+                newHeight = Math.max(minHeight, resizing.startHeight + deltaY)
+                break
+            case 'se': // Bottom-right corner (default behavior)
+            default:
+                newWidth = Math.max(minWidth, resizing.startWidth + deltaX)
+                newHeight = Math.max(minHeight, resizing.startHeight + deltaY)
+                break
+        }
 
         setVideoElements(prev => {
             const updatedVideos = prev.map(video =>
@@ -341,13 +467,21 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
             const deltaX = (event.clientX - dragging.startX) / safeZoom
             const deltaY = (event.clientY - dragging.startY) / safeZoom
 
-            setVideoElements(prev =>
-                prev.map(video =>
-                    video.id === dragging.id
-                        ? { ...video, x: dragging.initialX + deltaX, y: dragging.initialY + deltaY }
-                        : video
+            if (dragging.isCloning) {
+                // In cloning mode, update the clone position but keep original in place
+                const cloneX = dragging.initialX + deltaX
+                const cloneY = dragging.initialY + deltaY
+                setDragging(prev => prev ? { ...prev, cloneX, cloneY } : null)
+            } else {
+                // Normal drag behavior - move the video
+                setVideoElements(prev =>
+                    prev.map(video =>
+                        video.id === dragging.id
+                            ? { ...video, x: dragging.initialX + deltaX, y: dragging.initialY + deltaY }
+                            : video
+                    )
                 )
-            )
+            }
         }
 
         document.addEventListener('mousemove', handleMouseMove)
@@ -449,15 +583,6 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
             transformedHeight: finalHeight
         }
 
-        // Only log transform details occasionally to prevent console spam
-        if (Math.random() < 0.1) {
-            console.log('👇 Video transform:', {
-                original: { x: safeX, y: safeY, w: safeWidth, h: safeHeight },
-                canvas: { zoom: safeZoom, scrollX: safeScrollX, scrollY: safeScrollY },
-                transformed: { x: transformed.transformedX, y: transformed.transformedY, w: transformed.transformedWidth, h: transformed.transformedHeight }
-            })
-        }
-
         return transformed
     })
 
@@ -489,11 +614,64 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
                 left: 0,
                 right: 0,
                 bottom: 0,
-                zIndex: 10,
+                zIndex: 2,
                 // Allow clicks to pass through to canvas when not on videos
                 pointerEvents: 'none'
             }}
         >
+
+            {/* Render clone preview during Alt+drag */}
+            {dragging?.isCloning && dragging.cloneX !== undefined && dragging.cloneY !== undefined && (() => {
+                const originalVideo = videoElements.find(v => v.id === dragging.id)
+                if (!originalVideo) return null
+
+                const { zoom, scrollX, scrollY } = canvasTransform
+                const safeZoom = isNaN(zoom) || zoom <= 0 ? 1 : Math.max(0.1, Math.min(5, zoom))
+                const safeScrollX = isNaN(scrollX) ? 0 : scrollX
+                const safeScrollY = isNaN(scrollY) ? 0 : scrollY
+                const safeWidth = isNaN(originalVideo.width) || originalVideo.width <= 0 ? 320 : originalVideo.width
+                const safeHeight = isNaN(originalVideo.height) || originalVideo.height <= 0 ? 180 : originalVideo.height
+
+                const cloneTransformedX = (safeScrollX + dragging.cloneX) * safeZoom
+                const cloneTransformedY = (safeScrollY + dragging.cloneY) * safeZoom
+                const cloneTransformedWidth = Math.max(50, safeWidth * safeZoom)
+                const cloneTransformedHeight = Math.max(28, safeHeight * safeZoom)
+
+                return (
+                    <div
+                        key={`clone-${originalVideo.id}`}
+                        className="absolute cursor-move pointer-events-none"
+                        style={{
+                            left: `${cloneTransformedX}px`,
+                            top: `${cloneTransformedY}px`,
+                            width: `${cloneTransformedWidth}px`,
+                            height: `${cloneTransformedHeight}px`,
+                            zIndex: 15,
+                            border: '1px dashed #007bff',
+                            background: 'rgba(0, 123, 255, 0.1)',
+                            position: 'absolute',
+                            overflow: 'hidden',
+                            opacity: 1,
+                            boxShadow: '0 0 0px rgba(0, 123, 255, 0.5)'
+                        }}
+                    >
+                        <CanvasVideoElement
+                            elementId={`clone-${originalVideo.id}`}
+                            src={originalVideo.src}
+                            x={0}
+                            y={0}
+                            width={cloneTransformedWidth}
+                            height={cloneTransformedHeight}
+                            duration={originalVideo.duration}
+                            isSelected={false}
+                            onSelect={() => { }}
+                            onDelete={() => { }}
+                            onResize={() => { }}
+                            onPaste={() => { }}
+                        />
+                    </div>
+                )
+            })()}
 
             {transformedVideos.map(video => (
                 <div
@@ -505,14 +683,17 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
                         width: `${video.transformedWidth}px`,
                         height: `${video.transformedHeight}px`,
                         zIndex: selectedVideoId === video.id ? 12 : 11,
-                        border: selectedVideoId === video.id ? '3px solid #007bff' : '2px solid rgba(0, 255, 0, 0.7)',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        // 移除边框、圆角和阴影
+                        border: selectedVideoId === video.id ? '1.5px solid #007bff' : '1px solid rgba(255, 255, 255, 0.0)',
+                        // borderRadius: '8px',
+                        // boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                         background: 'rgba(0, 0, 0, 0.05)',
                         position: 'absolute',
                         overflow: 'hidden',
                         // Enable pointer events only on video containers
-                        pointerEvents: 'auto'
+                        pointerEvents: 'auto',
+                        // Add visual feedback for cloning mode
+                        opacity: dragging?.id === video.id ? 1 : 1,
                     }}
                     onMouseDown={(e) => {
                         console.log('📱 Mouse down on video container:', video.id)
@@ -542,42 +723,14 @@ export const VideoCanvasOverlay = forwardRef<VideoCanvasOverlayRef, VideoCanvasO
                             }
                             handleVideoSelect(video.id)
                         }}
+                        onDelete={() => removeVideoElement(video.id)}
+                        onResize={(direction: string, e: React.MouseEvent) => {
+                            handleResizeStart(video.id, direction, e)
+                        }}
+                        onPaste={handlePasteVideo}
                     />
 
-                    {/* Controls when selected */}
-                    {selectedVideoId === video.id && (
-                        <>
-                            {/* Delete button */}
-                            <button
-                                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors z-10"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    removeVideoElement(video.id)
-                                }}
-                                title="Delete video"
-                            >
-                                ×
-                            </button>
 
-                            {/* Resize handle */}
-                            <div
-                                className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded cursor-se-resize z-10"
-                                title="Resize video"
-                                onMouseDown={(e) => {
-                                    e.stopPropagation()
-                                    handleResizeStart(video.id, e)
-                                }}
-                            />
-
-                            {/* Drag handle */}
-                            <div
-                                className="absolute top-1 left-1 w-6 h-6 bg-blue-500 bg-opacity-50 rounded cursor-move z-10 flex items-center justify-center text-white text-xs"
-                                title="Drag video"
-                            >
-                                ⋮⋮
-                            </div>
-                        </>
-                    )}
                 </div>
             ))}
         </div>
