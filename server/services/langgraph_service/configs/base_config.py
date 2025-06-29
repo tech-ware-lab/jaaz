@@ -1,9 +1,14 @@
-from typing import Annotated, Optional, Dict, Any, Union, Sequence
+from typing import Annotated, Optional, Dict, Any, Sequence, List, TypedDict
 from langgraph.types import Command
 from langgraph.prebuilt import InjectedState
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import BaseTool, InjectedToolCallId, tool  # type: ignore
 from langgraph_swarm.handoff import METADATA_KEY_HANDOFF_DESTINATION
+
+
+class ToolConfig(TypedDict):
+    """工具配置"""
+    tool: str
 
 
 def _normalize_agent_name(name: str) -> str:
@@ -12,7 +17,7 @@ def _normalize_agent_name(name: str) -> str:
 
 
 def create_handoff_tool(
-    *, agent_name: str, name: str | None = None, description: str | None = None
+    *, agent_name: str, name: Optional[str] = None, description: Optional[str] = None
 ) -> BaseTool:
     """Create a tool that can handoff control to the requested agent.
 
@@ -43,7 +48,7 @@ def create_handoff_tool(
     def handoff_to_agent(
         state: Annotated[Dict[str, Any], InjectedState],
         tool_call_id: Annotated[str, InjectedToolCallId],
-    ):
+    ) -> Command[Any]:
         tool_message = ToolMessage(
             content=f"<hide_in_user_ui> Successfully transferred to {agent_name}",
             name=name,
@@ -62,17 +67,32 @@ def create_handoff_tool(
     return handoff_to_agent
 
 
-class BaseAgent:
-    """智能体基类"""
+class BaseAgentConfig:
+    """智能体配置基类
 
-    def __init__(self, name: str, tools: Sequence[Union[BaseTool, Dict[str, Any]]], system_prompt: str, handoffs: Optional[Sequence[Union[BaseTool, Dict[str, Any]]]] = None):
+    此类用于存储智能体配置信息的配置类，不是实际的智能体。
+    实际的智能体将通过 LangGraph 的 create_react_agent 函数创建。
+    """
+
+    def __init__(
+        self,
+        name: str,
+        tools: Sequence[ToolConfig],
+        system_prompt: str,
+        handoffs: Optional[Sequence[Dict[str, Any]]] = None
+    ) -> None:
         self.name = name
         self.tools = tools
         self.system_prompt = system_prompt
-        self.handoffs = handoffs or []
+        self.handoffs: List[Dict[str, Any]] = list(
+            handoffs) if handoffs else []
 
     def get_config(self) -> Dict[str, Any]:
-        """获取智能体配置"""
+        """获取智能体配置
+
+        Returns:
+            Dict[str, Any]: 包含智能体配置信息的字典，用于后续创建实际的 LangGraph 智能体
+        """
         return {
             'name': self.name,
             'tools': self.tools,

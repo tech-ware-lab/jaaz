@@ -10,7 +10,7 @@ from utils.http_client import HttpClient
 
 import traceback
 
-from .agents import AgentManager
+from .agent_manager import AgentManager
 from .handlers import StreamProcessor
 
 
@@ -64,7 +64,7 @@ async def langgraph_multi_agent(
         await _handle_error(e, session_id)
 
 
-def _create_model(text_model: ModelInfo):
+def _create_model(text_model: ModelInfo) -> Any:
     """创建语言模型实例"""
     model = text_model.get('model')
     provider = text_model.get('provider')
@@ -86,7 +86,7 @@ def _create_model(text_model: ModelInfo):
         http_async_client = HttpClient.create_async_client(timeout=15)
         return ChatOpenAI(
             model=model,
-            api_key=api_key, # type: ignore
+            api_key=api_key,  # type: ignore
             timeout=15,
             base_url=url,
             temperature=0,

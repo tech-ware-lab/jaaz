@@ -1,11 +1,13 @@
-from .base import BaseAgent
+from typing import List, Dict, Any
+from .base_config import BaseAgentConfig, ToolConfig
 
 
-class ImageDesignerAgent(BaseAgent):
-    """图像设计智能体 - 专门负责图像生成"""
+class ImageDesignerAgentConfig(BaseAgentConfig):
+    """图像设计智能体 - 专门负责图像生成
+    """
 
-    def __init__(self, tool_name: str, system_prompt: str = ""):
-        tools = [{'tool': tool_name}]
+    def __init__(self, tool_name: str, system_prompt: str = "") -> None:
+        tools: List[ToolConfig] = [{'tool': tool_name}]
 
         error_handling_prompt = """
 
@@ -28,9 +30,12 @@ IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with he
 
         full_system_prompt = system_prompt + error_handling_prompt
 
+        # 图像设计智能体不需要切换到其他智能体
+        handoffs: List[Dict[str, Any]] = []
+
         super().__init__(
             name='image_designer',
             tools=tools,
             system_prompt=full_system_prompt,
-            handoffs=[]  # 图像设计智能体不需要切换到其他智能体
+            handoffs=handoffs
         )

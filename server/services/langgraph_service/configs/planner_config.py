@@ -1,17 +1,14 @@
-from .base import BaseAgent
+from typing import List, Dict, Any
+from .base_config import BaseAgentConfig, ToolConfig
 
 
-class PlannerAgent(BaseAgent):
-    """规划智能体 - 负责制定执行计划"""
+class PlannerAgentConfig(BaseAgentConfig):
+    """规划智能体 - 负责制定执行计划
+    """
 
-    def __init__(self):
-        tools = [
-            {
-                'name': 'write_plan',
-                'description': "Write a execution plan for the user's request",
-                'type': 'system',
-                'tool': 'write_plan',
-            }
+    def __init__(self) -> None:
+        tools: List[ToolConfig] = [
+            {'tool': 'write_plan'}
         ]
 
         system_prompt = """
@@ -39,7 +36,7 @@ class PlannerAgent(BaseAgent):
             ```
             """
 
-        handoffs = [
+        handoffs: List[Dict[str, Any]] = [
             {
                 'agent_name': 'image_designer',
                 'description': """
