@@ -1,161 +1,108 @@
+# 🦄 Jaaz –⭐Open source AI Design Agent⭐
+https://jaaz.app/
 
-# 🦄 Jaaz – ⭐ The Open Source AI Design Agent ⭐
+[中文入门指南](https://mxnpt25l6k.feishu.cn/docx/LvcTdlVbFoRAZWxnhBYcqVydnpc)
+
+The world's first open-source, locally deployed creative AI design tool, supporting image generation and editing, unlimited canvas rapid iteration, can call local models and cloud apis, and intelligently batch generate images in one sentence!
+
+<div align="center"> <a href="https://github.com/11cafe/jaaz/releases/download/v1.0.15/Jaaz-1.0.15-arm64.dmg"> <img src="https://user-images.githubusercontent.com/37590873/219133640-8b7a0179-20a7-4e02-8887-fbbd2eaad64b.png" alt="Download for macOS" width="300"/> </a> &nbsp;&nbsp; <a href="https://github.com/11cafe/jaaz/releases/download/v1.0.15/Jaaz-Setup-1.0.15.exe"> <img width="300" src="https://cdn.intheloop.io/wp-content/uploads/2020/08/windows-button.png" alt="Download for Windows" /> </a> </div>
+
+<img width="900" alt="Screenshot 2025-06-02 at 3 51 56 AM" src="https://github.com/user-attachments/assets/56a15432-65ff-4e71-a2f2-4f159ffb304a" />
+
+<img width="900" alt="Screenshot 2025-06-02 at 3 51 56 AM" src="https://github.com/user-attachments/assets/186982a9-5e4e-4ac1-a42c-c840092fd616" />
+
+<img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/b8508efd-def8-40ed-8ab5-62ed3c26de67" />
 
 
-[![GitHub stars](https://img.shields.io/github/stars/11cafe/jaaz?style=social)](https://github.com/11cafe/jaaz/stargazers)
-[![GitHub release](https://img.shields.io/github/v/release/11cafe/jaaz?include_prereleases&label=latest)](https://github.com/11cafe/jaaz/releases)
-[![Downloads](https://img.shields.io/github/downloads/11cafe/jaaz/total?color=blue&label=downloads)](https://github.com/11cafe/jaaz/releases)
-[![Issues](https://img.shields.io/github/issues/11cafe/jaaz)](https://github.com/11cafe/jaaz/issues)
+## ✨ Key Features
 
-[https://jaaz.app](https://jaaz.app)
+Smart Prompt Agent
+Powered by LLMs, Jaaz can interpret your ideas and generate optimized prompts for high-quality image or storyboard creation.
 
-[🇨🇳 中文入门指南](https://mxnpt25l6k.feishu.cn/docx/LvcTdlVbFoRAZWxnhBYcqVydnpc)
+Hybrid Model Deployment
+Works with local models via Ollama, ComfyUI, and remote APIs like Replicate, OpenAI, or Claude. Run 100% locally or connect to the cloud.
 
-> **Jaaz** is the world’s first fully open-source, locally deployed creative AI design tool.
-> Generate & edit images, build infinite storyboards, or mass-produce stunning visuals — all through a smart conversational agent.
-> Supports both local models and top cloud APIs, plus intelligent one-click batch creation.
+Simply access all the strongest apis
+After logging in, you can use all the latest models (gpt-image-1,flux kntext,google……)
 
----
+Interactive Image Editing
+Supports advanced operations such as object insertion, style transfer, and multi-character coherence via Flux Kontext — all controllable via chat.
 
-<div align="center">
-  <a href="https://github.com/11cafe/jaaz/releases/download/v1.0.15/Jaaz-1.0.15-arm64.dmg">
-    <img src="https://user-images.githubusercontent.com/37590873/219133640-8b7a0179-20a7-4e02-8887-fbbd2eaad64b.png" alt="Download for macOS" width="300"/>
-  </a>
-  &nbsp;&nbsp;
-  <a href="https://github.com/11cafe/jaaz/releases/download/v1.0.15/Jaaz-Setup-1.0.15.exe">
-    <img width="300" src="https://cdn.intheloop.io/wp-content/uploads/2020/08/windows-button.png" alt="Download for Windows"/>
-  </a>
-</div>
+Infinite Canvas & Storyboarding
+Design layouts, plan scenes, and create visual storytelling flows with drag-and-drop simplicity.
 
----
-
-<img width="900" alt="Jaaz screenshot" src="https://github.com/user-attachments/assets/56a15432-65ff-4e71-a2f2-4f159ffb304a" />
-
----
-
-## 🚀 Features at a Glance
-
-✅ **Smart Prompt Agent**
-Chat with an AI that understands your creative goals, writing optimal prompts to generate high-quality images, layouts, or storyboards.
-
-✅ **Hybrid Model Deployment**
-
-* Run 100% locally with [Ollama](https://github.com/ollama/ollama), ComfyUI
-* Or seamlessly tap into cloud APIs (OpenAI, Claude, Google, Replicate).
-
-✅ **Interactive Image Editing**
-Add or remove objects, adjust styles, or ensure multiple characters match — controlled directly in natural language.
-
-✅ **Infinite Canvas & Storyboarding**
-Build complex storyboards, layouts, or scene flows with an intuitive drag-and-drop canvas.
-
-✅ **Cutting-Edge Models & APIs**
-Use Claude, GPT-4O, Recraft, Flux Kontext, Google Imagen and more. Mix local + cloud models for flexibility and cost efficiency.
-
-✅ **Upcoming: Video Agent**
-Generate & edit videos with models like Wan2.1, Kling — all tied into the same creative workflow.
+(Coming Soon)
+Video Agent：Video generation and editing via models like Wan2.1, Kling, and more, seamlessly integrated with your creative workflow.
+Intelligently invoke custom comfyui workflows
 
 ---
 
-## 🖼️ Showcase
-
-### ✏️ Example: World Landmark Tour
-
-**Prompt:**
-
-> “Place this character in six different landmark scenes around the world, harmonized lighting, warm tones, realistic, high-res, 9:16.”
-
-![example](https://github.com/user-attachments/assets/4e2634b3-9068-47cd-a18f-ddde8f218d25)
-
-<img width="1000" alt="Storyboard example" src="https://github.com/user-attachments/assets/5d8efe74-99b0-41bc-aa3e-6f7b92b69c36" />
+- Use Claude, OpenAI, Gemini via API key, or run locally with [Ollama](https://github.com/ollama/ollama) for **100% free** usage
+- Use image generation models like **GPT-4O, Recraft, Flux, Google Imagen**, etc. through Replicate API key
 
 ---
 
-## ⚙️ Usage Guide
+## Usage
 
-1. **Log in:**
-   Click the `Log in` button on the top right of the app to unlock all available API integrations. A small payment gives you smooth access to high-quality models.
+1. Click on the "Log in" button at the top right corner of the program's home page, and then you can use the apis of each model. By paying a low price, you can smoothly use the API models
 
-<img width="400" src="https://github.com/user-attachments/assets/0055557d-c247-4801-ac3f-01ed4fa775ae" />
+<img width="400" alt="Screenshot 2025-06-02 at 3 08 51 PM" src="https://github.com/user-attachments/assets/0055557d-c247-4801-ac3f-01ed4fa775ae" />
 
-2. **Add your API keys:**
+2. You can also customize the binding API,Add LLM API key like OpenAI or Claude, or install [Ollama](https://ollama.com/) to use local models
+3. Add image generations API key like [Replicate](https://replicate.com/)
 
-   * For text models: OpenAI, Claude, Gemini
-   * For image models: [Replicate](https://replicate.com/)
-   * For local: install [Ollama](https://ollama.com/) to run completely offline.
+<img width="1485" alt="Screenshot 2025-06-02 at 3 08 51 PM" src="https://github.com/user-attachments/assets/80bf76b1-229b-4491-893e-3f5102062a37" />
 
-<img width="1485" src="https://github.com/user-attachments/assets/80bf76b1-229b-4491-893e-3f5102062a37" />
+4. Start chatting with agent to generate stories or storyboards!
 
-3. **Start chatting with the design agent:**
-   Generate illustrations, stories, or detailed storyboards.
+<img width="900" alt="Screenshot 2025-06-18 at 16 09 05" src="https://github.com/user-attachments/assets/eacee793-3bc4-4fa2-9e23-94efa1e1f087" />
 
-<img width="900" src="https://github.com/user-attachments/assets/eacee793-3bc4-4fa2-9e23-94efa1e1f087" />
 
----
+## Cases
 
-## 🔌 Supported Providers
+- Prompt: Help me place this character in six different scenes, all in front of landmark buildings from around the world. The lighting is harmonious. He takes photos from all over the world, realistic, with warm light, high picture quality, and a picture ratio of 9:16
 
-| Provider  | Supported Models               |
-| --------- | ------------------------------ |
-| Ollama    | LLaMA, Mixtral, WizardLM, etc. |
-| OpenAI    | GPT-4o, DALL·E, etc.           |
-| Anthropic | Claude                         |
-| Google    | Gemini, Imagen                 |
-| Replicate | Recraft, Flux Kontext, & more  |
+![814c563b08f6ef44de0c2c31f0fdd00b-min](https://github.com/user-attachments/assets/4e2634b3-9068-47cd-a18f-ddde8f218d25)
 
-### ✅ DeepSeek Setup
 
-<img width="900" src="https://github.com/user-attachments/assets/61cb1b87-065f-4376-b853-b0032d4d3be8" />
+<img width="1000" alt="Screenshot 2025-06-02 at 3 51 56 AM" src="https://github.com/user-attachments/assets/5d8efe74-99b0-41bc-aa3e-6f7b92b69c36" />
 
----
+<img width="1000" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/6001af3a-2e2d-4bce-8112-7ee81cc75670" />
 
-## 🚀 Manual Install
+## API Providers
 
-For Linux or if you’d like to run everything locally:
+### Deepseek
 
-```bash
-git clone https://github.com/11cafe/localart
-cd server
-pip install -r requirements.txt
-python main.py
-```
+To use deepseek as a provider, setup as below
 
-Frontend:
+<img width="900" alt="Screenshot 2025-06-10 at 12 05 35" src="https://github.com/user-attachments/assets/61cb1b87-065f-4376-b853-b0032d4d3be8" />
 
-```bash
-cd react
-npm install --force
-npm run dev
-```
+## Stay Updated
 
----
+Star Jaaz on GitHub to receive instant noifications about new version releases.
 
-## 🛠 Development
+<img width="426" alt="Screenshot 2025-06-10 at 12 05 35" src="https://github.com/user-attachments/assets/e8779c10-dffd-46c3-bce6-88051cdc6c5e" />
 
-Contribute or customize:
+## Manual Install (For Linux or local builds)
 
-```bash
-# Frontend (React)
-cd react
-npm install --force
-npm run dev
+First git clone this repo:
 
-# Backend (FastAPI / Python)
-cd server
-pip install -r requirements.txt
-python main.py
-```
+`git clone https://github.com/11cafe/localart`
 
----
+`cd server`
 
-## ⭐ Stay Connected
+`pip install -r requirements.txt`
 
-* 🌟 **Star Jaaz on GitHub** to get notified about new releases and features!
-* 💬 Join our discussions on issues or pull requests — contributions are welcome.
+`python main.py`
 
-<img width="426" src="https://github.com/user-attachments/assets/e8779c10-dffd-46c3-bce6-88051cdc6c5e" />
+## Development
 
----
+`cd react`
 
-✅ **Ready to unleash your imagination?**
-Download Jaaz for [macOS](https://github.com/11cafe/jaaz/releases/download/v1.0.15/Jaaz-1.0.15-arm64.dmg) or [Windows](https://github.com/11cafe/jaaz/releases/download/v1.0.15/Jaaz-Setup-1.0.15.exe) and start creating today!
+`npm install --force && npm run dev`
+
+`cd server`
+
+`pip install -r requirements.txt`
+
+`python main.py`
