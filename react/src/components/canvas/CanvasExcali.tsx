@@ -18,20 +18,10 @@ import {
   BinaryFiles,
   ExcalidrawInitialDataState,
 } from '@excalidraw/excalidraw/types'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import '@/assets/style/canvas.css'
-
-type VideoElement = {
-  id: string
-  src: string
-  x: number
-  y: number
-  width: number
-  height: number
-  playing: boolean
-}
 
 type LastImagePosition = {
   x: number
@@ -51,7 +41,6 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   initialData,
 }) => {
   const { excalidrawAPI, setExcalidrawAPI } = useCanvas()
-  const [videos, setVideos] = useState<VideoElement[]>([])
 
   const { i18n } = useTranslation()
 
@@ -64,12 +53,6 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       if (elements.length === 0 || !appState) {
         return
       }
-
-      // 更新视频位置
-      setVideos(v => v.map(video => {
-        const el = elements.find(e => e.id === video.id)
-        return el ? { ...video, x: el.x, y: el.y } : video
-      }))
 
       const data: CanvasData = {
         elements,
@@ -107,27 +90,40 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     async (imageElement: ExcalidrawImageElement, file: BinaryFileData) => {
       if (!excalidrawAPI) return
 
-      // 处理视频文件
-      if (file.mimeType?.startsWith('video/')) {
-        setVideos(v => [...v, {
-          id: imageElement.id,
-          src: file.dataURL,
-          x: imageElement.x,
-          y: imageElement.y,
-          width: imageElement.width,
-          height: imageElement.height,
-          playing: false
-        }])
+      // Check if element already exists to prevent duplicates
+      const currentElements = excalidrawAPI.getSceneElements()
+      const existingElement = currentElements.find(el => el.id === imageElement.id)
+
+      if (existingElement) {
+        console.log('👇 Image element already exists, skipping duplicate:', imageElement.id)
         return
       }
 
-      // 原有图片处理逻辑
       excalidrawAPI.addFiles([file])
 
-      const currentElements = excalidrawAPI.getSceneElements()
-      console.log('👇 adding to currentElements', currentElements)
+      console.log('👇 Adding new image element to canvas:', imageElement.id)
+      console.log('👇 Image element properties:', {
+        id: imageElement.id,
+        type: imageElement.type,
+        locked: imageElement.locked,
+        groupIds: imageElement.groupIds,
+        isDeleted: imageElement.isDeleted,
+        x: imageElement.x,
+        y: imageElement.y,
+        width: imageElement.width,
+        height: imageElement.height
+      })
+
+      // Ensure image is not locked and can be manipulated
+      const unlockedImageElement = {
+        ...imageElement,
+        locked: false,
+        groupIds: [],
+        isDeleted: false
+      }
+
       excalidrawAPI.updateScene({
-        elements: [...(currentElements || []), imageElement],
+        elements: [...(currentElements || []), unlockedImageElement],
       })
 
       localStorage.setItem(
@@ -140,14 +136,23 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
 
   const handleImageGenerated = useCallback(
     (imageData: ISocket.SessionImageGeneratedEvent) => {
-      console.log('👇image_generated', imageData)
+      console.log('👇 CanvasExcali received image_generated:', imageData)
+
+      // Only handle if it's for this canvas
       if (imageData.canvas_id !== canvasId) {
+        console.log('👇 Image not for this canvas, ignoring')
+        return
+      }
+
+      // Check if this is actually a video generation event that got mislabeled
+      if (imageData.file?.mimeType?.startsWith('video/')) {
+        console.log('👇 This appears to be a video, not an image. Ignoring in image handler.')
         return
       }
 
       addImageToExcalidraw(imageData.element, imageData.file)
     },
-    [addImageToExcalidraw]
+    [addImageToExcalidraw, canvasId]
   )
 
   useEffect(() => {
@@ -157,64 +162,35 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   }, [handleImageGenerated])
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <Excalidraw
-        theme={theme as Theme}
-        langCode={i18n.language}
-        excalidrawAPI={(api) => {
-          setExcalidrawAPI(api)
-        }}
-        onChange={handleChange}
-        initialData={() => {
-          const data = initialData
-          console.log('👇initialData', data)
-          if (data?.appState) {
-            data.appState = {
-              ...data.appState,
-              collaborators: undefined!,
-            }
+    <Excalidraw
+      theme={theme as Theme}
+      langCode={i18n.language}
+      excalidrawAPI={(api) => {
+        setExcalidrawAPI(api)
+      }}
+      onChange={handleChange}
+      initialData={() => {
+        const data = initialData
+        console.log('👇initialData', data)
+        if (data?.appState) {
+          data.appState = {
+            ...data.appState,
+            collaborators: undefined!,
           }
-          return data || null
-        }}
-      />
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        pointerEvents: 'none',
-        width: '100%',
-        height: '100%'
-      }}>
-        {videos.map(video => (
-          <video
-            key={video.id}
-            src={video.src}
-            style={{
-              position: 'absolute',
-              left: video.x,
-              top: video.y,
-              width: video.width,
-              height: video.height,
-              pointerEvents: 'auto'
-            }}
-            autoPlay={video.playing}
-            muted
-            onMouseEnter={() => setVideos(v => v.map(v =>
-              v.id === video.id ? { ...v, playing: true } : { ...v, playing: false }
-            ))}
-            onClick={() => setVideos(v => v.map(v =>
-              v.id === video.id ? { ...v, playing: !v.playing } : v
-            ))}
-            onMouseLeave={() => setVideos(v => v.map(v =>
-              v.id === video.id ? { ...v, playing: false } : v
-            ))}
-            onPause={(e) => {
-              if (!video.playing) e.currentTarget.currentTime = 0
-            }}
-          />
-        ))}
-      </div>
-    </div>
+        }
+        return data || null
+      }}
+      // Ensure interactive mode is enabled
+      viewModeEnabled={false}
+      zenModeEnabled={false}
+      // Allow element manipulation  
+      onPointerUpdate={(payload) => {
+        // Minimal logging - only log significant pointer events
+        if (payload.button === 'down' && Math.random() < 0.05) {
+          console.log('👇 Pointer down on:', payload.pointer.x, payload.pointer.y)
+        }
+      }}
+    />
   )
 }
 export default CanvasExcali

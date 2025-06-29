@@ -30,7 +30,11 @@ from typing import Annotated, Any, Dict, List, Optional
 
 from common import DEFAULT_PORT
 from services.tool_service import tool_service
-from .image_generation_utils import generate_file_id, generate_new_image_element
+from .image_generation_utils import (
+    generate_file_id,
+    generate_new_image_element,
+    generate_new_video_element,
+)
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import InjectedToolCallId, tool, BaseTool
 from pydantic import BaseModel, Field, create_model
@@ -206,15 +210,24 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
                 "dataURL": url,
                 "created": int(time.time() * 1000),
             }
-
-            new_image_element = await generate_new_image_element(
-                canvas_id,
-                file_id,
-                {
-                    "width": width,
-                    "height": height,
-                },
-            )
+            if mime_type.startswith("image"):
+                new_element = await generate_new_image_element(
+                    canvas_id,
+                    file_id,
+                    {
+                        "width": width,
+                        "height": height,
+                    },
+                )
+            else:
+                new_element = await generate_new_video_element(
+                    canvas_id,
+                    file_id,
+                    {
+                        "width": width,
+                        "height": height,
+                    },
+                )
 
             # update the canvas data, add the new image element
             canvas_data = await db_service.get_canvas_data(canvas_id)
@@ -225,7 +238,7 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
             if "files" not in canvas_data["data"]:
                 canvas_data["data"]["files"] = {}
 
-            canvas_data["data"]["elements"].append(new_image_element)
+            canvas_data["data"]["elements"].append(new_element)
             canvas_data["data"]["files"][file_id] = file_data
 
             image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
@@ -235,21 +248,30 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
             await db_service.save_canvas_data(
                 canvas_id, json.dumps(canvas_data["data"])
             )
+            if mime_type.startswith("image"):
+                await broadcast_session_update(
+                    session_id,
+                    canvas_id,
+                    {
+                        "type": "image_generated",
+                        "element": new_element,
+                        "file": file_data,
+                        "image_url": image_url,
+                    },
+                )
+            else:
+                await broadcast_session_update(
+                    session_id,
+                    canvas_id,
+                    {
+                        "type": "video_generated",
+                        "element": new_element,
+                        "file": file_data,
+                        "video_url": image_url,
+                    },
+                )
 
-            await broadcast_session_update(
-                session_id,
-                canvas_id,
-                {
-                    "type": "image_generated",
-                    "element": new_image_element,
-                    "file": file_data,
-                    "image_url": image_url,
-                },
-            )
-
-            return (
-                f"workflow executed successfully ![image_id: {filename}]({image_url})"
-            )
+            return f"workflow executed successfully ![id: {filename}]({image_url})"
 
         except Exception as e:
             print(f"Error generating image: {str(e)}")
