@@ -65,6 +65,9 @@ const PROVIDER_OPTIONS = [
         'doubao-seed-1-6-thinking-250615': { type: 'text' },
         'doubao-seed-1-6-flash-250615': { type: 'text' },
         'doubao-seedream-3-0-t2i-250415': { type: 'image' },
+        'doubao-seedance-1-0-pro-250528': { type: ['video-i2v', 'video-t2v'] },
+        'doubao-seedance-1-0-lite-i2v-250428': { type: 'video-i2v' },
+        'doubao-seedance-1-0-lite-t2v-250428': { type: 'video-t2v' },
       },
     },
   },
@@ -96,7 +99,7 @@ export default function AddProviderDialog({
   const [apiUrl, setApiUrl] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [models, setModels] = useState<
-    Record<string, { type?: 'text' | 'image' | 'video' }>
+    Record<string, { type?: 'text' | 'image' | 'video' | 'video-i2v' | 'video-t2v' }>
   >({})
 
   // Handle data change when provider is selected

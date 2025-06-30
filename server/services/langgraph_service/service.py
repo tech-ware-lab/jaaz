@@ -20,6 +20,7 @@ async def langgraph_multi_agent(
     session_id: str,
     text_model: ModelInfo,
     image_model: ModelInfo,
+    video_model: ModelInfo = None,
     system_prompt: Optional[str] = None
 ) -> None:
     """多智能体处理函数
@@ -30,6 +31,7 @@ async def langgraph_multi_agent(
         session_id: 会话ID
         text_model: 文本模型配置
         image_model: 图像模型配置
+        video_model: 视频模型配置
         system_prompt: 系统提示词
     """
     try:
