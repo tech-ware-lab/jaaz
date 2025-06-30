@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Optional
 from langgraph.prebuilt import create_react_agent  # type: ignore
 from langchain_core.tools import BaseTool
 
-from .configs import PlannerAgentConfig, ImageDesignerAgentConfig, create_handoff_tool
+from .configs import PlannerAgentConfig, ImageDesignerAgentConfig, VideoDesignerAgentConfig, create_handoff_tool
 from services.tool_service import tool_service
 
 
@@ -37,7 +37,12 @@ class AgentManager:
         image_designer_agent = AgentManager._create_langgraph_agent(
             model, image_designer_config)
 
-        return [planner_agent, image_designer_agent]
+        video_designer_config = VideoDesignerAgentConfig(
+            "volces_generate_video", system_prompt).get_config()
+        video_designer_agent = AgentManager._create_langgraph_agent(
+            model, video_designer_config)
+
+        return [planner_agent, image_designer_agent, video_designer_agent]
 
     @staticmethod
     def _create_langgraph_agent(
