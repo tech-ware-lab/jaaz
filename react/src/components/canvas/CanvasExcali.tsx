@@ -22,7 +22,7 @@ import {
 } from '@excalidraw/excalidraw/types'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { VideoElement } from './videoelement'
+import { VideoElement } from './VideoElement'
 
 import '@/assets/style/canvas.css'
 
@@ -138,6 +138,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   )
 
   const addVideoEmbed = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async (elementData: any, videoSrc: string) => {
       if (!excalidrawAPI) return
 
@@ -353,7 +354,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       onPointerUpdate={(payload) => {
         // Minimal logging - only log significant pointer events
         if (payload.button === 'down' && Math.random() < 0.05) {
-          console.log('👇 Pointer down on:', payload.pointer.x, payload.pointer.y)
+          // console.log('👇 Pointer down on:', payload.pointer.x, payload.pointer.y)
         }
       }}
     />
