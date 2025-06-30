@@ -82,6 +82,7 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
       'black-forest-labs/flux-kontext-pro': { type: 'image' },
       'black-forest-labs/flux-kontext-max': { type: 'image' },
       'recraft-ai/recraft-v3': { type: 'image' },
+      'doubao/doubao-seedream-3-0-t2i-250415': { type: 'image' },
       // 'ideogram-ai/ideogram-v3-balanced': { type: 'image' },
       'openai/gpt-image-1': { type: 'image' },
     },
