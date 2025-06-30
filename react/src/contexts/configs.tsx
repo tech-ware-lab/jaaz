@@ -20,6 +20,10 @@ export const ConfigsProvider = ({
   const { data: modelList, refetch: refreshModels } = useQuery({
     queryKey: ['list_models'],
     queryFn: () => listModels(),
+    staleTime: 1 * 60 * 1000, // 5分钟内数据被认为是新鲜的
+    placeholderData: (previousData) => previousData, // 关键：显示旧数据同时获取新数据
+    refetchOnWindowFocus: true, // 窗口获得焦点时重新获取
+    refetchOnReconnect: true, // 网络重连时重新获取
   })
 
   useEffect(() => {
