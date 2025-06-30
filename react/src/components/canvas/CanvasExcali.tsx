@@ -22,7 +22,7 @@ import {
 } from '@excalidraw/excalidraw/types'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { VideoElement } from './VideoElement'
+import { VideoElement } from './videoelement'
 
 import '@/assets/style/canvas.css'
 
@@ -138,12 +138,12 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   )
 
   const addVideoEmbed = useCallback(
-    (elementData:any, videoSrc:string) => {
+    async (elementData: any, videoSrc: string) => {
       if (!excalidrawAPI) return
 
       // Function to create video element with given dimensions
       const createVideoElement = (finalWidth: number, finalHeight: number) => {
-        console.log('👇 Video element properties:', { 
+        console.log('👇 Video element properties:', {
           id: elementData.id,
           type: elementData.type,
           locked: elementData.locked,
@@ -153,8 +153,8 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
           y: elementData.y,
           width: elementData.width,
           height: elementData.height,
-         })
-        
+        })
+
         const videoElements = convertToExcalidrawElements([
           {
             type: "embeddable",
@@ -164,10 +164,32 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
             width: elementData.width,
             height: elementData.height,
             link: videoSrc,
-            validated: true,
+            // 添加必需的基本样式属性
+            strokeColor: "#000000",
+            backgroundColor: "transparent",
+            fillStyle: "solid",
+            strokeWidth: 1,
+            strokeStyle: "solid",
+            roundness: null,
+            roughness: 1,
+            opacity: 100,
+            // 添加必需的变换属性
+            angle: 0,
+            seed: Math.random(),
+            version: 1,
+            versionNonce: Math.random(),
+            // 添加必需的状态属性
             locked: false,
             isDeleted: false,
-            groupIds: []
+            groupIds: [],
+            // 添加绑定框属性
+            boundElements: [],
+            updated: Date.now(),
+            // 添加必需的索引和帧ID属性
+            frameId: null,
+            index: null, // 添加缺失的index属性
+            // 添加自定义数据属性
+            customData: {},
           }
         ])
 
@@ -175,9 +197,9 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
 
         const currentElements = excalidrawAPI.getSceneElements()
         const newElements = [...currentElements, ...videoElements]
-        
+
         console.log('👇 Updating scene with elements count:', newElements.length)
-        
+
         excalidrawAPI.updateScene({
           elements: newElements,
         })
@@ -194,35 +216,35 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       // Otherwise, try to get video's natural dimensions
       const video = document.createElement('video')
       video.crossOrigin = 'anonymous'
-      
+
       video.onloadedmetadata = () => {
         const videoWidth = video.videoWidth
         const videoHeight = video.videoHeight
-        
+
         if (videoWidth && videoHeight) {
           // Scale down if video is too large (max 800px width)
           const maxWidth = 800
           let finalWidth = videoWidth
           let finalHeight = videoHeight
-          
+
           if (videoWidth > maxWidth) {
             const scale = maxWidth / videoWidth
             finalWidth = maxWidth
             finalHeight = videoHeight * scale
           }
-          
+
           createVideoElement(finalWidth, finalHeight)
         } else {
           // Fallback to default dimensions
           createVideoElement(320, 180)
         }
       }
-      
+
       video.onerror = () => {
         console.warn('Could not load video metadata, using default dimensions')
         createVideoElement(320, 180)
       }
-      
+
       video.src = videoSrc
     },
     [excalidrawAPI]
@@ -231,22 +253,22 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
   const renderEmbeddable = useCallback(
     (element: NonDeleted<ExcalidrawEmbeddableElement>, appState: AppState) => {
       const { link } = element
-      
+
       console.log('👇 renderEmbeddable called with:', { link, elementId: element.id, elementType: element.type })
-      
+
       // Check if this is a video URL
       if (link && (link.includes('.mp4') || link.includes('.webm') || link.includes('.ogg') || link.startsWith('blob:') || link.includes('video'))) {
         console.log('👇 Rendering VideoPlayer for:', link)
         // Return the VideoPlayer component
         return (
-          <VideoElement 
+          <VideoElement
             src={link}
             width={element.width}
             height={element.height}
           />
         )
       }
-      
+
       console.log('👇 Not a video URL, returning null for:', link)
       // Return null for non-video embeds to use default rendering
       return null
