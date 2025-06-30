@@ -55,7 +55,7 @@ async def langgraph_multi_agent(
         ).compile()  # type: ignore
 
         # 4. 创建上下文
-        context = _create_context(canvas_id, session_id, image_model)
+        context = _create_context(canvas_id, session_id, image_model, video_model)
 
         # 5. 流处理
         processor = StreamProcessor(
@@ -113,14 +113,17 @@ def _determine_tool_name(image_model: ModelInfo, provider: str) -> str:
     return tool_name
 
 
-def _create_context(canvas_id: str, session_id: str, image_model: ModelInfo) -> Dict[str, Any]:
+def _create_context(canvas_id: str, session_id: str, image_model: ModelInfo, video_model: ModelInfo = None) -> Dict[str, Any]:
     """创建上下文信息"""
+    model_info = {'image': image_model}
+    if video_model:
+        model_info['video-t2v'] = video_model
+        model_info['video-i2v'] = video_model
+    
     return {
         'canvas_id': canvas_id,
         'session_id': session_id,
-        'model_info': {
-            'image': image_model
-        },
+        'model_info': model_info,
     }
 
 
