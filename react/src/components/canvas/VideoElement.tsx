@@ -129,7 +129,7 @@ export const VideoElement: React.FC<VideoElementProps> = ({
     // Full video player
     return (
         <div
-            className={cn('relative cursor-default', className)}
+            className={cn('relative cursor-pointer', className)}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onClick={handleClick}
@@ -141,10 +141,30 @@ export const VideoElement: React.FC<VideoElementProps> = ({
                 poster={poster}
                 loop={loop}
                 muted={muted}
-                className="w-full h-full object-cover cursor-default"
+                className="w-full h-full object-cover"
                 style={{ width, height, pointerEvents: 'none' }}
                 playsInline
             />
+
+            {/* 暂停按钮覆盖层 */}
+            {isPaused && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/5">
+                    <div className="bg-black/60 rounded-full p-3 flex items-center justify-center">
+                        <svg 
+                            width="24" 
+                            height="24" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            className="text-white"
+                        >
+                            <polygon 
+                                points="9,6 9,18 21,12" 
+                                fill="currentColor"
+                            />
+                        </svg>
+                    </div>
+                </div>
+            )}
 
             {/* Video info overlay */}
             {duration && (
