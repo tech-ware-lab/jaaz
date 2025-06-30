@@ -15,7 +15,7 @@ from services.config_service import (
     VIDEO_FORMATS,
 )
 from routers.comfyui_execution import execute
-from routers.video_generators import get_video_info_and_save
+from tools.video_generation_utils import get_video_info_and_save
 
 
 async def detect_file_type_comprehensive(url):
@@ -157,7 +157,7 @@ class ComfyUIWorkflowRunner(ImageGenerator):
         **kwargs,
     ) -> tuple[str, int, int, str]:
         """
-        Run a workflow by calling offical ComfyUI Client
+        Run a workflow by calling official ComfyUI Client
         """
         # Get context from kwargs
         ctx = kwargs.get("ctx", {})
