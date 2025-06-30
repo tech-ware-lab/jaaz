@@ -27,9 +27,10 @@ from pydantic import BaseModel, Field
 from tools.video_generators.video_generators import (
     generate_video_replicate,
     generate_video_volces,
+    generate_video_google,
 )
 
-PROMPTING_GUIDE="""
+PROMPTING_GUIDE = """
 ### Video Description Generation Prompting Guide
 
 **Role Definition**
@@ -83,19 +84,34 @@ You are a creative specialist in a video production team. Your primary function 
 # fastapi exception
 from fastapi import HTTPException
 
+
 class VolcesGenerateVideoInputSchema(BaseModel):
     prompt: str = Field(
-        description="Required. The prompt for image generation. Here's prompting guide: " + PROMPTING_GUIDE)
-    resolution: Optional[str] = Field(default="480p",
-        description="Optional. The resolution of the video, only these values are allowed: 480p, 720p, 1080p.")
-    duration: Optional[int] = Field(default=5,
-        description="Optional. The duration of the video in seconds, only these values are allowed: 5, 10.")
-    camerafixed: Optional[bool] = Field(default=False,
-        description="Optional. Whether to control the camera not moved.")
-    image_name: Optional[str | None] = Field(default=None, description="Optional; The name of the image to control as the first frame.")
-    aspect_ratio: Optional[str] = Field(default="16:9",
-        description="Optional. The aspect ratio of the video, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16.")
+        description="Required. The prompt for image generation. Here's prompting guide: "
+        + PROMPTING_GUIDE
+    )
+
+    resolution: Optional[str] = Field(
+        default="480p",
+        description="Optional. The resolution of the video, only these values are allowed: 480p, 720p, 1080p.",
+    )
+    duration: Optional[int] = Field(
+        default=5,
+        description="Optional. The duration of the video in seconds, only these values are allowed: 5, 10.",
+    )
+    camerafixed: Optional[bool] = Field(
+        default=False, description="Optional. Whether to control the camera not moved."
+    )
+    image_name: Optional[str | None] = Field(
+        default=None,
+        description="Optional; The name of the image to control as the first frame.",
+    )
+    aspect_ratio: Optional[str] = Field(
+        default="16:9",
+        description="Optional. The aspect ratio of the video, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16.",
+    )
     tool_call_id: Annotated[str, InjectedToolCallId]
+
 
 def generate_video_file_id():
     return "vi_" + generate(size=8)
@@ -188,7 +204,11 @@ async def generate_video_tool(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@tool("volces_generate_video", description="Generate a video using text prompt or image.", args_schema=VolcesGenerateVideoInputSchema)
+@tool(
+    "volces_generate_video",
+    description="Generate a video using text prompt or image.",
+    args_schema=VolcesGenerateVideoInputSchema,
+)
 async def volces_generate_video(
     prompt,
     tool_call_id: Annotated[str, InjectedToolCallId],
@@ -207,12 +227,15 @@ async def volces_generate_video(
     # Inject the tool call id into the context
     ctx["tool_call_id"] = tool_call_id
 
-    video_model = "doubao-seedance-1-0-pro-250528"
-
-    if not video_model:
+    model = ctx.get("model_info", {}).get("video-t2v", {})
+    if model is None:
+        model = ctx.get("model_info", {}).get("video-i2v", None)
+    if model is None:
         raise ValueError("Video model is not selected")
+    video_model = model.get("model", {})
+    video_provider = model.get("provider", "volces")
 
-    try:
+    if video_provider == "volces":
         mime_type, width, height, filename = await generate_video_volces(
             prompt,
             video_model,
@@ -222,6 +245,23 @@ async def volces_generate_video(
             image_name,
             aspect_ratio,
         )
+    elif video_provider == "replicate":
+        mime_type, width, height, filename = await generate_video_replicate(
+            prompt,
+            video_model,
+            aspect_ratio,
+        )
+    elif video_provider == "google":
+        mime_type, width, height, filename = await generate_video_google(
+            prompt,
+            video_model,
+            resolution,
+            image_name,
+        )
+    else:
+        raise ValueError("Video provider is not supported")
+
+    try:
         file_id = generate_video_file_id()
         url = f"/api/file/{filename}"
 

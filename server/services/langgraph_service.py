@@ -124,6 +124,7 @@ async def langgraph_multi_agent(
     session_id,
     text_model: ModelInfo,
     image_model: ModelInfo,
+    video_model: ModelInfo = None,
     system_prompt: Optional[str] = None,
 ):
     try:
@@ -132,6 +133,15 @@ async def langgraph_multi_agent(
         url = text_model.get("url")
         api_key = config_service.app_config.get(provider, {}).get("api_key", "")
         image_model_name = image_model.get("model", "")
+        
+        # 添加视频工具名称处理
+        video_tool_name = "volces_generate_video"
+        if video_model:
+            video_model_name = video_model.get("model", "")
+            # 根据不同的视频模型提供商选择不同的工具
+            if video_model.get("provider") == "volces":
+                video_tool_name = "volces_generate_video"
+            # 可以在这里添加其他视频提供商的工具
 
         tool_name = "generate_image"
 
@@ -177,6 +187,7 @@ async def langgraph_multi_agent(
             You are a design planning writing agent. You should do:
             - Step 1. write a execution plan for the user's request using the same language as the user's prompt. You should breakdown the task into high level steps for the other agents to execute.
             - Step 2. If it is a image generation task, transfer the task to image_designer agent to generate the image based on the plan IMMEDIATELY, no need to ask for user's approval.
+            - Step 3. If it is a video generation task, transfer the task to video_designer agent to generate the video based on the plan IMMEDIATELY, no need to ask for user's approval.
 
             IMPORTANT RULES:
             1. You MUST complete the write_plan tool call and wait for its result BEFORE attempting to transfer to another agent
@@ -204,6 +215,12 @@ async def langgraph_multi_agent(
                         "description": """
                         Transfer user to the image_designer. About this agent: Specialize in generating images.
                         """,
+                    },
+                    {
+                        "agent_name": "video_designer",
+                        "description": """
+                        Transfer user to the video_designer. About this agent: Specialize in generating videos.
+                        """,
                     }
                 ],
             },
@@ -213,11 +230,36 @@ async def langgraph_multi_agent(
                     {
                         "tool": tool_name,
                     },
-                    {
-                        "tool": "volces_generate_video",
-                    },
                 ],
                 "system_prompt": system_prompt,
+                "knowledge": [],
+                "handoffs": [
+                    {
+                        "agent_name": "video_designer",
+                        "description": """
+                        Transfer user to the video_designer if they need video generation after image generation.
+                        """,
+                    }
+                ],
+            },
+            {
+                "name": "video_designer",
+                "tools": [
+                    {
+                        "tool": video_tool_name,
+                    },
+                ],
+                "system_prompt": f"""
+                You are a video generation specialist. You can generate videos using text prompts or images.
+                Available video model: {video_model.get('model', 'volces video model') if video_model else 'volces video model'}
+                
+                When generating videos:
+                1. Use clear, descriptive prompts
+                2. Consider the aspect ratio and duration based on the content type
+                3. If an image is provided, use it as reference for video generation
+                
+                {system_prompt or ''}
+                """,
                 "knowledge": [],
                 "handoffs": [],
             },

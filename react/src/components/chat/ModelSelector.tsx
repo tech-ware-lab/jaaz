@@ -14,10 +14,13 @@ const ModelSelector: React.FC = () => {
   const {
     textModel,
     imageModel,
+    videoModel,
     setTextModel,
     setImageModel,
+    setVideoModel,
     textModels,
     imageModels,
+    videoModels,
   } = useConfigs()
 
   // Group models by provider
@@ -33,7 +36,28 @@ const ModelSelector: React.FC = () => {
   }
 
   const groupedTextModels = groupModelsByProvider(textModels)
-  const groupedImageModels = groupModelsByProvider(imageModels)
+  // Combine image and video models for unified multimedia selector
+  // For video models with multiple types, create a single entry with type info
+  const expandedVideoModels = (videoModels || []).map(model => {
+    if (Array.isArray(model.type)) {
+      // Create a single entry with combined type information
+      const typeLabels = model.type.map(type => {
+        if (type === 'video-t2v') return 'T2V'
+        if (type === 'video-i2v') return 'I2V'
+        return type
+      }).join('+')
+      return {
+        ...model,
+        model: `${model.model} (${typeLabels})`,
+        originalModel: model.model,
+        supportedTypes: model.type
+      }
+    }
+    return model
+  })
+  
+  const multimediaModels = [...(imageModels || []), ...expandedVideoModels]
+  const groupedMultimediaModels = groupModelsByProvider(multimediaModels)
 
   // Sort providers to put Jaaz first
   const sortProviders = (providers: [string, typeof textModels][]) => {
@@ -95,20 +119,49 @@ const ModelSelector: React.FC = () => {
         </SelectContent>
       </Select>
       <Select
-        value={imageModel?.provider + ':' + imageModel?.model}
+        value={
+          (imageModel && `${imageModel.provider}:${imageModel.model}`) ||
+          (videoModel && multimediaModels?.find(m => 
+            m.provider === videoModel.provider && 
+            ((m.originalModel && m.originalModel === videoModel.model) || m.model === videoModel.model)
+          )?.provider + ':' + multimediaModels?.find(m => 
+            m.provider === videoModel.provider && 
+            ((m.originalModel && m.originalModel === videoModel.model) || m.model === videoModel.model)
+          )?.model) || ''
+        }
         onValueChange={(value) => {
-          localStorage.setItem('image_model', value)
-          setImageModel(
-            imageModels?.find((m) => m.provider + ':' + m.model == value)
-          )
+          const selectedModel = multimediaModels?.find((m) => m.provider + ':' + m.model == value)
+          if (selectedModel?.type === 'image' || selectedModel?.type === 'tool') {
+            // For image models, also use original model name if available
+            const originalModel = {
+              ...selectedModel,
+              model: selectedModel.originalModel || selectedModel.model
+            }
+            const originalValue = `${originalModel.provider}:${originalModel.model}`
+            localStorage.setItem('image_model', originalValue)
+            setImageModel(originalModel)
+            setVideoModel(undefined)
+            localStorage.removeItem('video_model')
+          } else if (selectedModel?.type === 'video-i2v' || selectedModel?.type === 'video-t2v' || selectedModel?.supportedTypes || (Array.isArray(selectedModel?.type) && (selectedModel?.type.includes('video-i2v') || selectedModel?.type.includes('video-t2v')))) {
+            // For video models, save the original model info
+            const originalModel = {
+              ...selectedModel,
+              model: selectedModel.originalModel || selectedModel.model,
+              type: selectedModel.supportedTypes || selectedModel.type
+            }
+            const originalValue = `${originalModel.provider}:${originalModel.model}`
+            localStorage.setItem('video_model', originalValue)
+            setVideoModel(originalModel)
+            setImageModel(undefined)
+            localStorage.removeItem('image_model')
+          }
         }}
       >
         <SelectTrigger className="w-fit max-w-[40%] bg-background">
-          <span>🎨</span>
-          <SelectValue placeholder="Theme" />
+          <SelectValue placeholder="Multimedia Model" />
         </SelectTrigger>
         <SelectContent>
-          {sortProviders(Object.entries(groupedImageModels)).map(([provider, models]) => {
+          {sortProviders(Object.entries(groupedMultimediaModels)).map(([provider, models]) => {
             const providerInfo = getProviderDisplayName(provider)
             return (
               <SelectGroup key={provider}>
@@ -122,14 +175,20 @@ const ModelSelector: React.FC = () => {
                   )}
                   {providerInfo.name}
                 </SelectLabel>
-                {models.map((model) => (
-                  <SelectItem
-                    key={model.provider + ':' + model.model}
-                    value={model.provider + ':' + model.model}
-                  >
-                    {model.model}
-                  </SelectItem>
-                ))}
+                {models.map((model) => {
+                  const isVideo = model.type === 'video-i2v' || model.type === 'video-t2v' || model.supportedTypes || (Array.isArray(model.type) && (model.type.includes('video-i2v') || model.type.includes('video-t2v')))
+                  return (
+                    <SelectItem
+                      key={model.provider + ':' + model.model}
+                      value={model.provider + ':' + model.model}
+                    >
+                      <span className="flex items-center gap-2">
+                        {isVideo ? '🎬' : '🎨'}
+                        {model.model}
+                      </span>
+                    </SelectItem>
+                  )
+                })}
               </SelectGroup>
             )
           })}
