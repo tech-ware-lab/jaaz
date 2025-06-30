@@ -16,7 +16,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useConfigs } from '@/contexts/configs'
-import ComfuiWorkflowSetting from './ComfuiWorkflowSetting'
+import ComfuiWorkflowSetting from './ComfyuiWorkflowSetting'
 
 interface ComfyuiSettingProps {
   config: LLMConfig
@@ -120,8 +120,8 @@ export default function ComfyuiSetting({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          url: comfyUrl,  // 传递用户配置的ComfyUI地址
-          path: '/system_stats'  // 目标路径
+          url: comfyUrl, // 传递用户配置的ComfyUI地址
+          path: '/system_stats', // 目标路径
         }),
       })
 
@@ -153,9 +153,9 @@ export default function ComfyuiSetting({
     })
   }
 
-    // const handleInstallClick = () => {
-    //   setShowInstallDialog(true)
-    // }
+  // const handleInstallClick = () => {
+  //   setShowInstallDialog(true)
+  // }
 
   // start ComfyUI
   const startComfyUI = async () => {
