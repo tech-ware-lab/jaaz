@@ -306,12 +306,21 @@ async def langgraph_multi_agent(
         #     agents=agents,
         #     default_active_agent=agent_schemas[0]['name']
         # ).compile()
-
+        
         ctx = {
             "canvas_id": canvas_id,
             "session_id": session_id,
-            "model_info": {"image": image_model},
+            "model_info": {},
         }
+        if image_model.get("type") == "tool":
+            ctx["model_info"]["image"] = {"model": image_model.get("model")}
+        if video_model:
+            if "t2v" in video_model.get("model", "").lower():
+                ctx["model_info"]["video-t2v"] = video_model
+            elif "i2v" in video_model.get("model", "").lower():
+                ctx["model_info"]["video-i2v"] = video_model
+            else:
+                pass
         tool_calls: list[ToolCall] = []
         last_saved_message_index = len(messages) - 1
 
