@@ -186,6 +186,9 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: Mod
                     {
                         'tool': tool_name,
                     },
+                    {
+                        'tool': 'volces_generate_video',
+                    }
                 ],
                 'system_prompt': system_prompt,
                 'knowledge': [],
@@ -207,6 +210,10 @@ async def langgraph_multi_agent(messages, canvas_id, session_id, text_model: Mod
                 tool = tool_service.get_tool(tool_json.get('tool', ''))
                 if tool:
                     tools.append(tool)
+            print('👇tools', tools)
+            print('👇tools', handoff_tools)
+
+
             agent = create_react_agent(
                 name=ag_schema.get('name'),
                 model=model,

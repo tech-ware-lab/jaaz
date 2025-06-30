@@ -97,7 +97,7 @@ async def generate_video_volces(
     prompt: str,
     model: str,
     resolution: str = "480p",
-    duration: int = 10,
+    duration: int = 5,
     camerafixed: bool = True,
     image_name: str | None = None,
     ar: str = "16:9",
@@ -120,7 +120,6 @@ async def generate_video_volces(
             + resolution
             + " --dur "
             + str(duration)
-            + "s"
             + " --camerafixed "
             + str(camerafixed)
             + " --wm false"
@@ -197,7 +196,7 @@ async def generate_video_volces(
         async with HttpClient.create() as client:
             response = await client.post(url, headers=header, json=payload)
             res = response.json()
-            task_id = response.get("id", None)
+            task_id = res.get("id", None)
             status = "submitted"
 
             if task_id:
