@@ -254,11 +254,8 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     (element: NonDeleted<ExcalidrawEmbeddableElement>, appState: AppState) => {
       const { link } = element
 
-      console.log('👇 renderEmbeddable called with:', { link, elementId: element.id, elementType: element.type })
-
       // Check if this is a video URL
       if (link && (link.includes('.mp4') || link.includes('.webm') || link.includes('.ogg') || link.startsWith('blob:') || link.includes('video'))) {
-        console.log('👇 Rendering VideoPlayer for:', link)
         // Return the VideoPlayer component
         return (
           <VideoElement
