@@ -130,7 +130,7 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
         ).rstrip("/")
 
         # if there's image, upload it!
-        # First, let's fliter all values endswith .jpg .png etc
+        # First, let's filter all values endswith .jpg .png etc
 
         required_data = dict(kwargs)
         for key, value in required_data.items():
