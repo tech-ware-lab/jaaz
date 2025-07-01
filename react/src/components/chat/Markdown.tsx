@@ -207,6 +207,39 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
     },
     img: ({ node, children, ...props }) => {
       const id = filesArray.find((file) => props.src?.includes(file.url))?.id
+      
+      // 检查文件扩展名来判断是否为视频文件
+      const isVideo = props.src && /\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(props.src)
+      
+      if (isVideo) {
+        return (
+          <span className="group block relative overflow-hidden rounded-md my-2 last:mb-4">
+            <video
+              className="w-full max-w-full h-auto rounded-md cursor-pointer group-hover:scale-105 transition-transform duration-300"
+              controls
+              preload="metadata"
+              src={props.src}
+              {...(props.alt && { title: props.alt })}
+            >
+              Your browser does not support the video tag.
+            </video>
+
+            {id && (
+              <Button
+                variant="secondary"
+                className="group-hover:opacity-100 opacity-0 absolute top-2 right-2 z-10"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleImagePositioning(id)
+                }}
+              >
+                {t('chat:messages:imagePositioning')}
+              </Button>
+            )}
+          </span>
+        )
+      }
+      
       return (
         <PhotoView src={props.src}>
           <span className="group block relative overflow-hidden rounded-md my-2 last:mb-4">
