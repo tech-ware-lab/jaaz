@@ -304,7 +304,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             <PlusIcon className="size-4" />
           </Button>
 
-          <ModelSelectorV2 />
+          <ModelSelector />
         </div>
 
         {pending ? (
