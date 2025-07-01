@@ -65,7 +65,9 @@ export const ConfigsProvider = ({
 
       setTextModels(textModels || [])
       setImageModels(imageModels || [])
-      setTools(modelList.filter((m) => m.type == 'tool') || [])
+      setTools(
+        modelList.filter((m) => m.type == 'tool' || m.type == 'image') || []
+      )
     }
   }, [modelList, setImageModel, setTextModel, setTextModels, setImageModels])
 
