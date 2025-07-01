@@ -43,14 +43,7 @@ IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with he
             video_generation_prompt + error_handling_prompt
 
         # 视频设计智能体不需要切换到其他智能体
-        handoffs: List[Dict[str, Any]] = [
-            {
-                'agent_name': 'image_designer',
-                'description': """
-                        Transfer user to the image_designer. About this agent: Specialize in generating images.
-                        """
-            },
-        ]
+        handoffs: List[Dict[str, Any]] = []
 
         super().__init__(
             name='video_designer',
