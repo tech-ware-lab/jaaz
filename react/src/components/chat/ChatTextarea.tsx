@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import ModelSelector from './ModelSelector'
+import ModelSelectorV2 from './ModelSelectorV2'
 
 type ChatTextareaProps = {
   pending: boolean
@@ -309,7 +310,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             <PlusIcon className="size-4" />
           </Button>
 
-          <ModelSelector />
+          <ModelSelectorV2 />
         </div>
 
         {pending ? (
