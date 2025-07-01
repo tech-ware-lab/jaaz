@@ -114,7 +114,7 @@ async def langgraph_multi_agent(
         ).compile()  # type: ignore
 
         # 4. 创建上下文
-        context = _create_context(canvas_id, session_id, image_model)
+        context = _create_context(canvas_id, session_id, image_model, video_model)
 
         # 5. 流处理
         processor = StreamProcessor(
