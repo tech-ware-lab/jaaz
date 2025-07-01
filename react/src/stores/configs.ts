@@ -1,3 +1,4 @@
+import { ModelInfo } from '@/api/model'
 import { DEFAULT_PROVIDERS_CONFIG } from '@/constants'
 import { LLMConfig, Model } from '@/types/types'
 import { create } from 'zustand'
@@ -12,6 +13,9 @@ type ConfigsStore = {
   setTextModels: (models: Model[]) => void
   setImageModels: (models: Model[]) => void
   setVideoModels: (models: Model[]) => void
+
+  tools: ModelInfo[]
+  setTools: (models: ModelInfo[]) => void
 
   textModel?: Model
   imageModel?: Model
@@ -70,6 +74,9 @@ const useConfigsStore = create<ConfigsStore>((set) => ({
 
   providers: DEFAULT_PROVIDERS_CONFIG,
   setProviders: (providers) => set({ providers }),
+
+  tools: [],
+  setTools: (tools) => set({ tools }),
 }))
 
 export default useConfigsStore
