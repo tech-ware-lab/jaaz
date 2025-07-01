@@ -1,6 +1,6 @@
 from fastapi.responses import FileResponse
 from common import DEFAULT_PORT
-from tools.image_generators import generate_file_id
+from tools.image_generation_utils import generate_file_id
 from services.db_service import db_service
 import traceback
 from services.config_service import USER_DATA_DIR, FILES_DIR
