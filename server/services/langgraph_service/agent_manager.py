@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Optional
 from langgraph.prebuilt import create_react_agent  # type: ignore
 from langchain_core.tools import BaseTool
 
-from .configs import PlannerAgentConfig, ImageDesignerAgentConfig, VideoDesignerAgentConfig, create_handoff_tool
+from .configs import PlannerAgentConfig, ImageDesignerAgentConfig, VideoDesignerAgentConfig, ImageVideoCreatorAgentConfig, create_handoff_tool
 from services.tool_service import tool_service
 
 
@@ -32,6 +32,11 @@ class AgentManager:
         planner_agent = AgentManager._create_langgraph_agent(
             model, planner_config)
 
+        image_video_creator_config = ImageVideoCreatorAgentConfig(
+            system_prompt).get_config()
+        image_video_creator_agent = AgentManager._create_langgraph_agent(
+            model, image_video_creator_config)
+
         image_designer_config = ImageDesignerAgentConfig(
             tool_name, system_prompt).get_config()
         image_designer_agent = AgentManager._create_langgraph_agent(
@@ -42,7 +47,7 @@ class AgentManager:
         video_designer_agent = AgentManager._create_langgraph_agent(
             model, video_designer_config)
 
-        return [planner_agent, image_designer_agent, video_designer_agent]
+        return [planner_agent, image_video_creator_agent, image_designer_agent, video_designer_agent]
 
     @staticmethod
     def _create_langgraph_agent(
