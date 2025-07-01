@@ -14,7 +14,7 @@ from common import DEFAULT_PORT
 from services.config_service import FILES_DIR
 from services.db_service import db_service
 from services.websocket_service import send_to_websocket, broadcast_session_update
-from tools.image_generation_utils import generate_new_image_element, generate_file_id
+from tools.image_generation_utils import save_image_to_canvas
 
 # Import all generators
 from .img_generators import (
@@ -25,6 +25,7 @@ from .img_generators import (
     OpenAIGenerator,
     VolcesImageGenerator,
 )
+
 
 class GenerateImageInputSchema(BaseModel):
     prompt: str = Field(
@@ -109,45 +110,8 @@ async def generate_image(
             **extra_kwargs
         )
 
-        file_id = generate_file_id()
-        url = f'/api/file/{filename}'
-
-        file_data = {
-            'mimeType': mime_type,
-            'id': file_id,
-            'dataURL': url,
-            'created': int(time.time() * 1000),
-        }
-
-        new_image_element = await generate_new_image_element(canvas_id, file_id, {
-            'width': width,
-            'height': height,
-        })
-
-        # update the canvas data, add the new image element
-        canvas_data = await db_service.get_canvas_data(canvas_id)
-        if 'data' not in canvas_data:
-            canvas_data['data'] = {}
-        if 'elements' not in canvas_data['data']:
-            canvas_data['data']['elements'] = []
-        if 'files' not in canvas_data['data']:
-            canvas_data['data']['files'] = {}
-
-        canvas_data['data']['elements'].append(new_image_element)
-        canvas_data['data']['files'][file_id] = file_data
-
-        image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
-
-        # print('🛠️canvas_data', canvas_data)
-
-        await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data['data']))
-
-        await broadcast_session_update(session_id, canvas_id, {
-            'type': 'image_generated',
-            'element': new_image_element,
-            'file': file_data,
-            'image_url': image_url,
-        })
+        # 保存图像到画布
+        image_url = await save_image_to_canvas(session_id, canvas_id, filename, mime_type, width, height)
 
         return f"image generated successfully ![image_id: {filename}]({image_url})"
 
