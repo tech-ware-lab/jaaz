@@ -121,11 +121,14 @@ async def get_models():
         models = provider_config.get('models', {})
         for model_name in models:
             model = models[model_name]
+            model_type = model.get('type', 'text')
+            
+                
             res.append({
                 'provider': provider,
                 'model': model_name,
                 'url': provider_url,
-                'type': model.get('type', 'text')
+                'type': model_type
             })
 
     return res
