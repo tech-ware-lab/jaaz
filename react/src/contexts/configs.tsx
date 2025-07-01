@@ -14,8 +14,14 @@ export const ConfigsProvider = ({
   children: React.ReactNode
 }) => {
   const configsStore = useConfigsStore()
-  const { setTextModels, setImageModels, setVideoModels, setTextModel, setImageModel, setVideoModel } =
-    configsStore
+  const {
+    setTextModels,
+    setImageModels,
+    setVideoModels,
+    setTextModel,
+    setImageModel,
+    setVideoModel,
+  } = configsStore
 
   const { data: modelList, refetch: refreshModels } = useQuery({
     queryKey: ['list_models'],
@@ -52,7 +58,7 @@ export const ConfigsProvider = ({
       } else {
         setImageModel(modelList.find((m) => m.type == 'image'))
       }
-      
+
       const videoModel = localStorage.getItem('video_model')
       if (
         videoModel &&
@@ -62,20 +68,38 @@ export const ConfigsProvider = ({
           modelList.find((m) => m.provider + ':' + m.model == videoModel)
         )
       } else {
-        setVideoModel(modelList.find((m) => m.type == 'video-i2v' || m.type == 'video-t2v' || (Array.isArray(m.type) && (m.type.includes('video-i2v') || m.type.includes('video-t2v')))))
+        setVideoModel(
+          modelList.find(
+            (m) =>
+              m.type == 'video' ||
+              (Array.isArray(m.type) && m.type.includes('video'))
+          )
+        )
       }
 
       const textModels = modelList?.filter((m) => m.type == 'text')
       const imageModels = modelList?.filter(
         (m) => m.type == 'image' || m.type == 'tool'
       )
-      const videoModels = modelList?.filter((m) => m.type == 'video-i2v' || m.type == 'video-t2v' || (Array.isArray(m.type) && (m.type.includes('video-i2v') || m.type.includes('video-t2v'))))
+      const videoModels = modelList?.filter(
+        (m) =>
+          m.type == 'video' ||
+          (Array.isArray(m.type) && m.type.includes('video'))
+      )
 
       setTextModels(textModels || [])
       setImageModels(imageModels || [])
       setVideoModels(videoModels || [])
     }
-  }, [modelList, setImageModel, setTextModel, setTextModels, setImageModels, setVideoModel, setVideoModels])
+  }, [
+    modelList,
+    setImageModel,
+    setTextModel,
+    setTextModels,
+    setImageModels,
+    setVideoModel,
+    setVideoModels,
+  ])
 
   return (
     <ConfigsContext.Provider

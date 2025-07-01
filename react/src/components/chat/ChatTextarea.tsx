@@ -331,7 +331,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             variant="default"
             size="icon"
             onClick={handleSendPrompt}
-            disabled={!textModel || !imageModel || prompt.length === 0}
+            disabled={!textModel || (!imageModel && !videoModel) || prompt.length === 0}
           >
             <ArrowUp className="size-4" />
           </Button>

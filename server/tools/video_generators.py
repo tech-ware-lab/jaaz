@@ -24,7 +24,7 @@ from services.db_service import db_service
 from services.websocket_service import send_to_websocket, broadcast_session_update
 from common import DEFAULT_PORT
 from pydantic import BaseModel, Field
-from tools.video_generators.video_generators import (
+from tools.vid_generators import (
     generate_video_replicate,
     generate_video_volces,
     generate_video_google,
@@ -117,99 +117,12 @@ def generate_video_file_id():
     return "vi_" + generate(size=8)
 
 
-@tool("generate_video", parse_docstring=True)
-async def generate_video_tool(
-    prompt: str,
-    aspect_ratio: str,
-    tool_call_id: Annotated[str, InjectedToolCallId],
-    config: RunnableConfig,
-):
-    """Generate a video using text prompt
-
-    Args:
-        prompt: Required. The prompt for video generation. If you want to edit a video, please describe what you want to edit in the prompt.
-        aspect_ratio: Required. Aspect ratio of the video, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16 Choose the best fitting aspect ratio according to the prompt.
-    """
-    print("🛠️ Video tool_call_id", tool_call_id)
-    ctx = config.get("configurable", {})
-    canvas_id = ctx.get("canvas_id", "")
-    session_id = ctx.get("session_id", "")
-
-    # Inject the tool call id into the context
-    ctx["tool_call_id"] = tool_call_id
-    args_json = {
-        "prompt": prompt,
-        "aspect_ratio": aspect_ratio,
-    }
-    print("args_json", args_json)
-    video_model = {"model": "wan-video/wan-2.1-1.3b", "provider": "replicate"}
-    if not video_model:
-        raise ValueError("Video model is not selected")
-    model = video_model.get("model", "")
-    try:
-        mime_type, width, height, filename = await generate_video_replicate(
-            prompt, model, aspect_ratio
-        )
-        file_id = generate_video_file_id()
-        url = f"/api/file/{filename}"
-
-        file_data = {
-            "mimeType": mime_type,
-            "id": file_id,
-            "dataURL": url,
-            "created": int(time.time() * 1000),
-        }
-
-        new_video_element = await generate_new_video_element(
-            canvas_id,
-            file_id,
-            {
-                "width": width,
-                "height": height,
-            },
-        )
-
-        # update the canvas data, add the new video element
-        canvas_data = await db_service.get_canvas_data(canvas_id)
-        if "data" not in canvas_data:
-            canvas_data["data"] = {}
-        if "elements" not in canvas_data["data"]:
-            canvas_data["data"]["elements"] = []
-        if "files" not in canvas_data["data"]:
-            canvas_data["data"]["files"] = {}
-
-        canvas_data["data"]["elements"].append(new_video_element)
-        canvas_data["data"]["files"][file_id] = file_data
-
-        print("🛠️canvas_data", canvas_data)
-
-        await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data["data"]))
-
-        await send_to_websocket(
-            session_id,
-            {
-                "type": "video_generated",
-                "video_data": {
-                    "element": new_video_element,
-                    "file": file_data,
-                },
-            },
-        )
-
-        return f"video generated successfully ![video_id: {filename}](http://localhost:{DEFAULT_PORT}/api/file/{filename})"
-    except Exception as e:
-        print(f"Error generating video: {str(e)}")
-        traceback.print_exc()
-        await send_to_websocket(session_id, {"type": "error", "error": str(e)})
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @tool(
-    "volces_generate_video",
+    "generate_video",
     description="Generate a video using text prompt or image.",
     args_schema=VolcesGenerateVideoInputSchema,
 )
-async def volces_generate_video(
+async def generate_video(
     prompt,
     tool_call_id: Annotated[str, InjectedToolCallId],
     config: RunnableConfig,
@@ -227,9 +140,7 @@ async def volces_generate_video(
     # Inject the tool call id into the context
     ctx["tool_call_id"] = tool_call_id
 
-    model = ctx.get("model_info", {}).get("video-t2v", {})
-    if model is None:
-        model = ctx.get("model_info", {}).get("video-i2v", None)
+    model = ctx.get("model_info", {}).get("video", {})
     if model is None:
         raise ValueError("Video model is not selected")
     video_model = model.get("model", {})

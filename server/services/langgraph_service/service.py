@@ -43,7 +43,7 @@ async def langgraph_multi_agent(
         # 2. 创建智能体
         agents = AgentManager.create_agents(
             model, tool_name, system_prompt or "")
-        agent_names = ['planner', 'image_designer']
+        agent_names = ['planner', 'image_designer', 'video_designer']
         last_agent = AgentManager.get_last_active_agent(messages, agent_names)
 
         print('👇last_agent', last_agent)
@@ -117,8 +117,7 @@ def _create_context(canvas_id: str, session_id: str, image_model: ModelInfo, vid
     """创建上下文信息"""
     model_info = {'image': image_model}
     if video_model:
-        model_info['video-t2v'] = video_model
-        model_info['video-i2v'] = video_model
+        model_info['video'] = video_model
     
     return {
         'canvas_id': canvas_id,

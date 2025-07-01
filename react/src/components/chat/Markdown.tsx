@@ -28,15 +28,16 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
     const cleanedContent = content.replace(/<think>\s*<\/think>/g, '')
     const openTags = (cleanedContent.match(/<think>/g) || []).length
     const closeTags = (cleanedContent.match(/<\/think>/g) || []).length
-    const fixedContent = openTags > closeTags 
-      ? cleanedContent + '</think>'.repeat(openTags - closeTags)
-      : cleanedContent
+    const fixedContent =
+      openTags > closeTags
+        ? cleanedContent + '</think>'.repeat(openTags - closeTags)
+        : cleanedContent
 
     const thinkRegex = /<think>([\s\S]*?)<\/think>/g
     const parts = []
     let lastIndex = 0
     let match
-    
+
     while ((match = thinkRegex.exec(fixedContent)) !== null) {
       if (match.index > lastIndex) {
         const beforeContent = fixedContent.slice(lastIndex, match.index).trim()
@@ -44,33 +45,36 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
           parts.push({ type: 'normal', content: beforeContent })
         }
       }
-      
+
       const thinkContent = match[1]?.trim()
       if (thinkContent) {
         parts.push({ type: 'think', content: thinkContent })
       }
       lastIndex = match.index + match[0].length
     }
-    
+
     if (lastIndex < fixedContent.length) {
       const remainingContent = fixedContent.slice(lastIndex).trim()
       if (remainingContent) {
         parts.push({ type: 'normal', content: remainingContent })
       }
     }
-    
+
     if (parts.length === 0 && fixedContent.trim()) {
       parts.push({ type: 'normal', content: fixedContent.trim() })
     }
-    
-    console.log('Think tags processing:', { parts, originalContent: children.substring(0, 100) })
-    
+
+    console.log('Think tags processing:', {
+      parts,
+      originalContent: children.substring(0, 100),
+    })
+
     return { parts, hasUnclosed: openTags > closeTags }
   }
 
   // Check if it should auto-expand
-  const { parts, hasUnclosed } = children.includes('<think>') 
-    ? processThinkTags(children) 
+  const { parts, hasUnclosed } = children.includes('<think>')
+    ? processThinkTags(children)
     : { parts: [], hasUnclosed: false }
 
   useEffect(() => {
@@ -227,12 +231,40 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
         </PhotoView>
       )
     },
+    video: ({ node, children, ...props }) => {
+      const id = filesArray.find((file) => props.src?.includes(file.url))?.id
+      return (
+        <span className="group block relative overflow-hidden rounded-md my-2 last:mb-4">
+          <video
+            className="w-full max-w-full h-auto rounded-md"
+            controls
+            preload="metadata"
+            {...props}
+          >
+            Your browser does not support the video tag.
+          </video>
+
+          {id && (
+            <Button
+              variant="secondary"
+              className="group-hover:opacity-100 opacity-0 absolute top-2 right-2 z-10"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleImagePositioning(id)
+              }}
+            >
+              {t('chat:messages:imagePositioning')}
+            </Button>
+          )}
+        </span>
+      )
+    },
   }
   // Special handling if content contains think tags
   if (children.includes('<think>')) {
     return (
       <div className="space-y-3 flex flex-col w-full max-w-full">
-        {parts.map((part, index) => (
+        {parts.map((part, index) =>
           part.type === 'think' ? (
             <TextFoldTag
               key={index}
@@ -240,19 +272,25 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
               onToggleExpand={() => setIsThinkExpanded(!isThinkExpanded)}
             >
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={components}
+                >
                   {part.content}
                 </ReactMarkdown>
               </div>
             </TextFoldTag>
           ) : (
             <div key={index} className="w-full max-w-full">
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={components}
+              >
                 {part.content}
               </ReactMarkdown>
             </div>
           )
-        ))}
+        )}
       </div>
     )
   }
