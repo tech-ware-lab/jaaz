@@ -4,7 +4,7 @@
   "delete": "删除画布",
   "share": "分享画布",
   "export": "导出画布",
-  "exportImages": "导出图片",
+  "exportImages": "导出",
   "import": "导入画布",
   "untitled": "无标题",
   "back": "返回",
@@ -19,8 +19,8 @@
     "failedToRename": "重命名画布失败",
     "failedToDelete": "删除画布失败",
     "failedToCreateFile": "创建文件失败",
-    "noImagesSelected": "未选中图片",
-    "exportingImages": "导出图片中...",
+    "nothingSelected": "未选中素材",
+    "exportingAssets": "导出素材中...",
     "failedToExportImages": "导出图片失败"
   },
   "deleteDialog": {
