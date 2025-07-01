@@ -101,7 +101,7 @@ async def langgraph_multi_agent(
         # 2. 创建智能体
         agents = AgentManager.create_agents(
             model, tool_name, system_prompt or "")
-        agent_names = ['planner', 'image_designer', 'video_designer']
+        agent_names = ['planner', 'image_video_creator', 'image_designer', 'video_designer']
         last_agent = AgentManager.get_last_active_agent(
             fixed_messages, agent_names)
 
