@@ -71,7 +71,28 @@ const PROVIDER_OPTIONS = [
       },
     },
   },
-
+  {
+    value: 'GoogleVertex',
+    label: 'GoogleVertex',
+    data: {
+      apiUrl: '',
+      models: {
+        'gemini-2.5-flash': { type: 'text' },
+        'gemini-2.5-pro': { type: 'text' },
+        'gemini-2.5-flash-lite-preview-06-17': { type: 'text' },
+        'gemini-2.0-flash': { type: 'text' },
+        'gemini-2.0-flash-lite': { type: 'text' },
+        'gemini-2.0-flash-preview-image-generation': { type: 'image' },
+        'imagen-4.0-generate-preview-06-06': { type: 'image' },
+        'imagen-4.0-fast-generate-preview-06-06': { type: 'image' },
+        'imagen-4.0-ultra-generate-preview-06-06': { type: 'image' },
+        'imagen-3.0-generate-002': { type: 'image' },
+        'imagen-3.0-fast-generate-001': { type: 'image' },
+        'veo-3.0-generate-preview': { type: 'video' },
+        'veo-2.0-generate-001': { type: 'video' },
+      },
+    },
+  },
   {
     value: '硅基流动',
     label: '硅基流动 (SiliconFlow)',
