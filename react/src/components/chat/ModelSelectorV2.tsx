@@ -12,77 +12,86 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuLabel,
+  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
 import { useState, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { Badge } from '../ui/badge'
+import { useTranslation } from 'react-i18next'
+import { PROVIDER_NAME_MAPPING } from '@/constants'
+import { LLMConfig, Model } from '@/types/types'
+import { listModels, ModelInfo } from '@/api/model'
+import { useQuery } from '@tanstack/react-query'
 
 const ModelSelector: React.FC = () => {
-  const {
-    textModel,
-    imageModel,
-    setTextModel,
-    setImageModel,
-    textModels,
-    imageModels,
-  } = useConfigs()
+  const { textModel, setTextModel, textModels, tools, setTools } = useConfigs()
+  const selectedTools = tools.map((tool) => tool.provider + ':' + tool.model)
 
-  // 多选图像模型状态
-  const [selectedImageModels, setSelectedImageModels] = useState<string[]>([])
+  const { data: modelList = [], refetch: refreshModels } = useQuery({
+    queryKey: ['list_models'],
+    queryFn: () => listModels(),
+    staleTime: 1 * 60 * 1000, // 5分钟内数据被认为是新鲜的
+    placeholderData: (previousData) => previousData, // 关键：显示旧数据同时获取新数据
+    refetchOnWindowFocus: true, // 窗口获得焦点时重新获取
+    refetchOnReconnect: true, // 网络重连时重新获取
+  })
+  const toolsList = modelList.filter(
+    (m) => m.type == 'tool' || m.type == 'image'
+  )
 
   // 从localStorage加载已选择的图像模型
   useEffect(() => {
-    const saved = localStorage.getItem('selected_image_models')
+    const saved = localStorage.getItem('selected_multi_tools')
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        setSelectedImageModels(parsed)
+        // setSelectedTools(parsed)
       } catch (e) {
         console.error('Failed to parse selected image models:', e)
       }
-    } else if (imageModel) {
+    } else if (tools) {
       // 如果没有保存的多选数据，但有当前选中的模型，则初始化为该模型
-      const modelKey = imageModel.provider + ':' + imageModel.model
-      setSelectedImageModels([modelKey])
+      const toolKeys = tools.map((tool) => tool.provider + ':' + tool.model)
+      // setSelectedTools(toolKeys)
     }
-  }, [imageModel])
+  }, [tools])
 
   // 处理图像模型多选
   const handleImageModelToggle = (modelKey: string, checked: boolean) => {
-    let newSelected: string[]
+    let newSelected: ModelInfo[] = []
+    const tool = toolsList.find((m) => m.provider + ':' + m.model === modelKey)
     if (checked) {
-      newSelected = [...selectedImageModels, modelKey]
-    } else {
-      newSelected = selectedImageModels.filter((key) => key !== modelKey)
-    }
-
-    setSelectedImageModels(newSelected)
-    localStorage.setItem('selected_image_models', JSON.stringify(newSelected))
-
-    // 如果有选中的模型，将第一个设为当前imageModel（保持向后兼容）
-    if (newSelected.length > 0) {
-      const firstModel = imageModels?.find(
-        (m) => m.provider + ':' + m.model === newSelected[0]
-      )
-      if (firstModel) {
-        setImageModel(firstModel)
-        localStorage.setItem('image_model', newSelected[0])
+      if (tool) {
+        newSelected = [...tools, tool]
       }
+    } else {
+      newSelected = tools.filter((t) => t.provider + ':' + t.model !== modelKey)
     }
+
+    setTools(newSelected)
+    localStorage.setItem('selected_multi_tools', JSON.stringify(newSelected))
   }
 
   // 获取显示文本
   const getSelectedImageModelsText = () => {
-    if (selectedImageModels.length === 0) return '选择图像模型'
-    if (selectedImageModels.length === 1) {
-      const model = imageModels?.find(
-        (m) => m.provider + ':' + m.model === selectedImageModels[0]
-      )
-      return model?.model || selectedImageModels[0]
-    }
-    return `已选择 ${selectedImageModels.length} 个模型`
+    if (selectedTools.length === 0) return '‼️'
+    return `${selectedTools.length}`
   }
+
+  // Group models by provider
+  const groupModelsByProvider = (models: typeof textModels) => {
+    const grouped: { [provider: string]: typeof textModels } = {}
+    models?.forEach((model) => {
+      if (!grouped[model.provider]) {
+        grouped[model.provider] = []
+      }
+      grouped[model.provider].push(model)
+    })
+    return grouped
+  }
+  const groupedTools = groupModelsByProvider(toolsList)
 
   return (
     <>
@@ -115,54 +124,55 @@ const ModelSelector: React.FC = () => {
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className="w-fit max-w-[40%] bg-background justify-between"
+            className="w-fit max-w-[40%] bg-background justify-between overflow-hidden"
           >
             <span>🎨</span>
-            <span className="ml-2">{getSelectedImageModelsText()}</span>
-            <ChevronDown className="ml-2 h-4 w-4" />
+            <span className="bg-primary text-primary-foreground rounded-full text-[0.7rem] w-[1.5rem]">
+              {getSelectedImageModelsText()}
+            </span>
+            <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-100">
-          <DropdownMenuLabel>
-            <div className="flex items-center gap-2">模型</div>
-          </DropdownMenuLabel>
-          {imageModels?.slice(0, 6).map((model) => {
-            const modelKey = model.provider + ':' + model.model
-            return (
-              <DropdownMenuCheckboxItem
-                key={modelKey}
-                checked={selectedImageModels.includes(modelKey)}
-                onCheckedChange={(checked) =>
-                  handleImageModelToggle(modelKey, checked)
-                }
-              >
-                {model.model}
-              </DropdownMenuCheckboxItem>
-            )
-          })}
-          <DropdownMenuSeparator />
-          <div className="flex items-center gap-2">
-            <img
-              src={
-                'https://framerusercontent.com/images/3cNQMWKzIhIrQ5KErBm7dSmbd2w.png'
+          {Object.entries(groupedTools).map(([provider, models]) => {
+            const getProviderDisplayName = (provider: string) => {
+              const providerInfo = PROVIDER_NAME_MAPPING[provider]
+              return {
+                name: providerInfo?.name || provider,
+                icon: providerInfo?.icon,
               }
-              alt={'ComfyUI'}
-              className="w-6 h-6 rounded-full"
-            />
-            工作流
-          </div>
-          {imageModels?.slice(3).map((model) => {
-            const modelKey = model.provider + ':' + model.model
+            }
             return (
-              <DropdownMenuCheckboxItem
-                key={modelKey}
-                checked={selectedImageModels.includes(modelKey)}
-                onCheckedChange={(checked) =>
-                  handleImageModelToggle(modelKey, checked)
-                }
-              >
-                {model.model}
-              </DropdownMenuCheckboxItem>
+              <DropdownMenuGroup key={provider}>
+                <DropdownMenuLabel>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <img
+                      src={getProviderDisplayName(provider).icon}
+                      alt={getProviderDisplayName(provider).name}
+                      className="w-4 h-4 rounded-full"
+                    />
+                    {getProviderDisplayName(provider).name}
+                  </div>
+                </DropdownMenuLabel>
+                {models.map((model) => {
+                  const modelKey = model.provider + ':' + model.model
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={modelKey}
+                      checked={selectedTools.includes(modelKey)}
+                      onCheckedChange={(checked) =>
+                        handleImageModelToggle(modelKey, checked)
+                      }
+                      onSelect={(e) => {
+                        e.preventDefault()
+                      }}
+                    >
+                      {model.model}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+                <DropdownMenuSeparator />
+              </DropdownMenuGroup>
             )
           })}
         </DropdownMenuContent>

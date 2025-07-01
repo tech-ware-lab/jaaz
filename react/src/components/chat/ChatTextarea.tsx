@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import ModelSelector from './ModelSelector'
+import ModelSelectorV2 from './ModelSelectorV2'
 
 type ChatTextareaProps = {
   pending: boolean
@@ -41,7 +42,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   onCancelChat,
 }) => {
   const { t } = useTranslation()
-  const { textModel, imageModel, videoModel, imageModels, setShowInstallDialog } =
+  const { textModel, imageModel, videoModel } =
     useConfigs()
   const [prompt, setPrompt] = useState('')
   const textareaRef = useRef<TextAreaRef>(null)
@@ -97,11 +98,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       toast.error(t('chat:textarea.selectModel'))
       return
     }
-    // Check if there are image models, if not, prompt to install ComfyUI
-    // if (!imageModel || imageModels.length === 0) {
-    //   setShowInstallDialog(true)
-    //   return
-    // }
+
     let value = prompt
     if (value.length === 0 || value.trim() === '') {
       toast.error(t('chat:textarea.enterPrompt'))
@@ -137,7 +134,6 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     textModel,
     imageModel,
     videoModel,
-    imageModels,
     prompt,
     onSendMessages,
     images,

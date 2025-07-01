@@ -1,4 +1,4 @@
-type ModelInfo = {
+export type ModelInfo = {
   provider: string
   model: string
   type: 'text' | 'image' | 'tool'
