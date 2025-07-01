@@ -1,0 +1,41 @@
+{
+    "volces": {
+        "model_type": {
+            "doubao-seedance-1-0-pro-250528": ["t2v", "i2v"],
+            "doubao-seedance-1-0-lite-i2v-250428": ["i2v"],
+            "doubao-seedance-1-0-lite-t2v-250428": ["t2v"],
+            "doubao-seaweed-241128": ["t2v", "i2v"]
+        },
+        "input_types": {
+            "prompt": {
+                "description": "Required. The prompt for image generation.",
+                "type": "str"
+            },
+            "resolution": {
+                "default": "480p",
+                "description": "Optional. The resolution of the video, only these values are allowed, 480p, 720p, 1080p.",
+                "type": "str"
+            },
+            "duration": {
+                "default": 5,
+                "description": "Optional. The duration of the video in seconds, only these values are allowed, 5, 10.",
+                "type": "int"
+            },
+            "camerafixed": {
+                "default": false,
+                "description": "Optional. Whether to control the camera not moved.",
+                "type": "bool"
+            },
+            "image_name": {
+                "default": null,
+                "description": "Optional; The name of the image to control as the first frame.",
+                "type": "str"
+            },
+            "aspect_ratio": {
+                "default": "16:9",
+                "description": "Optional. The aspect ratio of the video, only these values are allowed, 1:1, 16:9, 4:3, 3:4, 9:16.",
+                "type": "str"
+            }
+        }
+    }
+}

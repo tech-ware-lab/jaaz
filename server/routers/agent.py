@@ -105,6 +105,7 @@ async def get_models():
             'url': comfyui_url,
             'type': 'tool'
         })
+        
     # Handle providers that are not ollama or comfyui
     for provider in config.keys():
         if provider in ['ollama', 'comfyui']:
