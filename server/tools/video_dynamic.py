@@ -113,7 +113,7 @@ def _get_video_model_type(provider:str, model:str) -> str | list[str]:
     return video_model_types[provider]["model_type"][model]
 
 def _get_provider_options(provider:str) -> dict[str, dict[str, str]]:
-    with open(os.path.join(os.path.dirname(__file__), "vid_generators", "config", "video_type.toml"), 'r') as f:
+    with open(os.path.join(os.path.dirname(__file__), "vid_generators", "config", "video.json"), 'r') as f:
         provider_options = json.load(f)
     return provider_options[provider]["input_types"]
 
