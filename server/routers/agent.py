@@ -123,14 +123,6 @@ async def get_models():
             model = models[model_name]
             model_type = model.get('type', 'text')
             
-            # Handle video models with multiple types
-            if isinstance(model_type, list):
-                # For models like 'doubao-seedance-1-0-pro-250528': { type: ['video-i2v', 'video-t2v'] }
-                # Keep the original list of types
-                pass  # model_type remains as list
-            elif isinstance(model_type, str) and model_type.startswith('video'):
-                # Keep specific video types like 'video-i2v', 'video-t2v'
-                pass  # model_type remains as original string
                 
             res.append({
                 'provider': provider,
