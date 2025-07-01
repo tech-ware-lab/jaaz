@@ -72,7 +72,7 @@ async def serve_react_app():
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/socket.io')
 
 if __name__ == "__main__":
-    # bypas localhost request for proxy, fix ollama proxy issue
+    # bypass localhost request for proxy, fix ollama proxy issue
     _bypass = {"127.0.0.1", "localhost", "::1"}
     current = set(os.environ.get("no_proxy", "").split(",")) | set(
         os.environ.get("NO_PROXY", "").split(","))
