@@ -53,7 +53,7 @@ class SeedanceV1JaazProvider(SeedanceV1ProviderBase):
     def _build_request_payload(
         self,
         prompt: str,
-        resolution: str = "720p",
+        resolution: str = "480p",
         duration: int = 5,
         aspect_ratio: str = "16:9",
         camera_fixed: bool = True,
