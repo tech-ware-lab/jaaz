@@ -27,6 +27,7 @@ type ChatTextareaProps = {
     configs: {
       textModel: Model
       imageModel: Model
+      videoModel?: Model
     }
   ) => void
   onCancelChat?: () => void
@@ -41,7 +42,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   onCancelChat,
 }) => {
   const { t } = useTranslation()
-  const { textModel, imageModel } = useConfigs()
+  const { textModel, imageModel, videoModel } =
+    useConfigs()
   const [prompt, setPrompt] = useState('')
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
@@ -125,11 +127,13 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         model: '',
         url: '',
       },
+      videoModel: videoModel,
     })
   }, [
     pending,
     textModel,
     imageModel,
+    videoModel,
     prompt,
     onSendMessages,
     images,
@@ -323,7 +327,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             variant="default"
             size="icon"
             onClick={handleSendPrompt}
-            disabled={!textModel || !imageModel || prompt.length === 0}
+            disabled={!textModel || (!imageModel && !videoModel) || prompt.length === 0}
           >
             <ArrowUp className="size-4" />
           </Button>

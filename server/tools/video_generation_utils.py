@@ -3,9 +3,13 @@ from utils.http_client import HttpClient
 
 import aiofiles
 
+from nanoid import generate
 # import httpx
 import mimetypes
 from pymediainfo import MediaInfo
+
+def generate_video_file_id():
+    return "vi_" + generate(size=8)
 
 
 async def get_video_info_and_save(
