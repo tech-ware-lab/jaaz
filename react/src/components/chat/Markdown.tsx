@@ -207,10 +207,10 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
     },
     img: ({ node, children, ...props }) => {
       const id = filesArray.find((file) => props.src?.includes(file.url))?.id
-      
-      // 检查文件扩展名来判断是否为视频文件
-      const isVideo = props.src && /\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(props.src)
-      
+
+      // 检查alt文本是否包含video_id标识，这表示这是一个视频文件
+      const isVideo = props.alt && props.alt.includes('video_id:')
+
       if (isVideo) {
         return (
           <span className="group block relative overflow-hidden rounded-md my-2 last:mb-4">
@@ -239,7 +239,7 @@ const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children }) => {
           </span>
         )
       }
-      
+
       return (
         <PhotoView src={props.src}>
           <span className="group block relative overflow-hidden rounded-md my-2 last:mb-4">
