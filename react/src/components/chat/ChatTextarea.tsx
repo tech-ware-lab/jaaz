@@ -41,7 +41,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   onCancelChat,
 }) => {
   const { t } = useTranslation()
-  const { textModel, imageModel } = useConfigs()
+  const { textModel, imageModel } =
+    useConfigs()
   const [prompt, setPrompt] = useState('')
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
@@ -127,15 +128,15 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       },
     })
   }, [
-    pending,
-    textModel,
-    imageModel,
-    prompt,
-    onSendMessages,
-    images,
-    messages,
-    t,
-  ])
+     pending,
+     textModel,
+     imageModel,
+     prompt,
+     onSendMessages,
+     images,
+     messages,
+     t,
+   ])
 
   // Drop Area
   const dropAreaRef = useRef<HTMLDivElement>(null)

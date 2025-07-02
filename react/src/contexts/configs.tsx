@@ -14,13 +14,8 @@ export const ConfigsProvider = ({
   children: React.ReactNode
 }) => {
   const configsStore = useConfigsStore()
-  const {
-    setTextModels,
-    setImageModels,
-    setTextModel,
-    setImageModel,
-    setTools,
-  } = configsStore
+  const { setTextModels, setImageModels, setTextModel, setImageModel } =
+    configsStore
 
   const { data: modelList, refetch: refreshModels } = useQuery({
     queryKey: ['list_models'],
@@ -66,7 +61,13 @@ export const ConfigsProvider = ({
       setTextModels(textModels || [])
       setImageModels(imageModels || [])
     }
-  }, [modelList, setImageModel, setTextModel, setTextModels, setImageModels])
+  }, [
+    modelList,
+    setImageModel,
+    setTextModel,
+    setTextModels,
+    setImageModels,
+  ])
 
   return (
     <ConfigsContext.Provider
