@@ -55,7 +55,7 @@ export const ConfigsProvider = ({
 
       const textModels = modelList?.filter((m) => m.type == 'text')
       const imageModels = modelList?.filter(
-        (m) => m.type == 'image' || m.type == 'tool'
+        (m) => m.type == 'image' || m.type == 'tool' || m.type == 'video'
       )
 
       setTextModels(textModels || [])
