@@ -35,60 +35,48 @@ class SeedanceV1ProviderBase(ABC):
         pass
 
 
-def get_seedance_v1_config() -> Dict[str, Any]:
-    """Get Seedance V1 model configuration"""
+def get_provider_config(provider_name: str) -> Dict[str, Any]:
+    """Get configuration for specific provider"""
     app_config = config_service.app_config
+    provider_config = app_config.get(provider_name, {})
 
-    # Get video configuration
-    video_config = app_config.get("video", {})
-    models_config = video_config.get("models", {})
-    seedance_config = models_config.get("seedance_v1", {})
+    if not provider_config.get("url") or not provider_config.get("api_key"):
+        raise ValueError(
+            f"Provider '{provider_name}' is not properly configured")
 
-    # If no specific config, fall back to jaaz config for backward compatibility
-    if not seedance_config:
-        jaaz_config = app_config.get("jaaz", {})
-        return {
-            "default_provider": "jaaz_cloud",
-            "providers": {
-                "jaaz_cloud": {
-                    "url": jaaz_config.get("url", ""),
-                    "api_key": jaaz_config.get("api_key", ""),
-                    "model_name": "doubao-seedance-1-0-pro"
-                }
-            }
-        }
-
-    return seedance_config
+    return {
+        "url": provider_config.get("url", ""),
+        "api_key": provider_config.get("api_key", ""),
+        "model_name": "doubao-seedance-1-0-pro-250528"
+    }
 
 
 def get_default_provider() -> str:
     """Get default provider for Seedance V1"""
-    config = get_seedance_v1_config()
-    return config.get("default_provider", "jaaz_cloud")
+    app_config = config_service.app_config
 
+    # Check if jaaz is configured first (preferred)
+    jaaz_config = app_config.get("jaaz", {})
+    if jaaz_config.get("url") and jaaz_config.get("api_key"):
+        return "jaaz_cloud"
 
-def get_provider_config(provider_name: str) -> Dict[str, Any]:
-    """Get configuration for specific provider"""
-    config = get_seedance_v1_config()
-    providers = config.get("providers", {})
+    # Then check volces
+    volces_config = app_config.get("volces", {})
+    if volces_config.get("url") and volces_config.get("api_key"):
+        return "volces"
 
-    if provider_name not in providers:
-        raise ValueError(
-            f"Provider '{provider_name}' not configured for Seedance V1")
-
-    return providers[provider_name]
+    # Default fallback
+    return "jaaz_cloud"
 
 
 def create_seedance_v1_provider(provider_name: str) -> SeedanceV1ProviderBase:
     """Factory function to create provider instance"""
     from .jaaz_provider import SeedanceV1JaazProvider
-    # from .bytedance_provider import SeedanceV1ByteDanceProvider  # Future
-    # from .local_provider import SeedanceV1LocalProvider  # Future
+    from .volces_provider import SeedanceV1VolcesProvider
 
     providers = {
         "jaaz_cloud": SeedanceV1JaazProvider,
-        # "bytedance_direct": SeedanceV1ByteDanceProvider,  # Future
-        # "local": SeedanceV1LocalProvider,  # Future
+        "volces": SeedanceV1VolcesProvider,
     }
 
     if provider_name not in providers:

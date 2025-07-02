@@ -31,10 +31,6 @@ class SeedanceV1VideoInputSchema(BaseModel):
         default=True,
         description="Optional. Whether to keep the camera fixed (no camera movement)."
     )
-    provider: Optional[str] = Field(
-        default=None,
-        description="Optional. Specify the provider to use (jaaz_cloud, bytedance_direct, local). If not specified, uses the default provider."
-    )
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
@@ -49,8 +45,7 @@ async def generate_video_doubao_seedance_1_0_pro(
     duration: Optional[int] = 5,
     aspect_ratio: Optional[str] = "16:9",
     input_images: Optional[list[str]] = None,
-    camera_fixed: Optional[bool] = True,
-    provider: Optional[str] = None,
+    camera_fixed: Optional[bool] = True
 ) -> str:
     """
     Generate a video using Seedance V1 model via configured provider.
@@ -66,8 +61,13 @@ async def generate_video_doubao_seedance_1_0_pro(
 
     try:
         # Determine provider to use
-        provider_name = provider or get_default_provider()
-        print(f"🎥 Using provider: {provider_name}")
+        # First check if provider is passed from context (like image generation)
+        media_model = ctx.get('model_info', {}).get('image', {})
+        context_provider = media_model.get('provider') if media_model else None
+
+        provider_name = provider or context_provider or get_default_provider()
+        print(
+            f"🎥 Using provider: {provider_name} (from: {'explicit' if provider else 'context' if context_provider else 'default'})")
 
         # Create provider instance
         provider_instance = create_seedance_v1_provider(provider_name)
