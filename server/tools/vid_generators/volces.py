@@ -26,7 +26,7 @@ async def generate_video_volces(
     duration: int = 5,
     camerafixed: bool = True,
     image_name: str | None = None,
-    ar: str = "16:9",
+    aspect_ratio: str = "16:9",
 ):
     try:
         api_key = config_service.app_config.get("volces", {}).get("api_key", "")
@@ -101,11 +101,12 @@ async def generate_video_volces(
                 mime_type = "image/png"
             input_image_data = f"data:{mime_type};base64,{b64}"
         else:
-            command += " --rt " + ar
+            command += " --rt " + aspect_ratio
             input_image_data = None
 
         payload = {
-            "model": model,
+            "model": str(model.split("by")[0]).rstrip("_"),
+
             "content": [
                 {"type": "text", "text": prompt + command},
             ],

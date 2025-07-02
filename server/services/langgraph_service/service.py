@@ -75,7 +75,6 @@ async def langgraph_multi_agent(
     session_id: str,
     text_model: ModelInfo,
     image_model: ModelInfo,
-    video_model: Optional[ModelInfo] = None,
     system_prompt: Optional[str] = None
 ) -> None:
     """多智能体处理函数
@@ -86,7 +85,7 @@ async def langgraph_multi_agent(
         session_id: 会话ID
         text_model: 文本模型配置
         image_model: 图像模型配置
-        video_model: 视频模型配置
+        video_models: 视频模型配置
         system_prompt: 系统提示词
     """
     try:
@@ -114,7 +113,7 @@ async def langgraph_multi_agent(
         ).compile()  # type: ignore
 
         # 4. 创建上下文
-        context = _create_context(canvas_id, session_id, image_model, video_model)
+        context = _create_context(canvas_id, session_id, image_model)
 
         # 5. 流处理
         processor = StreamProcessor(
@@ -172,13 +171,11 @@ def _determine_tool_name(image_model: ModelInfo, provider: str) -> str:
     return tool_name
 
 
-def _create_context(canvas_id: str, session_id: str, image_model: ModelInfo, video_model: ModelInfo = None) -> Dict[str, Any]:
+def _create_context(canvas_id: str, session_id: str, image_model: ModelInfo) -> Dict[str, Any]:
     """创建上下文信息"""
     model_info = {
         'image': image_model,
     }
-    if video_model is not None:
-        model_info['video'] = video_model
 
     return {
         'canvas_id': canvas_id,

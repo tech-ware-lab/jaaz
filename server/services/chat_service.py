@@ -30,7 +30,6 @@ async def handle_chat(data):
             - canvas_id: canvas identifier (contextual use)
             - text_model: text model configuration
             - image_model: image model configuration
-            - video_model: video model configuration
     """
     # Extract fields from incoming data
     messages = data.get('messages')
@@ -38,7 +37,6 @@ async def handle_chat(data):
     canvas_id = data.get('canvas_id')
     text_model = data.get('text_model')
     image_model = data.get('image_model')
-    video_model = data.get('video_model')
     # TODO: save and fetch system prompt from db or settings config
     system_prompt = data.get('system_prompt')
 
@@ -53,7 +51,7 @@ async def handle_chat(data):
 
     # Create and start langgraph_agent task for chat processing
     task = asyncio.create_task(langgraph_multi_agent(
-        messages, canvas_id, session_id, text_model, image_model, video_model, system_prompt))
+        messages, canvas_id, session_id, text_model, image_model, system_prompt))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)
