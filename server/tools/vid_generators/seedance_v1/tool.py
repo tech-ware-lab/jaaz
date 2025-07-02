@@ -60,14 +60,19 @@ async def generate_video_doubao_seedance_1_0_pro(
     ctx['tool_call_id'] = tool_call_id
 
     try:
-        # Determine provider to use
-        # First check if provider is passed from context (like image generation)
+        # 判断选择 Provider
+        # TODO 如果有多个 Provider 选择，需要修改，优先选择 Jaaz
         media_model = ctx.get('model_info', {}).get('image', {})
-        context_provider = media_model.get('provider') if media_model else None
+        if media_model is None:
+            raise ValueError("Media model is not selected")
 
-        provider_name = provider or context_provider or get_default_provider()
+        context_provider = media_model.get('provider')
+
+        print('🛠️ context_provider', context_provider)
+        provider_name = context_provider or get_default_provider()
+
         print(
-            f"🎥 Using provider: {provider_name} (from: {'explicit' if provider else 'context' if context_provider else 'default'})")
+            f"🎥 Using provider: {provider_name} (from: {'context' if context_provider else 'default'})")
 
         # Create provider instance
         provider_instance = create_seedance_v1_provider(provider_name)

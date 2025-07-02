@@ -58,7 +58,7 @@ def get_default_provider() -> str:
     # Check if jaaz is configured first (preferred)
     jaaz_config = app_config.get("jaaz", {})
     if jaaz_config.get("url") and jaaz_config.get("api_key"):
-        return "jaaz_cloud"
+        return "jaaz"
 
     # Then check volces
     volces_config = app_config.get("volces", {})
@@ -66,7 +66,7 @@ def get_default_provider() -> str:
         return "volces"
 
     # Default fallback
-    return "jaaz_cloud"
+    return "jaaz"
 
 
 def create_seedance_v1_provider(provider_name: str) -> SeedanceV1ProviderBase:
@@ -75,7 +75,7 @@ def create_seedance_v1_provider(provider_name: str) -> SeedanceV1ProviderBase:
     from .volces_provider import SeedanceV1VolcesProvider
 
     providers = {
-        "jaaz_cloud": SeedanceV1JaazProvider,
+        "jaaz": SeedanceV1JaazProvider,
         "volces": SeedanceV1VolcesProvider,
     }
 
