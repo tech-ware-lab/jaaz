@@ -11,7 +11,7 @@ import os
 import io
 from PIL import Image
 from mimetypes import guess_type
-from tools.video_generation_utils import get_video_info_and_save
+from tools.video_generation_utils import get_video_info_and_save, get_image_base64
 
 # services
 from services.config_service import config_service
@@ -25,7 +25,8 @@ async def generate_video_volces(
     resolution: str = "480p",
     duration: int = 5,
     camerafixed: bool = True,
-    image_name: str | None = None,
+    first_frame_image_name: str | None = None,
+    last_frame_image_name: str | None = None,
     aspect_ratio: str = "16:9",
 ):
     try:
@@ -52,57 +53,17 @@ async def generate_video_volces(
         )
 
         # Convert to base64 if image_path is provided
-        if image_name:
-            # Process image
-            image_path = os.path.join(FILES_DIR, f"{image_name}")
-            image = Image.open(image_path)
-
-            # 可爱的豆包，鲁棒性太拉了，拉的想骂人(图片支支持0.4-2.5比例的)
-            # Kawaii Doubao video model has a fxxking bad robustness,
-            # it can only handle images with aspect ratio between 0.4 and 2.5.
-
-            width, height = image.size
-            ratio = width / height
-            if ratio > 2.5 or ratio < 0.4:
-                # 宽高比大于2.5或者小于0.4的图片，现在只能暴力裁掉
-                if ratio < 1:
-                    # 竖版图片
-                    new_height = int(width * 2.4)
-                    new_width = width
-                    image = image.resize(  # type:ignore
-                        (new_width, new_height), Image.Resampling.LANCZOS
-                    )
-                elif ratio > 1:
-                    new_width = int(height * 2.4)
-                    new_height = height
-                    image = image.resize(
-                        (new_width, new_height), Image.Resampling.LANCZOS
-                    )
+        if first_frame_image_name:
+            # i2v
+            first_frame_image_base64 = get_image_base64(first_frame_image_name)
+            if last_frame_image_name is not None:
+                # flf2v
+                last_frame_image_base64 = get_image_base64(last_frame_image_name)
             else:
-                new_width, new_height = image.size
-
-            # 计算缩放因子，确保类型为float
-            scale_factor: float = float(
-                (float(1048576) / float(new_width * new_height)) ** 0.5
-            )
-
-            preview_image_width = int(new_width * scale_factor)
-            preview_image_height = int(new_height * scale_factor)
-
-            img = image.resize(
-                (preview_image_width, preview_image_height), Image.Resampling.LANCZOS
-            )
-            img_byte_arr = io.BytesIO()
-            img.save(img_byte_arr, format="PNG")
-
-            b64 = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
-            mime_type, _ = guess_type(image_path)
-            if not mime_type:
-                mime_type = "image/png"
-            input_image_data = f"data:{mime_type};base64,{b64}"
+                last_frame_image_base64 = None
         else:
+            # t2v
             command += " --rt " + aspect_ratio
-            input_image_data = None
 
         payload = {
             "model": str(model.split("by")[0]).rstrip("_"),
@@ -111,10 +72,15 @@ async def generate_video_volces(
                 {"type": "text", "text": prompt + command},
             ],
         }
-        if input_image_data:
-            payload.get("content", []).append(
-                {"type": "image_url", "image_url": {"url": input_image_data}}
-            )
+        if first_frame_image_base64:
+            image_input = {"type": "image_url", "image_url": {"url": first_frame_image_base64}}
+            if last_frame_image_base64 is not None:
+                image_input["role"] = "first_frame"
+                last_image_input = {"type": "image_url", "image_url": {"url": last_frame_image_base64}}
+                last_image_input["role"] = "last_frame"
+            payload.get("content", []).append(image_input)
+            if last_frame_image_base64 is not None:
+                payload.get("content", []).append(last_image_input)
 
         header = {
             "Authorization": f"Bearer {api_key}",
