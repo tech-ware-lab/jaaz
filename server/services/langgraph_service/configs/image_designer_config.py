@@ -41,7 +41,14 @@ IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with he
             batch_generation_prompt + error_handling_prompt
 
         # 图像设计智能体不需要切换到其他智能体
-        handoffs: List[Dict[str, Any]] = []
+        handoffs: List[Dict[str, Any]] = [
+            {
+                'agent_name': 'image_video_creator',
+                'description': """
+                        Transfer user to the image_video_creator. About this agent: Coordinates image and video generation tasks efficiently.
+                        """
+            }
+        ]
 
         super().__init__(
             name='image_designer',

@@ -6,7 +6,7 @@ class VideoDesignerAgentConfig(BaseAgentConfig):
     """视频设计智能体 - 专门负责视频生成
     """
 
-    def __init__(self, tool_name: str = "volces_generate_video", system_prompt: str = "") -> None:
+    def __init__(self, tool_name: str = "generate_video", system_prompt: str = "") -> None:
         tools: List[ToolConfig] = [{'tool': tool_name}]
 
         video_generation_prompt = """

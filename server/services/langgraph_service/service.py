@@ -85,6 +85,7 @@ async def langgraph_multi_agent(
         session_id: 会话ID
         text_model: 文本模型配置
         image_model: 图像模型配置
+        video_models: 视频模型配置
         system_prompt: 系统提示词
     """
     try:
@@ -99,7 +100,7 @@ async def langgraph_multi_agent(
         # 2. 创建智能体
         agents = AgentManager.create_agents(
             model, tool_name, system_prompt or "")
-        agent_names = ['planner', 'image_designer']
+        agent_names = ['planner', 'image_video_creator', 'image_designer', 'video_designer']
         last_agent = AgentManager.get_last_active_agent(
             fixed_messages, agent_names)
 
@@ -172,12 +173,14 @@ def _determine_tool_name(image_model: ModelInfo, provider: str) -> str:
 
 def _create_context(canvas_id: str, session_id: str, image_model: ModelInfo) -> Dict[str, Any]:
     """创建上下文信息"""
+    model_info = {
+        'image': image_model,
+    }
+
     return {
         'canvas_id': canvas_id,
         'session_id': session_id,
-        'model_info': {
-            'image': image_model
-        },
+        'model_info': model_info,
     }
 
 

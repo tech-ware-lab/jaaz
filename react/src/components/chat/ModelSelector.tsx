@@ -48,7 +48,7 @@ const ModelSelector: React.FC = () => {
     const providerInfo = PROVIDER_NAME_MAPPING[provider]
     return {
       name: providerInfo?.name || provider,
-      icon: providerInfo?.icon
+      icon: providerInfo?.icon,
     }
   }
 
@@ -67,72 +67,81 @@ const ModelSelector: React.FC = () => {
           <SelectValue placeholder="Theme" />
         </SelectTrigger>
         <SelectContent>
-          {sortProviders(Object.entries(groupedTextModels)).map(([provider, models]) => {
-            const providerInfo = getProviderDisplayName(provider)
-            return (
-              <SelectGroup key={provider}>
-                <SelectLabel className="flex items-center gap-2 select-none">
-                  {providerInfo.icon && (
-                    <img
-                      src={providerInfo.icon}
-                      alt={providerInfo.name}
-                      className="w-4 h-4 rounded-sm"
-                    />
-                  )}
-                  {providerInfo.name}
-                </SelectLabel>
-                {models.map((model) => (
-                  <SelectItem
-                    key={model.provider + ':' + model.model}
-                    value={model.provider + ':' + model.model}
-                  >
-                    {model.model}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            )
-          })}
+          {sortProviders(Object.entries(groupedTextModels)).map(
+            ([provider, models]) => {
+              const providerInfo = getProviderDisplayName(provider)
+              return (
+                <SelectGroup key={provider}>
+                  <SelectLabel className="flex items-center gap-2 select-none">
+                    {providerInfo.icon && (
+                      <img
+                        src={providerInfo.icon}
+                        alt={providerInfo.name}
+                        className="w-4 h-4 rounded-sm"
+                      />
+                    )}
+                    {providerInfo.name}
+                  </SelectLabel>
+                  {models.map((model) => (
+                    <SelectItem
+                      key={model.provider + ':' + model.model}
+                      value={model.provider + ':' + model.model}
+                    >
+                      {model.model}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )
+            }
+          )}
         </SelectContent>
       </Select>
       <Select
-        value={imageModel?.provider + ':' + imageModel?.model}
+        value={imageModel ? `${imageModel.provider}:${imageModel.model}` : ''}
         onValueChange={(value) => {
-          localStorage.setItem('image_model', value)
-          setImageModel(
-            imageModels?.find((m) => m.provider + ':' + m.model == value)
+          const selectedModel = imageModels?.find(
+            (m) => m.provider + ':' + m.model == value
           )
+          if (selectedModel) {
+            localStorage.setItem('image_model', value)
+            setImageModel(selectedModel)
+          }
         }}
       >
         <SelectTrigger className="w-fit max-w-[40%] bg-background">
-          <span>🎨</span>
-          <SelectValue placeholder="Theme" />
+          <SelectValue placeholder="Image Model" />
         </SelectTrigger>
         <SelectContent>
-          {sortProviders(Object.entries(groupedImageModels)).map(([provider, models]) => {
-            const providerInfo = getProviderDisplayName(provider)
-            return (
-              <SelectGroup key={provider}>
-                <SelectLabel className="flex items-center gap-2 select-none">
-                  {providerInfo.icon && (
-                    <img
-                      src={providerInfo.icon}
-                      alt={providerInfo.name}
-                      className="w-4 h-4 rounded-sm"
-                    />
-                  )}
-                  {providerInfo.name}
-                </SelectLabel>
-                {models.map((model) => (
-                  <SelectItem
-                    key={model.provider + ':' + model.model}
-                    value={model.provider + ':' + model.model}
-                  >
-                    {model.model}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            )
-          })}
+          {sortProviders(Object.entries(groupedImageModels)).map(
+            ([provider, models]) => {
+              const providerInfo = getProviderDisplayName(provider)
+              return (
+                <SelectGroup key={provider}>
+                  <SelectLabel className="flex items-center gap-2 select-none">
+                    {providerInfo.icon && (
+                      <img
+                        src={providerInfo.icon}
+                        alt={providerInfo.name}
+                        className="w-4 h-4 rounded-sm"
+                      />
+                    )}
+                    {providerInfo.name}
+                  </SelectLabel>
+                  {models.map((model) => (
+                    <SelectItem
+                      key={model.provider + ':' + model.model}
+                      value={model.provider + ':' + model.model}
+                    >
+                      <span className="flex items-center gap-2">
+                        🎨
+                        {model.model}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )
+            }
+          )}
         </SelectContent>
       </Select>
     </>
