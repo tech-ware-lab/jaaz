@@ -26,9 +26,14 @@
         "description": "Whether to control the camera not moved.",
         "type": "bool"
       },
-      "image_name": {
+      "first_frame_image_name": {
         "default": null,
         "description": "The name of the image to control as the first frame.",
+        "type": "str"
+      },
+      "last_frame_image_name": {
+        "default": null,
+        "description": "The name of the image to control as the last frame.",
         "type": "str"
       },
       "aspect_ratio": {
