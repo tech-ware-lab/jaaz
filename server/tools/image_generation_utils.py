@@ -7,7 +7,7 @@ from nanoid import generate
 import time
 import json
 from common import DEFAULT_PORT
-from services.websocket_service import broadcast_session_update
+from services.websocket_service import broadcast_session_update # type: ignore
 
 
 class CanvasLockManager:
@@ -84,63 +84,6 @@ async def generate_new_image_element(canvas_id: str, fileid: str, image_data: Di
         "scale": [1, 1],
         "crop": None,
     }
-
-
-async def generate_new_video_element(canvas_id: str, fileid: str, video_data: dict):
-    canvas = await db_service.get_canvas_data(canvas_id)
-    canvas_data = canvas.get("data", {})
-    elements = canvas_data.get("elements", [])
-
-    # find the last image element
-    last_x = 0
-    last_y = 0
-    last_width = 0
-    last_height = 0
-    image_elements = [
-        element for element in elements if element.get("type") == "image"]
-    last_image_element = image_elements[-1] if len(
-        image_elements) > 0 else None
-    if last_image_element is not None:
-        last_x = last_image_element.get("x", 0)
-        last_y = last_image_element.get("y", 0)
-        last_width = last_image_element.get("width", 0)
-        last_height = last_image_element.get("height", 0)
-
-    new_x = last_x + last_width + 20
-
-    return {
-        "type": "video",
-        "id": fileid,
-        "x": new_x,
-        "y": last_y,
-        "width": video_data.get("width", 0),
-        "height": video_data.get("height", 0),
-        "angle": 0,
-        "fileId": fileid,
-        "strokeColor": "#000000",
-        "fillStyle": "solid",
-        "strokeStyle": "solid",
-        "boundElements": None,
-        "roundness": None,
-        "frameId": None,
-        "backgroundColor": "transparent",
-        "strokeWidth": 1,
-        "roughness": 0,
-        "opacity": 100,
-        "groupIds": [],
-        "seed": int(random.random() * 1000000),
-        "version": 1,
-        "versionNonce": int(random.random() * 1000000),
-        "isDeleted": False,
-        "index": None,
-        "updated": 0,
-        "link": None,
-        "locked": False,
-        "status": "saved",
-        "scale": [1, 1],
-        "crop": None,
-    }
-
 
 async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, mime_type: str, width: int, height: int) -> str:
     # 使用锁确保整个保存过程的原子性

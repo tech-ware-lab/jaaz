@@ -15,7 +15,7 @@ from services.config_service import (
     VIDEO_FORMATS,
 )
 from routers.comfyui_execution import execute
-from tools.video_generation_utils import get_video_info_and_save
+from tools.vid_generators.video_utils import get_video_info_and_save
 
 
 async def detect_file_type_comprehensive(url):
