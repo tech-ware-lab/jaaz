@@ -166,19 +166,19 @@ def _build_video_input_schema(provider:str, model:str) -> type[BaseModel]:
     
     # 按优先级处理：flf2v > i2v > t2v
     if "flf2v" in video_types:
-        # flf2v需要所有image字段，不删除任何
+        # flf2v
         pass
     elif "i2v" in video_types:
-        # i2v需要first_image，只删除last_image
-        if "last_image_name" in pydantic_options:
+        # i2v
+        if "last_frame_image_name" in pydantic_options:
             del pydantic_options["last_frame_image_name"]
+        pass
     elif "t2v" in video_types:
-        # t2v不需要任何image字段
-        if "first_image_name" in pydantic_options:
+        # t2v
+        if "first_frame_image_name" in pydantic_options:
             del pydantic_options["first_frame_image_name"]
-        if "last_image_name" in pydantic_options:
+        if "last_frame_image_name" in pydantic_options:
             del pydantic_options["last_frame_image_name"]
-
     fields: Dict[str, tuple] = {}
 
     for value_name, value_cond in pydantic_options.items():

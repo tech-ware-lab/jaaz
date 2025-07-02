@@ -2,7 +2,7 @@
   "volces": {
     "model_type": {
       "doubao-seedance-1-0-pro-250528": ["t2v", "i2v"],
-      "doubao-seedance-1-0-lite-i2v-250428": ["i2v"],
+      "doubao-seedance-1-0-lite-i2v-250428": ["flf2v"],
       "doubao-seedance-1-0-lite-t2v-250428": ["t2v"],
       "doubao-seaweed-241128": ["t2v", "i2v"]
     },
@@ -13,12 +13,12 @@
       },
       "resolution": {
         "default": "480p",
-        "description": "The resolution of the video, only these values are allowed, 480p, 720p, 1080p.",
+        "description": "The resolution of the video, only these values are allowed: 480p (use this option unless user asked to user another resolution), 720p, 1080p. Note that if has both param first_frame_image_name and last_frame_image_name, the resolution should be 480p and 720p.",
         "type": "str"
       },
       "duration": {
         "default": 5,
-        "description": "The duration of the video in seconds, only these values are allowed, 5, 10.",
+        "description": "The duration of the video in seconds, only these values are allowed: 5, 10.",
         "type": "int"
       },
       "camerafixed": {
@@ -38,7 +38,7 @@
       },
       "aspect_ratio": {
         "default": "16:9",
-        "description": "The aspect ratio of the video, only these values are allowed, 1:1, 16:9, 4:3, 3:4, 9:16.",
+        "description": "The aspect ratio of the video, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16.",
         "type": "str"
       }
     }
