@@ -14,13 +14,8 @@ export const ConfigsProvider = ({
   children: React.ReactNode
 }) => {
   const configsStore = useConfigsStore()
-  const {
-    setTextModels,
-    setImageModels,
-    setTextModel,
-    setImageModel,
-    setTools,
-  } = configsStore
+  const { setTextModels, setImageModels, setVideoModels, setTextModel, setImageModel, setVideoModel } =
+    configsStore
 
   const { data: modelList, refetch: refreshModels } = useQuery({
     queryKey: ['list_models'],
@@ -58,15 +53,47 @@ export const ConfigsProvider = ({
         setImageModel(modelList.find((m) => m.type == 'image'))
       }
 
+      const videoModel = localStorage.getItem('video_model')
+      if (
+        videoModel &&
+        modelList.find((m) => m.provider + ':' + m.model == videoModel)
+      ) {
+        setVideoModel(
+          modelList.find((m) => m.provider + ':' + m.model == videoModel)
+        )
+      } else {
+        setVideoModel(
+          modelList.find(
+            (m) =>
+              m.type == 'video' ||
+              (Array.isArray(m.type) && m.type.includes('video'))
+          )
+        )
+      }
+
       const textModels = modelList?.filter((m) => m.type == 'text')
       const imageModels = modelList?.filter(
         (m) => m.type == 'image' || m.type == 'tool'
       )
+      const videoModels = modelList?.filter(
+        (m) =>
+          m.type == 'video' ||
+          (Array.isArray(m.type) && m.type.includes('video'))
+      )
 
       setTextModels(textModels || [])
       setImageModels(imageModels || [])
+      setVideoModels(videoModels || [])
     }
-  }, [modelList, setImageModel, setTextModel, setTextModels, setImageModels])
+  }, [
+    modelList,
+    setImageModel,
+    setTextModel,
+    setTextModels,
+    setImageModels,
+    setVideoModel,
+    setVideoModels,
+  ])
 
   return (
     <ConfigsContext.Provider

@@ -3,11 +3,13 @@ import traceback
 import toml
 
 DEFAULT_PROVIDERS_CONFIG = {}
+SERVER_DIR = os.path.dirname(os.path.dirname(__file__))
 USER_DATA_DIR = os.getenv(
     "USER_DATA_DIR",
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), "user_data"),
+    os.path.join(SERVER_DIR, "user_data"),
 )
 FILES_DIR = os.path.join(USER_DATA_DIR, "files")
+
 
 IMAGE_FORMATS = (
     ".png",

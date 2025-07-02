@@ -93,14 +93,8 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     async (imageElement: ExcalidrawImageElement, file: BinaryFileData) => {
       if (!excalidrawAPI) return
 
-      // Check if element already exists to prevent duplicates
+      // 获取当前画布元素以便添加新元素
       const currentElements = excalidrawAPI.getSceneElements()
-      const existingElement = currentElements.find(el => el.id === imageElement.id)
-
-      if (existingElement) {
-        console.log('👇 Image element already exists, skipping duplicate:', imageElement.id)
-        return
-      }
 
       excalidrawAPI.addFiles([file])
 
@@ -114,7 +108,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
         x: imageElement.x,
         y: imageElement.y,
         width: imageElement.width,
-        height: imageElement.height
+        height: imageElement.height,
       })
 
       // Ensure image is not locked and can be manipulated
@@ -122,7 +116,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
         ...imageElement,
         locked: false,
         groupIds: [],
-        isDeleted: false
+        isDeleted: false,
       }
 
       excalidrawAPI.updateScene({
@@ -158,7 +152,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
 
         const videoElements = convertToExcalidrawElements([
           {
-            type: "embeddable",
+            type: 'embeddable',
             id: elementData.id,
             x: elementData.x,
             y: elementData.y,
@@ -166,11 +160,11 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
             height: elementData.height,
             link: videoSrc,
             // 添加必需的基本样式属性
-            strokeColor: "#000000",
-            backgroundColor: "transparent",
-            fillStyle: "solid",
+            strokeColor: '#000000',
+            backgroundColor: 'transparent',
+            fillStyle: 'solid',
             strokeWidth: 1,
-            strokeStyle: "solid",
+            strokeStyle: 'solid',
             roundness: null,
             roughness: 1,
             opacity: 100,
@@ -191,7 +185,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
             index: null, // 添加缺失的index属性
             // 添加自定义数据属性
             customData: {},
-          }
+          },
         ])
 
         console.log('👇 Converted video elements:', videoElements)
@@ -199,13 +193,20 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
         const currentElements = excalidrawAPI.getSceneElements()
         const newElements = [...currentElements, ...videoElements]
 
-        console.log('👇 Updating scene with elements count:', newElements.length)
+        console.log(
+          '👇 Updating scene with elements count:',
+          newElements.length
+        )
 
         excalidrawAPI.updateScene({
           elements: newElements,
         })
 
-        console.log('👇 Added video embed element:', videoSrc, `${elementData.width}x${elementData.height}`)
+        console.log(
+          '👇 Added video embed element:',
+          videoSrc,
+          `${elementData.width}x${elementData.height}`
+        )
       }
 
       // If dimensions are provided, use them directly
@@ -256,7 +257,14 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       const { link } = element
 
       // Check if this is a video URL
-      if (link && (link.includes('.mp4') || link.includes('.webm') || link.includes('.ogg') || link.startsWith('blob:') || link.includes('video'))) {
+      if (
+        link &&
+        (link.includes('.mp4') ||
+          link.includes('.webm') ||
+          link.includes('.ogg') ||
+          link.startsWith('blob:') ||
+          link.includes('video'))
+      ) {
         // Return the VideoPlayer component
         return (
           <VideoElement
@@ -286,7 +294,9 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
 
       // Check if this is actually a video generation event that got mislabeled
       if (imageData.file?.mimeType?.startsWith('video/')) {
-        console.log('👇 This appears to be a video, not an image. Ignoring in image handler.')
+        console.log(
+          '👇 This appears to be a video, not an image. Ignoring in image handler.'
+        )
         return
       }
 
@@ -307,7 +317,6 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
 
       // Create video embed element using the video URL
       addVideoEmbed(videoData.element, videoData.video_url)
-
     },
     [addVideoEmbed, canvasId]
   )
@@ -350,7 +359,7 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
       // Ensure interactive mode is enabled
       viewModeEnabled={false}
       zenModeEnabled={false}
-      // Allow element manipulation  
+      // Allow element manipulation
       onPointerUpdate={(payload) => {
         // Minimal logging - only log significant pointer events
         if (payload.button === 'down' && Math.random() < 0.05) {

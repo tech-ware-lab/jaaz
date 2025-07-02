@@ -3,7 +3,6 @@ from langchain_core.tools import BaseTool
 from tools.generate_image_by_gpt import generate_image_by_gpt
 from tools.image_generators import generate_image
 from tools.write_plan import write_plan_tool
-from tools.video_tools import volces_generate_video
 
 
 class ToolService:
@@ -12,7 +11,6 @@ class ToolService:
             'generate_image': generate_image,
             'generate_image_by_gpt': generate_image_by_gpt,
             'write_plan': write_plan_tool,
-            'volces_generate_video': volces_generate_video,
         }
 
     def register_tool(self, tool_name: str, tool_function: BaseTool):
