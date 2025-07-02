@@ -1,7 +1,7 @@
 export type ModelInfo = {
   provider: string
   model: string
-  type: 'text' | 'image' | 'tool'
+  type: 'text' | 'image' | 'tool' | 'video'
   url: string
 }
 

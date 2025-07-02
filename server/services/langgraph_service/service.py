@@ -74,7 +74,7 @@ async def langgraph_multi_agent(
     canvas_id: str,
     session_id: str,
     text_model: ModelInfo,
-    image_model: ModelInfo,
+    media_model: ModelInfo,  # 更名为media_model，支持图像和视频模型
     system_prompt: Optional[str] = None
 ) -> None:
     """多智能体处理函数
@@ -84,8 +84,7 @@ async def langgraph_multi_agent(
         canvas_id: 画布ID
         session_id: 会话ID
         text_model: 文本模型配置
-        image_model: 图像模型配置
-        video_models: 视频模型配置
+        media_model: 媒体模型配置（图像或视频模型）
         system_prompt: 系统提示词
     """
     try:
@@ -95,12 +94,13 @@ async def langgraph_multi_agent(
         # 1. 模型配置
         model = _create_model(text_model)
         tool_name = _determine_tool_name(
-            image_model, text_model.get('provider'))
+            media_model, text_model.get('provider'))
 
         # 2. 创建智能体
         agents = AgentManager.create_agents(
             model, tool_name, system_prompt or "")
-        agent_names = ['planner', 'image_video_creator', 'image_designer', 'video_designer']
+        agent_names = ['planner', 'image_video_creator',
+                       'image_designer', 'video_designer']
         last_agent = AgentManager.get_last_active_agent(
             fixed_messages, agent_names)
 
@@ -113,7 +113,7 @@ async def langgraph_multi_agent(
         ).compile()  # type: ignore
 
         # 4. 创建上下文
-        context = _create_context(canvas_id, session_id, image_model)
+        context = _create_context(canvas_id, session_id, media_model)
 
         # 5. 流处理
         processor = StreamProcessor(
@@ -156,25 +156,33 @@ def _create_model(text_model: ModelInfo) -> Any:
         )
 
 
-def _determine_tool_name(image_model: ModelInfo, provider: str) -> str:
-    """确定图像生成工具名称"""
-    image_model_name = image_model.get('model', '')
-    tool_name = 'generate_image'
+def _determine_tool_name(media_model: ModelInfo, provider: str) -> str:
+    """确定工具名称（支持图像和视频模型）"""
+    model_name = media_model.get('model', '')
+    model_type = media_model.get('type', '')
 
-    is_jaaz_gpt_model = image_model_name.startswith(
-        'openai') and provider == 'jaaz'
+    # 视频模型工具选择
+    if model_type == 'video':
+        if model_name in ['doubao-seedance-1-0-pro-250528']:
+            return 'generate_video_doubao_seedance_1_0_pro'
+        # 其他视频模型可以在这里添加
+        return 'generate_video'  # 默认视频工具
+
+    # 图像模型工具选择（原有逻辑）
+    tool_name = 'generate_image'
+    is_jaaz_gpt_model = model_name.startswith('openai') and provider == 'jaaz'
     if is_jaaz_gpt_model:
         tool_name = 'generate_image_by_gpt'
-    if image_model.get('type') == 'tool':
-        tool_name = image_model.get('model')
+    if media_model.get('type') == 'tool':
+        tool_name = media_model.get('model')
 
     return tool_name
 
 
-def _create_context(canvas_id: str, session_id: str, image_model: ModelInfo) -> Dict[str, Any]:
+def _create_context(canvas_id: str, session_id: str, media_model: ModelInfo) -> Dict[str, Any]:
     """创建上下文信息"""
     model_info = {
-        'image': image_model,
+        'image': media_model,  # 保持向后兼容，这里仍使用'image'键名
     }
 
     return {
