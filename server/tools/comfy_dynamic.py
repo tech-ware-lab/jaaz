@@ -33,7 +33,6 @@ from services.tool_service import tool_service
 from .image_generation_utils import (
     generate_file_id,
     generate_new_image_element,
-    generate_new_video_element,
 )
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import InjectedToolCallId, tool, BaseTool
@@ -44,6 +43,7 @@ from services.db_service import db_service
 from services.websocket_service import broadcast_session_update, send_to_websocket
 
 from .img_generators import ComfyUIWorkflowRunner
+from .vid_generators.video_utils import generate_new_video_element
 
 
 def _python_type(param_type: str, default: Any):

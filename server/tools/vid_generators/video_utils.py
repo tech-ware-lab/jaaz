@@ -1,13 +1,17 @@
 import json
 import time
 import os
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional, Union
 from services.config_service import FILES_DIR
 from services.db_service import db_service
-from services.websocket_service import send_to_websocket, broadcast_session_update
-from tools.image_generation_utils import generate_new_video_element
-from tools.video_generation_utils import generate_video_file_id, get_video_info_and_save
+from services.websocket_service import send_to_websocket, broadcast_session_update  # type: ignore
 from common import DEFAULT_PORT
+from utils.http_client import HttpClient
+import aiofiles
+import mimetypes
+from pymediainfo import MediaInfo
+from nanoid import generate
+import random
 
 
 async def save_video_to_canvas(
@@ -42,7 +46,7 @@ async def save_video_to_canvas(
     file_id = generate_video_file_id()
     file_url = f"/api/file/{filename}"
 
-    file_data = {
+    file_data: Dict[str, Any] = {
         "mimeType": mime_type,
         "id": file_id,
         "dataURL": file_url,
@@ -50,7 +54,7 @@ async def save_video_to_canvas(
     }
 
     # Create new video element for canvas
-    new_video_element = await generate_new_video_element(
+    new_video_element: Dict[str, Any] = await generate_new_video_element(
         canvas_id,
         file_id,
         {
@@ -60,7 +64,7 @@ async def save_video_to_canvas(
     )
 
     # Update canvas data
-    canvas_data = await db_service.get_canvas_data(canvas_id)
+    canvas_data: Optional[Dict[str, Any]] = await db_service.get_canvas_data(canvas_id)
     if canvas_data is None:
         canvas_data = {}
     if "data" not in canvas_data:
@@ -70,7 +74,7 @@ async def save_video_to_canvas(
     if "files" not in canvas_data["data"]:
         canvas_data["data"]["files"] = {}
 
-    canvas_data["data"]["elements"].append(new_video_element)
+    canvas_data["data"]["elements"].append(new_video_element)  # type: ignore
     canvas_data["data"]["files"][file_id] = file_data
 
     # Save updated canvas data
@@ -79,7 +83,7 @@ async def save_video_to_canvas(
     return filename, file_data, new_video_element
 
 
-async def send_video_start_notification(session_id: str, message: str):
+async def send_video_start_notification(session_id: str, message: str) -> None:
     """Send WebSocket notification about video generation start"""
     await send_to_websocket(session_id, {
         "type": "video_generation_started",
@@ -93,7 +97,7 @@ async def send_video_completion_notification(
     new_video_element: Dict[str, Any],
     file_data: Dict[str, Any],
     video_url: str
-):
+) -> None:
     """Send WebSocket notification about video generation completion"""
     await broadcast_session_update(
         session_id,
@@ -107,7 +111,7 @@ async def send_video_completion_notification(
     )
 
 
-async def send_video_error_notification(session_id: str, error_message: str):
+async def send_video_error_notification(session_id: str, error_message: str) -> None:
     """Send WebSocket notification about video generation error"""
     print(f"🎥 Video generation error: {error_message}")
     await send_to_websocket(session_id, {
@@ -164,3 +168,105 @@ async def process_video_result(
         error_message = str(e)
         await send_video_error_notification(session_id, error_message)
         raise e
+
+
+def generate_video_file_id() -> str:
+    return "vi_" + generate(size=8)
+
+
+async def get_video_info_and_save(
+    url: str, file_path_without_extension: str
+) -> Tuple[str, int, int, str]:
+    # Fetch the video asynchronously
+    async with HttpClient.create(url=None) as client:
+        response = await client.get(url)
+        video_content = response.content
+
+    # Save to temporary mp4 file first
+    temp_path = f"{file_path_without_extension}.mp4"
+    async with aiofiles.open(temp_path, "wb") as out_file:
+        await out_file.write(video_content)
+    print("🎥 Video saved to", temp_path)
+
+    try:
+        media_info = MediaInfo.parse(temp_path)  # type: ignore
+        width: int = 0
+        height: int = 0
+
+        for track in media_info.tracks:  # type: ignore
+            if track.track_type == "Video":  # type: ignore
+                width = int(track.width or 0)  # type: ignore
+                height = int(track.height or 0)  # type: ignore
+                print(f"Width: {width}, Height: {height}")
+                break
+
+        extension = "mp4"  # 默认使用 mp4，实际情况可以根据 codec_name 灵活判断
+
+        # Get mime type
+        mime_type = mimetypes.types_map.get(".mp4", "video/mp4")
+
+        print(
+            f"🎥 Video info - width: {width}, height: {height}, mime_type: {mime_type}, extension: {extension}"
+        )
+
+        return mime_type, width, height, extension
+    except Exception as e:
+        print(f"Error probing video file {temp_path}: {str(e)}")
+        raise e
+
+
+async def generate_new_video_element(canvas_id: str, fileid: str, video_data: Dict[str, Any]) -> Dict[str, Any]:
+    canvas: Optional[Dict[str, Any]] = await db_service.get_canvas_data(canvas_id)
+    if canvas is None:
+        canvas = {'data': {}}
+    canvas_data: Dict[str, Any] = canvas.get("data", {})
+    elements = canvas_data.get("elements", [])
+
+    # find the last image element
+    last_x: Union[int, float] = 0
+    last_y: Union[int, float] = 0
+    last_width: Union[int, float] = 0
+    image_elements = [
+        element for element in elements if element.get("type") == "image"]
+    last_image_element = image_elements[-1] if len(
+        image_elements) > 0 else None
+    if last_image_element is not None:
+        last_x = last_image_element.get("x", 0)
+        last_y = last_image_element.get("y", 0)
+        last_width = last_image_element.get("width", 0)
+        # last_height = last_image_element.get("height", 0)
+
+    new_x = last_x + last_width + 20
+
+    return {
+        "type": "video",
+        "id": fileid,
+        "x": new_x,
+        "y": last_y,
+        "width": video_data.get("width", 0),
+        "height": video_data.get("height", 0),
+        "angle": 0,
+        "fileId": fileid,
+        "strokeColor": "#000000",
+        "fillStyle": "solid",
+        "strokeStyle": "solid",
+        "boundElements": None,
+        "roundness": None,
+        "frameId": None,
+        "backgroundColor": "transparent",
+        "strokeWidth": 1,
+        "roughness": 0,
+        "opacity": 100,
+        "groupIds": [],
+        "seed": int(random.random() * 1000000),
+        "version": 1,
+        "versionNonce": int(random.random() * 1000000),
+        "isDeleted": False,
+        "index": None,
+        "updated": 0,
+        "link": None,
+        "locked": False,
+        "status": "saved",
+        "scale": [1, 1],
+        "crop": None,
+    }
