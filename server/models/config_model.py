@@ -9,10 +9,10 @@ class LLMConfig(BaseModel):
     temperature: float
 
 class ConfigUpdate(BaseModel):
-    llm: LLMConfig 
+    llm: LLMConfig
 
 class ModelInfo(TypedDict):
     provider: str
     model: str # For tool type, it is the function name
     url: str
-    type: Literal['text', 'image', 'tool']
+    type: Literal['text', 'image', 'tool', 'video']

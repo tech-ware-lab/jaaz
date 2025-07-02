@@ -6,7 +6,7 @@ from services.config_service import config_service
 from services.db_service import db_service
 from utils.http_client import HttpClient
 from tools.comfy_dynamic import register_comfy_tools
-from tools.video_models_dynamic import register_video_models
+# from tools.video_models_dynamic import register_video_models  # Disabled video models
 # services
 from services.files_service import download_file
 from services.websocket_service import broadcast_init_done
@@ -89,7 +89,7 @@ async def get_models() -> list[dict[str, str]]:
     if comfyui_url:
         comfyui_models = await get_comfyui_model_list(comfyui_url)
         for comfyui_model in comfyui_models:
-            if comfyui_model in comfyui_config_models:            
+            if comfyui_model in comfyui_config_models:
                 res.append({
                     'provider': 'comfyui',
                     'model': comfyui_model,
@@ -106,7 +106,7 @@ async def get_models() -> list[dict[str, str]]:
             'url': comfyui_url,
             'type': 'tool'
         })
-        
+
     # Handle providers that are not ollama or comfyui
 
     for provider in config.keys():
@@ -122,36 +122,17 @@ async def get_models() -> list[dict[str, str]]:
             continue
 
         models = provider_config.get('models', {})
-        video_models: dict[str, list[dict[str, str]]] = {}
         for model_name in models:
             model = models[model_name]
             model_type = model.get('type', 'text')
-            if model_type == 'video':
-                if provider not in video_models:
-                    video_models[provider] = []
-                video_models[provider].append({
-                    'provider': provider,
-                    'model': model_name,
-                    'url': provider_url,
-                    'type': model_type
-                })
-            else:
-                res.append({
-                    'provider': provider,
-                    'model': model_name,
-                    'url': provider_url,
-                    'type': model_type
-                })
-    for video_provider, video_model_list in video_models.items():
-        dynamic_video_models = await register_video_models(video_model_list) # dict[name, function]
-        print(f'🛠️ dynamic video models for provider {video_provider}', dynamic_video_models)
-        for dynamic_video_model in dynamic_video_models:
+
             res.append({
-                'provider': video_provider,
-                'model': dynamic_video_model,
-                'url': video_models[video_provider][0]['url'],
-                'type': 'tool'
+                'provider': provider,
+                'model': model_name,
+                'url': provider_url,
+                'type': model_type
             })
+
     return res
 
 
