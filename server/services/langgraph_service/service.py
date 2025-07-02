@@ -161,14 +161,10 @@ def _determine_tool_name(media_model: ModelInfo, provider: str) -> str:
     model_name = media_model.get('model', '')
     model_type = media_model.get('type', '')
 
-    # 如果模型配置中直接指定了工具名称，优先使用
-    if 'tool_name' in media_model:
-        return media_model['tool_name']
-
     # 视频模型工具选择
     if model_type == 'video':
-        if model_name in ['seedance-v1', 'doubao-seedance-1-0-pro', 'doubao-seedance-1-0-lite']:
-            return 'generate_video_seedance_v1'
+        if model_name in ['doubao-seedance-1-0-pro-250528']:
+            return 'generate_video_doubao_seedance_1_0_pro'
         # 其他视频模型可以在这里添加
         return 'generate_video'  # 默认视频工具
 
