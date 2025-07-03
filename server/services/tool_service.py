@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple, Optional
 from langchain_core.tools import BaseTool
 from models.config_model import ModelInfo
 from tools.write_plan import write_plan_tool
@@ -48,61 +48,57 @@ class ToolService:
                 registered_tools.append(self._registered_models[model_name])
                 continue
 
-            tool_name = self._get_tool_name_for_model(model_name, model_type)
-            if tool_name:
+            tool_result = self._import_tool_for_model(model_name, model_type)
+            if tool_result:
+                tool_name, tool_function = tool_result
                 try:
-                    tool_function = self._import_tool(tool_name)
-                    if tool_function:
-                        self.register_tool(tool_name, tool_function)
-                        self._registered_models[model_name] = tool_name
-                        registered_tools.append(tool_name)
-                        print(f"✅ 已注册工具: {tool_name} for model: {model_name}")
+                    self.register_tool(tool_name, tool_function)
+                    self._registered_models[model_name] = tool_name
+                    registered_tools.append(tool_name)
+                    print(f"✅ 已注册工具: {tool_name} for model: {model_name}")
                 except Exception as e:
                     print(f"❌ 注册工具失败 {tool_name} for model {model_name}: {e}")
 
         return registered_tools
 
-    def _get_tool_name_for_model(self, model_name: str, model_type: str) -> str:
-        """根据模型名称和类型确定工具名称"""
-        # 工具类型直接使用模型名称作为工具名称
-        if model_type == 'tool':
-            return model_name
+    def _import_tool_for_model(self, model_name: str, model_type: str) -> Optional[Tuple[str, BaseTool]]:
+        """根据模型名称和类型直接导入工具实例
 
-        # 图像模型的工具名称映射
-        if model_type == 'image':
-            if 'gpt-image-1' in model_name:
-                return 'generate_image_by_gpt_image_1'
-            # elif 'gpt' in model_name.lower():
-            #     return 'generate_image_by_gpt'
-            # else:
-            #     return 'generate_image'
+        Args:
+            model_name: 模型名称
+            model_type: 模型类型
 
-        # 视频模型的工具名称映射
-        if model_type == 'video':
-            if 'doubao-seedance-1-0-pro' in model_name:
-                return 'generate_video_doubao_seedance_1_0_pro'
-            # else:
-            #     return 'generate_video'
-
-        return ''
-
-    def _import_tool(self, tool_name: str) -> BaseTool | None:
-        """动态导入工具函数"""
+        Returns:
+            (tool_name, tool_instance) 的元组，如果无法导入则返回 None
+        """
         try:
-            if tool_name == 'generate_image_by_gpt_image_1':
-                from tools.generate_image_by_gpt_image_1 import generate_image_by_gpt_image_1
-                return generate_image_by_gpt_image_1
-            elif tool_name == 'generate_video_doubao_seedance_1_0_pro':
-                from tools.vid_generators.seedance_v1 import generate_video_doubao_seedance_1_0_pro
-                return generate_video_doubao_seedance_1_0_pro
-            elif tool_name == 'write_plan':
-                from tools.write_plan import write_plan_tool
-                return write_plan_tool
-            else:
-                print(f"⚠️ 未知的工具名称: {tool_name}")
+            # 工具类型直接使用模型名称作为工具名称
+            if model_type == 'tool':
+                # TODO: 需要根据具体的工具模型名称实现动态导入
+                print(f"⚠️ 工具类型模型暂未实现: {model_name}")
                 return None
+
+            # 图像模型的工具导入
+            if model_type == 'image':
+                if 'gpt-image-1' in model_name:
+                    from tools.generate_image_by_gpt_image_1 import generate_image_by_gpt_image_1
+                    return ('generate_image_by_gpt_image_1', generate_image_by_gpt_image_1)
+                elif 'imagen-4' in model_name:
+                    from tools.generate_image_by_imagen_4 import generate_image_by_imagen_4
+                    return ('generate_image_by_imagen_4', generate_image_by_imagen_4)
+
+            # 视频模型的工具导入
+            if model_type == 'video':
+                if 'doubao-seedance-1-0-pro' in model_name:
+                    from tools.vid_generators.seedance_v1 import generate_video_doubao_seedance_1_0_pro
+                    return ('generate_video_doubao_seedance_1_0_pro', generate_video_doubao_seedance_1_0_pro)
+
+            print(
+                f"⚠️ 未找到对应的工具: model_name={model_name}, model_type={model_type}")
+            return None
+
         except ImportError as e:
-            print(f"❌ 导入工具失败 {tool_name}: {e}")
+            print(f"❌ 导入工具失败 for model {model_name}: {e}")
             return None
 
     def get_tool(self, tool_name: str) -> BaseTool | None:
