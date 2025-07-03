@@ -8,17 +8,13 @@ type ConfigsStore = {
   setInitCanvas: (initCanvas: boolean) => void
 
   textModels: Model[]
-  imageModels: Model[]
   setTextModels: (models: Model[]) => void
-  setImageModels: (models: Model[]) => void
 
-  tools: ModelInfo[]
-  setTools: (models: ModelInfo[]) => void
+  selectedTools: ModelInfo[]
+  setSelectedTools: (models: ModelInfo[]) => void
 
   textModel?: Model
-  imageModel?: Model
   setTextModel: (model?: Model) => void
-  setImageModel: (model?: Model) => void
 
   showInstallDialog: boolean
   setShowInstallDialog: (show: boolean) => void
@@ -43,14 +39,10 @@ const useConfigsStore = create<ConfigsStore>((set) => ({
   setInitCanvas: (initCanvas) => set({ initCanvas }),
 
   textModels: [],
-  imageModels: [],
   setTextModels: (models) => set({ textModels: models }),
-  setImageModels: (models) => set({ imageModels: models }),
 
   textModel: undefined,
-  imageModel: undefined,
   setTextModel: (model) => set({ textModel: model }),
-  setImageModel: (model) => set({ imageModel: model }),
 
   showInstallDialog: false,
   setShowInstallDialog: (show) => set({ showInstallDialog: show }),
@@ -67,8 +59,8 @@ const useConfigsStore = create<ConfigsStore>((set) => ({
   providers: DEFAULT_PROVIDERS_CONFIG,
   setProviders: (providers) => set({ providers }),
 
-  tools: [],
-  setTools: (tools) => set({ tools }),
+  selectedTools: [],
+  setSelectedTools: (tools) => set({ selectedTools: tools }),
 }))
 
 export default useConfigsStore

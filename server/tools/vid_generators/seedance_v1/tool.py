@@ -62,11 +62,11 @@ async def generate_video_doubao_seedance_1_0_pro(
     try:
         # 判断选择 Provider
         # TODO 如果有多个 Provider 选择，需要修改，优先选择 Jaaz
-        media_model = ctx.get('model_info', {}).get('image', {})
-        if media_model is None:
+        tool_list = ctx.get('model_info', {}).get('tool_list', [])
+        if tool_list is None or len(tool_list) == 0:
             raise ValueError("Media model is not selected")
 
-        context_provider = media_model.get('provider')
+        context_provider = tool_list[0].get('provider')
 
         print('🛠️ context_provider', context_provider)
         provider_name = context_provider or get_default_provider()
