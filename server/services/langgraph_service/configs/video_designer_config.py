@@ -6,8 +6,10 @@ class VideoDesignerAgentConfig(BaseAgentConfig):
     """视频设计智能体 - 专门负责视频生成
     """
 
-    def __init__(self, tool_name: str = "generate_video", system_prompt: str = "") -> None:
-        tools: List[ToolConfig] = [{'tool': tool_name}]
+    def __init__(self, tool_names: List[str], system_prompt: str = "") -> None:
+        # 将工具名称列表转换为工具配置列表
+        tools: List[ToolConfig] = [{'tool': tool_name}
+                                   for tool_name in tool_names]
 
         video_generation_prompt = """
 

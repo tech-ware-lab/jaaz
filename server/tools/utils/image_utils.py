@@ -1,7 +1,6 @@
 import os
 import random
 import asyncio
-import aiohttp
 import aiofiles
 from PIL import Image
 from io import BytesIO
@@ -15,6 +14,7 @@ from common import DEFAULT_PORT
 from services.config_service import FILES_DIR
 from services.db_service import db_service
 from services.websocket_service import broadcast_session_update
+from utils.http_client import HttpClient
 
 
 def generate_image_id() -> str:
@@ -45,16 +45,13 @@ async def get_image_info_and_save(
     """
     try:
         if is_b64:
-            # Handle base64 string
             image_data = base64.b64decode(url)
         else:
-            # Download from URL
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    if response.status != 200:
-                        raise Exception(
-                            f"Failed to download image: HTTP {response.status}")
-                    image_data = await response.read()
+            # Fetch the image asynchronously
+            async with HttpClient.create() as client:
+                response = await client.get(url)
+                # Read the image content as bytes
+                image_data = response.content
 
         # Open image to get info
         image = Image.open(BytesIO(image_data))

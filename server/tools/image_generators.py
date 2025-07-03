@@ -65,7 +65,18 @@ async def generate_image(
     # Inject the tool call id into the context
     ctx['tool_call_id'] = tool_call_id
 
-    image_model = ctx.get('model_info', {}).get('image', {})
+    # Get image model from the new structure
+    # Try to find any image generation model
+    model_info = ctx.get('model_info', {})
+    image_model = None
+
+    # Look for common image model names
+    for model_name in model_info.keys():
+        models = model_info.get(model_name, [])
+        if models and models[0].get('type', 'image') in ['image', 'tool']:
+            image_model = models[0]
+            break
+
     if image_model is None:
         raise ValueError("Image model is not selected")
     model = image_model.get('model', '')
