@@ -1,13 +1,22 @@
 from typing import Dict, List
 from langchain_core.tools import BaseTool
 from models.config_model import ModelInfo
+from tools.write_plan import write_plan_tool
 
 
 class ToolService:
     def __init__(self):
         self.tools: Dict[str, BaseTool] = {}
+        self._register_required_tools()
         # model_name -> tool_name mapping
         self._registered_models: Dict[str, str] = {}
+
+    def _register_required_tools(self):
+        """注册必须的工具"""
+        try:
+            self.tools['write_plan'] = write_plan_tool
+        except ImportError as e:
+            print(f"❌ 注册必须工具失败 write_plan: {e}")
 
     def register_tool(self, tool_name: str, tool_function: BaseTool):
         """注册单个工具"""
@@ -108,6 +117,8 @@ class ToolService:
         """清空所有已注册的工具"""
         self.tools.clear()
         self._registered_models.clear()
+        # 重新注册必须的工具
+        self._register_required_tools()
 
 
 tool_service = ToolService()

@@ -73,7 +73,7 @@ function Home() {
                 messages: messages,
                 session_id: nanoid(),
                 text_model: configs.textModel,
-                image_model: configs.imageModel,
+                tool_list: configs.toolList,
                 system_prompt:
                   localStorage.getItem('system_prompt') ||
                   DEFAULT_SYSTEM_PROMPT,
