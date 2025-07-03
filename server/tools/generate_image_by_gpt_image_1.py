@@ -1,11 +1,8 @@
-import traceback
-from typing import Optional, Annotated, List, cast
+from typing import Annotated
 from pydantic import BaseModel, Field
-from models.config_model import ModelInfo
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from .image_providers.image_base_provider import get_default_provider, create_image_provider
-from .utils.image_utils import save_image_to_canvas, send_image_start_notification, send_image_error_notification
+from .utils.image_utils import generate_image_with_provider
 
 
 class GenerateImageByGptImage1InputSchema(BaseModel):
@@ -15,11 +12,10 @@ class GenerateImageByGptImage1InputSchema(BaseModel):
     aspect_ratio: str = Field(
         description="Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16. Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4"
     )
-    model: Optional[str] = Field(
-        default="openai/gpt-image-1",
-        description="Optional. The model to use for image generation. Default is openai/gpt-image-1"
+    model: str = Field(
+        description="Required. The model to use for image generation, e.g. 'openai/gpt-image-1'"
     )
-    input_images: Optional[list[str]] = Field(
+    input_images: list[str] | None = Field(
         default=None,
         description="Optional; Images to use as reference. Pass a list of image_id here, e.g. ['im_jurheut7.png', 'im_hfuiut78.png']. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc."
     )
@@ -32,75 +28,23 @@ class GenerateImageByGptImage1InputSchema(BaseModel):
 async def generate_image_by_gpt_image_1(
     prompt: str,
     aspect_ratio: str,
+    model: str,
     config: RunnableConfig,
     tool_call_id: Annotated[str, InjectedToolCallId],
-    model: Optional[str] = "openai/gpt-image-1",
-    input_images: Optional[list[str]] = None,
+    input_images: list[str] | None = None,
 ) -> str:
     """
     Generate an image using the new provider framework
     """
-    print('🛠️ Image Generation V2 tool_call_id', tool_call_id)
-    ctx = config.get('configurable', {})
-    canvas_id = ctx.get('canvas_id', '')
-    session_id = ctx.get('session_id', '')
-    print('🛠️ canvas_id', canvas_id, 'session_id', session_id)
-
-    # Inject the tool call id into the context
-    ctx['tool_call_id'] = tool_call_id
-
-    try:
-        # Determine provider selection
-        model_name = 'gpt-image-1'
-        model_info_list: List[ModelInfo] = cast(
-            List[ModelInfo], ctx.get('model_info', {}).get(model_name, []))
-
-        # Use get_default_provider which already handles Jaaz prioritization
-        provider_name = get_default_provider(model_info_list)
-
-        print(f"🎨 Using provider: {provider_name}")
-
-        # Create provider instance
-        provider_instance = create_image_provider(provider_name)
-
-        # Send start notification
-        await send_image_start_notification(
-            session_id,
-            f"Starting image generation using {provider_name}..."
-        )
-
-        # Process input images for the provider
-        processed_input_images = None
-        if input_images:
-            # For some providers, we might need to process input images differently
-            # For now, just pass them as is
-            processed_input_images = input_images
-
-        # Generate image using the selected provider
-        mime_type, width, height, filename = await provider_instance.generate(
-            prompt=prompt,
-            model=model or "openai/gpt-image-1",
-            aspect_ratio=aspect_ratio,
-            input_images=processed_input_images
-        )
-
-        # Save image to canvas
-        image_url = await save_image_to_canvas(
-            session_id, canvas_id, filename, mime_type, width, height
-        )
-
-        return f"image generated successfully ![image_id: {filename}]({image_url})"
-
-    except Exception as e:
-        error_message = str(e)
-        print(f"🎨 Error generating image: {error_message}")
-        traceback.print_exc()
-
-        # Send error notification
-        await send_image_error_notification(session_id, error_message)
-
-        # Re-raise the exception for proper error handling
-        raise Exception(f"Image generation failed: {error_message}")
+    return await generate_image_with_provider(
+        prompt=prompt,
+        aspect_ratio=aspect_ratio,
+        model_name='gpt-image-1',
+        model=model,
+        tool_call_id=tool_call_id,
+        config=config,
+        input_images=input_images,
+    )
 
 
 # Export the tool for easy import
