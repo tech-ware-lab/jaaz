@@ -1,17 +1,23 @@
-from typing import Optional, List, Dict, Any, cast, Set
-from models.config_model import ModelInfo
 from services.db_service import db_service
-from services.config_service import config_service
-from services.websocket_service import send_to_websocket  # type: ignore
-from langchain_ollama import ChatOllama
-from langchain_openai import ChatOpenAI
-from langgraph_swarm import create_swarm  # type: ignore
-from utils.http_client import HttpClient
-
-import traceback
-
-from .agent_manager import AgentManager
 from .handlers import StreamProcessor
+from .agent_manager import AgentManager
+import traceback
+from utils.http_client import HttpClient
+from langgraph_swarm import create_swarm  # type: ignore
+from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
+from services.websocket_service import send_to_websocket  # type: ignore
+from services.config_service import config_service
+from services.tool_service import tool_service
+from typing import Optional, List, Dict, Any, cast, Set, TypedDict
+from models.config_model import ModelInfo
+
+
+class ContextInfo(TypedDict):
+    """Context information passed to tools"""
+    canvas_id: str
+    session_id: str
+    model_info: Dict[str, List[ModelInfo]]
 
 
 def _fix_chat_history(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -74,7 +80,7 @@ async def langgraph_multi_agent(
     canvas_id: str,
     session_id: str,
     text_model: ModelInfo,
-    tool_list: List[ModelInfo],  # 改为数组，支持多个图像和视频模型
+    tool_list: List[ModelInfo],
     system_prompt: Optional[str] = None
 ) -> None:
     """多智能体处理函数
@@ -91,18 +97,23 @@ async def langgraph_multi_agent(
         # 0. 修复消息历史
         fixed_messages = _fix_chat_history(messages)
 
-        # 1. 模型配置
-        model = _create_model(text_model)
+        # 1. 动态注册工具
+        registered_tools = tool_service.register_tools_from_models(tool_list)
+        if not registered_tools:
+            print("⚠️ 未注册任何工具，使用默认图像生成工具")
+            registered_tools = ['generate_image']
 
-        # 使用第一个媒体模型作为主要模型（保持向后兼容）
-        primary_media_model = tool_list[0] if tool_list else cast(
-            ModelInfo, {})
-        tool_name = _determine_tool_name(
-            primary_media_model, text_model.get('provider'))
+        # 2. 文本模型
+        text_model_instance = _create_text_model(text_model)
 
-        # 2. 创建智能体
+        print(f"🔧 已注册的工具: {registered_tools}")
+
+        # 3. 创建智能体
         agents = AgentManager.create_agents(
-            model, tool_name, system_prompt or "")
+            text_model_instance,
+            registered_tools,  # 传入所有注册的工具
+            system_prompt or ""
+        )
         agent_names = ['planner', 'image_video_creator',
                        'image_designer', 'video_designer']
         last_agent = AgentManager.get_last_active_agent(
@@ -110,16 +121,16 @@ async def langgraph_multi_agent(
 
         print('👇last_agent', last_agent)
 
-        # 3. 创建智能体群组
+        # 4. 创建智能体群组
         swarm = create_swarm(
             agents=agents,
             default_active_agent=last_agent if last_agent else agent_names[0]
         )
 
-        # 4. 创建上下文
+        # 5. 创建上下文
         context = _create_context(canvas_id, session_id, tool_list)
 
-        # 5. 流处理
+        # 6. 流处理
         processor = StreamProcessor(
             session_id, db_service, send_to_websocket)  # type: ignore
         await processor.process_stream(swarm, fixed_messages, context)
@@ -128,7 +139,7 @@ async def langgraph_multi_agent(
         await _handle_error(e, session_id)
 
 
-def _create_model(text_model: ModelInfo) -> Any:
+def _create_text_model(text_model: ModelInfo) -> Any:
     """创建语言模型实例"""
     model = text_model.get('model')
     provider = text_model.get('provider')
@@ -160,36 +171,24 @@ def _create_model(text_model: ModelInfo) -> Any:
         )
 
 
-def _determine_tool_name(media_model: ModelInfo, provider: str) -> str:
-    """确定工具名称（支持图像和视频模型）"""
-    model_name = media_model.get('model', '')
-    model_type = media_model.get('type', '')
-
-    # 视频模型工具选择
-    if model_type == 'video':
-        if model_name in ['doubao-seedance-1-0-pro-250528']:
-            return 'generate_video_doubao_seedance_1_0_pro'
-        # 其他视频模型可以在这里添加
-        return 'generate_video'  # 默认视频工具
-
-    # 图像模型工具选择（原有逻辑）
-    tool_name = 'generate_image'
-    is_jaaz_gpt_model = model_name.startswith('openai') and provider == 'jaaz'
-    if is_jaaz_gpt_model:
-        tool_name = 'generate_image_by_gpt'
-    if media_model.get('type') == 'tool':
-        tool_name = media_model.get('model')
-
-    return tool_name
-
-
 def _create_context(canvas_id: str, session_id: str, tool_list: List[ModelInfo]) -> Dict[str, Any]:
     """创建上下文信息"""
-    model_info: Dict[str, Any] = {
-        # 保持向后兼容，第一个模型作为默认图像模型
-        'image': tool_list[0] if tool_list else cast(ModelInfo, {}), # TODO 移除
-        'tool_list': tool_list,  # 新增：存储完整的媒体模型列表
-    }
+    # 按 model 名称分类组织 model_info
+    model_info: Dict[str, List[ModelInfo]] = {}
+
+    for model in tool_list:
+        model_name = model.get('model', '')
+        if model_name:
+            # 有的名称包含 "/"，比如 "openai/gpt-image-1"，需要处理
+            # 如果模型名称包含 "/"，只取 "/" 后面的部分作为分类键
+            if '/' in model_name:
+                classification_key = model_name.split('/')[-1]
+            else:
+                classification_key = model_name
+
+            if classification_key not in model_info:
+                model_info[classification_key] = []
+            model_info[classification_key].append(model)
 
     return {
         'canvas_id': canvas_id,

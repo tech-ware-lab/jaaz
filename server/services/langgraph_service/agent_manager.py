@@ -15,19 +15,26 @@ class AgentManager:
     @staticmethod
     def create_agents(
         model: Any,
-        tool_name: str,
+        registered_tools: List[str],
         system_prompt: str = ""
     ) -> List[Any]:
         """创建所有智能体
 
         Args:
             model: 语言模型实例
-            tool_name: 图像生成工具名称
+            registered_tools: 已注册的工具名称列表
             system_prompt: 系统提示词
 
         Returns:
             List[Any]: 创建好的智能体列表
         """
+        # 为不同类型的智能体过滤合适的工具
+        image_tools = AgentManager._filter_image_tools(registered_tools)
+        video_tools = AgentManager._filter_video_tools(registered_tools)
+
+        print(f"📸 图像工具: {image_tools}")
+        print(f"🎬 视频工具: {video_tools}")
+
         planner_config = PlannerAgentConfig().get_config()
         planner_agent = AgentManager._create_langgraph_agent(
             model, planner_config)
@@ -38,16 +45,26 @@ class AgentManager:
             model, image_video_creator_config)
 
         image_designer_config = ImageDesignerAgentConfig(
-            tool_name, system_prompt).get_config()
+            image_tools, system_prompt).get_config()
         image_designer_agent = AgentManager._create_langgraph_agent(
             model, image_designer_config)
 
         video_designer_config = VideoDesignerAgentConfig(
-            tool_name, system_prompt).get_config()
+            video_tools, system_prompt).get_config()
         video_designer_agent = AgentManager._create_langgraph_agent(
             model, video_designer_config)
 
         return [planner_agent, image_video_creator_agent, image_designer_agent, video_designer_agent]
+
+    @staticmethod
+    def _filter_image_tools(tools: List[str]) -> List[str]:
+        """过滤出图像相关工具"""
+        return [tool for tool in tools if 'image' in tool.lower()]
+
+    @staticmethod
+    def _filter_video_tools(tools: List[str]) -> List[str]:
+        """过滤出视频相关工具"""
+        return [tool for tool in tools if 'video' in tool.lower()]
 
     @staticmethod
     def _create_langgraph_agent(

@@ -1,13 +1,14 @@
 import traceback
-from typing import Optional, Annotated
+from typing import Optional, Annotated, List, cast
 from pydantic import BaseModel, Field
-from langchain_core.tools import tool, InjectedToolCallId # type: ignore
+from models.config_model import ModelInfo
+from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
 from .image_providers.image_base_provider import get_default_provider, create_image_provider
 from .utils.image_utils import save_image_to_canvas, send_image_start_notification, send_image_error_notification
 
 
-class GenerateImageV2InputSchema(BaseModel):
+class GenerateImageByGptImage1InputSchema(BaseModel):
     prompt: str = Field(
         description="Required. The prompt for image generation. If you want to edit an image, please describe what you want to edit in the prompt."
     )
@@ -25,10 +26,10 @@ class GenerateImageV2InputSchema(BaseModel):
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
-@tool("generate_image_by_gpt_v2",
+@tool("generate_image_by_gpt_image_1",
       description="Generate an image by gpt image model using text prompt or optionally pass images for reference or for editing. Use this model if you need to use multiple input images as reference. Supports multiple providers with automatic fallback.",
-      args_schema=GenerateImageV2InputSchema)
-async def generate_image_by_gpt_v2(
+      args_schema=GenerateImageByGptImage1InputSchema)
+async def generate_image_by_gpt_image_1(
     prompt: str,
     aspect_ratio: str,
     config: RunnableConfig,
@@ -50,22 +51,14 @@ async def generate_image_by_gpt_v2(
 
     try:
         # Determine provider selection
-        # TODO: If there are multiple provider selections, need to modify, prioritize Jaaz
-        tool_list = ctx.get('model_info', {}).get('tool_list', [])
-        if tool_list is None or len(tool_list) == 0:
-            # If no tool_list, use model to determine provider
-            if model and model.startswith('openai/'):
-                context_provider = 'openai'
-            else:
-                context_provider = None
-        else:
-            context_provider = tool_list[0].get('provider')
+        model_name = 'gpt-image-1'
+        model_info_list: List[ModelInfo] = cast(
+            List[ModelInfo], ctx.get('model_info', {}).get(model_name, []))
 
-        print('🛠️ context_provider', context_provider)
-        provider_name = context_provider or get_default_provider()
+        # Use get_default_provider which already handles Jaaz prioritization
+        provider_name = get_default_provider(model_info_list)
 
-        print(
-            f"🎨 Using provider: {provider_name} (from: {'context' if context_provider else 'default'})")
+        print(f"🎨 Using provider: {provider_name}")
 
         # Create provider instance
         provider_instance = create_image_provider(provider_name)
@@ -111,4 +104,4 @@ async def generate_image_by_gpt_v2(
 
 
 # Export the tool for easy import
-__all__ = ["generate_image_by_gpt_v2"]
+__all__ = ["generate_image_by_gpt_image_1"]

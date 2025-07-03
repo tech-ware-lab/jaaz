@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List
 from services.config_service import config_service
+from models.config_model import ModelInfo
 
 
 class ImageProviderBase(ABC):
@@ -46,24 +47,26 @@ def get_provider_config(provider_name: str) -> Dict[str, Any]:
     }
 
 
-def get_default_provider() -> str:
-    """Get default provider for image generation"""
-    app_config = config_service.app_config
+def get_default_provider(model_info_list: Optional[List[ModelInfo]] = None) -> str:
+    """Get default provider for image generation
 
-    # Check if jaaz is configured first (preferred)
-    jaaz_config = app_config.get("jaaz", {})
-    if jaaz_config.get("url") and jaaz_config.get("api_key"):
-        return "jaaz"
+    Args:
+        model_info_list: List of model info dictionaries. If provided,
+                        will prioritize jaaz provider if available, otherwise use first one.
+                        If not provided, returns 'jaaz' as default.
 
-    # Then check openai
-    openai_config = app_config.get("openai", {})
-    if openai_config.get("url") and openai_config.get("api_key"):
-        return "openai"
+    Returns:
+        str: Provider name
+    """
+    if model_info_list:
+        # Prioritize Jaaz provider if available
+        for model_info in model_info_list:
+            if model_info.get('provider') == 'jaaz':
+                return 'jaaz'
 
-    # Then check volces
-    volces_config = app_config.get("volces", {})
-    if volces_config.get("url") and volces_config.get("api_key"):
-        return "volces"
+        # If no jaaz provider, use the first available one
+        if model_info_list:
+            return model_info_list[0].get('provider', 'jaaz')
 
     # Default fallback
     return "jaaz"

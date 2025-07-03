@@ -6,8 +6,10 @@ class ImageDesignerAgentConfig(BaseAgentConfig):
     """图像设计智能体 - 专门负责图像生成
     """
 
-    def __init__(self, tool_name: str, system_prompt: str = "") -> None:
-        tools: List[ToolConfig] = [{'tool': tool_name}]
+    def __init__(self, tool_names: List[str], system_prompt: str = "") -> None:
+        # 将工具名称列表转换为工具配置列表
+        tools: List[ToolConfig] = [{'tool': tool_name}
+                                   for tool_name in tool_names]
 
         batch_generation_prompt = """
 
