@@ -26,8 +26,8 @@ import { listModels, ModelInfo } from '@/api/model'
 import { useQuery } from '@tanstack/react-query'
 
 const ModelSelector: React.FC = () => {
-  const { textModel, setTextModel, textModels, tools, setTools } = useConfigs()
-  const selectedTools = tools.map((tool) => tool.provider + ':' + tool.model)
+  const { textModel, setTextModel, textModels, selectedTools, setSelectedTools } = useConfigs()
+  const selectedToolKeys = selectedTools.map((tool) => tool.provider + ':' + tool.model)
 
   const { data: modelList = [], refetch: refreshModels } = useQuery({
     queryKey: ['list_models'],
@@ -38,12 +38,12 @@ const ModelSelector: React.FC = () => {
     refetchOnReconnect: true, // 网络重连时重新获取
   })
   const toolsList = modelList.filter(
-    (m) => m.type == 'tool' || m.type == 'image'
+    (m) => m.type == 'tool' || m.type == 'image' || m.type == 'video'
   )
 
   // 从localStorage加载已选择的图像模型
   useEffect(() => {
-    const saved = localStorage.getItem('selected_multi_tools')
+    const saved = localStorage.getItem('selected_tools')
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
@@ -51,12 +51,12 @@ const ModelSelector: React.FC = () => {
       } catch (e) {
         console.error('Failed to parse selected image models:', e)
       }
-    } else if (tools) {
+    } else if (selectedTools) {
       // 如果没有保存的多选数据，但有当前选中的模型，则初始化为该模型
-      const toolKeys = tools.map((tool) => tool.provider + ':' + tool.model)
+      const toolKeys = selectedTools.map((tool) => tool.provider + ':' + tool.model)
       // setSelectedTools(toolKeys)
     }
-  }, [tools])
+  }, [selectedTools])
 
   // 处理图像模型多选
   const handleImageModelToggle = (modelKey: string, checked: boolean) => {
@@ -64,14 +64,14 @@ const ModelSelector: React.FC = () => {
     const tool = toolsList.find((m) => m.provider + ':' + m.model === modelKey)
     if (checked) {
       if (tool) {
-        newSelected = [...tools, tool]
+        newSelected = [...selectedTools, tool]
       }
     } else {
-      newSelected = tools.filter((t) => t.provider + ':' + t.model !== modelKey)
+      newSelected = selectedTools.filter((t) => t.provider + ':' + t.model !== modelKey)
     }
 
-    setTools(newSelected)
-    localStorage.setItem('selected_multi_tools', JSON.stringify(newSelected))
+    setSelectedTools(newSelected)
+    localStorage.setItem('selected_tools', JSON.stringify(newSelected))
   }
 
   // 获取显示文本
@@ -159,7 +159,7 @@ const ModelSelector: React.FC = () => {
                   return (
                     <DropdownMenuCheckboxItem
                       key={modelKey}
-                      checked={selectedTools.includes(modelKey)}
+                      checked={selectedToolKeys.includes(modelKey)}
                       onCheckedChange={(checked) =>
                         handleImageModelToggle(modelKey, checked)
                       }

@@ -74,7 +74,7 @@ async def langgraph_multi_agent(
     canvas_id: str,
     session_id: str,
     text_model: ModelInfo,
-    media_model: ModelInfo,  # 更名为media_model，支持图像和视频模型
+    tool_list: List[ModelInfo],  # 改为数组，支持多个图像和视频模型
     system_prompt: Optional[str] = None
 ) -> None:
     """多智能体处理函数
@@ -84,7 +84,7 @@ async def langgraph_multi_agent(
         canvas_id: 画布ID
         session_id: 会话ID
         text_model: 文本模型配置
-        media_model: 媒体模型配置（图像或视频模型）
+        tool_list: 工具模型配置列表（图像或视频模型）
         system_prompt: 系统提示词
     """
     try:
@@ -93,8 +93,12 @@ async def langgraph_multi_agent(
 
         # 1. 模型配置
         model = _create_model(text_model)
+
+        # 使用第一个媒体模型作为主要模型（保持向后兼容）
+        primary_media_model = tool_list[0] if tool_list else cast(
+            ModelInfo, {})
         tool_name = _determine_tool_name(
-            media_model, text_model.get('provider'))
+            primary_media_model, text_model.get('provider'))
 
         # 2. 创建智能体
         agents = AgentManager.create_agents(
@@ -110,10 +114,10 @@ async def langgraph_multi_agent(
         swarm = create_swarm(
             agents=agents,
             default_active_agent=last_agent if last_agent else agent_names[0]
-        ).compile()  # type: ignore
+        )
 
         # 4. 创建上下文
-        context = _create_context(canvas_id, session_id, media_model)
+        context = _create_context(canvas_id, session_id, tool_list)
 
         # 5. 流处理
         processor = StreamProcessor(
@@ -179,10 +183,12 @@ def _determine_tool_name(media_model: ModelInfo, provider: str) -> str:
     return tool_name
 
 
-def _create_context(canvas_id: str, session_id: str, media_model: ModelInfo) -> Dict[str, Any]:
+def _create_context(canvas_id: str, session_id: str, tool_list: List[ModelInfo]) -> Dict[str, Any]:
     """创建上下文信息"""
-    model_info = {
-        'image': media_model,  # 保持向后兼容，这里仍使用'image'键名
+    model_info: Dict[str, Any] = {
+        # 保持向后兼容，第一个模型作为默认图像模型
+        'image': tool_list[0] if tool_list else cast(ModelInfo, {}), # TODO 移除
+        'tool_list': tool_list,  # 新增：存储完整的媒体模型列表
     }
 
     return {

@@ -14,7 +14,7 @@ export const ConfigsProvider = ({
   children: React.ReactNode
 }) => {
   const configsStore = useConfigsStore()
-  const { setTextModels, setImageModels, setTextModel, setImageModel } =
+  const { setTextModels, setTextModel, setSelectedTools } =
     configsStore
 
   const { data: modelList, refetch: refreshModels } = useQuery({
@@ -41,32 +41,20 @@ export const ConfigsProvider = ({
       } else {
         setTextModel(modelList.find((m) => m.type == 'text'))
       }
-      const imageModel = localStorage.getItem('image_model')
-      if (
-        imageModel &&
-        modelList.find((m) => m.provider + ':' + m.model == imageModel)
-      ) {
-        setImageModel(
-          modelList.find((m) => m.provider + ':' + m.model == imageModel)
-        )
-      } else {
-        setImageModel(modelList.find((m) => m.type == 'image'))
+
+      const selectedToolsJson = localStorage.getItem('selected_tools')
+      if (selectedToolsJson) {
+        setSelectedTools(JSON.parse(selectedToolsJson)) // 是否需要更多判定？
       }
 
       const textModels = modelList?.filter((m) => m.type == 'text')
-      const imageModels = modelList?.filter(
-        (m) => m.type == 'image' || m.type == 'tool' || m.type == 'video'
-      )
-
       setTextModels(textModels || [])
-      setImageModels(imageModels || [])
     }
   }, [
     modelList,
-    setImageModel,
+    setSelectedTools,
     setTextModel,
     setTextModels,
-    setImageModels,
   ])
 
   return (
