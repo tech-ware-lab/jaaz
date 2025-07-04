@@ -8,9 +8,10 @@ from typing import List, cast, Optional, Any
 from models.config_model import ModelInfo
 from ..image_providers.image_base_provider import get_default_provider, ImageProviderBase
 # 导入所有提供商以确保自动注册 (不要删除这些导入)
-from ..image_providers.jaaz_provider import JaazImageProvider  # noqa: F401
-from ..image_providers.openai_provider import OpenAIImageProvider  # noqa: F401
-from ..image_providers.replicate_provider import ReplicateImageProvider  # noqa: F401
+from ..image_providers.jaaz_provider import JaazImageProvider  # type: ignore
+from ..image_providers.openai_provider import OpenAIImageProvider  # type: ignore
+from ..image_providers.replicate_provider import ReplicateImageProvider  # type: ignore
+from ..image_providers.volces_provider import VolcesProvider  # type: ignore
 from .image_canvas_utils import (
     save_image_to_canvas,
     send_image_start_notification,
