@@ -9,26 +9,24 @@ from typing import Optional, Dict, Any, List
 from PIL import Image
 from mimetypes import guess_type
 
-from .base import SeedanceV1ProviderBase
+from .video_base_provider import VideoProviderBase
 from utils.http_client import HttpClient
-from services.config_service import FILES_DIR
+from services.config_service import config_service, FILES_DIR
 
 
-class SeedanceV1VolcesProvider(SeedanceV1ProviderBase):
-    """Volces Cloud implementation for Seedance V1"""
+class VolcesVideoProvider(VideoProviderBase, provider_name="volces"):
+    """Volces Cloud video generation provider implementation"""
 
-    def __init__(self, config: Dict[str, Any]):
-        self.config = config
+    def __init__(self):
+        config = config_service.app_config.get('volces', {})
         self.api_key = config.get("api_key", "")
         self.base_url = config.get("url", "").rstrip("/")
         self.model_name = config.get("model_name", "doubao-seedance-1-0-pro")
 
         if not self.api_key:
-            raise ValueError(
-                "Volces API key is not configured for Seedance V1")
+            raise ValueError("Volces API key is not configured")
         if not self.base_url:
-            raise ValueError(
-                "Volces URL is not configured for Seedance V1")
+            raise ValueError("Volces URL is not configured")
 
     def _build_api_url(self) -> str:
         """Build API URL for Volces Cloud"""
@@ -110,6 +108,7 @@ class SeedanceV1VolcesProvider(SeedanceV1ProviderBase):
     def _build_request_payload(
         self,
         prompt: str,
+        model: str,
         resolution: str = "480p",
         duration: int = 5,
         aspect_ratio: str = "16:9",
@@ -180,7 +179,8 @@ class SeedanceV1VolcesProvider(SeedanceV1ProviderBase):
     async def generate(
         self,
         prompt: str,
-        resolution: str = "720p",
+        model: str,
+        resolution: str = "480p",
         duration: int = 5,
         aspect_ratio: str = "16:9",
         input_images: Optional[List[str]] = None,
@@ -188,7 +188,7 @@ class SeedanceV1VolcesProvider(SeedanceV1ProviderBase):
         **kwargs: Any
     ) -> str:
         """
-        Generate video using Volces Seedance V1 API
+        Generate video using Volces API
 
         Returns:
             str: Video URL for download
@@ -203,6 +203,7 @@ class SeedanceV1VolcesProvider(SeedanceV1ProviderBase):
             # Build request payload
             payload = self._build_request_payload(
                 prompt=prompt,
+                model=model,
                 resolution=resolution,
                 duration=duration,
                 aspect_ratio=aspect_ratio,

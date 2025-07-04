@@ -99,9 +99,10 @@ async def langgraph_multi_agent(
 
         # 1. 动态注册工具
         registered_tools = tool_service.register_tools_from_models(tool_list)
-        if not registered_tools:
-            print("⚠️ 未注册任何工具，使用默认图像生成工具")
-            registered_tools = ['generate_image']
+        print('👇registered_tools', registered_tools)
+        # if not registered_tools:
+        #     print("⚠️ 未注册任何工具，使用默认图像生成工具")
+        #     registered_tools = ['generate_image']
 
         # 2. 文本模型
         text_model_instance = _create_text_model(text_model)
