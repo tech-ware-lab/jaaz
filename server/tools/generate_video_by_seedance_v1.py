@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
 from .video_generation import generate_video_with_provider
+from .utils.image_utils import process_input_image
 
 
 class GenerateVideoBySeedanceV1InputSchema(BaseModel):
@@ -48,6 +49,18 @@ async def generate_video_by_seedance_v1(
     """
     Generate a video using Seedance V1 model via configured provider
     """
+    # Process input images if provided (only use the first one)
+    processed_input_images = None
+    if input_images and len(input_images) > 0:
+        # Only process the first image
+        first_image = input_images[0]
+        processed_image = await process_input_image(first_image)
+        if processed_image:
+            processed_input_images = [processed_image]
+            print(f"Using input image for video generation: {first_image}")
+        else:
+            print(f"Warning: Failed to process input image: {first_image}")
+
     return await generate_video_with_provider(
         prompt=prompt,
         resolution=resolution,
@@ -56,7 +69,7 @@ async def generate_video_by_seedance_v1(
         model="doubao-seedance-1-0-pro-250528",
         tool_call_id=tool_call_id,
         config=config,
-        input_images=input_images,
+        input_images=processed_input_images,
         camera_fixed=camera_fixed,
     )
 

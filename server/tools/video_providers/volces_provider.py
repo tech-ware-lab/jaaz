@@ -1,17 +1,11 @@
-import base64
 import json
 import traceback
-import os
-import io
 import asyncio
 from typing import Optional, Dict, Any, List
 
-from PIL import Image
-from mimetypes import guess_type
-
 from .video_base_provider import VideoProviderBase
 from utils.http_client import HttpClient
-from services.config_service import config_service, FILES_DIR
+from services.config_service import config_service
 
 
 class VolcesVideoProvider(VideoProviderBase, provider_name="volces"):
@@ -38,72 +32,6 @@ class VolcesVideoProvider(VideoProviderBase, provider_name="volces"):
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
-
-    async def _process_input_images(self, input_images: Optional[List[str]]) -> Optional[str]:
-        """Process input images and return base64 encoded image data"""
-        if not input_images or len(input_images) == 0:
-            return None
-
-        # Use the first image for now
-        image_id = input_images[0]
-        image_path = os.path.join(FILES_DIR, image_id)
-
-        if not os.path.exists(image_path):
-            print(f"Warning: Image {image_id} not found, skipping image input")
-            return None
-
-        try:
-            image = Image.open(image_path)
-
-            # Volces has strict aspect ratio requirements (0.4-2.5)
-            width, height = image.size
-            ratio = width / height
-
-            if ratio > 2.5 or ratio < 0.4:
-                # Resize image to fit requirements
-                if ratio < 1:
-                    # Portrait image
-                    new_height = int(width * 2.4)
-                    new_width = width
-                    image = image.resize(
-                        (new_width, new_height), Image.Resampling.LANCZOS)
-                elif ratio > 1:
-                    # Landscape image
-                    new_width = int(height * 2.4)
-                    new_height = height
-                    image = image.resize(
-                        (new_width, new_height), Image.Resampling.LANCZOS)
-                else:
-                    new_width, new_height = image.size
-            else:
-                new_width, new_height = image.size
-
-            # Scale down if too large (max 1MB pixel count)
-            scale_factor: float = float(
-                (float(1048576) / float(new_width * new_height)) ** 0.5
-            )
-
-            if scale_factor < 1:
-                preview_image_width = int(new_width * scale_factor)
-                preview_image_height = int(new_height * scale_factor)
-                image = image.resize(
-                    (preview_image_width, preview_image_height), Image.Resampling.LANCZOS
-                )
-
-            # Convert to base64
-            img_byte_arr = io.BytesIO()
-            image.save(img_byte_arr, format="PNG")
-            b64 = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
-
-            mime_type, _ = guess_type(image_path)
-            if not mime_type:
-                mime_type = "image/png"
-
-            return f"data:{mime_type};base64,{b64}"
-
-        except Exception as e:
-            print(f"Error processing image {image_id}: {str(e)}")
-            return None
 
     def _build_request_payload(
         self,
@@ -197,8 +125,9 @@ class VolcesVideoProvider(VideoProviderBase, provider_name="volces"):
             api_url = self._build_api_url()
             headers = self._build_headers()
 
-            # Process input images
-            input_image_data = await self._process_input_images(input_images)
+            # Use the first input image if provided (already processed as base64)
+            input_image_data = input_images[0] if input_images and len(
+                input_images) > 0 else None
 
             # Build request payload
             payload = self._build_request_payload(
