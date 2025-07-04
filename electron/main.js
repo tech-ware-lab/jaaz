@@ -42,29 +42,43 @@ const net = require('net')
 // Initialize settings service
 const settingsService = require('./settingsService')
 
-function findAvailablePort(startPort) {
+function findAvailablePort(startPort, maxAttempts = 100) {
   return new Promise((resolve, reject) => {
-    const server = net.createServer()
+    let attempts = 0
 
-    server.on(
-      'error',
-      /** @param {NodeJS.ErrnoException} err */ (err) => {
+    const tryPort = (port) => {
+      attempts++
+      if (attempts > maxAttempts) {
+        reject(
+          new Error(
+            `Could not find available port after ${maxAttempts} attempts`
+          )
+        )
+        return
+      }
+
+      const server = net.createServer()
+
+      server.on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
-          // Port is in use, try the next one
-          findAvailablePort(startPort + 1)
-            .then(resolve)
-            .catch(reject)
+          console.log(`Port ${port} is in use, trying next port...`)
+          server.close()
+          tryPort(port + 1)
         } else {
           reject(err)
         }
-      }
-    )
-
-    server.listen(startPort, () => {
-      server.close(() => {
-        resolve(startPort)
       })
-    })
+
+      // 明确指定 host 为 127.0.0.1，确保检测到端口占用
+      server.listen(port, '127.0.0.1', () => {
+        server.close(() => {
+          console.log(`Found available port: ${port}`)
+          resolve(port)
+        })
+      })
+    }
+
+    tryPort(startPort)
   })
 }
 
@@ -159,12 +173,14 @@ const startPythonApi = async () => {
     try {
       const response = await fetch(`http://127.0.0.1:${pyPort}`)
       if (response.ok) {
-        console.log('Python service already running')
+        console.log('Python service already running on port:', pyPort)
         return pyPort
       }
     } catch (error) {
-      console.log('Starting Python service...')
+      console.log('Starting Python service on port:', pyPort)
     }
+  } else {
+    console.log('Starting Python service on port:', pyPort)
   }
 
   // 确定UI dist目录
