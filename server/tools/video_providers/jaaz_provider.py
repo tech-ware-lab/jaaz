@@ -1,7 +1,5 @@
-import json
 import traceback
-import os
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from .video_base_provider import VideoProviderBase
 from utils.http_client import HttpClient
 from services.config_service import config_service
@@ -34,19 +32,6 @@ class JaazVideoProvider(VideoProviderBase, provider_name="jaaz"):
             "Content-Type": "application/json"
         }
 
-    async def _process_input_images(self, input_images: Optional[list[str]]) -> Optional[list[str]]:
-        """Process input images and return list of valid image paths"""
-        if not input_images or len(input_images) == 0:
-            return None
-
-        processed_images = []
-        for image_id in input_images:
-            # For now, just pass the image IDs as they are
-            # The actual image processing will be handled by the API
-            processed_images.append(image_id)
-
-        return processed_images if processed_images else None
-
     def _build_request_payload(
         self,
         prompt: str,
@@ -55,11 +40,11 @@ class JaazVideoProvider(VideoProviderBase, provider_name="jaaz"):
         duration: int = 5,
         aspect_ratio: str = "16:9",
         camera_fixed: bool = True,
-        input_images: Optional[list[str]] = None,
+        input_images: Optional[List[str]] = None,
         **kwargs: Any
     ) -> Dict[str, Any]:
         """Build request payload for Jaaz Cloud API"""
-        payload = {
+        payload: Dict[str, Any] = {
             "prompt": prompt,
             "model": model,
             "resolution": resolution,
@@ -90,7 +75,7 @@ class JaazVideoProvider(VideoProviderBase, provider_name="jaaz"):
         resolution: str = "480p",
         duration: int = 5,
         aspect_ratio: str = "16:9",
-        input_images: Optional[list[str]] = None,
+        input_images: Optional[List[str]] = None,
         camera_fixed: bool = True,
         **kwargs: Any
     ) -> str:
@@ -104,9 +89,6 @@ class JaazVideoProvider(VideoProviderBase, provider_name="jaaz"):
             url = self._build_url()
             headers = self._build_headers()
 
-            # Process input images
-            processed_images = await self._process_input_images(input_images)
-
             # Build request payload
             data = self._build_request_payload(
                 prompt=prompt,
@@ -115,7 +97,7 @@ class JaazVideoProvider(VideoProviderBase, provider_name="jaaz"):
                 duration=duration,
                 aspect_ratio=aspect_ratio,
                 camera_fixed=camera_fixed,
-                input_images=processed_images,
+                input_images=input_images,
                 **kwargs
             )
 
