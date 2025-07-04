@@ -12,6 +12,8 @@ from ..image_providers.jaaz_provider import JaazImageProvider  # type: ignore
 from ..image_providers.openai_provider import OpenAIImageProvider  # type: ignore
 from ..image_providers.replicate_provider import ReplicateImageProvider  # type: ignore
 from ..image_providers.volces_provider import VolcesProvider  # type: ignore
+from ..image_providers.wavespeed_provider import WavespeedProvider  # type: ignore
+from ..image_providers.comfyui_provider import ComfyUIProvider  # type: ignore
 from .image_canvas_utils import (
     save_image_to_canvas,
     send_image_start_notification,
