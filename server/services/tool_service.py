@@ -2,6 +2,14 @@ from typing import Dict, List, Tuple, Optional
 from langchain_core.tools import BaseTool
 from models.config_model import ModelInfo
 from tools.write_plan import write_plan_tool
+from tools.generate_image_by_gpt_image_1 import generate_image_by_gpt_image_1
+from tools.generate_image_by_imagen_4 import generate_image_by_imagen_4
+from tools.generate_image_by_recraft_v3 import generate_image_by_recraft_v3
+from tools.generate_image_by_flux_1_1_pro import generate_image_by_flux_1_1_pro
+from tools.generate_image_by_flux_kontext_pro import generate_image_by_flux_kontext_pro
+from tools.generate_image_by_flux_kontext_max import generate_image_by_flux_kontext_max
+from tools.generate_image_by_doubao_seedream_3 import generate_image_by_doubao_seedream_3
+from tools.generate_video_by_seedance_v1 import generate_video_by_seedance_v1
 
 
 class ToolService:
@@ -35,6 +43,9 @@ class ToolService:
         Returns:
             已注册的工具名称列表
         """
+        # 清理无效的注册记录，确保状态一致性
+        self.cleanup_invalid_registrations()
+
         registered_tools: List[str] = []
 
         for model in model_list:
@@ -44,15 +55,15 @@ class ToolService:
             if not model_name:
                 continue
 
-            # 如果已经注册过这个模型，跳过
-            if model_name in self._registered_models:
-                continue
-
             tool_result = self._import_tool_for_model(model_name, model_type)
             if tool_result:
                 tool_name, tool_function = tool_result
-                # 如果工具已经注册过，跳过
-                if tool_name in self.tools:
+
+                # 检查工具是否已经注册且仍然存在
+                if tool_name in self.tools and tool_name in self._registered_models.values():
+                    # 工具已存在，直接添加到返回列表
+                    registered_tools.append(tool_name)
+                    print(f"✅ 工具已存在: {tool_name} for model: {model_name}")
                     continue
 
                 try:
@@ -85,31 +96,23 @@ class ToolService:
             # 图像模型的工具导入
             if model_type == 'image':
                 if 'gpt-image-1' in model_name:
-                    from tools.generate_image_by_gpt_image_1 import generate_image_by_gpt_image_1
                     return ('generate_image_by_gpt_image_1', generate_image_by_gpt_image_1)
                 elif 'imagen-4' in model_name:
-                    from tools.generate_image_by_imagen_4 import generate_image_by_imagen_4
                     return ('generate_image_by_imagen_4', generate_image_by_imagen_4)
                 elif 'recraft-v3' in model_name:
-                    from tools.generate_image_by_recraft_v3 import generate_image_by_recraft_v3
                     return ('generate_image_by_recraft_v3', generate_image_by_recraft_v3)
                 elif 'flux-1.1-pro' in model_name:
-                    from tools.generate_image_by_flux_1_1_pro import generate_image_by_flux_1_1_pro
                     return ('generate_image_by_flux_1_1_pro', generate_image_by_flux_1_1_pro)
                 elif 'flux-kontext-pro' in model_name:
-                    from tools.generate_image_by_flux_kontext_pro import generate_image_by_flux_kontext_pro
                     return ('generate_image_by_flux_kontext_pro', generate_image_by_flux_kontext_pro)
                 elif 'flux-kontext-max' in model_name:
-                    from tools.generate_image_by_flux_kontext_max import generate_image_by_flux_kontext_max
                     return ('generate_image_by_flux_kontext_max', generate_image_by_flux_kontext_max)
                 elif 'doubao-seedream-3' in model_name:
-                    from tools.generate_image_by_doubao_seedream_3 import generate_image_by_doubao_seedream_3
                     return ('generate_image_by_doubao_seedream_3', generate_image_by_doubao_seedream_3)
 
             # 视频模型的工具导入
             if model_type == 'video':
                 if 'doubao-seedance-1-0-pro-250528' in model_name:
-                    from tools.generate_video_by_seedance_v1 import generate_video_by_seedance_v1
                     return ('generate_video_by_seedance_v1', generate_video_by_seedance_v1)
 
             print(
@@ -134,6 +137,17 @@ class ToolService:
         self._registered_models.clear()
         # 重新注册必须的工具
         self._register_required_tools()
+
+    def cleanup_invalid_registrations(self):
+        """清理无效的工具注册记录，确保状态一致性"""
+        invalid_models: List[str] = []
+        for model_name, tool_name in self._registered_models.items():
+            if tool_name not in self.tools:
+                invalid_models.append(model_name)
+
+        for model_name in invalid_models:
+            del self._registered_models[model_name]
+            print(f"🧹 清理无效注册: {model_name}")
 
 
 tool_service = ToolService()
