@@ -1,6 +1,7 @@
 # type: ignore[import]
 from typing import Optional, List, Dict, Any, Callable, Awaitable
 from langchain_core.messages import AIMessageChunk, ToolCall, convert_to_openai_messages, ToolMessage
+from langgraph.graph import StateGraph
 import json
 
 
@@ -15,7 +16,7 @@ class StreamProcessor:
         self.last_saved_message_index = 0
         self.last_streaming_tool_call_id: Optional[str] = None
 
-    async def process_stream(self, swarm: Any, messages: List[Dict[str, Any]], context: Dict[str, Any]) -> None:
+    async def process_stream(self, swarm: StateGraph, messages: List[Dict[str, Any]], context: Dict[str, Any]) -> None:
         """处理整个流式响应
 
         Args:
@@ -25,7 +26,9 @@ class StreamProcessor:
         """
         self.last_saved_message_index = len(messages) - 1
 
-        async for chunk in swarm.astream(
+        compiled_swarm = swarm.compile()
+
+        async for chunk in compiled_swarm.astream(
             {"messages": messages},
             config=context,
             stream_mode=["messages", "custom", 'values']
