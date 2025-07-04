@@ -11,7 +11,6 @@ class ReplicateImageProvider(ImageProviderBase, provider_name="replicate"):
     """Replicate image generation provider implementation"""
 
     def __init__(self):
-        # 自己获取和验证配置
         config = config_service.app_config.get('replicate', {})
         self.api_key = config.get("api_key", "")
 
@@ -41,11 +40,6 @@ class ReplicateImageProvider(ImageProviderBase, provider_name="replicate"):
             print(
                 f'🦄 Replicate API request: {url}, model: {data["input"]["prompt"]}')
             response = await client.post(url, headers=headers, json=data)
-
-            if response.status_code != 200:
-                error_msg = f"HTTP {response.status_code}: {response.text}"
-                print(f'🦄 Replicate API error: {error_msg}')
-                raise Exception(f'Image generation failed: {error_msg}')
 
             if not response.content:
                 raise Exception(
