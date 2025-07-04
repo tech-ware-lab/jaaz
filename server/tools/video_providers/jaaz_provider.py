@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any, List
 from .video_base_provider import VideoProviderBase
 from utils.http_client import HttpClient
 from services.config_service import config_service
+import httpx
 
 
 class JaazVideoProvider(VideoProviderBase, provider_name="jaaz"):
@@ -104,8 +105,15 @@ class JaazVideoProvider(VideoProviderBase, provider_name="jaaz"):
             print(
                 f'🎥 Jaaz API request: {url}, model: {data["model"]}, prompt: {data["prompt"]}')
 
-            # Make API request
-            async with HttpClient.create() as client:
+            # Make API request with extended timeout for video generation
+            video_timeout = httpx.Timeout(
+                connect=20.0,
+                read=10 * 60,  # 10 minutes for video generation
+                write=30.0,
+                pool=60.0
+            )
+
+            async with HttpClient.create(timeout=video_timeout) as client:
                 response = await client.post(url, headers=headers, json=data)
                 print('👇response', url, response.content)
                 if response.status_code != 200:
