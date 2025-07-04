@@ -1,19 +1,20 @@
 import os
 import traceback
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from openai import OpenAI
 from .image_base_provider import ImageProviderBase
 from ..utils.image_utils import get_image_info_and_save, generate_image_id
 from services.config_service import FILES_DIR
+from services.config_service import config_service
 
 
-class OpenAIImageProvider(ImageProviderBase):
+class OpenAIImageProvider(ImageProviderBase, provider_name="openai"):
     """OpenAI image generation provider implementation"""
 
-    def __init__(self, config: Dict[str, Any]):
-        self.config = config
-        self.api_key = config.get("api_key", "")
-        self.base_url = config.get("url", "")
+    def __init__(self):
+        config = config_service.app_config.get('openai', {})
+        self.api_key = str(config.get("api_key", ""))
+        self.base_url = str(config.get("url", ""))  # 可选
 
         if not self.api_key:
             raise ValueError("OpenAI API key is not configured")

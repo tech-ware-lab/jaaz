@@ -6,7 +6,11 @@ Contains the main orchestration logic for image generation across different prov
 import traceback
 from typing import List, cast, Optional, Any
 from models.config_model import ModelInfo
-from ..image_providers.image_base_provider import get_default_provider, create_image_provider
+from ..image_providers.image_base_provider import get_default_provider, ImageProviderBase
+# 导入所有提供商以确保自动注册 (不要删除这些导入)
+from ..image_providers.jaaz_provider import JaazImageProvider  # noqa: F401
+from ..image_providers.openai_provider import OpenAIImageProvider  # noqa: F401
+from ..image_providers.replicate_provider import ReplicateImageProvider  # noqa: F401
 from .image_canvas_utils import (
     save_image_to_canvas,
     send_image_start_notification,
@@ -58,7 +62,7 @@ async def generate_image_with_provider(
         print(f"🎨 Using provider: {provider_name} for {model_name}")
 
         # Create provider instance
-        provider_instance = create_image_provider(provider_name)
+        provider_instance = ImageProviderBase.create_provider(provider_name)
 
         # Send start notification
         await send_image_start_notification(
