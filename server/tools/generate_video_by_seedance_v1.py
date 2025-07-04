@@ -59,7 +59,8 @@ async def generate_video_by_seedance_v1(
             processed_input_images = [processed_image]
             print(f"Using input image for video generation: {first_image}")
         else:
-            print(f"Warning: Failed to process input image: {first_image}")
+            raise ValueError(
+                f"Failed to process input image: {first_image}. Please check if the image exists and is valid.")
 
     return await generate_video_with_provider(
         prompt=prompt,
