@@ -24,7 +24,6 @@ from .image_canvas_utils import (
 async def generate_image_with_provider(
     prompt: str,
     aspect_ratio: str,
-    model_name: str,
     model: str,
     tool_call_id: str,
     config: Any,
@@ -45,6 +44,7 @@ async def generate_image_with_provider(
     Returns:
         str: 生成结果消息
     """
+    model_name = model.split('/')[-1]  # 有的模型名称包含 "/"，比如 "openai/gpt-image-1"，需要处理
     print(f'🛠️ Image Generation {model_name} tool_call_id', tool_call_id)
     ctx = config.get('configurable', {})
     canvas_id = ctx.get('canvas_id', '')
