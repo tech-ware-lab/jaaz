@@ -47,7 +47,7 @@ class AgentManager:
             model, image_designer_config)
 
         video_designer_config = VideoDesignerAgentConfig(
-            video_tools, system_prompt)
+            video_tools)
         video_designer_agent = AgentManager._create_langgraph_agent(
             model, video_designer_config)
 

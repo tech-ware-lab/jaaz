@@ -125,11 +125,15 @@ class JaazVideoProvider(VideoProviderBase, provider_name="jaaz"):
             # Make API request
             async with HttpClient.create() as client:
                 response = await client.post(url, headers=headers, json=data)
-
+                print('👇response', url, response.content)
                 if response.status_code != 200:
-                    error_data = response.json() if response.content else {}
-                    error_message = error_data.get(
-                        "error", f"HTTP {response.status_code}")
+                    try:
+                        error_data = response.json() if response.content else {}
+                        error_message = error_data.get(
+                            "error", f"HTTP {response.status_code}")
+                    except Exception as e:
+                        # If response is not JSON, use the raw text or status code
+                        error_message = f"HTTP {response.status_code} {response.text if response.content else ''}"
                     raise Exception(
                         f'Video generation failed: {error_message}')
 

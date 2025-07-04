@@ -6,12 +6,13 @@ class VideoDesignerAgentConfig(BaseAgentConfig):
     """视频设计智能体 - 专门负责视频生成
     """
 
-    def __init__(self, tool_names: List[str], system_prompt: str = "") -> None:
+    def __init__(self, tool_names: List[str]) -> None:
         # 将工具名称列表转换为工具配置列表
         tools: List[ToolConfig] = [{'tool': tool_name}
                                    for tool_name in tool_names]
 
         video_generation_prompt = """
+You are a video designer. You are responsible for generating videos based on user request. You can generate video from text prompt and images.
 
 VIDEO GENERATION RULES:
 - Generate high-quality videos based on user prompts
@@ -41,8 +42,7 @@ When video generation fails, you MUST:
 IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with helpful guidance for the user.
 """
 
-        full_system_prompt = system_prompt + \
-            video_generation_prompt + error_handling_prompt
+        full_system_prompt = video_generation_prompt + error_handling_prompt
 
         # 视频设计智能体不需要切换到其他智能体
         handoffs: List[HandoffConfig] = [
