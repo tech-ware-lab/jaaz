@@ -46,17 +46,20 @@ class ToolService:
 
             # 如果已经注册过这个模型，跳过
             if model_name in self._registered_models:
-                registered_tools.append(self._registered_models[model_name])
                 continue
 
             tool_result = self._import_tool_for_model(model_name, model_type)
             if tool_result:
                 tool_name, tool_function = tool_result
+                # 如果工具已经注册过，跳过
+                if tool_name in self.tools:
+                    continue
+
                 try:
                     self.register_tool(tool_name, tool_function)
                     self._registered_models[model_name] = tool_name
                     registered_tools.append(tool_name)
-                    print(f"✅ 已注册工具: {tool_name} for model: {model_name}")
+                    print(f"✅ 注册工具: {tool_name} for model: {model_name}")
                 except Exception as e:
                     print(f"❌ 注册工具失败 {tool_name} for model {model_name}: {e}")
 
@@ -87,6 +90,21 @@ class ToolService:
                 elif 'imagen-4' in model_name:
                     from tools.generate_image_by_imagen_4 import generate_image_by_imagen_4
                     return ('generate_image_by_imagen_4', generate_image_by_imagen_4)
+                elif 'recraft-v3' in model_name:
+                    from tools.generate_image_by_recraft_v3 import generate_image_by_recraft_v3
+                    return ('generate_image_by_recraft_v3', generate_image_by_recraft_v3)
+                elif 'flux-1.1-pro' in model_name:
+                    from tools.generate_image_by_flux_1_1_pro import generate_image_by_flux_1_1_pro
+                    return ('generate_image_by_flux_1_1_pro', generate_image_by_flux_1_1_pro)
+                elif 'flux-kontext-pro' in model_name:
+                    from tools.generate_image_by_flux_kontext_pro import generate_image_by_flux_kontext_pro
+                    return ('generate_image_by_flux_kontext_pro', generate_image_by_flux_kontext_pro)
+                elif 'flux-kontext-max' in model_name:
+                    from tools.generate_image_by_flux_kontext_max import generate_image_by_flux_kontext_max
+                    return ('generate_image_by_flux_kontext_max', generate_image_by_flux_kontext_max)
+                elif 'doubao-seedream-3' in model_name:
+                    from tools.generate_image_by_doubao_seedream_3 import generate_image_by_doubao_seedream_3
+                    return ('generate_image_by_doubao_seedream_3', generate_image_by_doubao_seedream_3)
 
             # 视频模型的工具导入
             if model_type == 'video':
