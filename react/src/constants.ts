@@ -78,7 +78,7 @@ export const DEFAULT_PROVIDERS_CONFIG: { [key: string]: LLMConfig } = {
       // image models
       'google/imagen-4': { type: 'image' },
       // 'google/imagen-4-ultra': { type: 'image' },
-      'black-forest-labs/flux-1.1-pro': { type: 'image' },
+      // 'black-forest-labs/flux-1.1-pro': { type: 'image' },
       'black-forest-labs/flux-kontext-pro': { type: 'image' },
       'black-forest-labs/flux-kontext-max': { type: 'image' },
       'recraft-ai/recraft-v3': { type: 'image' },

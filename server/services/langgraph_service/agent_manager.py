@@ -1,8 +1,9 @@
 from typing import List, Dict, Any, Optional
 from langgraph.prebuilt import create_react_agent  # type: ignore
+from langgraph.graph.graph import CompiledGraph
 from langchain_core.tools import BaseTool
 
-from .configs import PlannerAgentConfig, ImageDesignerAgentConfig, VideoDesignerAgentConfig, ImageVideoCreatorAgentConfig, create_handoff_tool
+from .configs import PlannerAgentConfig, ImageDesignerAgentConfig, VideoDesignerAgentConfig, create_handoff_tool, BaseAgentConfig
 from services.tool_service import tool_service
 
 
@@ -17,7 +18,7 @@ class AgentManager:
         model: Any,
         registered_tools: List[str],
         system_prompt: str = ""
-    ) -> List[Any]:
+    ) -> List[CompiledGraph]:
         """创建所有智能体
 
         Args:
@@ -35,26 +36,22 @@ class AgentManager:
         print(f"📸 图像工具: {image_tools}")
         print(f"🎬 视频工具: {video_tools}")
 
-        planner_config = PlannerAgentConfig().get_config()
+        planner_config = PlannerAgentConfig()
         planner_agent = AgentManager._create_langgraph_agent(
             model, planner_config)
 
-        image_video_creator_config = ImageVideoCreatorAgentConfig(
-            system_prompt).get_config()
-        image_video_creator_agent = AgentManager._create_langgraph_agent(
-            model, image_video_creator_config)
-
         image_designer_config = ImageDesignerAgentConfig(
-            image_tools, system_prompt).get_config()
+            image_tools, system_prompt)
+        print('👇image_designer_config tools', image_designer_config.tools)
         image_designer_agent = AgentManager._create_langgraph_agent(
             model, image_designer_config)
 
         video_designer_config = VideoDesignerAgentConfig(
-            video_tools, system_prompt).get_config()
+            video_tools, system_prompt)
         video_designer_agent = AgentManager._create_langgraph_agent(
             model, video_designer_config)
 
-        return [planner_agent, image_video_creator_agent, image_designer_agent, video_designer_agent]
+        return [planner_agent, image_designer_agent, video_designer_agent]
 
     @staticmethod
     def _filter_image_tools(tools: List[str]) -> List[str]:
@@ -69,8 +66,8 @@ class AgentManager:
     @staticmethod
     def _create_langgraph_agent(
         model: Any,
-        config: Dict[str, Any]
-    ) -> Any:
+        config: BaseAgentConfig
+    ) -> CompiledGraph:
         """根据配置创建单个 LangGraph 智能体
 
         Args:
@@ -82,7 +79,7 @@ class AgentManager:
         """
         # 创建智能体间切换工具
         handoff_tools: List[BaseTool] = []
-        for handoff in config.get('handoffs', []):
+        for handoff in config.handoffs:
             handoff_tool = create_handoff_tool(
                 agent_name=handoff['agent_name'],
                 description=handoff['description'],
@@ -92,17 +89,17 @@ class AgentManager:
 
         # 获取业务工具
         business_tools: List[BaseTool] = []
-        for tool_json in config.get('tools', []):
+        for tool_json in config.tools:
             tool = tool_service.get_tool(tool_json.get('tool', ''))
             if tool:
                 business_tools.append(tool)
 
         # 创建并返回 LangGraph 智能体
         return create_react_agent(
-            name=config.get('name'),
+            name=config.name,
             model=model,
             tools=[*business_tools, *handoff_tools],
-            prompt=config.get('system_prompt', '')
+            prompt=config.system_prompt
         )
 
     @staticmethod
