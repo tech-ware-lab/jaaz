@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
 from .image_generation import generate_image_with_provider
+from .utils.image_utils import process_input_image
 
 
 class GenerateImageByGptImage1InputSchema(BaseModel):
@@ -32,13 +33,28 @@ async def generate_image_by_gpt_image_1(
     """
     Generate an image using the new provider framework
     """
+    # Process input images if provided
+    processed_input_images: list[str] | None = None
+    if input_images:
+        processed_input_images = []
+        for image_path in input_images:
+            processed_image = await process_input_image(image_path)
+            if processed_image:
+                processed_input_images.append(processed_image)
+
+        if processed_input_images:
+            print(
+                f"Using {len(processed_input_images)} input images for generation")
+        else:
+            print("Warning: No valid input images found")
+
     return await generate_image_with_provider(
         prompt=prompt,
         aspect_ratio=aspect_ratio,
         model="openai/gpt-image-1",
         tool_call_id=tool_call_id,
         config=config,
-        input_images=input_images,
+        input_images=processed_input_images,
     )
 
 

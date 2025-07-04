@@ -159,6 +159,9 @@ class JaazImageProvider(ImageProviderBase, provider_name="jaaz"):
             if input_images:
                 # For Replicate format, we take the first image as input_image
                 data['input_image'] = input_images[0]
+                if len(input_images) > 1:
+                    print(
+                        "Warning: Replicate format only supports single image input. Using first image.")
 
             res = await self._make_request(url, headers, data)
             return await self._process_response(res, "Jaaz")
@@ -195,9 +198,13 @@ class JaazImageProvider(ImageProviderBase, provider_name="jaaz"):
                 "prompt": enhanced_prompt,
                 "n": kwargs.get("num_images", 1),
                 "size": 'auto',
-                "input_images": input_images,
                 "mask": None,  # Add mask here if needed
             }
+
+            # Add input images if provided
+            if input_images:
+                data["input_images"] = input_images
+                print(f"Using {len(input_images)} input images for generation")
 
             res = await self._make_request(url, headers, data)
             return await self._process_response(res, "Jaaz OpenAI")

@@ -1,3 +1,4 @@
+import os
 import aiofiles
 from PIL import Image
 from io import BytesIO
@@ -5,6 +6,7 @@ import base64
 from typing import Tuple
 from nanoid import generate
 from utils.http_client import HttpClient
+from services.config_service import FILES_DIR
 
 
 def generate_image_id() -> str:
@@ -79,3 +81,44 @@ async def get_image_info_and_save(
 
 # Image generation orchestration moved to tools/image_generation/image_generation_core.py
 # Notification functions moved to tools/image_generation/image_canvas_utils.py
+
+
+async def process_input_image(input_image: str | None) -> str | None:
+    """
+    Process input image and convert to base64 format
+
+    Args:
+        input_image: Image file path
+
+    Returns:
+        Base64 encoded image with data URL, or None if no image
+    """
+    if not input_image:
+        return None
+
+    try:
+        full_path = os.path.join(FILES_DIR, input_image)
+        if not os.path.exists(full_path):
+            print(f"Warning: Image file not found: {full_path}")
+            return None
+
+        async with aiofiles.open(full_path, 'rb') as image_file:
+            image_data = await image_file.read()
+            b64_data = base64.b64encode(image_data).decode('utf-8')
+
+            # Determine MIME type based on file extension
+            ext = os.path.splitext(input_image)[1].lower()
+            mime_type_map = {
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.webp': 'image/webp'
+            }
+            mime_type = mime_type_map.get(ext, 'image/png')
+
+            data_url = f"data:{mime_type};base64,{b64_data}"
+            return data_url
+
+    except Exception as e:
+        print(f"Error processing image {input_image}: {e}")
+        return None
