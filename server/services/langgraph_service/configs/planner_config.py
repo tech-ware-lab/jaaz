@@ -1,5 +1,5 @@
-from typing import List, Dict, Any
-from .base_config import BaseAgentConfig, ToolConfig
+from typing import List
+from .base_config import BaseAgentConfig, ToolConfig, HandoffConfig
 
 
 class PlannerAgentConfig(BaseAgentConfig):
@@ -43,7 +43,7 @@ class PlannerAgentConfig(BaseAgentConfig):
             ```
             """
 
-        handoffs: List[Dict[str, Any]] = [
+        handoffs: List[HandoffConfig] = [
             {
                 'agent_name': 'image_designer',
                 'description': """

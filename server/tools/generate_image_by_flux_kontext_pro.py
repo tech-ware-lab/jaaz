@@ -21,7 +21,7 @@ class GenerateImageByFluxKontextProInputSchema(BaseModel):
 
 
 @tool("generate_image_by_flux_kontext_pro",
-      description="Generate an image by Flux Kontext Pro model using text prompt or optionally pass an image for reference or editing. Use this model for high-quality image generation with Flux's advanced AI. Supports multiple providers with automatic fallback.",
+      description="Generate an image by Flux Kontext Pro model using text prompt or optionally pass an image for reference or editing. Good for object removal, image editing, etc. Only one input image is allowed.",
       args_schema=GenerateImageByFluxKontextProInputSchema)
 async def generate_image_by_flux_kontext_pro(
     prompt: str,

@@ -114,8 +114,8 @@ async def langgraph_multi_agent(
             registered_tools,  # 传入所有注册的工具
             system_prompt or ""
         )
-        agent_names = ['planner', 'image_video_creator',
-                       'image_designer', 'video_designer']
+        agent_names = [agent.name for agent in agents]
+        print('👇agent_names', agent_names)
         last_agent = AgentManager.get_last_active_agent(
             fixed_messages, agent_names)
 
@@ -123,7 +123,7 @@ async def langgraph_multi_agent(
 
         # 4. 创建智能体群组
         swarm = create_swarm(
-            agents=agents,
+            agents=agents,  # type: ignore
             default_active_agent=last_agent if last_agent else agent_names[0]
         )
 

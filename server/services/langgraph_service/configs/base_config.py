@@ -67,6 +67,12 @@ def create_handoff_tool(
     return handoff_to_agent
 
 
+class HandoffConfig(TypedDict):
+    """切换智能体配置"""
+    agent_name: str
+    description: str
+
+
 class BaseAgentConfig:
     """智能体配置基类
 
@@ -79,23 +85,9 @@ class BaseAgentConfig:
         name: str,
         tools: Sequence[ToolConfig],
         system_prompt: str,
-        handoffs: Optional[Sequence[Dict[str, Any]]] = None
+        handoffs: Optional[List[HandoffConfig]] = None
     ) -> None:
         self.name = name
         self.tools = tools
         self.system_prompt = system_prompt
-        self.handoffs: List[Dict[str, Any]] = list(
-            handoffs) if handoffs else []
-
-    def get_config(self) -> Dict[str, Any]:
-        """获取智能体配置
-
-        Returns:
-            Dict[str, Any]: 包含智能体配置信息的字典，用于后续创建实际的 LangGraph 智能体
-        """
-        return {
-            'name': self.name,
-            'tools': self.tools,
-            'system_prompt': self.system_prompt,
-            'handoffs': self.handoffs
-        }
+        self.handoffs: List[HandoffConfig] = handoffs or []

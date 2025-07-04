@@ -1,5 +1,5 @@
-from typing import List, Dict, Any
-from .base_config import BaseAgentConfig, ToolConfig
+from typing import List
+from .base_config import BaseAgentConfig, ToolConfig, HandoffConfig
 
 
 class ImageDesignerAgentConfig(BaseAgentConfig):
@@ -43,13 +43,13 @@ IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with he
             batch_generation_prompt + error_handling_prompt
 
         # 图像设计智能体不需要切换到其他智能体
-        handoffs: List[Dict[str, Any]] = [
-            # {
-            #     'agent_name': 'image_video_creator',
-            #     'description': """
-            #             Transfer user to the image_video_creator. About this agent: Coordinates image and video generation tasks efficiently.
-            #             """
-            # }
+        handoffs: List[HandoffConfig] = [
+            {
+                'agent_name': 'video_designer',
+                'description': """
+                        Transfer user to the video_designer. About this agent: Specialize in generating videos from text prompts or images.
+                        """
+            }
         ]
 
         super().__init__(
