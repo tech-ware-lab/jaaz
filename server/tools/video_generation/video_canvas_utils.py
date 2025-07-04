@@ -1,3 +1,8 @@
+"""
+Video canvas utilities module
+Contains functions for video processing, canvas operations, and notifications
+"""
+
 import json
 import time
 import os
@@ -200,7 +205,7 @@ async def get_video_info_and_save(
                 print(f"Width: {width}, Height: {height}")
                 break
 
-        extension = "mp4"  # 默认使用 mp4，实际情况可以根据 codec_name 灵活判断
+        extension = "mp4"  # Default to mp4, can be flexible based on codec_name
 
         # Get mime type
         mime_type = mimetypes.types_map.get(".mp4", "video/mp4")

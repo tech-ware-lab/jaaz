@@ -108,9 +108,9 @@ class ToolService:
 
             # 视频模型的工具导入
             if model_type == 'video':
-                if 'doubao-seedance-1-0-pro' in model_name:
-                    from tools.vid_generators.seedance_v1 import generate_video_doubao_seedance_1_0_pro
-                    return ('generate_video_doubao_seedance_1_0_pro', generate_video_doubao_seedance_1_0_pro)
+                if 'doubao-seedance-1-0-pro-250528' in model_name:
+                    from tools.generate_video_by_seedance_v1 import generate_video_by_seedance_v1
+                    return ('generate_video_by_seedance_v1', generate_video_by_seedance_v1)
 
             print(
                 f"⚠️ 未找到对应的工具: model_name={model_name}, model_type={model_type}")
