@@ -2,7 +2,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from .utils.image_utils import generate_image_with_provider
+from .image_generation import generate_image_with_provider
 
 
 class GenerateImageByImagen4InputSchema(BaseModel):

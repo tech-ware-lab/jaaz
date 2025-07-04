@@ -76,10 +76,12 @@ def create_image_provider(provider_name: str) -> ImageProviderBase:
     """Factory function to create image provider instance"""
     from .jaaz_provider import JaazImageProvider
     from .openai_provider import OpenAIImageProvider
+    from .replicate_provider import ReplicateImageProvider
 
     providers = {
         "jaaz": JaazImageProvider,
         "openai": OpenAIImageProvider,
+        "replicate": ReplicateImageProvider,
     }
 
     if provider_name not in providers:
