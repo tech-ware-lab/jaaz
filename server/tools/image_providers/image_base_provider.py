@@ -1,11 +1,33 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, Tuple, List
-from services.config_service import config_service
+from typing import Optional, Dict, Any, Tuple, List, Type
 from models.config_model import ModelInfo
 
 
 class ImageProviderBase(ABC):
     """Image generation provider base class"""
+
+    # 类属性：提供商注册表
+    _providers: Dict[str, Type['ImageProviderBase']] = {}
+
+    def __init_subclass__(cls, provider_name: Optional[str] = None, **kwargs: Any):
+        """自动注册提供商"""
+        super().__init_subclass__(**kwargs)
+        if provider_name:
+            cls._providers[provider_name] = cls
+
+    @classmethod
+    def create_provider(cls, provider_name: str) -> 'ImageProviderBase':
+        """工厂方法：创建提供商实例"""
+        if provider_name not in cls._providers:
+            raise ValueError(f"Unknown provider: {provider_name}")
+
+        provider_class = cls._providers[provider_name]
+        return provider_class()  # 让各提供商自己处理配置
+
+    @classmethod
+    def get_available_providers(cls) -> List[str]:
+        """获取所有可用的提供商"""
+        return list(cls._providers.keys())
 
     @abstractmethod
     async def generate(
@@ -32,21 +54,6 @@ class ImageProviderBase(ABC):
         pass
 
 
-def get_provider_config(provider_name: str) -> Dict[str, Any]:
-    """Get configuration for specific image provider"""
-    app_config = config_service.app_config
-    provider_config = app_config.get(provider_name, {})
-
-    if not provider_config.get("url") or not provider_config.get("api_key"):
-        raise ValueError(
-            f"Provider '{provider_name}' is not properly configured")
-
-    return {
-        "url": provider_config.get("url", ""),
-        "api_key": provider_config.get("api_key", ""),
-    }
-
-
 def get_default_provider(model_info_list: Optional[List[ModelInfo]] = None) -> str:
     """Get default provider for image generation
 
@@ -70,24 +77,3 @@ def get_default_provider(model_info_list: Optional[List[ModelInfo]] = None) -> s
 
     # Default fallback
     return "jaaz"
-
-
-def create_image_provider(provider_name: str) -> ImageProviderBase:
-    """Factory function to create image provider instance"""
-    from .jaaz_provider import JaazImageProvider
-    from .openai_provider import OpenAIImageProvider
-    from .replicate_provider import ReplicateImageProvider
-
-    providers = {
-        "jaaz": JaazImageProvider,
-        "openai": OpenAIImageProvider,
-        "replicate": ReplicateImageProvider,
-    }
-
-    if provider_name not in providers:
-        raise ValueError(f"Unsupported image provider: {provider_name}")
-
-    provider_class = providers[provider_name]
-    provider_config = get_provider_config(provider_name)
-
-    return provider_class(provider_config)

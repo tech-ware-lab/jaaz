@@ -1,17 +1,18 @@
 import os
 import traceback
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from .image_base_provider import ImageProviderBase
 from ..utils.image_utils import get_image_info_and_save, generate_image_id
 from services.config_service import FILES_DIR
 from utils.http_client import HttpClient
+from services.config_service import config_service
 
-
-class ReplicateImageProvider(ImageProviderBase):
+class ReplicateImageProvider(ImageProviderBase, provider_name="replicate"):
     """Replicate image generation provider implementation"""
 
-    def __init__(self, config: Dict[str, Any]):
-        self.config = config
+    def __init__(self):
+        # 自己获取和验证配置
+        config = config_service.app_config.get('replicate', {})
         self.api_key = config.get("api_key", "")
 
         if not self.api_key:

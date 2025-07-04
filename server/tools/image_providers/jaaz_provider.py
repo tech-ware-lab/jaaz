@@ -1,12 +1,13 @@
 import os
 import traceback
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Any
 from pydantic import BaseModel
 from openai.types import Image
 from .image_base_provider import ImageProviderBase
 from ..utils.image_utils import get_image_info_and_save, generate_image_id
 from services.config_service import FILES_DIR
 from utils.http_client import HttpClient
+from services.config_service import config_service
 
 
 class JaazImagesResponse(BaseModel):
@@ -18,13 +19,13 @@ class JaazImagesResponse(BaseModel):
     """The list of generated images."""
 
 
-class JaazImageProvider(ImageProviderBase):
+class JaazImageProvider(ImageProviderBase, provider_name="jaaz"):
     """Jaaz Cloud image generation provider implementation"""
 
-    def __init__(self, config: Dict[str, Any]):
-        self.config = config
-        self.api_url = config.get("url", "").rstrip("/")
-        self.api_token = config.get("api_key", "")
+    def __init__(self):
+        config = config_service.app_config.get('jaaz', {})
+        self.api_url = str(config.get("url", "")).rstrip("/")
+        self.api_token = str(config.get("api_key", ""))
 
         if not self.api_url:
             raise ValueError("Jaaz API URL is not configured")
@@ -92,10 +93,6 @@ class JaazImageProvider(ImageProviderBase):
                     image_url,
                     os.path.join(FILES_DIR, f'{image_id}')
                 )
-
-                # Ensure mime_type is not None
-                if mime_type is None:
-                    raise Exception('Failed to determine image MIME type')
 
                 filename = f'{image_id}.{extension}'
                 return mime_type, width, height, filename

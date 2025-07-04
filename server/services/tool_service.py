@@ -21,8 +21,9 @@ class ToolService:
     def register_tool(self, tool_name: str, tool_function: BaseTool):
         """注册单个工具"""
         if tool_name in self.tools:
-            raise ValueError(
-                f"Tool {tool_name} already registered, please use a unique name")
+            # 跳过已注册的工具
+            return
+
         self.tools[tool_name] = tool_function
 
     def register_tools_from_models(self, model_list: List[ModelInfo]) -> List[str]:
