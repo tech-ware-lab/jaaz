@@ -12,11 +12,11 @@ class GenerateVideoBySeedanceV1InputSchema(BaseModel):
     )
     resolution: str = Field(
         default="480p",
-        description="Optional. The resolution of the video. Allowed values: 480p, 1080p."
+        description="Optional. The resolution of the video. Use 480p if not explicitly specified by user. Allowed values: 480p, 1080p."
     )
     duration: int = Field(
         default=5,
-        description="Optional. The duration of the video in seconds. Allowed values: 5, 10."
+        description="Optional. The duration of the video in seconds. Use 5 by default. Allowed values: 5, 10."
     )
     aspect_ratio: str = Field(
         default="16:9",
