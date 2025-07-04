@@ -2,39 +2,36 @@ import json
 import traceback
 import os
 from typing import Optional, Dict, Any
-from .base import SeedanceV1ProviderBase
+from .video_base_provider import VideoProviderBase
 from utils.http_client import HttpClient
-from services.config_service import FILES_DIR
+from services.config_service import config_service
 
 
-class SeedanceV1JaazProvider(SeedanceV1ProviderBase):
-    """Jaaz Cloud implementation for Seedance V1"""
+class JaazVideoProvider(VideoProviderBase, provider_name="jaaz"):
+    """Jaaz Cloud video generation provider implementation"""
 
-    def __init__(self, config: Dict[str, Any]):
-        self.config = config
-        self.api_key = config.get("api_key", "")
-        self.base_url = config.get("url", "").rstrip("/")
-        self.model_name = "doubao-seedance-1-0-pro-250528"
+    def __init__(self):
+        config = config_service.app_config.get('jaaz', {})
+        self.api_url = str(config.get("url", "")).rstrip("/")
+        self.api_token = str(config.get("api_key", ""))
 
-        if not self.api_key:
-            raise ValueError(
-                "Jaaz Cloud API key is not configured for Seedance V1")
-        if not self.base_url:
-            raise ValueError(
-                "Jaaz Cloud URL is not configured for Seedance V1")
+        if not self.api_url:
+            raise ValueError("Jaaz API URL is not configured")
+        if not self.api_token:
+            raise ValueError("Jaaz API token is not configured")
 
-    def _build_api_url(self) -> str:
-        """Build API URL for Jaaz Cloud"""
-        if self.base_url.rstrip('/').endswith('/api/v1'):
-            return f"{self.base_url.rstrip('/')}/video/generations"
+    def _build_url(self) -> str:
+        """Build request URL"""
+        if self.api_url.rstrip('/').endswith('/api/v1'):
+            return f"{self.api_url.rstrip('/')}/video/generations"
         else:
-            return f"{self.base_url.rstrip('/')}/api/v1/video/generations"
+            return f"{self.api_url.rstrip('/')}/api/v1/video/generations"
 
-    def _build_headers(self) -> Dict[str, str]:
+    def _build_headers(self) -> dict[str, str]:
         """Build request headers"""
         return {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_token}",
+            "Content-Type": "application/json"
         }
 
     async def _process_input_images(self, input_images: Optional[list[str]]) -> Optional[list[str]]:
@@ -44,15 +41,16 @@ class SeedanceV1JaazProvider(SeedanceV1ProviderBase):
 
         processed_images = []
         for image_id in input_images:
-            image_path = os.path.join(FILES_DIR, image_id)
-            if os.path.exists(image_path):
-                processed_images.append(image_id)
+            # For now, just pass the image IDs as they are
+            # The actual image processing will be handled by the API
+            processed_images.append(image_id)
 
         return processed_images if processed_images else None
 
     def _build_request_payload(
         self,
         prompt: str,
+        model: str,
         resolution: str = "480p",
         duration: int = 5,
         aspect_ratio: str = "16:9",
@@ -63,7 +61,7 @@ class SeedanceV1JaazProvider(SeedanceV1ProviderBase):
         """Build request payload for Jaaz Cloud API"""
         payload = {
             "prompt": prompt,
-            "model": self.model_name,
+            "model": model,
             "resolution": resolution,
             "duration": duration,
             "aspect_ratio": aspect_ratio,
@@ -79,16 +77,17 @@ class SeedanceV1JaazProvider(SeedanceV1ProviderBase):
         """Extract video URL from Jaaz Cloud API response"""
         if "data" not in response_data or not response_data["data"]:
             raise Exception(
-                "Seedance V1 video generation failed: No video data in response")
+                "Video generation failed: No video data in response")
 
         video_url = response_data["data"][0]["url"]
-        print(f"🎥 Seedance V1 (Jaaz Cloud) video URL: {video_url}")
+        print(f"🎥 Jaaz Cloud video URL: {video_url}")
         return video_url
 
     async def generate(
         self,
         prompt: str,
-        resolution: str = "720p",
+        model: str,
+        resolution: str = "480p",
         duration: int = 5,
         aspect_ratio: str = "16:9",
         input_images: Optional[list[str]] = None,
@@ -96,21 +95,22 @@ class SeedanceV1JaazProvider(SeedanceV1ProviderBase):
         **kwargs: Any
     ) -> str:
         """
-        Generate video using Jaaz Cloud Seedance V1 API
+        Generate video using Jaaz Cloud API
 
         Returns:
             str: Video URL for download
         """
         try:
-            api_url = self._build_api_url()
+            url = self._build_url()
             headers = self._build_headers()
 
             # Process input images
             processed_images = await self._process_input_images(input_images)
 
             # Build request payload
-            payload = self._build_request_payload(
+            data = self._build_request_payload(
                 prompt=prompt,
+                model=model,
                 resolution=resolution,
                 duration=duration,
                 aspect_ratio=aspect_ratio,
@@ -120,29 +120,32 @@ class SeedanceV1JaazProvider(SeedanceV1ProviderBase):
             )
 
             print(
-                f"🎥 Starting Seedance V1 (Jaaz Cloud) video generation with payload: {json.dumps(payload, indent=2)}")
+                f'🎥 Jaaz API request: {url}, model: {data["model"]}, prompt: {data["prompt"]}')
 
             # Make API request
             async with HttpClient.create() as client:
-                response = await client.post(api_url, headers=headers, json=payload)
+                response = await client.post(url, headers=headers, json=data)
 
                 if response.status_code != 200:
                     error_data = response.json() if response.content else {}
                     error_message = error_data.get(
                         "error", f"HTTP {response.status_code}")
                     raise Exception(
-                        f"Jaaz Cloud Seedance V1 generation failed: {error_message}")
+                        f'Video generation failed: {error_message}')
 
+                if not response.content:
+                    raise Exception(
+                        'Video generation failed: Empty response from server')
+
+                # Parse JSON data
                 result = response.json()
-                print(
-                    f"🎥 Seedance V1 (Jaaz Cloud) API response: {json.dumps(result, indent=2)}")
+                print('🎥 Jaaz API response', result)
 
                 # Extract and return video URL
                 video_url = self._extract_video_url(result)
                 return video_url
 
         except Exception as e:
-            print(
-                f"🎥 Error generating video with Jaaz Cloud Seedance V1: {str(e)}")
+            print('Error generating video with Jaaz:', e)
             traceback.print_exc()
             raise e

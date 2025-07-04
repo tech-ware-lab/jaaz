@@ -5,6 +5,7 @@ import { useConfigs } from '@/contexts/configs'
 import { eventBus, TCanvasAddImagesToChatEvent } from '@/lib/event'
 import { cn, dataURLToFile } from '@/lib/utils'
 import { Message, Model } from '@/types/types'
+import { ModelInfo } from '@/api/model'
 import { useMutation } from '@tanstack/react-query'
 import { useDrop } from 'ahooks'
 import { produce } from 'immer'
@@ -26,7 +27,7 @@ type ChatTextareaProps = {
     data: Message[],
     configs: {
       textModel: Model
-      imageModel: Model
+      toolList: ModelInfo[]
     }
   ) => void
   onCancelChat?: () => void
@@ -41,7 +42,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   onCancelChat,
 }) => {
   const { t } = useTranslation()
-  const { textModel, imageModel } = useConfigs()
+  const { textModel, selectedTools } = useConfigs()
   const [prompt, setPrompt] = useState('')
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
@@ -120,16 +121,12 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
     onSendMessages(newMessage, {
       textModel: textModel,
-      imageModel: imageModel || {
-        provider: '',
-        model: '',
-        url: '',
-      },
+      toolList: selectedTools && selectedTools.length > 0 ? selectedTools : [],
     })
   }, [
     pending,
     textModel,
-    imageModel,
+    selectedTools,
     prompt,
     onSendMessages,
     images,
@@ -323,7 +320,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             variant="default"
             size="icon"
             onClick={handleSendPrompt}
-            disabled={!textModel || !imageModel || prompt.length === 0}
+            disabled={!textModel || !selectedTools || prompt.length === 0}
           >
             <ArrowUp className="size-4" />
           </Button>

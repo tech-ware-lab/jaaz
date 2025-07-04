@@ -43,7 +43,7 @@ from services.db_service import db_service
 from services.websocket_service import broadcast_session_update, send_to_websocket
 
 from .img_generators import ComfyUIWorkflowRunner
-from .vid_generators.video_utils import generate_new_video_element
+from tools.video_generation.video_canvas_utils import generate_new_video_element
 
 
 def _python_type(param_type: str, default: Any):

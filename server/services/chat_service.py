@@ -3,15 +3,17 @@
 # Import necessary modules
 import asyncio
 import json
+from typing import Dict, Any, List, Optional
 
 # Import service modules
 from services.db_service import db_service
 from services.langgraph_service import langgraph_multi_agent
-from services.config_service import config_service
 from services.websocket_service import send_to_websocket
 from services.stream_service import add_stream_task, remove_stream_task
+from models.config_model import ModelInfo
 
-async def handle_chat(data):
+
+async def handle_chat(data: Dict[str, Any]) -> None:
     """
     Handle an incoming chat request.
 
@@ -29,16 +31,19 @@ async def handle_chat(data):
             - session_id: unique session identifier
             - canvas_id: canvas identifier (contextual use)
             - text_model: text model configuration
-            - image_model: image model configuration
+            - tool_list: list of tool model configurations (images/videos)
     """
     # Extract fields from incoming data
-    messages = data.get('messages')
-    session_id = data.get('session_id')
-    canvas_id = data.get('canvas_id')
-    text_model = data.get('text_model')
-    image_model = data.get('image_model')
+    messages: List[Dict[str, Any]] = data.get('messages', [])
+    session_id: str = data.get('session_id', '')
+    canvas_id: str = data.get('canvas_id', '')
+    text_model: ModelInfo = data.get('text_model', {})
+    tool_list: List[ModelInfo] = data.get('tool_list', [])
+
+    print('👇 chat_service 接收到 tool_list', tool_list)
+
     # TODO: save and fetch system prompt from db or settings config
-    system_prompt = data.get('system_prompt')
+    system_prompt: Optional[str] = data.get('system_prompt')
 
     # If there is only one message, create a new chat session
     if len(messages) == 1:
@@ -51,7 +56,7 @@ async def handle_chat(data):
 
     # Create and start langgraph_agent task for chat processing
     task = asyncio.create_task(langgraph_multi_agent(
-        messages, canvas_id, session_id, text_model, image_model, system_prompt))
+        messages, canvas_id, session_id, text_model, tool_list, system_prompt))
 
     # Register the task in stream_tasks (for possible cancellation)
     add_stream_task(session_id, task)

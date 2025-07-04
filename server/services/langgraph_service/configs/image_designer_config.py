@@ -6,8 +6,10 @@ class ImageDesignerAgentConfig(BaseAgentConfig):
     """图像设计智能体 - 专门负责图像生成
     """
 
-    def __init__(self, tool_name: str, system_prompt: str = "") -> None:
-        tools: List[ToolConfig] = [{'tool': tool_name}]
+    def __init__(self, tool_names: List[str], system_prompt: str = "") -> None:
+        # 将工具名称列表转换为工具配置列表
+        tools: List[ToolConfig] = [{'tool': tool_name}
+                                   for tool_name in tool_names]
 
         batch_generation_prompt = """
 
@@ -42,12 +44,12 @@ IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with he
 
         # 图像设计智能体不需要切换到其他智能体
         handoffs: List[Dict[str, Any]] = [
-            {
-                'agent_name': 'image_video_creator',
-                'description': """
-                        Transfer user to the image_video_creator. About this agent: Coordinates image and video generation tasks efficiently.
-                        """
-            }
+            # {
+            #     'agent_name': 'image_video_creator',
+            #     'description': """
+            #             Transfer user to the image_video_creator. About this agent: Coordinates image and video generation tasks efficiently.
+            #             """
+            # }
         ]
 
         super().__init__(
