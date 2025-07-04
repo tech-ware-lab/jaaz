@@ -12,9 +12,6 @@ class GenerateImageByGptImage1InputSchema(BaseModel):
     aspect_ratio: str = Field(
         description="Required. Aspect ratio of the image, only these values are allowed: 1:1, 16:9, 4:3, 3:4, 9:16. Choose the best fitting aspect ratio according to the prompt. Best ratio for posters is 3:4"
     )
-    model: str = Field(
-        description="Required. The model to use for image generation, e.g. 'openai/gpt-image-1'"
-    )
     input_images: list[str] | None = Field(
         default=None,
         description="Optional; Images to use as reference. Pass a list of image_id here, e.g. ['im_jurheut7.png', 'im_hfuiut78.png']. Best for image editing cases like: Editing specific parts of the image, Removing specific objects, Maintaining visual elements across scenes (character/object consistency), Generating new content in the style of the reference (style transfer), etc."
@@ -28,7 +25,6 @@ class GenerateImageByGptImage1InputSchema(BaseModel):
 async def generate_image_by_gpt_image_1(
     prompt: str,
     aspect_ratio: str,
-    model: str,
     config: RunnableConfig,
     tool_call_id: Annotated[str, InjectedToolCallId],
     input_images: list[str] | None = None,
@@ -39,8 +35,7 @@ async def generate_image_by_gpt_image_1(
     return await generate_image_with_provider(
         prompt=prompt,
         aspect_ratio=aspect_ratio,
-        model_name='gpt-image-1',
-        model=model,
+        model="openai/gpt-image-1",
         tool_call_id=tool_call_id,
         config=config,
         input_images=input_images,
