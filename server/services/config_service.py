@@ -1,6 +1,7 @@
 import copy
 import os
 import traceback
+import aiofiles
 import toml
 from typing import Dict, TypedDict, Literal, Optional
 
@@ -122,19 +123,16 @@ VIDEO_FORMATS = (
 class ConfigService:
     def __init__(self):
         self.app_config: AppConfig = copy.deepcopy(DEFAULT_PROVIDERS_CONFIG)
-        self.root_dir = os.path.dirname(
-            os.path.dirname(os.path.dirname(__file__)))
         self.config_file = os.getenv(
             "CONFIG_PATH", os.path.join(USER_DATA_DIR, "config.toml")
         )
-        # 初次加载配置，赋值给 app_config
-        self._load_config_from_file()
+        self.initialized = False
 
-    # TODO: make this async method, non blocking!!
-    def _load_config_from_file(self) -> None:
+    async def initialize(self) -> None:
         try:
-            with open(self.config_file, "r") as f:
-                config: AppConfig = toml.load(f)
+            async with aiofiles.open(self.config_file, "r") as f:
+                content = await f.read()
+                config: AppConfig = toml.loads(content)
             for provider, provider_config in config.items():
                 if provider not in DEFAULT_PROVIDERS_CONFIG:
                     provider_config['is_custom'] = True
@@ -149,8 +147,11 @@ class ConfigService:
                     if model_name in provider_models:
                         provider_models[model_name]['is_disabled'] = model_config.get('is_disabled', False)
                 self.app_config[provider]['models'] = provider_models
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error loading config: {e}")
+            traceback.print_exc()
+        finally:
+            self.initialized = True
 
     def get_config(self) -> AppConfig:
         # 直接返回内存中的配置
