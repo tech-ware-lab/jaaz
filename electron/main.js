@@ -188,6 +188,7 @@ const startPythonApi = async () => {
     ...process.env,
   }
   env.PYTHONIOENCODING = 'utf-8'
+  env.DEFAULT_PORT = pyPort // 添加端口到环境变量
   if (app.isPackaged) {
     env.UI_DIST_DIR = path.join(process.resourcesPath, 'react', 'dist')
     env.USER_DATA_DIR = app.getPath('userData')
