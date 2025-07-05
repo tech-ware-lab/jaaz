@@ -43,6 +43,7 @@ class AgentManager:
         image_designer_config = ImageDesignerAgentConfig(
             image_tools, system_prompt)
         print('👇image_designer_config tools', image_designer_config.tools)
+        print('👇image_designer_config system_prompt', image_designer_config.system_prompt)
         image_designer_agent = AgentManager._create_langgraph_agent(
             model, image_designer_config)
 
