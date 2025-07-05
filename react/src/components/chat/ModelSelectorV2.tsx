@@ -16,52 +16,19 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
-import { useState, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { Badge } from '../ui/badge'
-import { useTranslation } from 'react-i18next'
 import { PROVIDER_NAME_MAPPING } from '@/constants'
-import { LLMConfig, Model } from '@/types/types'
-import { listModels, ModelInfo } from '@/api/model'
-import { useQuery } from '@tanstack/react-query'
+import { ModelInfo } from '@/api/model'
+
 
 const ModelSelector: React.FC = () => {
-  const { textModel, setTextModel, textModels, selectedTools, setSelectedTools } = useConfigs()
+  const { textModel, setTextModel, textModels, selectedTools, setSelectedTools, allTools } = useConfigs()
   const selectedToolKeys = selectedTools.map((tool) => tool.provider + ':' + tool.model)
-
-  const { data: modelList = [], refetch: refreshModels } = useQuery({
-    queryKey: ['list_models'],
-    queryFn: () => listModels(),
-    staleTime: 1 * 60 * 1000, // 5分钟内数据被认为是新鲜的
-    placeholderData: (previousData) => previousData, // 关键：显示旧数据同时获取新数据
-    refetchOnWindowFocus: true, // 窗口获得焦点时重新获取
-    refetchOnReconnect: true, // 网络重连时重新获取
-  })
-  const toolsList = modelList.filter(
-    (m) => m.type == 'tool' || m.type == 'image' || m.type == 'video'
-  )
-
-  // 从localStorage加载已选择的图像模型
-  useEffect(() => {
-    const saved = localStorage.getItem('selected_tools')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        // setSelectedTools(parsed)
-      } catch (e) {
-        console.error('Failed to parse selected image models:', e)
-      }
-    } else if (selectedTools) {
-      // 如果没有保存的多选数据，但有当前选中的模型，则初始化为该模型
-      const toolKeys = selectedTools.map((tool) => tool.provider + ':' + tool.model)
-      // setSelectedTools(toolKeys)
-    }
-  }, [selectedTools])
 
   // 处理图像模型多选
   const handleImageModelToggle = (modelKey: string, checked: boolean) => {
     let newSelected: ModelInfo[] = []
-    const tool = toolsList.find((m) => m.provider + ':' + m.model === modelKey)
+    const tool = allTools.find((m) => m.provider + ':' + m.model === modelKey)
     if (checked) {
       if (tool) {
         newSelected = [...selectedTools, tool]
@@ -81,8 +48,8 @@ const ModelSelector: React.FC = () => {
   }
 
   // Group models by provider
-  const groupModelsByProvider = (models: typeof textModels) => {
-    const grouped: { [provider: string]: typeof textModels } = {}
+  const groupModelsByProvider = (models: typeof allTools) => {
+    const grouped: { [provider: string]: typeof allTools } = {}
     models?.forEach((model) => {
       if (!grouped[model.provider]) {
         grouped[model.provider] = []
@@ -91,7 +58,7 @@ const ModelSelector: React.FC = () => {
     })
     return grouped
   }
-  const groupedTools = groupModelsByProvider(toolsList)
+  const groupedTools = groupModelsByProvider(allTools)
 
   return (
     <>
