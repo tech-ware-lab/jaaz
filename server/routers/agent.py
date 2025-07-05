@@ -2,10 +2,11 @@ import os
 from fastapi import APIRouter
 import requests
 import httpx
+from models.tool_model import ToolInfoJson
+from services.tool_service import tool_service
 from services.config_service import config_service
 from services.db_service import db_service
 from utils.http_client import HttpClient
-from tools.comfy_dynamic import register_comfy_tools
 # services
 from models.config_model import ModelInfo
 from typing import List
@@ -45,9 +46,9 @@ async def get_comfyui_model_list(base_url: str) -> List[str]:
         print(f"Error querying ComfyUI: {e}")
         return []
 
-
+# List all LLM models
 @router.get("/list_models")
-async def get_models() -> list[dict[str, str]]:
+async def get_models() -> list[ModelInfo]:
     config = config_service.get_config()
     res: List[ModelInfo] = []
 
@@ -65,35 +66,8 @@ async def get_models() -> list[dict[str, str]]:
                 'type': 'text'
             })
 
-    # Handle ComfyUI models separately
-    comfyui_config = config.get('comfyui', {})
-    comfyui_url = comfyui_config.get('url', '').strip()
-    comfyui_config_models = comfyui_config.get('models', {})
-    if comfyui_url:
-        comfyui_models = await get_comfyui_model_list(comfyui_url)
-        for comfyui_model in comfyui_models:
-            if comfyui_model in comfyui_config_models:
-                res.append({
-                    'provider': 'comfyui',
-                    'model': comfyui_model,
-                    'url': comfyui_url,
-                    'type': 'image'
-                })
-    # Handle ComfyUI workflows separately
-    comfyui_workflows = await register_comfy_tools()
-    print('🛠️ dynamic comfyui workflow tools', comfyui_workflows)
-    for workflow in comfyui_workflows:
-        res.append({
-            'provider': 'comfyui',
-            'model': workflow,
-            'url': comfyui_url,
-            'type': 'tool'
-        })
-
-    # Handle providers that are not ollama or comfyui
-
     for provider in config.keys():
-        if provider in ['ollama', 'comfyui']:
+        if provider in ['ollama']:
             continue
 
         provider_config = config[provider]
@@ -108,13 +82,43 @@ async def get_models() -> list[dict[str, str]]:
         for model_name in models:
             model = models[model_name]
             model_type = model.get('type', 'text')
+            # Only return text models
+            if model_type == 'text':
+                res.append({
+                    'provider': provider,
+                    'model': model_name,
+                    'url': provider_url,
+                    'type': model_type
+                })
+    return res
 
+
+@router.get("/list_tools")
+async def list_tools() -> list[ToolInfoJson]:
+    res: list[ToolInfoJson] = []
+    for tool_id, tool_info in tool_service.tools.items():
+        if tool_info.get('provider') != 'system':
             res.append({
-                'provider': provider,
-                'model': model_name,
-                'url': provider_url,
-                'type': model_type
+                'id': tool_id,
+                'provider': tool_info.get('provider', ''),
+                'type': tool_info.get('type', ''),
+                'display_name': tool_info.get('display_name', ''),
             })
+
+    # Handle ComfyUI models separately
+    # comfyui_config = config.get('comfyui', {})
+    # comfyui_url = comfyui_config.get('url', '').strip()
+    # comfyui_config_models = comfyui_config.get('models', {})
+    # if comfyui_url:
+    #     comfyui_models = await get_comfyui_model_list(comfyui_url)
+    #     for comfyui_model in comfyui_models:
+    #         if comfyui_model in comfyui_config_models:
+    #             res.append({
+    #                 'provider': 'comfyui',
+    #                 'model': comfyui_model,
+    #                 'url': comfyui_url,
+    #                 'type': 'image'
+    #             })
 
     return res
 

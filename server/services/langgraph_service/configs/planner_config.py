@@ -1,5 +1,5 @@
 from typing import List
-from .base_config import BaseAgentConfig, ToolConfig, HandoffConfig
+from .base_config import BaseAgentConfig, HandoffConfig
 
 
 class PlannerAgentConfig(BaseAgentConfig):
@@ -7,10 +7,6 @@ class PlannerAgentConfig(BaseAgentConfig):
     """
 
     def __init__(self) -> None:
-        tools: List[ToolConfig] = [
-            {'tool': 'write_plan'}
-        ]
-
         system_prompt = """
             You are a design planning writing agent. You should do:
             - Step 1. write a execution plan for the user's request using the same language as the user's prompt. You should breakdown the task into high level steps for the other agents to execute.
@@ -60,7 +56,7 @@ class PlannerAgentConfig(BaseAgentConfig):
 
         super().__init__(
             name='planner',
-            tools=tools,
+            tools=[{'id': 'write_plan', 'provider': 'system'}],
             system_prompt=system_prompt,
             handoffs=handoffs
         )

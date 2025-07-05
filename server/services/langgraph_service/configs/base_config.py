@@ -4,6 +4,7 @@ from langgraph.prebuilt import InjectedState
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import BaseTool, InjectedToolCallId, tool  # type: ignore
 from langgraph_swarm.handoff import METADATA_KEY_HANDOFF_DESTINATION
+from models.tool_model import ToolInfoJson
 
 
 class ToolConfig(TypedDict):
@@ -83,7 +84,7 @@ class BaseAgentConfig:
     def __init__(
         self,
         name: str,
-        tools: Sequence[ToolConfig],
+        tools: Sequence[ToolInfoJson],
         system_prompt: str,
         handoffs: Optional[List[HandoffConfig]] = None
     ) -> None:

@@ -6,6 +6,7 @@ import json
 from typing import Dict, Any, List, Optional
 
 # Import service modules
+from models.tool_model import ToolInfoJson
 from services.db_service import db_service
 from services.langgraph_service import langgraph_multi_agent
 from services.websocket_service import send_to_websocket
@@ -38,9 +39,9 @@ async def handle_chat(data: Dict[str, Any]) -> None:
     session_id: str = data.get('session_id', '')
     canvas_id: str = data.get('canvas_id', '')
     text_model: ModelInfo = data.get('text_model', {})
-    tool_list: List[ModelInfo] = data.get('tool_list', [])
+    tool_list: List[ToolInfoJson] = data.get('tool_list', [])
 
-    print('👇 chat_service 接收到 tool_list', tool_list)
+    print('👇 chat_service got tool_list', tool_list)
 
     # TODO: save and fetch system prompt from db or settings config
     system_prompt: Optional[str] = data.get('system_prompt')

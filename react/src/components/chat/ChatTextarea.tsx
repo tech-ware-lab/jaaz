@@ -5,7 +5,7 @@ import { useConfigs } from '@/contexts/configs'
 import { eventBus, TCanvasAddImagesToChatEvent } from '@/lib/event'
 import { cn, dataURLToFile } from '@/lib/utils'
 import { Message, Model } from '@/types/types'
-import { ModelInfo } from '@/api/model'
+import { ModelInfo, ToolInfo } from '@/api/model'
 import { useMutation } from '@tanstack/react-query'
 import { useDrop } from 'ahooks'
 import { produce } from 'immer'
@@ -28,7 +28,7 @@ type ChatTextareaProps = {
     data: Message[],
     configs: {
       textModel: Model
-      toolList: ModelInfo[]
+      toolList: ToolInfo[]
     }
   ) => void
   onCancelChat?: () => void
