@@ -1,4 +1,4 @@
-import { listModels } from '@/api/model'
+import { listModels, ModelInfo } from '@/api/model'
 import useConfigsStore from '@/stores/configs'
 import { useQuery } from '@tanstack/react-query'
 import { createContext, useContext, useEffect } from 'react'
@@ -14,7 +14,7 @@ export const ConfigsProvider = ({
   children: React.ReactNode
 }) => {
   const configsStore = useConfigsStore()
-  const { setTextModels, setTextModel, setSelectedTools } =
+  const { setTextModels, setTextModel, setSelectedTools, setAllTools } =
     configsStore
 
   const { data: modelList, refetch: refreshModels } = useQuery({
@@ -30,31 +30,48 @@ export const ConfigsProvider = ({
     if (!modelList) return
 
     if (modelList.length > 0) {
+      // 设置所有的文本模型
+      const textModels = modelList.filter((m) => m.type === 'text')
+      setTextModels(textModels || [])
+
+      // 设置所有的工具模型
+      const allTools = modelList.filter(
+        (m) => m.type === 'tool' || m.type === 'image' || m.type === 'video'
+      )
+      setAllTools(allTools || [])
+
+      // 设置选择的文本模型
       const textModel = localStorage.getItem('text_model')
       if (
         textModel &&
-        modelList.find((m) => m.provider + ':' + m.model == textModel)
+        modelList.find((m) => m.provider + ':' + m.model === textModel)
       ) {
         setTextModel(
-          modelList.find((m) => m.provider + ':' + m.model == textModel)
+          modelList.find((m) => m.provider + ':' + m.model === textModel)
         )
       } else {
-        setTextModel(modelList.find((m) => m.type == 'text'))
+        setTextModel(modelList.find((m) => m.type === 'text'))
       }
 
+      // 设置选中的工具模型
       const selectedToolsJson = localStorage.getItem('selected_tools')
       if (selectedToolsJson) {
-        setSelectedTools(JSON.parse(selectedToolsJson)) // 是否需要更多判定？
-      }
+        const savedSelectedTools: ModelInfo[] = JSON.parse(selectedToolsJson)
 
-      const textModels = modelList?.filter((m) => m.type == 'text')
-      setTextModels(textModels || [])
+        // 如果选中的工具在 allTools 中, 则设置选中的工具
+        const selectedTools = savedSelectedTools.filter((t) =>
+          allTools.find((a) => a.provider + ':' + a.model === t.provider + ':' + t.model)
+        )
+        setSelectedTools(selectedTools)
+        localStorage.setItem('selected_tools', JSON.stringify(selectedTools)) // 更新 localStorage
+      }
     }
   }, [
     modelList,
     setSelectedTools,
     setTextModel,
     setTextModels,
+    setAllTools,
   ])
 
   return (
