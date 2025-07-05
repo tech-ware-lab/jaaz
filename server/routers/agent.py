@@ -6,28 +6,11 @@ from services.config_service import config_service
 from services.db_service import db_service
 from utils.http_client import HttpClient
 from tools.comfy_dynamic import register_comfy_tools
-# from tools.video_models_dynamic import register_video_models  # Disabled video models
 # services
-from services.files_service import download_file
-from services.websocket_service import broadcast_init_done
 from models.config_model import ModelInfo
 from typing import List
 
 router = APIRouter(prefix="/api")
-
-# @router.get("/workspace_list")
-# async def workspace_list():
-#     return [{"name": entry.name, "is_dir": entry.is_dir(), "path": str(entry)} for entry in Path(WORKSPACE_ROOT).iterdir()]
-
-
-async def initialize():
-    # await initialize_mcp()
-    await broadcast_init_done()
-
-
-@router.get("/workspace_download")
-async def workspace_download(path: str):
-    return download_file(path)
 
 
 def get_ollama_model_list() -> List[str]:

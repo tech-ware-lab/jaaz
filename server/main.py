@@ -6,24 +6,28 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 from routers import config, agent, workspace, image_tools, canvas, ssl_test, chat_router, settings
-import routers.websocket_router
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
-import asyncio
-import argparse
+import argparse 
 from contextlib import asynccontextmanager
 from starlette.types import Scope
 from starlette.responses import Response
 import socketio
 from services.websocket_state import sio
+from services.websocket_service import broadcast_init_done
+from services.config_service import config_service  
+
+async def initialize():
+    await config_service.initialize()
+    await broadcast_init_done()
 
 root_dir = os.path.dirname(__file__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # onstartup
-    await agent.initialize()
+    await initialize()
     yield
     # onshutdown
 
