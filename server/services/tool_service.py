@@ -4,11 +4,11 @@ from langchain_core.tools import BaseTool
 from models.tool_model import ToolInfo
 from tools.comfy_dynamic import build_tool
 from tools.write_plan import write_plan_tool
-from tools.generate_image_by_gpt_image_1 import generate_image_by_gpt_image_1
-from tools.generate_image_by_imagen_4 import generate_image_by_imagen_4
+from tools.generate_image_by_gpt_image_1_jaaz import generate_image_by_gpt_image_1_jaaz
+from tools.generate_image_by_imagen_4_jaaz import generate_image_by_imagen_4_jaaz
 from tools.generate_image_by_recraft_v3 import generate_image_by_recraft_v3
 # from tools.generate_image_by_flux_1_1_pro import generate_image_by_flux_1_1_pro
-from tools.generate_image_by_flux_kontext_pro import generate_image_by_flux_kontext_pro
+from tools.generate_image_by_flux_kontext_pro_jaaz import generate_image_by_flux_kontext_pro_jaaz
 from tools.generate_image_by_flux_kontext_max import generate_image_by_flux_kontext_max
 from tools.generate_image_by_doubao_seedream_3 import generate_image_by_doubao_seedream_3
 from tools.generate_video_by_seedance_v1 import generate_video_by_seedance_v1
@@ -20,13 +20,13 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "display_name": "GPT Image 1",
         "type": "image",
         "provider": "jaaz",
-        "tool_function": generate_image_by_gpt_image_1,
+        "tool_function": generate_image_by_gpt_image_1_jaaz,
     },
     "generate_image_by_imagen_4_jaaz": {
         "display_name": "Imagen 4",
         "type": "image",
         "provider": "jaaz",
-        "tool_function": generate_image_by_imagen_4,
+        "tool_function": generate_image_by_imagen_4_jaaz,
     },
     "generate_image_by_recraft_v3_jaaz": {
         "display_name": "Recraft v3",
@@ -44,7 +44,7 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "display_name": "Flux Kontext Pro",
         "type": "image",
         "provider": "jaaz",
-        "tool_function": generate_image_by_flux_kontext_pro,
+        "tool_function": generate_image_by_flux_kontext_pro_jaaz,
     },
     "generate_image_by_flux_kontext_max_jaaz": {
         "display_name": "Flux Kontext Max",

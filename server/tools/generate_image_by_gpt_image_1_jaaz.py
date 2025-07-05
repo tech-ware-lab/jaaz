@@ -20,10 +20,10 @@ class GenerateImageByGptImage1InputSchema(BaseModel):
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
-@tool("generate_image_by_gpt_image_1",
+@tool("generate_image_by_gpt_image_1_jaaz",
       description="Generate an image by gpt image model using text prompt or optionally pass images for reference or for editing. Use this model if you need to use multiple input images as reference. Supports multiple providers with automatic fallback.",
       args_schema=GenerateImageByGptImage1InputSchema)
-async def generate_image_by_gpt_image_1(
+async def generate_image_by_gpt_image_1_jaaz(
     prompt: str,
     aspect_ratio: str,
     config: RunnableConfig,
@@ -59,4 +59,4 @@ async def generate_image_by_gpt_image_1(
 
 
 # Export the tool for easy import
-__all__ = ["generate_image_by_gpt_image_1"]
+__all__ = ["generate_image_by_gpt_image_1_jaaz"]

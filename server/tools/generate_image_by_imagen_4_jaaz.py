@@ -17,18 +17,15 @@ class GenerateImageByImagen4InputSchema(BaseModel):
 
 
 
-@tool("generate_image_by_imagen_4",
+@tool("generate_image_by_imagen_4_jaaz",
       description="Generate an image by Google Imagen-4 model using text prompt. This model does NOT support input images for reference or editing. Use this model for high-quality image generation with Google's advanced AI. Supports multiple providers with automatic fallback.",
       args_schema=GenerateImageByImagen4InputSchema)
-async def generate_image_by_imagen_4(
+async def generate_image_by_imagen_4_jaaz(
     prompt: str,
     aspect_ratio: str,
     config: RunnableConfig,
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> str:
-    """
-    Generate an image using Google Imagen-4 model via the provider framework
-    """
     jaaz_image_provider = JaazImageProvider()
     ctx = config.get('configurable', {})
     canvas_id = ctx.get('canvas_id', '')
@@ -54,4 +51,4 @@ async def generate_image_by_imagen_4(
 
 
 # Export the tool for easy import
-__all__ = ["generate_image_by_imagen_4"]
+__all__ = ["generate_image_by_imagen_4_jaaz"]

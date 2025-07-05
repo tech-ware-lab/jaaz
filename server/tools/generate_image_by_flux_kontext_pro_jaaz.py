@@ -2,8 +2,10 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from .image_generation import generate_image_with_provider
-from .utils.image_utils import process_input_image
+from tools.image_generation.image_canvas_utils import save_image_to_canvas
+from tools.image_providers.jaaz_provider import JaazImageProvider
+from tools.utils.image_utils import process_input_image
+
 
 
 class GenerateImageByFluxKontextProInputSchema(BaseModel):
@@ -23,17 +25,21 @@ class GenerateImageByFluxKontextProInputSchema(BaseModel):
 @tool("generate_image_by_flux_kontext_pro",
       description="Generate an image by Flux Kontext Pro model using text prompt or optionally pass an image for reference or editing. Good for object removal, image editing, etc. Only one input image is allowed.",
       args_schema=GenerateImageByFluxKontextProInputSchema)
-async def generate_image_by_flux_kontext_pro(
+async def generate_image_by_flux_kontext_pro_jaaz(
     prompt: str,
     aspect_ratio: str,
     config: RunnableConfig,
     tool_call_id: Annotated[str, InjectedToolCallId],
     input_image: str | None = None,
 ) -> str:
-    """
-    Generate an image using Flux Kontext Pro model via the provider framework
-    """
-    # Process input image if provided
+    jaaz_image_provider = JaazImageProvider()
+    ctx = config.get('configurable', {})
+    canvas_id = ctx.get('canvas_id', '')
+    session_id = ctx.get('session_id', '')
+    print(f'🛠️ canvas_id {canvas_id} session_id {session_id}')
+
+    # Inject the tool call id into the context
+    ctx['tool_call_id'] = tool_call_id
     processed_input_image = None
     if input_image:
         processed_input_image = await process_input_image(input_image)
@@ -42,16 +48,21 @@ async def generate_image_by_flux_kontext_pro(
         else:
             print("Warning: No valid input image found")
 
-    return await generate_image_with_provider(
+
+    # Generate image using the selected provider
+    mime_type, width, height, filename = await jaaz_image_provider.generate(
         prompt=prompt,
+        model='black-forest-labs/flux-kontext-pro',
         aspect_ratio=aspect_ratio,
-        model="black-forest-labs/flux-kontext-pro",
-        tool_call_id=tool_call_id,
-        config=config,
-        input_images=[
-            processed_input_image] if processed_input_image else None,
+        input_images=[processed_input_image] if processed_input_image else None,
     )
 
+    # Save image to canvas
+    image_url = await save_image_to_canvas(
+        session_id, canvas_id, filename, mime_type, width, height
+    )
+
+    return f"image generated successfully ![image_id: {filename}]({image_url})"
 
 # Export the tool for easy import
-__all__ = ["generate_image_by_flux_kontext_pro"]
+__all__ = ["generate_image_by_flux_kontext_pro_jaaz"]
