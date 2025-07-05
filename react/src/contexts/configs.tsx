@@ -1,7 +1,7 @@
 import { listModels, ModelInfo } from '@/api/model'
 import useConfigsStore from '@/stores/configs'
 import { useQuery } from '@tanstack/react-query'
-import { createContext, useContext, useEffect } from 'react'
+import { createContext, useContext, useEffect, useRef } from 'react'
 
 export const ConfigsContext = createContext<{
   configsStore: typeof useConfigsStore
@@ -16,6 +16,9 @@ export const ConfigsProvider = ({
   const configsStore = useConfigsStore()
   const { setTextModels, setTextModel, setSelectedTools, setAllTools } =
     configsStore
+
+  // 存储上一次的 allTools 值，用于检测新添加的工具，并自动选中
+  const previousAllToolsRef = useRef<ModelInfo[]>([])
 
   const { data: modelList, refetch: refreshModels } = useQuery({
     queryKey: ['list_models'],
@@ -55,16 +58,38 @@ export const ConfigsProvider = ({
 
       // 设置选中的工具模型
       const selectedToolsJson = localStorage.getItem('selected_tools')
+      let currentSelectedTools: ModelInfo[] = []
+
       if (selectedToolsJson) {
         const savedSelectedTools: ModelInfo[] = JSON.parse(selectedToolsJson)
 
         // 如果选中的工具在 allTools 中, 则设置选中的工具
-        const selectedTools = savedSelectedTools.filter((t) =>
+        currentSelectedTools = savedSelectedTools.filter((t) =>
           allTools.find((a) => a.provider + ':' + a.model === t.provider + ':' + t.model)
         )
-        setSelectedTools(selectedTools)
-        localStorage.setItem('selected_tools', JSON.stringify(selectedTools)) // 更新 localStorage
       }
+
+      // 检测新添加的工具并自动选中
+      const previousAllTools = previousAllToolsRef.current
+      if (previousAllTools) {
+        const newTools = allTools.filter((tool) => {
+          const toolKey = tool.provider + ':' + tool.model
+          return !previousAllTools.find((prevTool) =>
+            prevTool.provider + ':' + prevTool.model === toolKey
+          )
+        })
+
+        // 将新工具添加到已选中的工具中
+        if (newTools.length > 0) {
+          currentSelectedTools = [...currentSelectedTools, ...newTools]
+        }
+      }
+
+      setSelectedTools(currentSelectedTools)
+      localStorage.setItem('selected_tools', JSON.stringify(currentSelectedTools)) // 更新 localStorage
+
+      // 更新 previousAllToolsRef 为当前的 allTools
+      previousAllToolsRef.current = allTools
     }
   }, [
     modelList,
