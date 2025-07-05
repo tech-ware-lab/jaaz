@@ -4,7 +4,7 @@ import io
 # Ensure stdout and stderr use utf-8 encoding to prevent emoji logs from crashing python server
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
-
+from routers.websocket_router import *  # DO NOT DELETE THIS LINE, OTHERWISE, WEBSOCKET WILL NOT WORK
 from routers import config, agent, workspace, image_tools, canvas, ssl_test, chat_router, settings
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
