@@ -147,6 +147,8 @@ async def register_comfy_tools() -> Dict[str, BaseTool]:
                 'provider': 'comfyui',
                 'tool_function': tool_fn,
                 'display_name': wf['name'],
+                # TODO: Add comfyui workflow type! Not hardcoded!
+                'type': 'image',
             })
         except Exception as exc:  # pragma: no cover
             print(
