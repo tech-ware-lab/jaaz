@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Optional
 from langgraph.prebuilt import create_react_agent  # type: ignore
 from langgraph.graph.graph import CompiledGraph
 from langchain_core.tools import BaseTool
-
+from models.tool_model import ToolInfoJson
 from .configs import PlannerAgentConfig, ImageDesignerAgentConfig, VideoDesignerAgentConfig, create_handoff_tool, BaseAgentConfig
 from services.tool_service import tool_service
 
@@ -16,7 +16,7 @@ class AgentManager:
     @staticmethod
     def create_agents(
         model: Any,
-        registered_tools: List[str],
+        tool_list: List[ToolInfoJson],
         system_prompt: str = ""
     ) -> List[CompiledGraph]:
         """创建所有智能体
@@ -30,8 +30,8 @@ class AgentManager:
             List[Any]: 创建好的智能体列表
         """
         # 为不同类型的智能体过滤合适的工具
-        image_tools = AgentManager._filter_image_tools(registered_tools)
-        video_tools = AgentManager._filter_video_tools(registered_tools)
+        image_tools = AgentManager._filter_image_tools(tool_list)
+        video_tools = AgentManager._filter_video_tools(tool_list)
 
         print(f"📸 图像工具: {image_tools}")
         print(f"🎬 视频工具: {video_tools}")
@@ -54,14 +54,14 @@ class AgentManager:
         return [planner_agent, image_designer_agent, video_designer_agent]
 
     @staticmethod
-    def _filter_image_tools(tools: List[str]) -> List[str]:
+    def _filter_image_tools(tool_list: List[ToolInfoJson]) -> List[ToolInfoJson]:
         """过滤出图像相关工具"""
-        return [tool for tool in tools if 'image' in tool.lower()]
+        return [tool for tool in tool_list if tool.get('type') == 'image']
 
     @staticmethod
-    def _filter_video_tools(tools: List[str]) -> List[str]:
+    def _filter_video_tools(tool_list: List[ToolInfoJson]) -> List[ToolInfoJson]:
         """过滤出视频相关工具"""
-        return [tool for tool in tools if 'video' in tool.lower()]
+        return [tool for tool in tool_list if tool.get('type') == 'video']
 
     @staticmethod
     def _create_langgraph_agent(
@@ -90,7 +90,7 @@ class AgentManager:
         # 获取业务工具
         business_tools: List[BaseTool] = []
         for tool_json in config.tools:
-            tool = tool_service.get_tool(tool_json.get('tool', ''))
+            tool = tool_service.get_tool(tool_json['id'])
             if tool:
                 business_tools.append(tool)
 

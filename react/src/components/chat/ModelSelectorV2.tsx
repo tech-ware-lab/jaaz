@@ -1,7 +1,9 @@
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -18,27 +20,42 @@ import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
 import { ChevronDown } from 'lucide-react'
 import { PROVIDER_NAME_MAPPING } from '@/constants'
-import { ModelInfo } from '@/api/model'
-
+import { ModelInfo, ToolInfo } from '@/api/model'
 
 const ModelSelector: React.FC = () => {
-  const { textModel, setTextModel, textModels, selectedTools, setSelectedTools, allTools } = useConfigs()
-  const selectedToolKeys = selectedTools.map((tool) => tool.provider + ':' + tool.model)
+  const {
+    textModel,
+    setTextModel,
+    textModels,
+    selectedTools,
+    setSelectedTools,
+    allTools,
+  } = useConfigs()
+  const selectedToolKeys = selectedTools.map(
+    (tool) => tool.provider + ':' + tool.id
+  )
 
   // 处理图像模型多选
   const handleImageModelToggle = (modelKey: string, checked: boolean) => {
-    let newSelected: ModelInfo[] = []
-    const tool = allTools.find((m) => m.provider + ':' + m.model === modelKey)
+    let newSelected: ToolInfo[] = []
+    const tool = allTools.find((m) => m.provider + ':' + m.id === modelKey)
     if (checked) {
       if (tool) {
         newSelected = [...selectedTools, tool]
       }
     } else {
-      newSelected = selectedTools.filter((t) => t.provider + ':' + t.model !== modelKey)
+      newSelected = selectedTools.filter(
+        (t) => t.provider + ':' + t.id !== modelKey
+      )
     }
 
     setSelectedTools(newSelected)
-    localStorage.setItem('selected_tools', JSON.stringify(newSelected))
+    localStorage.setItem(
+      'disabled_tool_ids',
+      JSON.stringify(
+        allTools.filter((t) => !newSelected.includes(t)).map((t) => t.id)
+      )
+    )
   }
 
   // 获取显示文本
@@ -58,6 +75,18 @@ const ModelSelector: React.FC = () => {
     })
     return grouped
   }
+
+  const groupLLMsByProvider = (models: typeof textModels) => {
+    const grouped: { [provider: string]: typeof textModels } = {}
+    models?.forEach((model) => {
+      if (!grouped[model.provider]) {
+        grouped[model.provider] = []
+      }
+      grouped[model.provider].push(model)
+    })
+    return grouped
+  }
+  const groupedLLMs = groupLLMsByProvider(textModels)
   const groupedTools = groupModelsByProvider(allTools)
 
   return (
@@ -75,14 +104,21 @@ const ModelSelector: React.FC = () => {
           <SelectValue placeholder="Theme" />
         </SelectTrigger>
         <SelectContent>
-          {textModels?.map((model) => (
-            <SelectItem
-              key={model.provider + ':' + model.model}
-              value={model.provider + ':' + model.model}
-            >
-              {model.model}
-            </SelectItem>
-          ))}
+          {Object.entries(groupedLLMs).map(([provider, models]) => {
+            return (
+              <SelectGroup key={provider}>
+                <SelectLabel>{provider}</SelectLabel>
+                {models.map((model) => (
+                  <SelectItem
+                    key={model.provider + ':' + model.model}
+                    value={model.provider + ':' + model.model}
+                  >
+                    {model.model}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            )
+          })}
         </SelectContent>
       </Select>
 
@@ -122,7 +158,7 @@ const ModelSelector: React.FC = () => {
                   </div>
                 </DropdownMenuLabel>
                 {models.map((model) => {
-                  const modelKey = model.provider + ':' + model.model
+                  const modelKey = model.provider + ':' + model.id
                   return (
                     <DropdownMenuCheckboxItem
                       key={modelKey}
@@ -134,7 +170,7 @@ const ModelSelector: React.FC = () => {
                         e.preventDefault()
                       }}
                     >
-                      {model.model}
+                      {model.display_name || model.id}
                     </DropdownMenuCheckboxItem>
                   )
                 })}

@@ -144,8 +144,6 @@ class ConfigService:
                     if model_config.get('type') == 'text' and model_name not in provider_models:
                         provider_models[model_name] = model_config
                         provider_models[model_name]['is_custom'] = True
-                    if model_name in provider_models:
-                        provider_models[model_name]['is_disabled'] = model_config.get('is_disabled', False)
                 self.app_config[provider]['models'] = provider_models
         except Exception as e:
             print(f"Error loading config: {e}")

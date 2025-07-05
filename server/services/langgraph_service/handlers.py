@@ -33,6 +33,7 @@ class StreamProcessor:
             config=context,
             stream_mode=["messages", "custom", 'values']
         ):
+            print('👇chunk', chunk)
             await self._handle_chunk(chunk)
 
         # 发送完成事件

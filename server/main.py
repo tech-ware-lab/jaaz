@@ -17,6 +17,7 @@ import socketio
 from services.websocket_state import sio
 from services.websocket_service import broadcast_init_done
 from services.config_service import config_service  
+from services.tool_service import tool_service
 
 async def initialize():
     await config_service.initialize()
@@ -28,6 +29,7 @@ root_dir = os.path.dirname(__file__)
 async def lifespan(app: FastAPI):
     # onstartup
     await initialize()
+    await tool_service.initialize()
     yield
     # onshutdown
 
