@@ -1,4 +1,5 @@
 import { cancelChat } from '@/api/chat'
+import { cancelMagicGenerate } from '@/api/magic'
 import { uploadImage } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
@@ -85,7 +86,12 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
   const handleCancelChat = useCallback(async () => {
     if (sessionId) {
-      await cancelChat(sessionId)
+      // 同时取消普通聊天和魔法生成任务
+      await Promise.all([
+        cancelChat(sessionId),
+        cancelMagicGenerate(sessionId)
+      ])
+
     }
     onCancelChat?.()
   }, [sessionId, onCancelChat])
