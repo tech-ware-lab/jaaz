@@ -1,5 +1,4 @@
 import { ModelInfo } from '@/api/model'
-import { DEFAULT_PROVIDERS_CONFIG } from '@/constants'
 import { LLMConfig, Model } from '@/types/types'
 import { create } from 'zustand'
 
@@ -56,7 +55,7 @@ const useConfigsStore = create<ConfigsStore>((set) => ({
   showLoginDialog: false,
   setShowLoginDialog: (show) => set({ showLoginDialog: show }),
 
-  providers: DEFAULT_PROVIDERS_CONFIG,
+  providers: {},
   setProviders: (providers) => set({ providers }),
 
   selectedTools: [],
