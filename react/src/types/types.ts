@@ -65,6 +65,7 @@ export type LLMConfig = {
   url: string
   api_key: string
   max_tokens?: number
+  is_custom?: boolean
 }
 
 export interface AppStateWithVideos extends AppState {
