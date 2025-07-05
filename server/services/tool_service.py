@@ -89,6 +89,7 @@ class ToolService:
 
         self.tools[tool_id] = tool_info
 
+    # TODO: Check if there will be racing conditions when server just starting up but tools are not ready yet.
     async def initialize(self):
         self.clear_tools()
         try:

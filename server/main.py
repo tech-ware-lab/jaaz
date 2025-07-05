@@ -13,7 +13,7 @@ import argparse
 from contextlib import asynccontextmanager
 from starlette.types import Scope
 from starlette.responses import Response
-import socketio
+import socketio # type: ignore
 from services.websocket_state import sio
 from services.websocket_service import broadcast_init_done
 from services.config_service import config_service  
@@ -28,6 +28,7 @@ root_dir = os.path.dirname(__file__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # onstartup
+    # TODO: Check if there will be racing conditions when user send chat request but tools and models are not initialized yet.
     await initialize()
     await tool_service.initialize()
     yield
