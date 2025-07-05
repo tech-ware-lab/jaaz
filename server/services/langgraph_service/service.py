@@ -1,3 +1,4 @@
+from models.tool_model import ToolInfoJson
 from services.db_service import db_service
 from .handlers import StreamProcessor
 from .agent_manager import AgentManager
@@ -8,7 +9,6 @@ from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
 from services.websocket_service import send_to_websocket  # type: ignore
 from services.config_service import config_service
-from services.tool_service import tool_service
 from typing import Optional, List, Dict, Any, cast, Set, TypedDict
 from models.config_model import ModelInfo
 
@@ -80,7 +80,7 @@ async def langgraph_multi_agent(
     canvas_id: str,
     session_id: str,
     text_model: ModelInfo,
-    tool_list: List[ModelInfo],
+    tool_list: List[ToolInfoJson],
     system_prompt: Optional[str] = None
 ) -> None:
     """多智能体处理函数
@@ -96,19 +96,14 @@ async def langgraph_multi_agent(
     try:
         # 0. 修复消息历史
         fixed_messages = _fix_chat_history(messages)
-
-        # 1. 动态注册工具
-        registered_tools = tool_service.register_tools_from_models(tool_list)
         
         # 2. 文本模型
         text_model_instance = _create_text_model(text_model)
 
-        print(f"🔧 已注册的工具: {registered_tools}")
-
         # 3. 创建智能体
         agents = AgentManager.create_agents(
             text_model_instance,
-            registered_tools,  # 传入所有注册的工具
+            tool_list,  # 传入所有注册的工具
             system_prompt or ""
         )
         agent_names = [agent.name for agent in agents]
@@ -125,7 +120,11 @@ async def langgraph_multi_agent(
         )
 
         # 5. 创建上下文
-        context = _create_context(canvas_id, session_id, tool_list)
+        context = {
+            'canvas_id': canvas_id,
+            'session_id': session_id,
+            'tool_list': tool_list,
+        }
 
         # 6. 流处理
         processor = StreamProcessor(
@@ -166,33 +165,6 @@ def _create_text_model(text_model: ModelInfo) -> Any:
             http_client=http_client,
             http_async_client=http_async_client
         )
-
-
-def _create_context(canvas_id: str, session_id: str, tool_list: List[ModelInfo]) -> Dict[str, Any]:
-    """创建上下文信息"""
-    # 按 model 名称分类组织 model_info
-    model_info: Dict[str, List[ModelInfo]] = {}
-
-    for model in tool_list:
-        model_name = model.get('model', '')
-        if model_name:
-            # 有的名称包含 "/"，比如 "openai/gpt-image-1"，需要处理
-            # 如果模型名称包含 "/"，只取 "/" 后面的部分作为分类键
-            if '/' in model_name:
-                classification_key = model_name.split('/')[-1]
-            else:
-                classification_key = model_name
-
-            if classification_key not in model_info:
-                model_info[classification_key] = []
-            model_info[classification_key].append(model)
-
-    return {
-        'canvas_id': canvas_id,
-        'session_id': session_id,
-        'model_info': model_info,
-    }
-
 
 async def _handle_error(error: Exception, session_id: str) -> None:
     """处理错误"""
