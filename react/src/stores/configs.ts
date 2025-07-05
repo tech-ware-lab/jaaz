@@ -27,6 +27,9 @@ type ConfigsStore = {
   showLoginDialog: boolean
   setShowLoginDialog: (show: boolean) => void
 
+  allTools: ModelInfo[]
+  setAllTools: (tools: ModelInfo[]) => void
+
   providers: {
     [key: string]: LLMConfig
   }
@@ -57,6 +60,9 @@ const useConfigsStore = create<ConfigsStore>((set) => ({
 
   providers: {},
   setProviders: (providers) => set({ providers }),
+
+  allTools: [],
+  setAllTools: (tools) => set({ allTools: tools }),
 
   selectedTools: [],
   setSelectedTools: (tools) => set({ selectedTools: tools }),

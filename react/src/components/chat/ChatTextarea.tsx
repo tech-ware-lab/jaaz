@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import ModelSelector from './ModelSelector'
 import ModelSelectorV2 from './ModelSelectorV2'
+import { useAuth } from '@/contexts/AuthContext'
 
 type ChatTextareaProps = {
   pending: boolean
@@ -42,7 +43,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   onCancelChat,
 }) => {
   const { t } = useTranslation()
-  const { textModel, selectedTools } = useConfigs()
+  const { authStatus } = useAuth()
+  const { textModel, selectedTools, setShowLoginDialog } = useConfigs()
   const [prompt, setPrompt] = useState('')
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
@@ -95,6 +97,17 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     if (pending) return
     if (!textModel) {
       toast.error(t('chat:textarea.selectModel'))
+      if (!authStatus.is_logged_in) {
+        setShowLoginDialog(true)
+      }
+      return
+    }
+
+    if (!selectedTools || selectedTools.length === 0) {
+      toast.error(t('chat:textarea.selectTool'))
+      if (!authStatus.is_logged_in) {
+        setShowLoginDialog(true)
+      }
       return
     }
 
