@@ -167,5 +167,8 @@ export class SocketIOManager {
 }
 
 export const socketManager = new SocketIOManager({
-  serverUrl: 'http://localhost:57988',
+  serverUrl:
+    process.env.NODE_ENV === 'development'
+      ? 'http://localhost:57988'
+      : window.location.origin,
 })
