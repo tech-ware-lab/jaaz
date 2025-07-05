@@ -42,7 +42,7 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
       # 'ideogram-ai/ideogram-v3-balanced': { 'type': 'image' },
       'openai/gpt-image-1': { 'type': 'image' },
     },
-    'url': 'https://www.jaaz.app/api/v1/',
+    'url': os.getenv('BASE_API_URL', 'https://www.jaaz.app').rstrip('/') + '/api/v1/',
     'api_key': '',
     'max_tokens': 8192,
   },
