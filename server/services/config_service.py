@@ -1,3 +1,4 @@
+import copy
 import os
 import traceback
 import toml
@@ -5,8 +6,10 @@ from typing import Dict, TypedDict, Literal, Optional
 
 # 定义配置文件的类型结构
 
-class ModelConfig(TypedDict):
+class ModelConfig(TypedDict, total=False):
     type: Literal["text", "image", "video"]
+    is_custom: Optional[bool]
+    is_disabled: Optional[bool]
 
 
 class ProviderConfig(TypedDict, total=False):
@@ -118,7 +121,7 @@ VIDEO_FORMATS = (
 
 class ConfigService:
     def __init__(self):
-        self.app_config: AppConfig = DEFAULT_PROVIDERS_CONFIG
+        self.app_config: AppConfig = copy.deepcopy(DEFAULT_PROVIDERS_CONFIG)
         self.root_dir = os.path.dirname(
             os.path.dirname(os.path.dirname(__file__)))
         self.config_file = os.getenv(
@@ -142,6 +145,9 @@ class ConfigService:
                     # Only text model can be self added
                     if model_config.get('type') == 'text' and model_name not in provider_models:
                         provider_models[model_name] = model_config
+                        provider_models[model_name]['is_custom'] = True
+                    if model_name in provider_models:
+                        provider_models[model_name]['is_disabled'] = model_config.get('is_disabled', False)
                 self.app_config[provider]['models'] = provider_models
         except Exception:
             pass

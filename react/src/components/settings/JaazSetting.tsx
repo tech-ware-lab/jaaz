@@ -30,10 +30,16 @@ export default function JaazSetting({
 
     if (enabled) {
       // Add model with its type from available models
-      updatedModels[modelName] = availableModels[modelName]
+      updatedModels[modelName] = {
+        ...availableModels[modelName],
+        is_disabled: false,
+      }
     } else {
       // Remove model
-      delete updatedModels[modelName]
+      updatedModels[modelName] = {
+        ...updatedModels[modelName],
+        is_disabled: true,
+      }
     }
 
     // Filter out any models that don't exist in availableModels
@@ -66,20 +72,18 @@ export default function JaazSetting({
 
       <div className="space-y-2">
         {Object.entries(availableModels).map(([modelName, modelConfig]) => {
-          const isEnabled =
-            config.models && config.models[modelName] !== undefined
-
           return (
             <div key={modelName} className="flex items-center justify-between">
               <p className="w-[50%]">{modelName}</p>
               <div className="flex items-center gap-6">
                 <p>{modelConfig.type || 'text'}</p>
-                <Switch
-                  checked={isEnabled}
+                {/* TODO: re-enable this switch */}
+                {/* <Switch
+                  checked={!modelConfig.is_disabled}
                   onCheckedChange={(checked) =>
                     handleModelToggle(modelName, checked)
                   }
-                />
+                /> */}
               </div>
             </div>
           )
