@@ -1,7 +1,7 @@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { DEFAULT_PROVIDERS_CONFIG, PROVIDER_NAME_MAPPING } from '@/constants'
+import { PROVIDER_NAME_MAPPING } from '@/constants'
 import { LLMConfig } from '@/types/types'
 import { useTranslation } from 'react-i18next'
 import AddModelsList from './AddModelsList'
@@ -35,7 +35,7 @@ export default function CommonSetting({
   }
 
   // Check if this is a custom provider (not in PROVIDER_NAME_MAPPING)
-  const isCustomProvider = !(providerKey in DEFAULT_PROVIDERS_CONFIG)
+  const isCustomProvider = config.is_custom
 
   const handleChange = (field: keyof LLMConfig, value: string | number) => {
     onConfigChange(providerKey, {

@@ -1,26 +1,93 @@
 import os
 import traceback
 import toml
-from typing import Dict, TypedDict, Literal, Union
+from typing import Dict, TypedDict, Literal, Optional
 
 # 定义配置文件的类型结构
-class ProviderConfig(TypedDict, total=False):
-    url: str
-    api_key: str
-    max_tokens: int
-
 
 class ModelConfig(TypedDict):
     type: Literal["text", "image", "video"]
 
 
-class ProviderModelsConfig(TypedDict):
+class ProviderConfig(TypedDict, total=False):
+    url: str
+    api_key: str
+    max_tokens: int
     models: Dict[str, ModelConfig]
+    is_custom: Optional[bool]
 
-AppConfig = Dict[str, Union[ProviderConfig, Dict[str, ModelConfig]]]
+
+AppConfig = Dict[str, ProviderConfig]
 
 
-DEFAULT_PROVIDERS_CONFIG: AppConfig = {}
+DEFAULT_PROVIDERS_CONFIG: AppConfig = {
+  'jaaz': {
+    'models': {
+      # text models
+      'gpt-4o': { 'type': 'text' },
+      'gpt-4o-mini': { 'type': 'text' },
+      'deepseek/deepseek-chat-v3-0324:free': { 'type': 'text' },
+      'deepseek/deepseek-chat-v3-0324': { 'type': 'text' },
+      'anthropic/claude-sonnet-4': { 'type': 'text' },
+      'anthropic/claude-3.7-sonnet': { 'type': 'text' },
+      # image models
+      'google/imagen-4': { 'type': 'image' },
+      # 'google/imagen-4-ultra': { type: 'image' },
+      # 'black-forest-labs/flux-1.1-pro': { type: 'image' },
+      'black-forest-labs/flux-kontext-pro': { 'type': 'image' },
+      'black-forest-labs/flux-kontext-max': { 'type': 'image' },
+      'recraft-ai/recraft-v3': { 'type': 'image' },
+      'doubao/doubao-seedream-3-0-t2i-250415': { 'type': 'image' },
+      'doubao-seedance-1-0-pro-250528': { 'type': 'video' },
+      # 'ideogram-ai/ideogram-v3-balanced': { 'type': 'image' },
+      'openai/gpt-image-1': { 'type': 'image' },
+    },
+    'url': 'https://www.jaaz.app/api/v1/',
+    'api_key': '',
+    'max_tokens': 8192,
+  },
+  'comfyui': {
+    'models': {},
+    'url': 'http://127.0.0.1:8188',
+    'api_key': '',
+  },
+  'ollama': {
+    'models': {},
+    'url': 'http://localhost:11434',
+    'api_key': '',
+    'max_tokens': 8192,
+  },
+  'openai': {
+    'models': {
+      'gpt-4o': { 'type': 'text' },
+      'gpt-4o-mini': { 'type': 'text' },
+      'gpt-image-1': { 'type': 'image' },
+    },
+    'url': 'https://api.openai.com/v1/',
+    'api_key': '',
+    'max_tokens': 8192,
+  },
+  'wavespeed': {
+    'models': {
+      'wavespeed-ai/flux-dev': { 'type': 'image' },
+    },
+    'url': 'https://api.wavespeed.ai/api/v3/',
+    'api_key': '',
+  },
+  'replicate': {
+    'models': {
+      'google/imagen-4': { 'type': 'image' },
+      'black-forest-labs/flux-1.1-pro': { 'type': 'image' },
+      'black-forest-labs/flux-kontext-pro': { 'type': 'image' },
+      'black-forest-labs/flux-kontext-max': { 'type': 'image' },
+      'recraft-ai/recraft-v3': { 'type': 'image' },
+    },
+    'url': 'https://api.replicate.com/v1/',
+    'api_key': '',
+    'max_tokens': 8192,
+  },
+}
+
 SERVER_DIR = os.path.dirname(os.path.dirname(__file__))
 USER_DATA_DIR = os.getenv(
     "USER_DATA_DIR",
@@ -60,11 +127,22 @@ class ConfigService:
         # 初次加载配置，赋值给 app_config
         self._load_config_from_file()
 
+    # TODO: make this async method, non blocking!!
     def _load_config_from_file(self) -> None:
         try:
             with open(self.config_file, "r") as f:
-                config = toml.load(f)
-            self.app_config = config
+                config: AppConfig = toml.load(f)
+            for provider, provider_config in config.items():
+                if provider not in DEFAULT_PROVIDERS_CONFIG:
+                    provider_config['is_custom'] = True
+                self.app_config[provider] = provider_config
+                # image/video models are hardcoded in the default provider config
+                provider_models = DEFAULT_PROVIDERS_CONFIG.get(provider, {}).get('models', {})
+                for model_name, model_config in provider_config.get('models', {}).items():
+                    # Only text model can be self added
+                    if model_config.get('type') == 'text' and model_name not in provider_models:
+                        provider_models[model_name] = model_config
+                self.app_config[provider]['models'] = provider_models
         except Exception:
             pass
 

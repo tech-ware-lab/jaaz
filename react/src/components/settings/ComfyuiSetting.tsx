@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { DEFAULT_PROVIDERS_CONFIG, PROVIDER_NAME_MAPPING } from '@/constants'
+import { PROVIDER_NAME_MAPPING } from '@/constants'
 import { LLMConfig } from '@/types/types'
 import {
   AlertCircle,
@@ -224,24 +224,6 @@ export default function ComfyuiSetting({
       url: '',
       models: {},
     })
-  }
-  const [showAddWorkflowDialog, setShowAddWorkflowDialog] = useState(false)
-
-  // ComfyUI installed successfully
-  const handleInstallSuccess = async () => {
-    setIsComfyUIInstalled(true)
-
-    // Set default URL if not already set
-    if (!comfyUrl) {
-      onConfigChange('comfyui', {
-        ...config,
-        models: DEFAULT_PROVIDERS_CONFIG.comfyui.models,
-        url: 'http://127.0.0.1:8188',
-      })
-    }
-
-    // Start ComfyUI after installation
-    await startComfyUI()
   }
 
   const getComfyUIStatusIcon = () => {

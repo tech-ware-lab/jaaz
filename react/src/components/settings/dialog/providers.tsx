@@ -3,7 +3,6 @@ import ComfyuiSetting from '@/components/settings/ComfyuiSetting'
 import CommonSetting from '@/components/settings/CommonSetting'
 import JaazSetting from '@/components/settings/JaazSetting'
 import { Button } from '@/components/ui/button'
-import { DEFAULT_PROVIDERS_CONFIG } from '@/constants'
 import useConfigsStore from '@/stores/configs'
 import { LLMConfig } from '@/types/types'
 import { getConfig, updateConfig } from '@/api/config'
@@ -26,32 +25,7 @@ const SettingProviders = () => {
       try {
         const config: { [key: string]: LLMConfig } = await getConfig()
 
-        const res: { [key: string]: LLMConfig } = {}
-
-        // First, add custom providers that are not in DEFAULT_PROVIDERS_CONFIG
-        for (const provider in config) {
-          if (
-            !(provider in DEFAULT_PROVIDERS_CONFIG) &&
-            typeof config[provider] === 'object'
-          ) {
-            console.log('Adding custom provider:', provider, config[provider])
-            res[provider] = config[provider]
-          }
-        }
-
-        // Then, add providers from DEFAULT_PROVIDERS_CONFIG
-        for (const provider in DEFAULT_PROVIDERS_CONFIG) {
-          if (config[provider] && typeof config[provider] === 'object') {
-            res[provider] = {
-              ...DEFAULT_PROVIDERS_CONFIG[provider],
-              ...config[provider],
-            }
-          } else {
-            res[provider] = DEFAULT_PROVIDERS_CONFIG[provider]
-          }
-        }
-
-        setProviders(res)
+        setProviders(config)
       } catch (error) {
         console.error('Error loading configuration:', error)
         setErrorMessage(t('settings:messages.failedToLoad'))
@@ -112,10 +86,12 @@ const SettingProviders = () => {
       )}
 
       <div className="w-full">
-        <JaazSetting
-          config={providers['jaaz']}
-          onConfigChange={handleConfigChange}
-        />
+        {providers['jaaz'] && (
+          <JaazSetting
+            config={providers['jaaz']}
+            onConfigChange={handleConfigChange}
+          />
+        )}
 
         <div className="my-6 border-t bg-border" />
       </div>
