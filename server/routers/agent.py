@@ -30,7 +30,7 @@ async def workspace_download(path: str):
     return download_file(path)
 
 
-def get_ollama_model_list():
+def get_ollama_model_list() -> List[str]:
     base_url = config_service.get_config().get('ollama', {}).get(
         'url', os.getenv('OLLAMA_HOST', 'http://localhost:11434'))
     try:
@@ -43,7 +43,7 @@ def get_ollama_model_list():
         return []
 
 
-async def get_comfyui_model_list(base_url: str):
+async def get_comfyui_model_list(base_url: str) -> List[str]:
     """Get ComfyUI model list from object_info API"""
     try:
         timeout = httpx.Timeout(10.0)
@@ -54,7 +54,7 @@ async def get_comfyui_model_list(base_url: str):
                 # Extract models from CheckpointLoaderSimple node
                 models = data.get('CheckpointLoaderSimple', {}).get(
                     'input', {}).get('required', {}).get('ckpt_name', [[]])[0]
-                return models if isinstance(models, list) else []
+                return models if isinstance(models, list) else []  # type: ignore
             else:
                 print(f"ComfyUI server returned status {response.status_code}")
                 return []

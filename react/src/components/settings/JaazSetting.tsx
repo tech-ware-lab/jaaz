@@ -2,7 +2,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { LOGO_URL, DEFAULT_PROVIDERS_CONFIG } from '@/constants'
+import { LOGO_URL } from '@/constants'
 import { LLMConfig } from '@/types/types'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/contexts/AuthContext'
@@ -22,7 +22,7 @@ export default function JaazSetting({
   const { setShowLoginDialog } = useConfigs()
 
   // Get available models from constants
-  const availableModels = DEFAULT_PROVIDERS_CONFIG.jaaz.models || {}
+  const availableModels = config.models || {}
 
   const handleModelToggle = (modelName: string, enabled: boolean) => {
     const currentModels = config.models || {}
@@ -37,8 +37,9 @@ export default function JaazSetting({
     }
 
     // Filter out any models that don't exist in availableModels
-    const validModels: Record<string, { type?: 'text' | 'image' | 'video' }> = {}
-    Object.keys(updatedModels).forEach(key => {
+    const validModels: Record<string, { type?: 'text' | 'image' | 'video' }> =
+      {}
+    Object.keys(updatedModels).forEach((key) => {
       if (availableModels[key]) {
         validModels[key] = updatedModels[key]
       }
@@ -65,7 +66,8 @@ export default function JaazSetting({
 
       <div className="space-y-2">
         {Object.entries(availableModels).map(([modelName, modelConfig]) => {
-          const isEnabled = config.models && config.models[modelName] !== undefined
+          const isEnabled =
+            config.models && config.models[modelName] !== undefined
 
           return (
             <div key={modelName} className="flex items-center justify-between">
@@ -74,7 +76,9 @@ export default function JaazSetting({
                 <p>{modelConfig.type || 'text'}</p>
                 <Switch
                   checked={isEnabled}
-                  onCheckedChange={(checked) => handleModelToggle(modelName, checked)}
+                  onCheckedChange={(checked) =>
+                    handleModelToggle(modelName, checked)
+                  }
                 />
               </div>
             </div>
@@ -89,11 +93,7 @@ export default function JaazSetting({
       {/* Provider Header */}
       <div className="flex items-center gap-2 justify-between">
         <div className="flex items-center gap-2">
-          <img
-            src={LOGO_URL}
-            alt="Jaaz"
-            className="w-10 h-10 rounded-full"
-          />
+          <img src={LOGO_URL} alt="Jaaz" className="w-10 h-10 rounded-full" />
           <p className="font-bold text-2xl w-fit">Jaaz</p>
           {/* <span>✨ Custom Provider</span> */}
         </div>
