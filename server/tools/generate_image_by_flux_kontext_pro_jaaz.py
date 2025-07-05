@@ -22,7 +22,7 @@ class GenerateImageByFluxKontextProInputSchema(BaseModel):
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
-@tool("generate_image_by_flux_kontext_pro",
+@tool("generate_image_by_flux_kontext_pro_jaaz",
       description="Generate an image by Flux Kontext Pro model using text prompt or optionally pass an image for reference or editing. Good for object removal, image editing, etc. Only one input image is allowed.",
       args_schema=GenerateImageByFluxKontextProInputSchema)
 async def generate_image_by_flux_kontext_pro_jaaz(

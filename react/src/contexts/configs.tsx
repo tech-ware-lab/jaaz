@@ -26,7 +26,7 @@ export const ConfigsProvider = ({
   const previousAllToolsRef = useRef<ModelInfo[]>([])
 
   const { data: modelList, refetch: refreshModels } = useQuery({
-    queryKey: ['list_models'],
+    queryKey: ['list_models_2'],
     queryFn: () => listModels(),
     staleTime: 1000, // 5分钟内数据被认为是新鲜的
     placeholderData: (previousData) => previousData, // 关键：显示旧数据同时获取新数据
