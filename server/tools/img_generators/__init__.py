@@ -1,4 +1,5 @@
 from .base import ImageGenerator
+from .replicate import ReplicateGenerator
 from .comfyui import ComfyUIGenerator, ComfyUIWorkflowRunner
 from .wavespeed import WavespeedGenerator
 from .jaaz import JaazGenerator
@@ -7,6 +8,7 @@ from .volces import VolcesImageGenerator
 
 __all__ = [
     'ImageGenerator',
+    'ReplicateGenerator',
     'ComfyUIGenerator',
     'WavespeedGenerator',
     'JaazGenerator',
