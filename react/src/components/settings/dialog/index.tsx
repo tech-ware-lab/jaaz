@@ -43,15 +43,6 @@ const SettingsDialog = () => {
             {renderContent()}
           </ScrollArea>
         </SidebarProvider>
-
-        <DialogFooter className="flex-shrink-0 p-2 border-t border-border/50">
-          <Button
-            onClick={() => setShowSettingsDialog(false)}
-            variant={'outline'}
-          >
-            {t('settings:close')}
-          </Button>
-        </DialogFooter>
       </CommonDialogContent>
     </Dialog>
   )
