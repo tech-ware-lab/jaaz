@@ -10,7 +10,6 @@ import json
 from contextlib import asynccontextmanager
 from typing import Dict, List, Any, Optional, Union, cast
 from nanoid import generate
-from common import DEFAULT_PORT
 from services.db_service import db_service
 from services.websocket_service import broadcast_session_update
 from services.websocket_service import send_to_websocket

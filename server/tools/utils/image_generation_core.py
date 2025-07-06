@@ -3,9 +3,7 @@ Image generation core module
 Contains the main orchestration logic for image generation across different providers
 """
 
-import traceback
-from typing import List, cast, Optional, Any
-from models.config_model import ModelInfo
+from typing import Optional
 from tools.utils.image_utils import process_input_image
 from ..image_providers.image_base_provider import ImageProviderBase
 # 导入所有提供商以确保自动注册 (不要删除这些导入)

@@ -14,9 +14,6 @@ def generate_image_id() -> str:
     return generate(size=10)
 
 
-# File ID generation moved to tools/image_generation/image_canvas_utils.py
-
-
 async def get_image_info_and_save(
     url: str,
     file_path_without_extension: str,
