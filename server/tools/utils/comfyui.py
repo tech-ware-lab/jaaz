@@ -1,13 +1,12 @@
-from typing import Optional, Dict, Any
+from typing import Optional
 import os
-from io import BytesIO
 import random
 import json
 import sys
 import copy
 import traceback
 from utils.http_client import HttpClient
-from .base import ImageGenerator, get_image_info_and_save, generate_image_id
+from .image_utils import get_image_info_and_save, generate_image_id
 from services.config_service import (
     config_service,
     FILES_DIR,
@@ -15,7 +14,7 @@ from services.config_service import (
     VIDEO_FORMATS,
 )
 from routers.comfyui_execution import execute
-from tools.video_generation_utils import get_video_info_and_save
+from tools.video_generation.video_canvas_utils import get_video_info_and_save
 
 
 async def detect_file_type_comprehensive(url):
@@ -61,7 +60,7 @@ def get_asset_path(filename):
     return os.path.join(base_path, "asset", filename)
 
 
-class ComfyUIGenerator(ImageGenerator):
+class ComfyUIGenerator():
     """ComfyUI image generator implementation"""
 
     def __init__(self):
@@ -144,7 +143,7 @@ class ComfyUIGenerator(ImageGenerator):
         return mime_type, width, height, filename
 
 
-class ComfyUIWorkflowRunner(ImageGenerator):
+class ComfyUIWorkflowRunner():
     """ComfyUI image generator implementation"""
 
     def __init__(self, workflow_dict, base_url):

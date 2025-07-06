@@ -1,15 +1,12 @@
 from fastapi.responses import FileResponse
 from common import DEFAULT_PORT
-from tools.image_generation_utils import generate_file_id
-from services.db_service import db_service
-import traceback
-from services.config_service import USER_DATA_DIR, FILES_DIR
-from services.websocket_service import send_to_websocket, broadcast_session_update
+from tools.utils.image_canvas_utils import generate_file_id
+from services.config_service import FILES_DIR
 
 from PIL import Image
 from io import BytesIO
 import os
-from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File
 import httpx
 import aiofiles
 from mimetypes import guess_type

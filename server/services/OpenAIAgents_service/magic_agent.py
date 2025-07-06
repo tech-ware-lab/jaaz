@@ -7,7 +7,7 @@ import asyncio
 import re
 import os
 from nanoid import generate
-from tools.image_generation.image_canvas_utils import save_image_to_canvas
+from tools.utils.image_canvas_utils import save_image_to_canvas
 from tools.utils.image_utils import get_image_info_and_save
 from services.config_service import FILES_DIR
 

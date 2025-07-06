@@ -19,7 +19,6 @@ If `run_comfy_workflow` is not yet implemented it will still work
 
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 import random
@@ -28,7 +27,7 @@ import traceback
 from io import BytesIO
 from typing import Annotated, Any, Dict, List, Optional
 from common import DEFAULT_PORT
-from .image_generation_utils import (
+from .utils.image_canvas_utils import (
     generate_file_id,
     generate_new_image_element,
 )
@@ -40,7 +39,7 @@ from services.config_service import FILES_DIR, config_service, IMAGE_FORMATS
 from services.db_service import db_service
 from services.websocket_service import broadcast_session_update, send_to_websocket
 
-from .img_generators import ComfyUIWorkflowRunner
+from .utils.comfyui import ComfyUIWorkflowRunner
 from tools.video_generation.video_canvas_utils import generate_new_video_element
 
 

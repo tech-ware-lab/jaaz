@@ -2,8 +2,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from .image_generation import generate_image_with_provider
-
+from tools.utils.image_generation_core import generate_image_with_provider
 
 class GenerateImageByRecraftV3InputSchema(BaseModel):
     prompt: str = Field(
@@ -27,12 +26,16 @@ async def generate_image_by_recraft_v3(
     """
     Generate an image using Recraft V3 model via the provider framework
     """
-    return await generate_image_with_provider(
+    ctx = config.get('configurable', {})
+    canvas_id = ctx.get('canvas_id', '')
+    session_id = ctx.get('session_id', '')
+    return await generate_image_with_provider(        
+        canvas_id=canvas_id,
+        session_id=session_id,
+        provider='jaaz',
+        model="recraft-ai/recraft-v3",
         prompt=prompt,
         aspect_ratio=aspect_ratio,
-        model="recraft-ai/recraft-v3",
-        tool_call_id=tool_call_id,
-        config=config,
         input_images=None,
     )
 
