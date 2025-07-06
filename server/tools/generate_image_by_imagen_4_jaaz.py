@@ -2,9 +2,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-
-from tools.image_generation.image_canvas_utils import save_image_to_canvas
-from tools.image_providers.jaaz_provider import JaazImageProvider
+from tools.image_generators import generate_image
 
 class GenerateImageByImagen4InputSchema(BaseModel):
     prompt: str = Field(
@@ -26,28 +24,18 @@ async def generate_image_by_imagen_4_jaaz(
     config: RunnableConfig,
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> str:
-    jaaz_image_provider = JaazImageProvider()
     ctx = config.get('configurable', {})
     canvas_id = ctx.get('canvas_id', '')
     session_id = ctx.get('session_id', '')
     print(f'🛠️ canvas_id {canvas_id} session_id {session_id}')
-
-    # Inject the tool call id into the context
-    ctx['tool_call_id'] = tool_call_id
-
-    # Generate image using the selected provider
-    mime_type, width, height, filename = await jaaz_image_provider.generate(
-        prompt=prompt,
+    return await generate_image(
+        canvas_id=canvas_id,
+        session_id=session_id,
         model='google/imagen-4',
+        provider='jaaz',
+        prompt=prompt,
         aspect_ratio=aspect_ratio,
     )
-
-    # Save image to canvas
-    image_url = await save_image_to_canvas(
-        session_id, canvas_id, filename, mime_type, width, height
-    )
-
-    return f"image generated successfully ![image_id: {filename}]({image_url})"
 
 
 # Export the tool for easy import
