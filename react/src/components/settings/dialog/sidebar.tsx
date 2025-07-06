@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import {
   Sidebar,
   SidebarContent,
@@ -20,7 +21,11 @@ type SettingSidebar = {
   onClose?: () => void
 }
 
-const SettingSidebar: React.FC<SettingSidebar> = ({ current, setCurrent, onClose }) => {
+const SettingSidebar: React.FC<SettingSidebar> = ({
+  current,
+  setCurrent,
+  onClose,
+}) => {
   const { t } = useTranslation()
 
   // Menu items.
@@ -29,17 +34,17 @@ const SettingSidebar: React.FC<SettingSidebar> = ({ current, setCurrent, onClose
     title: string
     icon: React.ElementType
   }[] = [
-      {
-        type: 'provider',
-        title: 'settings:provider:title',
-        icon: PlugZap,
-      },
-      {
-        type: 'proxy',
-        title: 'settings:proxy:title',
-        icon: Network,
-      },
-    ]
+    {
+      type: 'provider',
+      title: 'settings:provider:title',
+      icon: PlugZap,
+    },
+    {
+      type: 'proxy',
+      title: 'settings:proxy:title',
+      icon: Network,
+    },
+  ]
 
   return (
     <Sidebar className="h-full rounded-l-lg overflow-hidden">
@@ -47,13 +52,10 @@ const SettingSidebar: React.FC<SettingSidebar> = ({ current, setCurrent, onClose
         <SidebarGroup>
           <div className="flex items-center justify-between mb-2">
             {onClose && (
-              <button
-                onClick={onClose}
-                className="rounded-md p-1 opacity-70 ring-offset-background transition-all hover:opacity-100 hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none cursor-pointer"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="sr-only">关闭</span>
-              </button>
+              <Button onClick={onClose}>
+                <ChevronLeft className="h-6 w-6" />
+                <span className="sr-only">Close</span>
+              </Button>
             )}
             <SidebarGroupLabel className="text-lg font-bold select-none">
               {t('settings:title')}
