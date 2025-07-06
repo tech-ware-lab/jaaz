@@ -41,15 +41,9 @@ class PlannerAgentConfig(BaseAgentConfig):
 
         handoffs: List[HandoffConfig] = [
             {
-                'agent_name': 'image_designer',
+                'agent_name': 'image_video_creator',
                 'description': """
-                        Transfer user to the image_designer. About this agent: Specialize in generating images.
-                        """
-            },
-            {
-                'agent_name': 'video_designer',
-                'description': """
-                        Transfer user to the video_designer. About this agent: Specialize in generating videos from text prompts or images.
+                        Transfer user to the image_video_creator. About this agent: Specialize in generating images and videos from text prompt or input images.
                         """
             }
         ]
