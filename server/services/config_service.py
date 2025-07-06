@@ -25,40 +25,40 @@ AppConfig = Dict[str, ProviderConfig]
 
 
 DEFAULT_PROVIDERS_CONFIG: AppConfig = {
-  'jaaz': {
-    'models': {
-      # text models
-      'gpt-4o': { 'type': 'text' },
-      'gpt-4o-mini': { 'type': 'text' },
-      'deepseek/deepseek-chat-v3-0324:free': { 'type': 'text' },
-      'deepseek/deepseek-chat-v3-0324': { 'type': 'text' },
-      'anthropic/claude-sonnet-4': { 'type': 'text' },
-      'anthropic/claude-3.7-sonnet': { 'type': 'text' },
+    'jaaz': {
+        'models': {
+            # text models
+            'gpt-4o': {'type': 'text'},
+            'gpt-4o-mini': {'type': 'text'},
+            'deepseek/deepseek-chat-v3-0324:free': {'type': 'text'},
+            'deepseek/deepseek-chat-v3-0324': {'type': 'text'},
+            'anthropic/claude-sonnet-4': {'type': 'text'},
+            'anthropic/claude-3.7-sonnet': {'type': 'text'},
+        },
+        'url': os.getenv('BASE_API_URL', 'https://www.jaaz.app').rstrip('/') + '/api/v1/',
+        'api_key': '',
+        'max_tokens': 8192,
     },
-    'url': os.getenv('BASE_API_URL', 'https://www.jaaz.app').rstrip('/') + '/api/v1/',
-    'api_key': '',
-    'max_tokens': 8192,
-  },
-  'comfyui': {
-    'models': {},
-    'url': 'http://127.0.0.1:8188',
-    'api_key': '',
-  },
-  'ollama': {
-    'models': {},
-    'url': 'http://localhost:11434',
-    'api_key': '',
-    'max_tokens': 8192,
-  },
-  'openai': {
-    'models': {
-      'gpt-4o': { 'type': 'text' },
-      'gpt-4o-mini': { 'type': 'text' },
+    'comfyui': {
+        'models': {},
+        'url': 'http://127.0.0.1:8188',
+        'api_key': '',
     },
-    'url': 'https://api.openai.com/v1/',
-    'api_key': '',
-    'max_tokens': 8192,
-  },
+    'ollama': {
+        'models': {},
+        'url': 'http://localhost:11434',
+        'api_key': '',
+        'max_tokens': 8192,
+    },
+    'openai': {
+        'models': {
+            'gpt-4o': {'type': 'text'},
+            'gpt-4o-mini': {'type': 'text'},
+        },
+        'url': 'https://api.openai.com/v1/',
+        'api_key': '',
+        'max_tokens': 8192,
+    },
 
 }
 
@@ -100,6 +100,20 @@ class ConfigService:
 
     async def initialize(self) -> None:
         try:
+            # Ensure the user_data directory exists
+            os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
+
+            # Check if config file exists
+            if not self.exists_config():
+                print(
+                    f"Config file not found at {self.config_file}, creating default configuration")
+                # Create default config file
+                with open(self.config_file, "w") as f:
+                    toml.dump(self.app_config, f)
+                print(f"Default config file created at {self.config_file}")
+                self.initialized = True
+                return
+
             async with aiofiles.open(self.config_file, "r") as f:
                 content = await f.read()
                 config: AppConfig = toml.loads(content)
@@ -108,7 +122,8 @@ class ConfigService:
                     provider_config['is_custom'] = True
                 self.app_config[provider] = provider_config
                 # image/video models are hardcoded in the default provider config
-                provider_models = DEFAULT_PROVIDERS_CONFIG.get(provider, {}).get('models', {})
+                provider_models = DEFAULT_PROVIDERS_CONFIG.get(
+                    provider, {}).get('models', {})
                 for model_name, model_config in provider_config.get('models', {}).items():
                     # Only text model can be self added
                     if model_config.get('type') == 'text' and model_name not in provider_models:
@@ -139,6 +154,9 @@ class ConfigService:
         except Exception as e:
             traceback.print_exc()
             return {"status": "error", "message": str(e)}
+
+    def exists_config(self) -> bool:
+        return os.path.exists(self.config_file)
 
 
 config_service = ConfigService()
