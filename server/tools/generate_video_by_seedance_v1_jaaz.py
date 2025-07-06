@@ -2,7 +2,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from .video_generation import generate_video_with_provider
+from tools.video_generation.video_generation_core import generate_video_with_provider
 from .utils.image_utils import process_input_image
 
 
@@ -33,10 +33,10 @@ class GenerateVideoBySeedanceV1InputSchema(BaseModel):
     tool_call_id: Annotated[str, InjectedToolCallId]
 
 
-@tool("generate_video_by_seedance_v1",
+@tool("generate_video_by_seedance_v1_jaaz",
       description="Generate high-quality videos using Seedance V1 model. Supports multiple providers and text-to-video/image-to-video generation.",
       args_schema=GenerateVideoBySeedanceV1InputSchema)
-async def generate_video_by_seedance_v1(
+async def generate_video_by_seedance_v1_jaaz(
     prompt: str,
     config: RunnableConfig,
     tool_call_id: Annotated[str, InjectedToolCallId],
@@ -76,4 +76,4 @@ async def generate_video_by_seedance_v1(
 
 
 # Export the tool for easy import
-__all__ = ["generate_video_by_seedance_v1"]
+__all__ = ["generate_video_by_seedance_v1_jaaz"]
