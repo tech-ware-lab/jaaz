@@ -34,17 +34,6 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
       'deepseek/deepseek-chat-v3-0324': { 'type': 'text' },
       'anthropic/claude-sonnet-4': { 'type': 'text' },
       'anthropic/claude-3.7-sonnet': { 'type': 'text' },
-      # image models
-      'google/imagen-4': { 'type': 'image' },
-      # 'google/imagen-4-ultra': { type: 'image' },
-      # 'black-forest-labs/flux-1.1-pro': { type: 'image' },
-      'black-forest-labs/flux-kontext-pro': { 'type': 'image' },
-      'black-forest-labs/flux-kontext-max': { 'type': 'image' },
-      'recraft-ai/recraft-v3': { 'type': 'image' },
-      'doubao/doubao-seedream-3-0-t2i-250415': { 'type': 'image' },
-      'doubao-seedance-1-0-pro-250528': { 'type': 'video' },
-      # 'ideogram-ai/ideogram-v3-balanced': { 'type': 'image' },
-      'openai/gpt-image-1': { 'type': 'image' },
     },
     'url': os.getenv('BASE_API_URL', 'https://www.jaaz.app').rstrip('/') + '/api/v1/',
     'api_key': '',
@@ -65,31 +54,12 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
     'models': {
       'gpt-4o': { 'type': 'text' },
       'gpt-4o-mini': { 'type': 'text' },
-      'gpt-image-1': { 'type': 'image' },
     },
     'url': 'https://api.openai.com/v1/',
     'api_key': '',
     'max_tokens': 8192,
   },
-  'wavespeed': {
-    'models': {
-      'wavespeed-ai/flux-dev': { 'type': 'image' },
-    },
-    'url': 'https://api.wavespeed.ai/api/v3/',
-    'api_key': '',
-  },
-  'replicate': {
-    'models': {
-      'google/imagen-4': { 'type': 'image' },
-      'black-forest-labs/flux-1.1-pro': { 'type': 'image' },
-      'black-forest-labs/flux-kontext-pro': { 'type': 'image' },
-      'black-forest-labs/flux-kontext-max': { 'type': 'image' },
-      'recraft-ai/recraft-v3': { 'type': 'image' },
-    },
-    'url': 'https://api.replicate.com/v1/',
-    'api_key': '',
-    'max_tokens': 8192,
-  },
+
 }
 
 SERVER_DIR = os.path.dirname(os.path.dirname(__file__))

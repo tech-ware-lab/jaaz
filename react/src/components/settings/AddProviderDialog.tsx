@@ -46,6 +46,27 @@ const PROVIDER_OPTIONS = [
     },
   },
   {
+    value: 'wavespeed',
+    label: 'Wavespeed',
+    mediaOnly: true,
+    data: {
+      apiUrl: 'https://api.wavespeed.ai/api/v3/',
+      models: {},
+      api_key: '',
+    },
+  },
+  {
+    value: 'replicate',
+    label: 'Replicate',
+    mediaOnly: true,
+    data: {
+      apiUrl: 'https://api.replicate.com/v1/',
+      models: {},
+      api_key: '',
+      max_tokens: 8192,
+    },
+  },
+  {
     value: '深度求索',
     label: '深度求索 (DeepSeek)',
     data: {
@@ -124,6 +145,9 @@ export default function AddProviderDialog({
     Record<string, { type?: 'text' | 'image' | 'video' }>
   >({})
 
+  const isMediaOnlyProvider =
+    PROVIDER_OPTIONS.find((p) => p.value === providerName)?.mediaOnly ?? false
+
   // Handle data change when provider is selected
   const handleProviderDataChange = (data: any) => {
     if (data && typeof data === 'object' && 'apiUrl' in data) {
@@ -136,7 +160,10 @@ export default function AddProviderDialog({
     if (!providerName.trim() || !apiUrl.trim()) {
       return
     }
-    if (Object.keys(models).length === 0) {
+    if (
+      !PROVIDER_OPTIONS.find((p) => p.value === providerName)?.mediaOnly &&
+      Object.keys(models).length === 0
+    ) {
       toast.error(t('settings:provider.noModelsSelected'))
       return
     }
@@ -146,6 +173,7 @@ export default function AddProviderDialog({
       url: apiUrl,
       api_key: apiKey,
       max_tokens: 8192,
+      is_custom: true,
     }
 
     // Use provider name as key (convert to lowercase and replace spaces with underscores)
@@ -174,7 +202,10 @@ export default function AddProviderDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <CommonDialogContent open={open}>
         <DialogHeader>
-          <DialogTitle>{t('settings:provider.addProvider')}</DialogTitle>
+          <DialogTitle>
+            {t('settings:provider.addProvider')}
+            {isMediaOnlyProvider && <span className="ml-3">🎨 🎥</span>}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -217,11 +248,13 @@ export default function AddProviderDialog({
           </div>
 
           {/* Models */}
-          <AddModelsList
-            models={models}
-            onChange={setModels}
-            label={t('settings:models.title')}
-          />
+          {!isMediaOnlyProvider && (
+            <AddModelsList
+              models={models}
+              onChange={setModels}
+              label={t('settings:models.title')}
+            />
+          )}
         </div>
 
         <DialogFooter>
