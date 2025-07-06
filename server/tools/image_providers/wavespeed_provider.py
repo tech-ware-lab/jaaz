@@ -16,26 +16,25 @@ class WavespeedResponse(BaseModel):
     message: Optional[str] = None
 
 
-class WavespeedProvider(ImageProviderBase, provider_name="wavespeed"):
+class WavespeedProvider(ImageProviderBase):
     """WaveSpeed image generation provider implementation"""
 
-    def __init__(self):
-        config = config_service.app_config.get('wavespeed', {})
-        self.api_key = str(config.get("api_key", ""))
-        self.api_url = str(config.get("url", ""))
-        self.channel = os.environ.get('WAVESPEED_CHANNEL', 'jaaz_main')
-
-        if not self.api_key:
-            raise ValueError("WaveSpeed API key is not configured")
-        if not self.api_url:
-            raise ValueError("WaveSpeed API URL is not configured")
 
     def _build_headers(self) -> dict[str, str]:
         """Build request headers"""
+        config = config_service.app_config.get('wavespeed', {})
+        api_key = str(config.get("api_key", ""))
+        api_url = str(config.get("url", ""))
+        channel = os.environ.get('WAVESPEED_CHANNEL', 'jaaz_main')
+
+        if not api_key:
+            raise ValueError("WaveSpeed API key is not configured")
+        if not api_url:
+            raise ValueError("WaveSpeed API URL is not configured")
         return {
-            'Authorization': f'Bearer {self.api_key}',
+            'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json',
-            'channel': self.channel,
+            'channel': channel,
         }
 
     def _build_payload(self, prompt: str, input_images: Optional[list[str]] = None, **kwargs: Any) -> dict[str, Any]:

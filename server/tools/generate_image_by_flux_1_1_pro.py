@@ -27,12 +27,17 @@ async def generate_image_by_flux_1_1_pro(
     """
     Generate an image using Flux 1.1 Pro model via the provider framework
     """
+    ctx = config.get('configurable', {})
+    canvas_id = ctx.get('canvas_id', '')
+    session_id = ctx.get('session_id', '')
+
     return await generate_image_with_provider(
+        canvas_id=canvas_id,
+        session_id=session_id,
+        provider='jaaz',
         prompt=prompt,
         aspect_ratio=aspect_ratio,
         model="black-forest-labs/flux-1.1-pro",
-        tool_call_id=tool_call_id,
-        config=config,
         input_images=None,
     )
 

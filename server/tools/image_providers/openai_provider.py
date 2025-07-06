@@ -8,20 +8,8 @@ from services.config_service import FILES_DIR
 from services.config_service import config_service
 
 
-class OpenAIImageProvider(ImageProviderBase, provider_name="openai"):
+class OpenAIImageProvider(ImageProviderBase):
     """OpenAI image generation provider implementation"""
-
-    def __init__(self):
-        config = config_service.app_config.get('openai', {})
-        self.api_key = str(config.get("api_key", ""))
-        self.base_url = str(config.get("url", ""))  # 可选
-
-        if not self.api_key:
-            raise ValueError("OpenAI API key is not configured")
-
-        # Create OpenAI client
-        self.client = OpenAI(api_key=self.api_key,
-                             base_url=self.base_url or None)
 
     async def generate(
         self,
@@ -37,6 +25,17 @@ class OpenAIImageProvider(ImageProviderBase, provider_name="openai"):
         Returns:
             tuple[str, int, int, str]: (mime_type, width, height, filename)
         """
+
+        config = config_service.app_config.get('openai', {})
+        self.api_key = str(config.get("api_key", ""))
+        self.base_url = str(config.get("url", ""))  # 可选
+
+        if not self.api_key:
+            raise ValueError("OpenAI API key is not configured")
+
+        # Create OpenAI client
+        self.client = OpenAI(api_key=self.api_key,
+                             base_url=self.base_url or None)
         try:
             # Remove openai/ prefix if present
             model = model.replace('openai/', '')

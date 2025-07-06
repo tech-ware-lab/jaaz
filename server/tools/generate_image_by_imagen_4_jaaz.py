@@ -2,7 +2,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from tools.image_generators import generate_image
+from tools.image_generation.image_generation_core import generate_image_with_provider
 
 class GenerateImageByImagen4InputSchema(BaseModel):
     prompt: str = Field(
@@ -28,11 +28,11 @@ async def generate_image_by_imagen_4_jaaz(
     canvas_id = ctx.get('canvas_id', '')
     session_id = ctx.get('session_id', '')
     print(f'🛠️ canvas_id {canvas_id} session_id {session_id}')
-    return await generate_image(
+    return await generate_image_with_provider(
         canvas_id=canvas_id,
         session_id=session_id,
-        model='google/imagen-4',
         provider='jaaz',
+        model='google/imagen-4',
         prompt=prompt,
         aspect_ratio=aspect_ratio,
     )

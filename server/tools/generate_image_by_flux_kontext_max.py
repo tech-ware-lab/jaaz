@@ -2,9 +2,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from .image_generation import generate_image_with_provider
-from .utils.image_utils import process_input_image
-
+from tools.image_generation.image_generation_core import generate_image_with_provider
 
 class GenerateImageByFluxKontextMaxInputSchema(BaseModel):
     prompt: str = Field(
@@ -33,25 +31,19 @@ async def generate_image_by_flux_kontext_max(
     """
     Generate an image using Flux Kontext Max model via the provider framework
     """
-    # Process input image if provided
-    processed_input_image = None
-    if input_image:
-        processed_input_image = await process_input_image(input_image)
-        if processed_input_image:
-            print("Using input image for generation")
-        else:
-            print("Warning: No valid input image found")
+    ctx = config.get('configurable', {})
+    canvas_id = ctx.get('canvas_id', '')
+    session_id = ctx.get('session_id', '')
 
     return await generate_image_with_provider(
+        canvas_id=canvas_id,
+        session_id=session_id,
+        provider='jaaz',
+        model="black-forest-labs/flux-kontext-max",
         prompt=prompt,
         aspect_ratio=aspect_ratio,
-        model="black-forest-labs/flux-kontext-max",
-        tool_call_id=tool_call_id,
-        config=config,
-        input_images=[
-            processed_input_image] if processed_input_image else None,
+        input_images=[input_image] if input_image else None,
     )
-
 
 # Export the tool for easy import
 __all__ = ["generate_image_by_flux_kontext_max"]

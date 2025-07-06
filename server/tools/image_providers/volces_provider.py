@@ -18,22 +18,22 @@ class VolcesImagesResponse(BaseModel):
     """The list of generated images."""
 
 
-class VolcesProvider(ImageProviderBase, provider_name="volces"):
+class VolcesProvider(ImageProviderBase):
     """Volces image generation provider implementation"""
 
-    def __init__(self):
-        config = config_service.app_config.get('volces', {})
-        self.api_key = str(config.get("api_key", ""))
-        self.api_url = str(config.get("url", ""))
-
-        if not self.api_key:
-            raise ValueError("Volces API key is not configured")
-        if not self.api_url:
-            raise ValueError("Volces API URL is not configured")
 
     def _create_client(self) -> OpenAI:
         """Create OpenAI client for Volces API"""
-        return OpenAI(api_key=self.api_key, base_url=self.api_url)
+        config = config_service.app_config.get('volces', {})
+        api_key = str(config.get("api_key", ""))
+        api_url = str(config.get("url", ""))
+
+        if not api_key:
+            raise ValueError("Volces API key is not configured")
+        if not api_url:
+            raise ValueError("Volces API URL is not configured")
+
+        return OpenAI(api_key=api_key, base_url=api_url)
 
     def _calculate_dimensions(self, aspect_ratio: str) -> tuple[int, int]:
         """Calculate width and height based on aspect ratio"""

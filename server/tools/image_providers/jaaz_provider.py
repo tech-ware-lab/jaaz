@@ -19,30 +19,31 @@ class JaazImagesResponse(BaseModel):
     """The list of generated images."""
 
 
-class JaazImageProvider(ImageProviderBase, provider_name="jaaz"):
+class JaazImageProvider(ImageProviderBase):
     """Jaaz Cloud image generation provider implementation"""
-
-    def __init__(self):
-        config = config_service.app_config.get('jaaz', {})
-        self.api_url = str(config.get("url", "")).rstrip("/")
-        self.api_token = str(config.get("api_key", ""))
-
-        if not self.api_url:
-            raise ValueError("Jaaz API URL is not configured")
-        if not self.api_token:
-            raise ValueError("Jaaz API token is not configured")
 
     def _build_url(self) -> str:
         """Build request URL"""
-        if self.api_url.rstrip('/').endswith('/api/v1'):
-            return f"{self.api_url.rstrip('/')}/image/generations"
+        config = config_service.app_config.get('jaaz', {})
+        api_url = str(config.get("url", "")).rstrip("/")
+        api_token = str(config.get("api_key", ""))
+
+        if not api_url:
+            raise ValueError("Jaaz API URL is not configured")
+        if not api_token:
+            raise ValueError("Jaaz API token is not configured")
+        if api_url.rstrip('/').endswith('/api/v1'):
+            return f"{api_url.rstrip('/')}/image/generations"
         else:
-            return f"{self.api_url.rstrip('/')}/api/v1/image/generations"
+            return f"{api_url.rstrip('/')}/api/v1/image/generations"
 
     def _build_headers(self) -> dict[str, str]:
+        config = config_service.app_config.get('jaaz', {})
+        api_token = str(config.get("api_key", ""))
+
         """Build request headers"""
         return {
-            "Authorization": f"Bearer {self.api_token}",
+            "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json"
         }
 
