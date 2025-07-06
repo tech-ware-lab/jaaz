@@ -3,6 +3,7 @@ from langgraph.prebuilt import create_react_agent  # type: ignore
 from langgraph.graph.graph import CompiledGraph
 from langchain_core.tools import BaseTool
 from models.tool_model import ToolInfoJson
+from services.langgraph_service.configs.image_vide_creator_config import ImageVideoCreatorAgentConfig
 from .configs import PlannerAgentConfig, ImageDesignerAgentConfig, VideoDesignerAgentConfig, create_handoff_tool, BaseAgentConfig
 from services.tool_service import tool_service
 
@@ -30,8 +31,8 @@ class AgentManager:
             List[Any]: 创建好的智能体列表
         """
         # 为不同类型的智能体过滤合适的工具
-        image_tools = AgentManager._filter_image_tools(tool_list)
-        video_tools = AgentManager._filter_video_tools(tool_list)
+        image_tools =  [tool for tool in tool_list if tool.get('type') == 'image']
+        video_tools = [tool for tool in tool_list if tool.get('type') == 'video']
 
         print(f"📸 图像工具: {image_tools}")
         print(f"🎬 视频工具: {video_tools}")
@@ -40,29 +41,23 @@ class AgentManager:
         planner_agent = AgentManager._create_langgraph_agent(
             model, planner_config)
 
-        image_designer_config = ImageDesignerAgentConfig(
-            image_tools, system_prompt)
-        print('👇image_designer_config tools', image_designer_config.tools)
-        print('👇image_designer_config system_prompt', image_designer_config.system_prompt)
-        image_designer_agent = AgentManager._create_langgraph_agent(
-            model, image_designer_config)
+        # image_designer_config = ImageDesignerAgentConfig(
+        #     image_tools, system_prompt)
+        # print('👇image_designer_config tools', image_designer_config.tools)
+        # print('👇image_designer_config system_prompt', image_designer_config.system_prompt)
+        # image_designer_agent = AgentManager._create_langgraph_agent(
+        #     model, image_designer_config)
 
-        video_designer_config = VideoDesignerAgentConfig(
-            video_tools)
-        video_designer_agent = AgentManager._create_langgraph_agent(
-            model, video_designer_config)
+        # video_designer_config = VideoDesignerAgentConfig(
+        #     video_tools)
+        # video_designer_agent = AgentManager._create_langgraph_agent(
+        #     model, video_designer_config)
 
-        return [planner_agent, image_designer_agent, video_designer_agent]
+        image_video_creator_config = ImageVideoCreatorAgentConfig(tool_list)
+        image_video_creator_agent = AgentManager._create_langgraph_agent(
+            model, image_video_creator_config)
 
-    @staticmethod
-    def _filter_image_tools(tool_list: List[ToolInfoJson]) -> List[ToolInfoJson]:
-        """过滤出图像相关工具"""
-        return [tool for tool in tool_list if tool.get('type') == 'image']
-
-    @staticmethod
-    def _filter_video_tools(tool_list: List[ToolInfoJson]) -> List[ToolInfoJson]:
-        """过滤出视频相关工具"""
-        return [tool for tool in tool_list if tool.get('type') == 'video']
+        return [planner_agent, image_video_creator_agent]
 
     @staticmethod
     def _create_langgraph_agent(
