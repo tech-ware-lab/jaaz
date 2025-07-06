@@ -1,16 +1,13 @@
 from typing import List
-from .base_config import BaseAgentConfig, ToolConfig, HandoffConfig
+from models.tool_model import ToolInfoJson
+from .base_config import BaseAgentConfig, HandoffConfig
 
 
 class VideoDesignerAgentConfig(BaseAgentConfig):
     """视频设计智能体 - 专门负责视频生成
     """
 
-    def __init__(self, tool_names: List[str]) -> None:
-        # 将工具名称列表转换为工具配置列表
-        tools: List[ToolConfig] = [{'tool': tool_name}
-                                   for tool_name in tool_names]
-
+    def __init__(self, tool_list: List[ToolInfoJson]) -> None:
         video_generation_prompt = """
 You are a video designer. You are responsible for generating videos based on user request. You can generate video from text prompt and images.
 
@@ -56,7 +53,7 @@ IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with he
 
         super().__init__(
             name='video_designer',
-            tools=tools,
+            tools=tool_list,
             system_prompt=full_system_prompt,
             handoffs=handoffs
         )

@@ -61,7 +61,14 @@ export enum EAgentState {
 }
 
 export type LLMConfig = {
-  models: Record<string, { type?: 'text' | 'image' | 'video' }>
+  models: Record<
+    string,
+    {
+      type?: 'text' | 'image' | 'video'
+      is_custom?: boolean
+      is_disabled?: boolean
+    }
+  >
   url: string
   api_key: string
   max_tokens?: number
