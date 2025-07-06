@@ -6,12 +6,12 @@ from tools.comfy_dynamic import build_tool
 from tools.write_plan import write_plan_tool
 from tools.generate_image_by_gpt_image_1_jaaz import generate_image_by_gpt_image_1_jaaz
 from tools.generate_image_by_imagen_4_jaaz import generate_image_by_imagen_4_jaaz
-from tools.generate_image_by_recraft_v3 import generate_image_by_recraft_v3
 # from tools.generate_image_by_flux_1_1_pro import generate_image_by_flux_1_1_pro
 from tools.generate_image_by_flux_kontext_pro_jaaz import generate_image_by_flux_kontext_pro_jaaz
 from tools.generate_image_by_flux_kontext_max import generate_image_by_flux_kontext_max
-from tools.generate_image_by_doubao_seedream_3 import generate_image_by_doubao_seedream_3
-from tools.generate_video_by_seedance_v1 import generate_video_by_seedance_v1
+from tools.generate_image_by_doubao_seedream_3_jaaz import generate_image_by_doubao_seedream_3_jaaz
+from tools.generate_video_by_seedance_v1_jaaz import generate_video_by_seedance_v1_jaaz
+from tools.generate_image_by_recraft_v3_jaaz import generate_image_by_recraft_v3_jaaz
 from services.config_service import config_service
 from services.db_service import db_service
 
@@ -32,7 +32,7 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "display_name": "Recraft v3",
         "type": "image",
         "provider": "jaaz",
-        "tool_function": generate_image_by_recraft_v3,
+        "tool_function": generate_image_by_recraft_v3_jaaz,
     },
     # "generate_image_by_flux_1_1_pro_jaaz": {
     #     "display_name": "Flux 1.1 Pro",
@@ -56,13 +56,13 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "display_name": "Doubao Seedream 3",
         "type": "image",
         "provider": "jaaz",
-        "tool_function": generate_image_by_doubao_seedream_3,
+        "tool_function": generate_image_by_doubao_seedream_3_jaaz,
     },
     "generate_video_by_seedance_v1_jaaz": {
         "display_name": "Doubao Seedance v1",
         "type": "video",
         "provider": "jaaz",
-        "tool_function": generate_video_by_seedance_v1,
+        "tool_function": generate_video_by_seedance_v1_jaaz,
     },
 }
 
