@@ -32,7 +32,7 @@ async def create_magic_response(messages: List[Dict[str, Any]], session_id: str 
 
             intent_agent = Agent(
                 name="Intent Agent",
-                instructions='''你是一个强大艺术图像助手，根据用户的需求生成图像。
+                instructions='''你是一个强大艺术洞察助手，你指导下游的图像生成助手根据用户的需求生成图像。
 你有强大的用户意图理解能力，能根据用户的草图理解用户想要什么。
 最终输出的图像不仅内容要符合用户意图，还要保证图像艺术风格与意图相匹配。
 必须给出目标图像的尺寸比率建议（目标图像有可能不是输入的草图的初始的大小，而是草图上某个区域作业区域的尺寸）。''',
@@ -43,15 +43,14 @@ async def create_magic_response(messages: List[Dict[str, Any]], session_id: str 
                 name="Draw Agent",
                 instructions='''你是一个顶尖的图像生成助手。
 根据用户提供的草图分析，生成符合以下要求的图像：
-1) 内容安全、积极向上 2) 风格现代、美观 3) 符合用户创作意图 4) 避免任何可能违反内容政策的内容。
-请使用imageGenerationTool生成图像，必须遵从上下文给出的尺寸比率建议，如果上下文没有给出尺寸比率建议，则生成图像的尺寸是1024*1024。
-如果有角色，竟可能保持角色长相气质与原来一致。''',
+1) 风格现代、美观 2) 符合用户创作意图 3) 避免任何可能违反内容政策的内容 4) 如果用户有明确的要求，则想办法在满足用户要求的同时避免违反内容政策。
+请使用imageGenerationTool生成图像，必须遵从上下文给出的尺寸比率建议，如果上下文没有给出尺寸建议，则生成图像的尺寸是512*512或对应的质量。
+如果有角色，尽可能保持角色长相气质与原来一致。''',
                 model="gpt-4.1-mini",
                 tools=[ImageGenerationTool(
                     tool_config={
                         "type": "image_generation",
                         "model": "gpt-image-1",
-                        "quality": "high",
                     }
                 )],
                 tool_use_behavior="stop_on_first_tool",
