@@ -91,7 +91,7 @@ First git clone this repo:
 
 `cd react`
 
-`npm install`
+`npm install --force`
 
 `npx vite build`
 
