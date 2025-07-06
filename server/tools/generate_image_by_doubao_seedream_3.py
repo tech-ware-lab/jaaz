@@ -27,12 +27,17 @@ async def generate_image_by_doubao_seedream_3(
     """
     Generate an image using Doubao Seedream 3 model via the provider framework
     """
+    ctx = config.get('configurable', {})
+    canvas_id = ctx.get('canvas_id', '')
+    session_id = ctx.get('session_id', '')
+
     return await generate_image_with_provider(
+        canvas_id=canvas_id,
+        session_id=session_id,
+        provider='jaaz',
+        model="doubao/doubao-seedream-3-0-t2i-250415",
         prompt=prompt,
         aspect_ratio=aspect_ratio,
-        model="doubao/doubao-seedream-3-0-t2i-250415",
-        tool_call_id=tool_call_id,
-        config=config,
         input_images=None,
     )
 

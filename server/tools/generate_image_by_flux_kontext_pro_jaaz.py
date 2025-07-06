@@ -2,7 +2,8 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from tools.image_generators import generate_image
+from tools.image_generation.image_generation_core import generate_image_with_provider
+
 
 class GenerateImageByFluxKontextProInputSchema(BaseModel):
     prompt: str = Field(
@@ -31,16 +32,14 @@ async def generate_image_by_flux_kontext_pro_jaaz(
     ctx = config.get('configurable', {})
     canvas_id = ctx.get('canvas_id', '')
     session_id = ctx.get('session_id', '')
-    print(f'🛠️ canvas_id {canvas_id} session_id {session_id}')
-
-    return await generate_image(
+    return await generate_image_with_provider(
         canvas_id=canvas_id,
         session_id=session_id,
-        model='black-forest-labs/flux-kontext-pro',
         provider='jaaz',
+        model='black-forest-labs/flux-kontext-pro',
         prompt=prompt,
         aspect_ratio=aspect_ratio,
-        input_image=input_image,
+        input_images=[input_image] if input_image else None,
     )
 
 # Export the tool for easy import

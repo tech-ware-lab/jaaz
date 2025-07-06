@@ -2,9 +2,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from tools.image_generation.image_canvas_utils import save_image_to_canvas
-from tools.image_providers.jaaz_provider import JaazImageProvider
-from .utils.image_utils import process_input_image
+from tools.image_generation.image_generation_core import generate_image_with_provider
 
 
 class GenerateImageByGptImage1InputSchema(BaseModel):
@@ -31,41 +29,18 @@ async def generate_image_by_gpt_image_1_jaaz(
     tool_call_id: Annotated[str, InjectedToolCallId],
     input_images: list[str] | None = None,
 ) -> str:
-    """
-    Generate an image using the new provider framework
-    """
-    # Process input images if provided
-    processed_input_images: list[str] | None = None
-    if input_images:
-        processed_input_images = []
-        for image_path in input_images:
-            processed_image = await process_input_image(image_path)
-            if processed_image:
-                processed_input_images.append(processed_image)
-
-        if processed_input_images:
-            print(
-                f"Using {len(processed_input_images)} input images for generation")
-        else:
-            print("Warning: No valid input images found")
-    jaaz_image_provider = JaazImageProvider()
-    # Generate image using the selected provider
-    mime_type, width, height, filename = await jaaz_image_provider.generate(
-        prompt=prompt,
-        model='openai/gpt-image-1',
-        aspect_ratio=aspect_ratio,
-        input_images=processed_input_images,
-    )
     ctx = config.get('configurable', {})
     canvas_id = ctx.get('canvas_id', '')
     session_id = ctx.get('session_id', '')
-
-    # Save image to canvas
-    image_url = await save_image_to_canvas(
-        session_id, canvas_id, filename, mime_type, width, height
+    return await generate_image_with_provider(
+        canvas_id=canvas_id,
+        session_id=session_id,
+        provider='jaaz',
+        model='openai/gpt-image-1',
+        prompt=prompt,
+        aspect_ratio=aspect_ratio,
+        input_images=input_images,
     )
-
-    return f"image generated successfully ![image_id: {filename}]({image_url})"
 
 
 # Export the tool for easy import

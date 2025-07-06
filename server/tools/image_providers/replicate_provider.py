@@ -7,15 +7,8 @@ from services.config_service import FILES_DIR
 from utils.http_client import HttpClient
 from services.config_service import config_service
 
-class ReplicateImageProvider(ImageProviderBase, provider_name="replicate"):
+class ReplicateImageProvider(ImageProviderBase):
     """Replicate image generation provider implementation"""
-
-    def __init__(self):
-        config = config_service.app_config.get('replicate', {})
-        self.api_key = config.get("api_key", "")
-
-        if not self.api_key:
-            raise ValueError("Replicate API key is not configured")
 
     def _build_url(self, model: str) -> str:
         """Build request URL for Replicate API"""
@@ -23,8 +16,13 @@ class ReplicateImageProvider(ImageProviderBase, provider_name="replicate"):
 
     def _build_headers(self) -> dict[str, str]:
         """Build request headers"""
+        config = config_service.app_config.get('replicate', {})
+        api_key = config.get("api_key", "")
+
+        if not api_key:
+            raise ValueError("Replicate API key is not configured")
         return {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "Prefer": "wait"
         }
