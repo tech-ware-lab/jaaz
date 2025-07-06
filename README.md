@@ -89,7 +89,13 @@ First git clone this repo:
 
 `git clone https://github.com/11cafe/localart`
 
-`cd server`
+`cd react`
+
+`npm install`
+
+`npx vite build`
+
+`cd ../server`
 
 `pip install -r requirements.txt`
 
