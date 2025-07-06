@@ -8,6 +8,14 @@ export type TCanvasAddImagesToChatEvent = {
   height: number
 }[]
 
+export type TCanvasMagicGenerateEvent = {
+  fileId: string
+  base64: string
+  width: number
+  height: number
+  timestamp: string
+}
+
 export type TEvents = {
   // ********** Socket events - Start **********
   'Socket::Session::Error': ISocket.SessionErrorEvent
@@ -24,6 +32,7 @@ export type TEvents = {
 
   // ********** Canvas events - Start **********
   'Canvas::AddImagesToChat': TCanvasAddImagesToChatEvent
+  'Canvas::MagicGenerate': TCanvasMagicGenerateEvent
   // ********** Canvas events - End **********
 }
 
