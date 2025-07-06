@@ -13,7 +13,7 @@ from nanoid import generate
 from common import DEFAULT_PORT
 from services.db_service import db_service
 from services.websocket_service import broadcast_session_update
-
+from services.websocket_service import send_to_websocket
 
 def generate_file_id() -> str:
     """Generate unique file ID"""
@@ -134,7 +134,7 @@ async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, m
         elements_list.append(new_image_element)
         canvas_data['data']['files'][file_id] = file_data
 
-        image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
+        image_url = f"/api/file/{filename}"
 
         # Save canvas data to database
         await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data['data']))
@@ -152,7 +152,6 @@ async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, m
 
 async def send_image_start_notification(session_id: str, message: str) -> None:
     """Send image generation start notification"""
-    from services.websocket_service import send_to_websocket
     await send_to_websocket(session_id, {
         'type': 'image_generation_start',
         'message': message
@@ -161,7 +160,6 @@ async def send_image_start_notification(session_id: str, message: str) -> None:
 
 async def send_image_error_notification(session_id: str, error_message: str) -> None:
     """Send image generation error notification"""
-    from services.websocket_service import send_to_websocket
     await send_to_websocket(session_id, {
         'type': 'error',
         'error': error_message

@@ -1,4 +1,4 @@
-import { ModelInfo } from '@/api/model'
+import { ModelInfo, ToolInfo } from '@/api/model'
 import { LLMConfig, Model } from '@/types/types'
 import { create } from 'zustand'
 
@@ -9,8 +9,8 @@ type ConfigsStore = {
   textModels: Model[]
   setTextModels: (models: Model[]) => void
 
-  selectedTools: ModelInfo[]
-  setSelectedTools: (models: ModelInfo[]) => void
+  selectedTools: ToolInfo[]
+  setSelectedTools: (models: ToolInfo[]) => void
 
   textModel?: Model
   setTextModel: (model?: Model) => void
@@ -27,8 +27,8 @@ type ConfigsStore = {
   showLoginDialog: boolean
   setShowLoginDialog: (show: boolean) => void
 
-  allTools: ModelInfo[]
-  setAllTools: (tools: ModelInfo[]) => void
+  allTools: ToolInfo[]
+  setAllTools: (tools: ToolInfo[]) => void
 
   providers: {
     [key: string]: LLMConfig

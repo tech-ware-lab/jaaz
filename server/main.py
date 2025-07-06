@@ -4,26 +4,33 @@ import io
 # Ensure stdout and stderr use utf-8 encoding to prevent emoji logs from crashing python server
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
-
+from routers.websocket_router import *  # DO NOT DELETE THIS LINE, OTHERWISE, WEBSOCKET WILL NOT WORK
 from routers import config, agent, workspace, image_tools, canvas, ssl_test, chat_router, settings
-import routers.websocket_router
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
-import asyncio
-import argparse
+import argparse 
 from contextlib import asynccontextmanager
 from starlette.types import Scope
 from starlette.responses import Response
-import socketio
+import socketio # type: ignore
 from services.websocket_state import sio
+from services.websocket_service import broadcast_init_done
+from services.config_service import config_service  
+from services.tool_service import tool_service
+
+async def initialize():
+    await config_service.initialize()
+    await broadcast_init_done()
 
 root_dir = os.path.dirname(__file__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # onstartup
-    await agent.initialize()
+    # TODO: Check if there will be racing conditions when user send chat request but tools and models are not initialized yet.
+    await initialize()
+    await tool_service.initialize()
     yield
     # onshutdown
 

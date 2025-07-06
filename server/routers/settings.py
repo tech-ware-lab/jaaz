@@ -30,8 +30,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 from services.db_service import db_service
 from services.settings_service import settings_service
-from tools.comfy_dynamic import register_comfy_tools
-from services.config_service import USER_DATA_DIR
+from services.tool_service import tool_service
 from services.knowledge_service import list_user_enabled_knowledge
 from pydantic import BaseModel
 
@@ -254,7 +253,7 @@ async def create_workflow(request: CreateWorkflowRequest):
         inputs = json.dumps(request.inputs)
         outputs = json.dumps(request.outputs)
         await db_service.create_comfy_workflow(name, api_json, request.description, inputs, outputs)
-        await register_comfy_tools()
+        await tool_service.initialize()
         return {"success": True}
     except Exception as e:
         raise HTTPException(
@@ -269,7 +268,7 @@ async def list_workflows():
 @router.delete("/comfyui/delete_workflow/{id}")
 async def delete_workflow(id: int):
     result = await db_service.delete_comfy_workflow(id)
-    await register_comfy_tools()
+    await tool_service.initialize()
     return result
 
 

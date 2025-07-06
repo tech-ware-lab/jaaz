@@ -27,9 +27,7 @@ import time
 import traceback
 from io import BytesIO
 from typing import Annotated, Any, Dict, List, Optional
-
 from common import DEFAULT_PORT
-from services.tool_service import tool_service
 from .image_generation_utils import (
     generate_file_id,
     generate_new_image_element,
@@ -101,7 +99,7 @@ def _build_input_schema(wf: Dict[str, Any]) -> type[BaseModel]:
     return create_model(model_name, __base__=BaseModel, **fields)
 
 
-def _build_tool(wf: Dict[str, Any]) -> BaseTool:
+def build_tool(wf: Dict[str, Any]) -> BaseTool:
     """Return an @tool function for the given workflow record."""
     input_schema = _build_input_schema(wf)
 
@@ -280,61 +278,3 @@ def _build_tool(wf: Dict[str, Any]) -> BaseTool:
             return f"image generation failed: {str(e)}"
 
     return _run
-
-
-# --------------------------------------------------------------------------- #
-# registration
-# --------------------------------------------------------------------------- #
-
-
-async def register_comfy_tools() -> Dict[str, BaseTool]:
-    """
-    Fetch all workflows from DB and build tool callables.
-    Run inside the current event loop.
-    """
-    dynamic_comfy_tools: Dict[str, BaseTool] = {}
-    try:
-        workflows = await db_service.list_comfy_workflows()
-    except Exception as exc:  # pragma: no cover
-        print("[comfy_dynamic] Failed to list comfy workflows:", exc)
-        traceback.print_stack()
-        return {}
-
-    for wf in workflows:
-        try:
-            tool_fn = _build_tool(wf)
-            # Export with a unique python identifier so that `dir(module)` works
-            unique_name = f"comfyui_{wf['name']}"
-            dynamic_comfy_tools[unique_name] = tool_fn
-            tool_service.register_tool(unique_name, tool_fn)
-        except Exception as exc:  # pragma: no cover
-            print(
-                f"[comfy_dynamic] Failed to create tool for workflow {wf.get('id')}: {exc}"
-            )
-            print(traceback.print_stack())
-
-    return dynamic_comfy_tools
-
-
-def _ensure_async_registration():
-    """
-    Schedule register_comfy_tools() in the current (or newly created) event loop.
-    Top-level awaits are not allowed in import time, so we create a task.
-    """
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        # No loop yet; create one
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    # if loop already running, just create a task
-    if loop.is_running():
-        loop.create_task(register_comfy_tools())
-    else:
-        # For synchronous contexts (e.g. CLI startup), run until complete
-        loop.run_until_complete(register_comfy_tools())
-
-
-# trigger registration at import
-_ensure_async_registration()

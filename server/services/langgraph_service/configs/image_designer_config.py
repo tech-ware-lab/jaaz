@@ -1,16 +1,13 @@
 from typing import List
-from .base_config import BaseAgentConfig, ToolConfig, HandoffConfig
 
+from models.tool_model import ToolInfoJson
+from .base_config import BaseAgentConfig, HandoffConfig
 
 class ImageDesignerAgentConfig(BaseAgentConfig):
     """图像设计智能体 - 专门负责图像生成
     """
 
-    def __init__(self, tool_names: List[str], system_prompt: str = "") -> None:
-        # 将工具名称列表转换为工具配置列表
-        tools: List[ToolConfig] = [{'tool': tool_name}
-                                   for tool_name in tool_names]
-
+    def __init__(self, tool_list: List[ToolInfoJson], system_prompt: str = "") -> None:
         batch_generation_prompt = """
 
 BATCH GENERATION RULES:
@@ -47,14 +44,14 @@ IMPORTANT: Never ignore tool errors. Always respond to failed tool calls with he
             {
                 'agent_name': 'video_designer',
                 'description': """
-                        Transfer user to the video_designer. About this agent: Specialize in generating videos from text prompts or images.
+                        Transfer user to the video_designer. If user wants to generate video, transfer to video_designer.
                         """
             }
         ]
 
         super().__init__(
             name='image_designer',
-            tools=tools,
+            tools=tool_list,
             system_prompt=full_system_prompt,
             handoffs=handoffs
         )
