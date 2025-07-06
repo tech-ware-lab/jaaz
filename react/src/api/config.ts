@@ -46,7 +46,6 @@ export async function clearJaazApiKey(): Promise<void> {
 
     if (config.jaaz) {
       config.jaaz.api_key = ''
-      config.jaaz.url = ''
       await updateConfig(config)
       console.log('Successfully cleared jaaz provider api_key')
     }
