@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
 import { eventBus, TCanvasAddImagesToChatEvent } from '@/lib/event'
 import { cn, dataURLToFile } from '@/lib/utils'
-import { Message, Model } from '@/types/types'
+import { Message, MessageContent, Model } from '@/types/types'
 import { ModelInfo, ToolInfo } from '@/api/model'
 import { useMutation } from '@tanstack/react-query'
 import { useDrop } from 'ahooks'
@@ -89,17 +89,13 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const handleCancelChat = useCallback(async () => {
     if (sessionId) {
       // 同时取消普通聊天和魔法生成任务
-      await Promise.all([
-        cancelChat(sessionId),
-        cancelMagicGenerate(sessionId)
-      ])
-
+      await Promise.all([cancelChat(sessionId), cancelMagicGenerate(sessionId)])
     }
     onCancelChat?.()
   }, [sessionId, onCancelChat])
 
   // Send Prompt
-  const handleSendPrompt = useCallback(() => {
+  const handleSendPrompt = useCallback(async () => {
     if (pending) return
     if (!textModel) {
       toast.error(t('chat:textarea.selectModel'))
@@ -110,15 +106,11 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     }
 
     if (!selectedTools || selectedTools.length === 0) {
-      toast.error(t('chat:textarea.selectTool'))
-      if (!authStatus.is_logged_in) {
-        setShowLoginDialog(true)
-      }
-      return
+      toast.warning(t('chat:textarea.selectTool'))
     }
 
-    let value = prompt
-    if (value.length === 0 || value.trim() === '') {
+    let value: MessageContent[] | string = prompt
+    if (prompt.length === 0 || prompt.trim() === '') {
       toast.error(t('chat:textarea.enterPrompt'))
       return
     }
@@ -127,6 +119,32 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       images.forEach((image) => {
         value += `\n\n ![Attached image - width: ${image.width} height: ${image.height} filename: ${image.file_id}](/api/file/${image.file_id})`
       })
+
+      // Fetch images as base64
+      const imagePromises = images.map(async (image) => {
+        const response = await fetch(`/api/file/${image.file_id}`)
+        const blob = await response.blob()
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(blob)
+        })
+      })
+
+      const base64Images = await Promise.all(imagePromises)
+
+      value = [
+        {
+          type: 'text',
+          text: value,
+        },
+        ...images.map((image, index) => ({
+          type: 'image_url',
+          image_url: {
+            url: base64Images[index],
+          },
+        })),
+      ] as MessageContent[]
     }
 
     const newMessage = messages.concat([
@@ -135,6 +153,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         content: value,
       },
     ])
+
     setImages([])
     setPrompt('')
 
