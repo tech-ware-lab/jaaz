@@ -1,4 +1,5 @@
 from fastapi.responses import FileResponse
+from fastapi.concurrency import run_in_threadpool
 from common import DEFAULT_PORT
 from tools.utils.image_canvas_utils import generate_file_id
 from services.config_service import FILES_DIR
@@ -56,7 +57,8 @@ async def upload_image(file: UploadFile = File(...), max_size_mb: float = 3.0):
             # Create new image from compressed content and save
             with Image.open(BytesIO(compressed_content)) as compressed_img:
                 width, height = compressed_img.size
-                compressed_img.save(file_path, format='JPEG', quality=95, optimize=True)
+                await run_in_threadpool(compressed_img.save, format='JPEG', quality=95, optimize=True)
+                # compressed_img.save(file_path, format='JPEG', quality=95, optimize=True)
             
             final_size_mb = len(compressed_content) / (1024 * 1024)
             print(f'🦄 Compressed from {original_size_mb:.2f}MB to {final_size_mb:.2f}MB')
@@ -77,7 +79,8 @@ async def upload_image(file: UploadFile = File(...), max_size_mb: float = 3.0):
             # Determine save format based on extension
             save_format = 'JPEG' if extension.lower() in ['jpg', 'jpeg'] else extension.upper()
             
-            img.save(file_path, format=save_format)
+            # img.save(file_path, format=save_format)
+            await run_in_threadpool(img.save, file_path, format=save_format)
 
     # 返回文件信息
     print('🦄upload_image file_path', file_path)
