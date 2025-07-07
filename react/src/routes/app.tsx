@@ -6,6 +6,7 @@ import CanvasPopbarWrapper from '@/components/canvas/pop-bar'
 // VideoCanvasOverlay removed - using native Excalidraw embeddable elements instead
 import ChatInterface from '@/components/chat/Chat'
 import HomeV2Header from '@/components/home_v2/HomeV2Header'
+import MaterialManager from '@/components/material/MaterialManager'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -81,8 +82,8 @@ function Home() {
           className="w-screen h-screen"
           autoSaveId="jaaz-chat-panel"
         >
-          <ResizablePanel className="relative" defaultSize={80}>
-            <div className="w-full h-full">gallery</div>
+          <ResizablePanel className="relative" defaultSize={75}>
+            <MaterialManager />
           </ResizablePanel>
 
           <ResizableHandle />
