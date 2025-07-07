@@ -3,6 +3,7 @@ from fastapi import APIRouter
 import requests
 import httpx
 from models.tool_model import ToolInfoJson
+from services.tool_service import tool_service
 from services.config_service import config_service
 from services.db_service import db_service
 from utils.http_client import HttpClient
@@ -97,25 +98,19 @@ async def get_models() -> list[ModelInfo]:
 async def list_tools() -> list[ToolInfoJson]:
     config = config_service.get_config()
     res: list[ToolInfoJson] = []
-
-    for provider in config.keys():
-        provider_config = config[provider]
-        provider_url = provider_config.get('url', '').strip()
-        provider_api_key = provider_config.get('api_key', '').strip()
-
-        # 跳过无效 provider
-        if not provider_url or not provider_api_key:
+    for tool_id, tool_info in tool_service.tools.items():
+        if tool_info.get('provider') == 'system':
             continue
-
-        # 判断 TOOL_MAPPING 里是否有 provider 字段等于当前 provider 的工具
-        for tool_id, tool_info in TOOL_MAPPING.items():
-            if tool_info.get('provider') == provider:
-                res.append({
-                    'id': tool_id,
-                    'provider': tool_info.get('provider', ''),
-                    'type': tool_info.get('type', ''),
-                    'display_name': tool_info.get('display_name', ''),
-                })
+        provider = tool_info['provider']
+        provider_api_key = config[provider].get('api_key', '').strip()
+        if provider != 'comfyui' and not provider_api_key:
+            continue
+        res.append({
+            'id': tool_id,
+            'provider': tool_info.get('provider', ''),
+            'type': tool_info.get('type', ''),
+            'display_name': tool_info.get('display_name', ''),
+        })
 
     # Handle ComfyUI models separately
     # comfyui_config = config.get('comfyui', {})
