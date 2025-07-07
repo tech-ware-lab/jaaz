@@ -33,17 +33,17 @@ const MixedContent: React.FC<MixedContentProps> = ({ message, contents }) => {
       <div className="flex flex-col gap-3">
         {/* 图片区域 */}
         {images.length > 0 && (
-          <div className="w-full">
+          <div className="h-full">
             {images.length === 1 ? (
               // 单张图片：保持长宽比，最大宽度限制
-              <div className="max-w-[300px]">
+              <div className="max-h-[512px]">
                 <MessageImage content={images[0]} />
               </div>
             ) : (
               // 多张图片：网格布局，保持长宽比
-              <div className="flex gap-2 max-w-[300px]">
+              <div className="flex gap-2 max-h-[512px]">
                 {images.map((image, index) => (
-                  <div key={index} className="max-w-[300px]">
+                  <div key={index} className="max-h-[512px]">
                     <MessageImage content={image} />
                   </div>
                 ))}
