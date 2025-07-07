@@ -85,6 +85,8 @@ Star Jaaz on GitHub to receive instant noifications about new version releases.
 
 ## Manual Install (For Linux or local builds)
 
+🟠 **Need Python version >=3.12**
+
 First git clone this repo:
 
 `git clone https://github.com/11cafe/localart`
@@ -102,6 +104,8 @@ First git clone this repo:
 `python main.py`
 
 ## Development
+
+🟠 **Need Python version >=3.12**
 
 `cd react`
 
