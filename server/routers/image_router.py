@@ -77,20 +77,7 @@ async def upload_image(file: UploadFile = File(...), max_size_mb: float = 3.0):
             # Determine save format based on extension
             save_format = 'JPEG' if extension.lower() in ['jpg', 'jpeg'] else extension.upper()
             
-            # Save with appropriate parameters
-            if save_format == 'JPEG':
-                # Convert to RGB if saving as JPEG
-                if img.mode in ('RGBA', 'LA', 'P'):
-                    background = Image.new('RGB', img.size, (255, 255, 255))
-                    if img.mode == 'P':
-                        img = img.convert('RGBA')
-                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
-                    img = background
-                elif img.mode != 'RGB':
-                    img = img.convert('RGB')
-                img.save(file_path, format=save_format, quality=95, optimize=True)
-            else:
-                img.save(file_path, format=save_format)
+            img.save(file_path, format=save_format)
 
     # 返回文件信息
     print('🦄upload_image file_path', file_path)
