@@ -6,7 +6,9 @@ Contains functions for video processing, canvas operations, and notifications
 import json
 import time
 import os
-from typing import Dict, Any, Tuple, Optional, Union
+import asyncio
+from contextlib import asynccontextmanager
+from typing import Dict, List, Any, Tuple, Optional, Union
 from services.config_service import FILES_DIR
 from services.db_service import db_service
 from services.websocket_service import send_to_websocket, broadcast_session_update  # type: ignore
@@ -17,6 +19,26 @@ import mimetypes
 from pymediainfo import MediaInfo
 from nanoid import generate
 import random
+from utils.canvas import find_next_best_element_position
+
+
+class CanvasLockManager:
+    """Canvas lock manager to prevent concurrent operations causing position overlap"""
+
+    def __init__(self) -> None:
+        self._locks: Dict[str, asyncio.Lock] = {}
+
+    @asynccontextmanager
+    async def lock_canvas(self, canvas_id: str):
+        if canvas_id not in self._locks:
+            self._locks[canvas_id] = asyncio.Lock()
+
+        async with self._locks[canvas_id]:
+            yield
+
+
+# Global lock manager instance
+canvas_lock_manager = CanvasLockManager()
 
 
 async def save_video_to_canvas(
@@ -35,57 +57,59 @@ async def save_video_to_canvas(
     Returns:
         Tuple of (filename, file_data, new_video_element)
     """
-    # Generate unique video ID
-    video_id = generate_video_file_id()
+    # Use lock to ensure atomicity of the save process
+    async with canvas_lock_manager.lock_canvas(canvas_id):
+        # Generate unique video ID
+        video_id = generate_video_file_id()
 
-    # Download and save video
-    print(f"🎥 Downloading video from: {video_url}")
-    mime_type, width, height, extension = await get_video_info_and_save(
-        video_url, os.path.join(FILES_DIR, f"{video_id}")
-    )
-    filename = f"{video_id}.{extension}"
+        # Download and save video
+        print(f"🎥 Downloading video from: {video_url}")
+        mime_type, width, height, extension = await get_video_info_and_save(
+            video_url, os.path.join(FILES_DIR, f"{video_id}")
+        )
+        filename = f"{video_id}.{extension}"
 
-    print(f"🎥 Video saved as: {filename}, dimensions: {width}x{height}")
+        print(f"🎥 Video saved as: {filename}, dimensions: {width}x{height}")
 
-    # Create file data
-    file_id = generate_video_file_id()
-    file_url = f"/api/file/{filename}"
+        # Create file data
+        file_id = generate_video_file_id()
+        file_url = f"/api/file/{filename}"
 
-    file_data: Dict[str, Any] = {
-        "mimeType": mime_type,
-        "id": file_id,
-        "dataURL": file_url,
-        "created": int(time.time() * 1000),
-    }
+        file_data: Dict[str, Any] = {
+            "mimeType": mime_type,
+            "id": file_id,
+            "dataURL": file_url,
+            "created": int(time.time() * 1000),
+        }
 
-    # Create new video element for canvas
-    new_video_element: Dict[str, Any] = await generate_new_video_element(
-        canvas_id,
-        file_id,
-        {
-            "width": width,
-            "height": height,
-        },
-    )
+        # Create new video element for canvas
+        new_video_element: Dict[str, Any] = await generate_new_video_element(
+            canvas_id,
+            file_id,
+            {
+                "width": width,
+                "height": height,
+            },
+        )
 
-    # Update canvas data
-    canvas_data: Optional[Dict[str, Any]] = await db_service.get_canvas_data(canvas_id)
-    if canvas_data is None:
-        canvas_data = {}
-    if "data" not in canvas_data:
-        canvas_data["data"] = {}
-    if "elements" not in canvas_data["data"]:
-        canvas_data["data"]["elements"] = []
-    if "files" not in canvas_data["data"]:
-        canvas_data["data"]["files"] = {}
+        # Update canvas data
+        canvas_data: Optional[Dict[str, Any]] = await db_service.get_canvas_data(canvas_id)
+        if canvas_data is None:
+            canvas_data = {}
+        if "data" not in canvas_data:
+            canvas_data["data"] = {}
+        if "elements" not in canvas_data["data"]:
+            canvas_data["data"]["elements"] = []
+        if "files" not in canvas_data["data"]:
+            canvas_data["data"]["files"] = {}
 
-    canvas_data["data"]["elements"].append(new_video_element)  # type: ignore
-    canvas_data["data"]["files"][file_id] = file_data
+        canvas_data["data"]["elements"].append(new_video_element)  # type: ignore
+        canvas_data["data"]["files"][file_id] = file_data
 
-    # Save updated canvas data
-    await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data["data"]))
+        # Save updated canvas data
+        await db_service.save_canvas_data(canvas_id, json.dumps(canvas_data["data"]))
 
-    return filename, file_data, new_video_element
+        return filename, file_data, new_video_element
 
 
 async def send_video_start_notification(session_id: str, message: str) -> None:
@@ -225,29 +249,14 @@ async def generate_new_video_element(canvas_id: str, fileid: str, video_data: Di
     if canvas is None:
         canvas = {'data': {}}
     canvas_data: Dict[str, Any] = canvas.get("data", {})
-    elements = canvas_data.get("elements", [])
 
-    # find the last image element
-    last_x: Union[int, float] = 0
-    last_y: Union[int, float] = 0
-    last_width: Union[int, float] = 0
-    image_elements = [
-        element for element in elements if element.get("type") == "image"]
-    last_image_element = image_elements[-1] if len(
-        image_elements) > 0 else None
-    if last_image_element is not None:
-        last_x = last_image_element.get("x", 0)
-        last_y = last_image_element.get("y", 0)
-        last_width = last_image_element.get("width", 0)
-        # last_height = last_image_element.get("height", 0)
-
-    new_x = last_x + last_width + 20
+    new_x, new_y = await find_next_best_element_position(canvas_data)
 
     return {
         "type": "video",
         "id": fileid,
         "x": new_x,
-        "y": last_y,
+        "y": new_y,
         "width": video_data.get("width", 0),
         "height": video_data.get("height", 0),
         "angle": 0,
