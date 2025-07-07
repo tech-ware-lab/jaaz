@@ -8,17 +8,26 @@ import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { exportToCanvas } from "@excalidraw/excalidraw";
 import { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types'
+import { toast } from 'sonner'
 
 type CanvasMagicGeneratorProps = {
     selectedImages: TCanvasAddImagesToChatEvent
     selectedElements: OrderedExcalidrawElement[]
 }
 
+// Track if warning has been shown
+let hasShownWarning = false;
+
 const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicGeneratorProps) => {
     const { t } = useTranslation()
     const { excalidrawAPI } = useCanvas()
 
     const handleMagicGenerate = async () => {
+        if (!hasShownWarning) {
+            toast.warning("您必须开通 gpt-image-1 模型权限才可以使用！")
+            hasShownWarning = true;
+        }
+
         if (!excalidrawAPI) return;
 
         // 获取选中的元素
