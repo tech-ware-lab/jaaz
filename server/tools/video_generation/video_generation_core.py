@@ -62,6 +62,11 @@ async def generate_video_with_provider(
         model_info_list: List[ModelInfo] = cast(
             List[ModelInfo], ctx.get('model_info', {}).get(model_name, []))
 
+        if model_info_list == []:
+            # video registed as tool
+            model_info_list: List[ModelInfo] = cast(
+                List[ModelInfo], ctx.get('tool_list', {}))
+
         # Use get_default_provider which already handles Jaaz prioritization
         provider_name = get_default_provider(model_info_list)
 
