@@ -5,6 +5,7 @@ import CanvasMenu from '@/components/canvas/menu'
 import CanvasPopbarWrapper from '@/components/canvas/pop-bar'
 // VideoCanvasOverlay removed - using native Excalidraw embeddable elements instead
 import ChatInterface from '@/components/chat/Chat'
+import HomeV2Header from '@/components/home_v2/HomeV2Header'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -12,26 +13,24 @@ import {
 } from '@/components/ui/resizable'
 import { CanvasProvider } from '@/contexts/canvas'
 import { Session } from '@/types/types'
-import { createFileRoute, useParams, useSearch } from '@tanstack/react-router'
+import { createFileRoute, useParams } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-export const Route = createFileRoute('/canvas/$id')({
-  component: Canvas,
+export const Route = createFileRoute('/app')({
+  component: Home,
 })
 
-function Canvas() {
-  const { id } = useParams({ from: '/canvas/$id' })
+function Home() {
+  const canvasId = '123'
   const [canvas, setCanvas] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [canvasName, setCanvasName] = useState('')
   const [sessionList, setSessionList] = useState<Session[]>([])
   // initialVideos removed - using native Excalidraw embeddable elements instead
-  const search = useSearch({ from: '/canvas/$id' }) as {
-    sessionId: string
-  }
-  const searchSessionId = search.sessionId || ''
+  const [sessionId, setSessionId] = useState('')
+
   useEffect(() => {
     let mounted = true
 
@@ -39,7 +38,7 @@ function Canvas() {
       try {
         setIsLoading(true)
         setError(null)
-        const data = await getCanvas(id)
+        const data = await getCanvas(canvasId)
         if (mounted) {
           setCanvas(data)
           setCanvasName(data.name)
@@ -67,42 +66,23 @@ function Canvas() {
     return () => {
       mounted = false
     }
-  }, [id])
+  }, [canvasId])
 
   const handleNameSave = async () => {
-    await renameCanvas(id, canvasName)
+    await renameCanvas(canvasId, canvasName)
   }
 
   return (
     <CanvasProvider>
       <div className="flex flex-col w-screen h-screen">
-        <CanvasHeader
-          canvasName={canvasName}
-          canvasId={id}
-          onNameChange={setCanvasName}
-          onNameSave={handleNameSave}
-        />
+        <HomeV2Header />
         <ResizablePanelGroup
           direction="horizontal"
           className="w-screen h-screen"
           autoSaveId="jaaz-chat-panel"
         >
           <ResizablePanel className="relative" defaultSize={80}>
-            <div className="w-full h-full">
-              {isLoading ? (
-                <div className="flex-1 flex-grow px-4 bg-accent w-[24%] absolute right-0">
-                  <div className="flex items-center justify-center h-full">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  </div>
-                </div>
-              ) : (
-                <div className="relative w-full h-full">
-                  <CanvasExcali canvasId={id} initialData={canvas?.data} />
-                  <CanvasMenu />
-                  <CanvasPopbarWrapper />
-                </div>
-              )}
-            </div>
+            <div className="w-full h-full">gallery</div>
           </ResizablePanel>
 
           <ResizableHandle />
@@ -110,10 +90,10 @@ function Canvas() {
           <ResizablePanel defaultSize={25} minSize={25}>
             <div className="flex-1 flex-grow bg-accent/50 w-full">
               <ChatInterface
-                canvasId={id}
+                canvasId={canvasId}
                 sessionList={sessionList}
                 setSessionList={setSessionList}
-                sessionId={searchSessionId}
+                sessionId={sessionId}
               />
             </div>
           </ResizablePanel>
