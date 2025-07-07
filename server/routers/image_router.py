@@ -25,7 +25,10 @@ async def upload_image(file: UploadFile = File(...), max_size_mb: float = 3.0):
     filename = file.filename or ''
 
     # Read the file content
-    content = await file.read()
+    try:
+        content = await file.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error reading file: {e}")
     original_size_mb = len(content) / (1024 * 1024)  # Convert to MB
 
     # Open the image from bytes to get its dimensions
@@ -57,7 +60,7 @@ async def upload_image(file: UploadFile = File(...), max_size_mb: float = 3.0):
             # Create new image from compressed content and save
             with Image.open(BytesIO(compressed_content)) as compressed_img:
                 width, height = compressed_img.size
-                await run_in_threadpool(compressed_img.save, format='JPEG', quality=95, optimize=True)
+                await run_in_threadpool(compressed_img.save, file_path, format='JPEG', quality=95, optimize=True)
                 # compressed_img.save(file_path, format='JPEG', quality=95, optimize=True)
             
             final_size_mb = len(compressed_content) / (1024 * 1024)
@@ -78,6 +81,8 @@ async def upload_image(file: UploadFile = File(...), max_size_mb: float = 3.0):
             
             # Determine save format based on extension
             save_format = 'JPEG' if extension.lower() in ['jpg', 'jpeg'] else extension.upper()
+            if save_format == 'JPEG':
+                img = img.convert('RGB')
             
             # img.save(file_path, format=save_format)
             await run_in_threadpool(img.save, file_path, format=save_format)
