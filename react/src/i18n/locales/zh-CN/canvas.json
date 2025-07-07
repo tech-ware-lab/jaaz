@@ -21,7 +21,8 @@
     "failedToCreateFile": "创建文件失败",
     "nothingSelected": "未选中素材",
     "exportingAssets": "导出素材中...",
-    "failedToExportImages": "导出图片失败"
+    "failedToExportImages": "导出图片失败",
+    "gptImagePermissionRequired": "您必须开通 gpt-image-1 模型权限才可以使用！"
   },
   "deleteDialog": {
     "title": "删除画布",
