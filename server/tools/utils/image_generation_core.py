@@ -4,15 +4,16 @@ Contains the main orchestration logic for image generation across different prov
 """
 
 from typing import Optional
+from common import DEFAULT_PORT
 from tools.utils.image_utils import process_input_image
 from ..image_providers.image_base_provider import ImageProviderBase
 # 导入所有提供商以确保自动注册 (不要删除这些导入)
-from ..image_providers.jaaz_provider import JaazImageProvider  
-from ..image_providers.openai_provider import OpenAIImageProvider 
-from ..image_providers.replicate_provider import ReplicateImageProvider 
-from ..image_providers.volces_provider import VolcesProvider  
-from ..image_providers.wavespeed_provider import WavespeedProvider  
-# from ..image_providers.comfyui_provider import ComfyUIProvider  
+from ..image_providers.jaaz_provider import JaazImageProvider
+from ..image_providers.openai_provider import OpenAIImageProvider
+from ..image_providers.replicate_provider import ReplicateImageProvider
+from ..image_providers.volces_provider import VolcesProvider
+from ..image_providers.wavespeed_provider import WavespeedProvider
+# from ..image_providers.comfyui_provider import ComfyUIProvider
 from .image_canvas_utils import (
     save_image_to_canvas,
 )
@@ -79,4 +80,4 @@ async def generate_image_with_provider(
         session_id, canvas_id, filename, mime_type, width, height
     )
 
-    return f"image generated successfully ![image_id: {filename}]({image_url})"
+    return f"image generated successfully ![image_id: {filename}](http://localhost:{DEFAULT_PORT}{image_url})"
