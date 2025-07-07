@@ -43,6 +43,7 @@ import { Button } from '@/components/ui/button'
 import { Share2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useQueryClient } from '@tanstack/react-query'
+import MixedContent from './Message/MixedContent'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -639,14 +640,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       />
                     ))}
 
-                  {Array.isArray(message.content) &&
-                    message.content.map((content, i) => (
-                      <MessageRegular
-                        key={i}
-                        message={message}
-                        content={content}
-                      />
-                    ))}
+                  {/* 混合内容消息 - 使用新的MixedContent组件 */}
+                  {Array.isArray(message.content) && (
+                    <MixedContent
+                      message={message}
+                      contents={message.content}
+                    />
+                  )}
 
                   {message.role === 'assistant' &&
                     message.tool_calls &&
