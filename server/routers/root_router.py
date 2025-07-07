@@ -104,7 +104,7 @@ async def list_tools() -> list[ToolInfoJson]:
         provider_api_key = provider_config.get('api_key', '').strip()
 
         # 跳过无效 provider
-        if not provider_url or not provider_api_key:
+        if provider != 'comfyui' and (not provider_url or not provider_api_key):
             continue
 
         # 判断 TOOL_MAPPING 里是否有 provider 字段等于当前 provider 的工具
