@@ -48,24 +48,49 @@ async def upload_image(file: UploadFile = File(...), max_size_mb: float = 3.0):
             
             # Compress the image
             compressed_content = compress_image(img, max_size_mb)
-            content = compressed_content
+            
+            # Save compressed image using Image.save
             extension = 'jpg'  # Force JPEG for compressed images
+            file_path = os.path.join(FILES_DIR, f'{file_id}.{extension}')
             
-            # Update dimensions if image was resized during compression
-            with Image.open(BytesIO(content)) as compressed_img:
+            # Create new image from compressed content and save
+            with Image.open(BytesIO(compressed_content)) as compressed_img:
                 width, height = compressed_img.size
+                compressed_img.save(file_path, format='JPEG', quality=95, optimize=True)
             
-            final_size_mb = len(content) / (1024 * 1024)
+            final_size_mb = len(compressed_content) / (1024 * 1024)
             print(f'🦄 Compressed from {original_size_mb:.2f}MB to {final_size_mb:.2f}MB')
         else:
             # Determine the file extension from original file
             mime_type, _ = guess_type(filename)
-            extension = mime_type.split('/')[-1] if mime_type else 'bin'
-
-    # 保存图片到本地
-    file_path = os.path.join(FILES_DIR, f'{file_id}.{extension}')
-    async with aiofiles.open(file_path, 'wb') as f:
-        await f.write(content)
+            if mime_type and mime_type.startswith('image/'):
+                extension = mime_type.split('/')[-1]
+                # Handle common image format mappings
+                if extension == 'jpeg':
+                    extension = 'jpg'
+            else:
+                extension = 'jpg'  # Default to jpg for unknown types
+            
+            # Save original image using Image.save
+            file_path = os.path.join(FILES_DIR, f'{file_id}.{extension}')
+            
+            # Determine save format based on extension
+            save_format = 'JPEG' if extension.lower() in ['jpg', 'jpeg'] else extension.upper()
+            
+            # Save with appropriate parameters
+            if save_format == 'JPEG':
+                # Convert to RGB if saving as JPEG
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                    img = background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                img.save(file_path, format=save_format, quality=95, optimize=True)
+            else:
+                img.save(file_path, format=save_format)
 
     # 返回文件信息
     print('🦄upload_image file_path', file_path)
