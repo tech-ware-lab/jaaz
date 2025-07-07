@@ -1,4 +1,5 @@
 # type: ignore[import]
+import traceback
 from typing import Optional, List, Dict, Any, Callable, Awaitable
 from langchain_core.messages import AIMessageChunk, ToolCall, convert_to_openai_messages, ToolMessage
 from langgraph.graph import StateGraph
@@ -41,6 +42,7 @@ class StreamProcessor:
         })
 
     async def _handle_chunk(self, chunk: Any) -> None:
+        print('👇chunk', chunk)
         """处理单个chunk"""
         chunk_type = chunk[0]
 
@@ -77,25 +79,34 @@ class StreamProcessor:
     async def _handle_message_chunk(self, ai_message_chunk: AIMessageChunk) -> None:
         """处理消息类型的 chunk"""
         # print('👇ai_message_chunk', ai_message_chunk)
+        try:
+            content = ai_message_chunk.content
 
-        content = ai_message_chunk.content
+            if isinstance(ai_message_chunk, ToolMessage):
+                # 工具调用结果之后会在 values 类型中发送到前端，这里会更快出现一些
+                oai_message = convert_to_openai_messages([ai_message_chunk])[0]
+                print('👇toolcall res oai_message', oai_message)
+                await self.websocket_service(self.session_id, {
+                    'type': 'tool_call_result',
+                    'id': ai_message_chunk.tool_call_id,
+                    'message': oai_message
+                })
+            elif content:
+                # 发送文本内容
+                await self.websocket_service(self.session_id, {
+                    'type': 'delta',
+                    'text': content
+                })
+            elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
+                # 处理工具调用
+                await self._handle_tool_calls(ai_message_chunk.tool_calls)
 
-        if isinstance(ai_message_chunk, ToolMessage):
-            # 工具调用结果已经在 values 类型中发送到前端
-            print('👇tool_call_results', ai_message_chunk.content)
-        elif content:
-            # 发送文本内容
-            await self.websocket_service(self.session_id, {
-                'type': 'delta',
-                'text': content
-            })
-        elif hasattr(ai_message_chunk, 'tool_calls') and ai_message_chunk.tool_calls and ai_message_chunk.tool_calls[0].get('name'):
-            # 处理工具调用
-            await self._handle_tool_calls(ai_message_chunk.tool_calls)
-
-        # 处理工具调用参数流
-        if hasattr(ai_message_chunk, 'tool_call_chunks'):
-            await self._handle_tool_call_chunks(ai_message_chunk.tool_call_chunks)
+            # 处理工具调用参数流
+            if hasattr(ai_message_chunk, 'tool_call_chunks'):
+                await self._handle_tool_call_chunks(ai_message_chunk.tool_call_chunks)
+        except Exception as e:
+            print('🟠error', e)
+            traceback.print_stack()
 
     async def _handle_tool_calls(self, tool_calls: List[ToolCall]) -> None:
         """处理工具调用"""
