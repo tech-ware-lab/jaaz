@@ -42,7 +42,7 @@ class StreamProcessor:
         })
 
     async def _handle_chunk(self, chunk: Any) -> None:
-        print('👇chunk', chunk)
+        # print('👇chunk', chunk)
         """处理单个chunk"""
         chunk_type = chunk[0]
 
