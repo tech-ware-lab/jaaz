@@ -12,6 +12,7 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as KnowledgeImport } from './routes/knowledge'
+import { Route as AppImport } from './routes/app'
 import { Route as AgentstudioImport } from './routes/agent_studio'
 import { Route as IndexImport } from './routes/index'
 import { Route as CanvasIdImport } from './routes/canvas.$id'
@@ -21,6 +22,12 @@ import { Route as CanvasIdImport } from './routes/canvas.$id'
 const KnowledgeRoute = KnowledgeImport.update({
   id: '/knowledge',
   path: '/knowledge',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AppRoute = AppImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -60,6 +67,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgentstudioImport
       parentRoute: typeof rootRoute
     }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppImport
+      parentRoute: typeof rootRoute
+    }
     '/knowledge': {
       id: '/knowledge'
       path: '/knowledge'
@@ -82,6 +96,7 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agent_studio': typeof AgentstudioRoute
+  '/app': typeof AppRoute
   '/knowledge': typeof KnowledgeRoute
   '/canvas/$id': typeof CanvasIdRoute
 }
@@ -89,6 +104,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agent_studio': typeof AgentstudioRoute
+  '/app': typeof AppRoute
   '/knowledge': typeof KnowledgeRoute
   '/canvas/$id': typeof CanvasIdRoute
 }
@@ -97,22 +113,24 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/agent_studio': typeof AgentstudioRoute
+  '/app': typeof AppRoute
   '/knowledge': typeof KnowledgeRoute
   '/canvas/$id': typeof CanvasIdRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/agent_studio' | '/knowledge' | '/canvas/$id'
+  fullPaths: '/' | '/agent_studio' | '/app' | '/knowledge' | '/canvas/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/agent_studio' | '/knowledge' | '/canvas/$id'
-  id: '__root__' | '/' | '/agent_studio' | '/knowledge' | '/canvas/$id'
+  to: '/' | '/agent_studio' | '/app' | '/knowledge' | '/canvas/$id'
+  id: '__root__' | '/' | '/agent_studio' | '/app' | '/knowledge' | '/canvas/$id'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgentstudioRoute: typeof AgentstudioRoute
+  AppRoute: typeof AppRoute
   KnowledgeRoute: typeof KnowledgeRoute
   CanvasIdRoute: typeof CanvasIdRoute
 }
@@ -120,6 +138,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgentstudioRoute: AgentstudioRoute,
+  AppRoute: AppRoute,
   KnowledgeRoute: KnowledgeRoute,
   CanvasIdRoute: CanvasIdRoute,
 }
@@ -136,6 +155,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/agent_studio",
+        "/app",
         "/knowledge",
         "/canvas/$id"
       ]
@@ -145,6 +165,9 @@ export const routeTree = rootRoute
     },
     "/agent_studio": {
       "filePath": "agent_studio.tsx"
+    },
+    "/app": {
+      "filePath": "app.tsx"
     },
     "/knowledge": {
       "filePath": "knowledge.tsx"
