@@ -60,7 +60,6 @@
       "misconfigured": "配置错误"
     }
   },
-  "comfyui.workflows": "工作流",
   "comfyui": {
     "title": "ComfyUI",
     "localImageGeneration": "🎨 本地图像生成",
@@ -90,7 +89,20 @@
       "logTitle": "卸载日志：",
       "completed": "卸载完成"
     },
-    "notInstalled": "ComfyUI 未安装"
+    "notInstalled": "ComfyUI 未安装",
+    "deleteWorkflowConfirmation": "您确定要删除此工作流吗？",
+    "addInput": "添加输入参数",
+    "editWorkflow": "编辑工作流",
+    "addWorkflow": "添加工作流",
+    "save": "保存",
+    "submit": "提交",
+    "uploadWorkflowApiJson": "上传工作流API JSON",
+    "workflowInputsConfiguration": "工作流输入参数设置",
+    "defaultValue": "默认值",
+    "describeInput": "请描述这个参数是做什么的，让LLM可以理解这个参数的作用，来更智能的调用工具，动态传入正确参数",
+    "workflowName": "工作流名称，只能包含a-Z, 0-9, 下划线_",
+    "workflowDescription": "工作流描述，描述工作流的用途，功能作用，让大模型更好的调用",
+    "workflowNameInvalid": "工作流名称只能允许字母、数字、下划线，以方便大模型动态调用"
   },
   "saveSettings": "保存设置",
   "close": "关闭",

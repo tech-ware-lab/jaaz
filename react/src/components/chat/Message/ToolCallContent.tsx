@@ -7,7 +7,7 @@ type ToolCallContentProps = {
   message: ToolResultMessage
 }
 
-const ToolCallContent: React.FC<ToolCallContentProps> = ({
+export const ToolCallContent: React.FC<ToolCallContentProps> = ({
   expandingToolCalls,
   message,
 }) => {
@@ -35,4 +35,16 @@ const ToolCallContent: React.FC<ToolCallContentProps> = ({
   )
 }
 
-export default ToolCallContent
+const ToolCallContentV2: React.FC<{ content: string }> = ({ content }) => {
+  if (content.includes('<hide_in_user_ui>')) {
+    return null
+  }
+
+  return (
+    <div className="p-2 bg-muted rounded-lg">
+      <Markdown>{content}</Markdown>
+    </div>
+  )
+}
+
+export default ToolCallContentV2

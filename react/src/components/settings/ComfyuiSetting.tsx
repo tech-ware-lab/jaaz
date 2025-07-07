@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { DEFAULT_PROVIDERS_CONFIG, PROVIDER_NAME_MAPPING } from '@/constants'
+import { PROVIDER_NAME_MAPPING } from '@/constants'
 import { LLMConfig } from '@/types/types'
 import {
   AlertCircle,
@@ -16,7 +16,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useConfigs } from '@/contexts/configs'
-import ComfuiWorkflowSetting from './ComfuiWorkflowSetting'
+import ComfuiWorkflowSetting from './ComfyuiWorkflowSetting'
 
 interface ComfyuiSettingProps {
   config: LLMConfig
@@ -105,7 +105,6 @@ export default function ComfyuiSetting({
       return
     }
 
-    // Validate URL format first
     if (!isValidUrl(comfyUrl)) {
       console.log('Invalid ComfyUI URL format:', comfyUrl)
       setComfyUIStatus('not-running')
@@ -113,10 +112,17 @@ export default function ComfyuiSetting({
     }
 
     try {
-      console.log('Checking ComfyUI status at:', comfyUrl)
-      const response = await fetch(`${comfyUrl}/system_stats`, {
-        method: 'GET',
-        signal: AbortSignal.timeout(5000), // 5 second timeout
+      console.log('Checking ComfyUI status via proxy...')
+      // 通过服务端代理接口转发请求
+      const response = await fetch(`/api/settings/comfyui/proxy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: comfyUrl, // 传递用户配置的ComfyUI地址
+          path: '/system_stats', // 目标路径
+        }),
       })
 
       if (response.ok) {
@@ -147,9 +153,9 @@ export default function ComfyuiSetting({
     })
   }
 
-    // const handleInstallClick = () => {
-    //   setShowInstallDialog(true)
-    // }
+  // const handleInstallClick = () => {
+  //   setShowInstallDialog(true)
+  // }
 
   // start ComfyUI
   const startComfyUI = async () => {
@@ -218,24 +224,6 @@ export default function ComfyuiSetting({
       url: '',
       models: {},
     })
-  }
-  const [showAddWorkflowDialog, setShowAddWorkflowDialog] = useState(false)
-
-  // ComfyUI installed successfully
-  const handleInstallSuccess = async () => {
-    setIsComfyUIInstalled(true)
-
-    // Set default URL if not already set
-    if (!comfyUrl) {
-      onConfigChange('comfyui', {
-        ...config,
-        models: DEFAULT_PROVIDERS_CONFIG.comfyui.models,
-        url: 'http://127.0.0.1:8188',
-      })
-    }
-
-    // Start ComfyUI after installation
-    await startComfyUI()
   }
 
   const getComfyUIStatusIcon = () => {
@@ -356,8 +344,8 @@ export default function ComfyuiSetting({
         )}
       </div>
       <ComfuiWorkflowSetting />
-      {/* ComfyUI Models */}
-      {comfyuiModels.length > 0 && (
+      {/* Temporarily disable ComfyUI Models, until it is fixed */}
+      {/* {comfyuiModels.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <SquareSquareIcon className="w-5 h-5" />
@@ -395,7 +383,7 @@ export default function ComfyuiSetting({
             ))}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Install Dialog */}
       {/* <InstallComfyUIDialog onInstallSuccess={handleInstallSuccess} /> */}

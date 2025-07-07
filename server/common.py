@@ -1,1 +1,3 @@
-DEFAULT_PORT = 57988
+import os
+
+DEFAULT_PORT = int(os.environ.get('DEFAULT_PORT', 57988))

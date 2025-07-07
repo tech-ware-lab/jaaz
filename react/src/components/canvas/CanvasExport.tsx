@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '../ui/button'
 
+
 const CanvasExport = () => {
   const { excalidrawAPI } = useCanvas()
   const { t } = useTranslation()
@@ -31,7 +32,7 @@ const CanvasExport = () => {
 
   const handleExportImages = async () => {
     if (!excalidrawAPI) return
-    const toastId = toast.loading(t('canvas:messages.exportingImages'))
+    const toastId = toast.loading(t('canvas:messages.exportingAssets'))
     try {
       const appState = excalidrawAPI.getAppState()
       const elements = excalidrawAPI.getSceneElements()
@@ -42,52 +43,96 @@ const CanvasExport = () => {
 
       const images = elements.filter(
         (element) =>
-          selectedIds.includes(element.id) && element.type === 'image'
+          selectedIds.includes(element.id) && 
+          (element.type === 'image' || element.type === 'embeddable')
       )
 
       if (images.length === 0) {
-        toast.error(t('canvas:messages.noImagesSelected'))
+        toast.error(t('canvas:messages.nothingSelected'))
         return
       }
 
       const files = excalidrawAPI.getFiles()
 
-      const imageUrls = images
-        .map((image) => {
-          if ('fileId' in image && image.fileId) {
-            const file = files[image.fileId]
+      // Separate embeddable elements (videos) and regular images
+      const embeddableElements = images.filter(element => element.type === 'embeddable')
+      const imageElements = images.filter(element => element.type === 'image')
+
+      // Get video URLs from embeddable elements
+      const videoUrls = embeddableElements
+        .map((element) => {
+          if ('link' in element && element.link) {
+            return element.link
+          }
+          return null
+        })
+        .filter((url) => url !== null)
+
+      // Get image URLs from regular image elements
+      const imageUrls = imageElements
+        .map((element) => {
+          if ('fileId' in element && element.fileId) {
+            const file = files[element.fileId]
             return file?.dataURL
           }
           return null
         })
         .filter((url) => url !== null)
 
-      if (imageUrls.length === 0) {
-        toast.error(t('canvas:messages.noImagesSelected'))
+      if (imageUrls.length === 0 && videoUrls.length === 0) {
+        toast.error(t('canvas:messages.nothingSelected'))
+        return
+      }
+      
+      // Generate random ID for the asset package
+      const randomId = Math.random().toString(36).substring(2, 15)
+      const packageName = `Asset-${randomId}.zip`
+
+      // If only one image and no videos, save directly
+      if (imageUrls.length === 1 && videoUrls.length === 0) {
+        const imageUrl = imageUrls[0]
+        const dataURL = await downloadImage(imageUrl)
+        saveAs(dataURL, `Asset-${randomId}.png`)
         return
       }
 
-      if (imageUrls.length === 1) {
-        const imageUrl = imageUrls[0]
-        const dataURL = await downloadImage(imageUrl)
-        saveAs(dataURL, 'image.png')
-      } else {
-        const zip = new JSZip()
-        await Promise.all(
-          imageUrls.map(async (imageUrl, index) => {
-            const dataURL = await downloadImage(imageUrl)
-            if (dataURL) {
-              zip.file(
-                `image-${index}.png`,
-                dataURL.replace('data:image/png;base64,', ''),
-                { base64: true }
-              )
-            }
-          })
-        )
-        const content = await zip.generateAsync({ type: 'blob' })
-        saveAs(content, 'images.zip')
+      // If only one video and no images, save directly
+      if (videoUrls.length === 1 && imageUrls.length === 0) {
+        const videoUrl = videoUrls[0]
+        const response = await fetch(videoUrl)
+        const blob = await response.blob()
+        saveAs(blob, `Asset-${randomId}.mp4`)
+        return
       }
+
+      // Create a zip package for multiple assets or mixed types
+      const zip = new JSZip()
+      
+      // Add videos to zip
+      await Promise.all(
+        videoUrls.map(async (videoUrl, index) => {
+          const response = await fetch(videoUrl)
+          const blob = await response.blob()
+          zip.file(`video-${index + 1}.mp4`, blob)
+        })
+      )
+
+      // Add images to zip
+      await Promise.all(
+        imageUrls.map(async (imageUrl, index) => {
+          const dataURL = await downloadImage(imageUrl)
+          if (dataURL) {
+            zip.file(
+              `image-${index + 1}.png`,
+              dataURL.replace('data:image/png;base64,', ''),
+              { base64: true }
+            )
+          }
+        })
+      )
+
+      const content = await zip.generateAsync({ type: 'blob' })
+      saveAs(content, packageName)
     } catch (error) {
       toast.error(t('canvas:messages.failedToExportImages'), {
         id: toastId,

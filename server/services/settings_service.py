@@ -34,7 +34,9 @@ app_settings = {}
 # 默认设置配置模板
 # 定义了应用程序的基础配置结构和默认值
 DEFAULT_SETTINGS = {
-    "proxy": "system"  # 代理设置：'' (不使用代理), 'system' (使用系统代理), 或具体的代理URL地址
+    "proxy": "system",  # 代理设置：'' (不使用代理), 'system' (使用系统代理), 或具体的代理URL地址
+    "enabled_knowledge": [],  # 启用的知识库ID列表（保持兼容性）
+    "enabled_knowledge_data": []  # 启用的知识库完整数据列表
 }
 
 
@@ -112,7 +114,7 @@ class SettingsService:
             # 更新全局设置缓存（存储未掩码的完整版本）
             global app_settings
             app_settings = merged_settings
-            return display_settings
+            return merged_settings
         except Exception as e:
             print(f"Error loading settings: {e}")
             traceback.print_exc()
@@ -170,6 +172,56 @@ class SettingsService:
         """
         settings = self.get_raw_settings()
         return settings.get('proxy', '')
+
+    def get_enabled_knowledge_ids(self):
+        """
+        获取启用的知识库ID列表
+
+        Returns:
+            list: 启用的知识库ID列表
+        """
+        settings = self.get_raw_settings()
+        return settings.get('enabled_knowledge', [])
+
+    async def update_enabled_knowledge(self, knowledge_ids):
+        """
+        更新启用的知识库列表
+
+        Args:
+            knowledge_ids (list): 知识库ID列表
+
+        Returns:
+            dict: 操作结果
+        """
+        return await self.update_settings({"enabled_knowledge": knowledge_ids})
+
+    def get_enabled_knowledge_data(self):
+        """
+        获取启用的知识库完整数据列表
+
+        Returns:
+            list: 知识库数据列表，每个项目包含name、description、content等信息
+        """
+        settings = self.get_raw_settings()
+        return settings.get('enabled_knowledge_data', [])
+
+    async def update_enabled_knowledge_data(self, knowledge_data_list):
+        """
+        更新启用的知识库完整数据
+
+        Args:
+            knowledge_data_list (list): 知识库数据列表，包含完整的知识库信息
+
+        Returns:
+            dict: 操作结果
+        """
+        # 同时更新ID列表和完整数据
+        knowledge_ids = [kb.get('id', '')
+                         for kb in knowledge_data_list if kb.get('id')]
+        return await self.update_settings({
+            "enabled_knowledge": knowledge_ids,
+            "enabled_knowledge_data": knowledge_data_list
+        })
 
     def create_default_settings(self):
         """

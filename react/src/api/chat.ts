@@ -1,4 +1,5 @@
 import { Message, Model } from '@/types/types'
+import { ModelInfo, ToolInfo } from './model'
 
 export const getChatSession = async (sessionId: string) => {
   const response = await fetch(`/api/chat_session/${sessionId}`)
@@ -11,7 +12,7 @@ export const sendMessages = async (payload: {
   canvasId: string
   newMessages: Message[]
   textModel: Model
-  imageModel: Model
+  toolList: ToolInfo[]
   systemPrompt: string | null
 }) => {
   const response = await fetch(`/api/chat`, {
@@ -24,7 +25,7 @@ export const sendMessages = async (payload: {
       canvas_id: payload.canvasId,
       session_id: payload.sessionId,
       text_model: payload.textModel,
-      image_model: payload.imageModel,
+      tool_list: payload.toolList,
       system_prompt: payload.systemPrompt,
     }),
   })

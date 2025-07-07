@@ -2,6 +2,7 @@ import { sendMessages } from '@/api/chat'
 import Blur from '@/components/common/Blur'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { eventBus, TEvents } from '@/lib/event'
+import ChatMagicGenerator from './ChatMagicGenerator'
 import {
   AssistantMessage,
   Message,
@@ -27,7 +28,7 @@ import { toast } from 'sonner'
 import ShinyText from '../ui/shiny-text'
 import ChatTextarea from './ChatTextarea'
 import MessageRegular from './Message/Regular'
-import ToolCallContent from './Message/ToolCallContent'
+import { ToolCallContent } from './Message/ToolCallContent'
 import ToolCallTag from './Message/ToolCallTag'
 import SessionSelector from './SessionSelector'
 import ChatSpinner from './Spinner'
@@ -36,6 +37,7 @@ import ToolcallProgressUpdate from './ToolcallProgressUpdate'
 import { useConfigs } from '@/contexts/configs'
 import 'react-photo-view/dist/react-photo-view.css'
 import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
+import { ModelInfo, ToolInfo } from '@/api/model'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -75,6 +77,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [pending, setPending] = useState<PendingType>(
     initCanvas ? 'text' : false
   )
+  const mergedToolCallIds = useRef<string[]>([])
 
   const sessionId = session?.id
 
@@ -95,6 +98,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       })
     }, 200)
   }, [])
+
+  const mergeToolCallResult = (messages: Message[]) => {
+    const messagesWithToolCallResult = messages.map((message, index) => {
+      if (message.role === 'assistant' && message.tool_calls) {
+        for (const toolCall of message.tool_calls) {
+          // From the next message, find the tool call result
+          for (let i = index + 1; i < messages.length; i++) {
+            const nextMessage = messages[i]
+            if (
+              nextMessage.role === 'tool' &&
+              nextMessage.tool_call_id === toolCall.id
+            ) {
+              toolCall.result = nextMessage.content
+              mergedToolCallIds.current.push(toolCall.id)
+            }
+          }
+        }
+      }
+      return message
+    })
+
+    return messagesWithToolCallResult
+  }
 
   const handleDelta = useCallback(
     (data: TEvents['Socket::Session::Delta']) => {
@@ -211,6 +237,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     [sessionId, scrollToBottom]
   )
 
+  const handleToolCallResult = useCallback(
+    (data: TEvents['Socket::Session::ToolCallResult']) => {
+      console.log('😘🖼️tool_call_result event get', data)
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+      // TODO: support other non string types of returning content like image_url
+      if (data.message.content) {
+        setMessages(
+          produce((prev) => {
+            prev.forEach((m) => {
+              if (m.role === 'assistant' && m.tool_calls) {
+                m.tool_calls.forEach((t) => {
+                  if (t.id === data.id) {
+                    t.result = data.message.content
+                  }
+                })
+              }
+            })
+          })
+        )
+      }
+    },
+    [canvasId, sessionId]
+  )
+
   const handleImageGenerated = useCallback(
     (data: TEvents['Socket::Session::ImageGenerated']) => {
       if (
@@ -237,6 +289,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         console.log('👇all_messages', data.messages)
         return data.messages
       })
+      setMessages(mergeToolCallResult(data.messages))
       scrollToBottom()
     },
     [sessionId, scrollToBottom]
@@ -284,6 +337,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     eventBus.on('Socket::Session::Delta', handleDelta)
     eventBus.on('Socket::Session::ToolCall', handleToolCall)
     eventBus.on('Socket::Session::ToolCallArguments', handleToolCallArguments)
+    eventBus.on('Socket::Session::ToolCallResult', handleToolCallResult)
     eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
     eventBus.on('Socket::Session::AllMessages', handleAllMessages)
     eventBus.on('Socket::Session::Done', handleDone)
@@ -298,6 +352,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         'Socket::Session::ToolCallArguments',
         handleToolCallArguments
       )
+      eventBus.off('Socket::Session::ToolCallResult', handleToolCallResult)
       eventBus.off('Socket::Session::ImageGenerated', handleImageGenerated)
       eventBus.off('Socket::Session::AllMessages', handleAllMessages)
       eventBus.off('Socket::Session::Done', handleDone)
@@ -316,7 +371,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const resp = await fetch('/api/chat_session/' + sessionId)
     const data = await resp.json()
     const msgs = data?.length ? data : []
-    setMessages(msgs)
+
+    setMessages(mergeToolCallResult(msgs))
     if (msgs.length > 0) {
       setInitCanvas(false)
     }
@@ -352,7 +408,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   const onSendMessages = useCallback(
-    (data: Message[], configs: { textModel: Model; imageModel: Model }) => {
+    (data: Message[], configs: { textModel: Model; toolList: ToolInfo[] }) => {
       setPending('text')
       setMessages(data)
 
@@ -361,7 +417,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         canvasId: canvasId,
         newMessages: data,
         textModel: configs.textModel,
-        imageModel: configs.imageModel,
+        toolList: configs.toolList,
         systemPrompt:
           localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
       })
@@ -411,6 +467,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         message={message}
                         content={message.content}
                       />
+                    ) : message.tool_call_id &&
+                      mergedToolCallIds.current.includes(
+                        message.tool_call_id
+                      ) ? (
+                      <></>
                     ) : (
                       <ToolCallContent
                         expandingToolCalls={expandingToolCalls}
@@ -487,6 +548,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             messages={messages}
             onSendMessages={onSendMessages}
             onCancelChat={handleCancelChat}
+          />
+
+          {/* 魔法生成组件 */}
+          <ChatMagicGenerator
+            sessionId={sessionId || ''}
+            canvasId={canvasId}
+            messages={messages}
+            setMessages={setMessages}
+            setPending={setPending}
+            scrollToBottom={scrollToBottom}
           />
         </div>
       </div>

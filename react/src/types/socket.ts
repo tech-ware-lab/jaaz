@@ -1,15 +1,17 @@
 import { ExcalidrawImageElement } from '@excalidraw/excalidraw/element/types'
 import { BinaryFileData } from '@excalidraw/excalidraw/types'
-import { Message, ToolCallFunctionName } from './types'
+import { Message, ToolCallFunctionName, ToolResultMessage } from './types'
 
 export enum SessionEventType {
   Error = 'error',
   Done = 'done',
   Info = 'info',
   ImageGenerated = 'image_generated',
+  VideoGenerated = 'video_generated',
   Delta = 'delta',
   ToolCall = 'tool_call',
   ToolCallArguments = 'tool_call_arguments',
+  ToolCallResult = 'tool_call_result',
   AllMessages = 'all_messages',
   ToolCallProgress = 'tool_call_progress',
 }
@@ -36,6 +38,14 @@ export interface SessionImageGeneratedEvent extends SessionBaseEvent {
   canvas_id: string
   image_url: string
 }
+export interface SessionVideoGeneratedEvent extends SessionBaseEvent {
+  type: SessionEventType.VideoGenerated
+  element: any
+  file: BinaryFileData & { duration?: number }
+  canvas_id: string
+  video_url: string
+}
+
 export interface SessionDeltaEvent extends SessionBaseEvent {
   type: SessionEventType.Delta
   text: string
@@ -49,6 +59,11 @@ export interface SessionToolCallArgumentsEvent extends SessionBaseEvent {
   type: SessionEventType.ToolCallArguments
   id: string
   text: string
+}
+export interface SessionToolCallResultEvent extends SessionBaseEvent {
+  type: SessionEventType.ToolCallResult
+  id: string
+  message: ToolResultMessage
 }
 export interface SessionAllMessagesEvent extends SessionBaseEvent {
   type: SessionEventType.AllMessages
@@ -66,7 +81,9 @@ export type SessionUpdateEvent =
   | SessionToolCallArgumentsEvent
   | SessionToolCallProgressEvent
   | SessionImageGeneratedEvent
+  | SessionVideoGeneratedEvent
   | SessionAllMessagesEvent
   | SessionDoneEvent
   | SessionErrorEvent
   | SessionInfoEvent
+  | SessionToolCallResultEvent

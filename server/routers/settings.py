@@ -15,17 +15,23 @@ Settings Router - 设置路由模块
 - GET /api/settings/proxy/test - 测试代理连接
 - GET /api/settings/proxy - 获取代理设置
 - POST /api/settings/proxy - 更新代理设置
+- GET /api/settings/knowledge/enabled - 获取启用的知识库列表
 依赖模块：
 - services.settings_service - 设置服务
+- services.db_service - 数据库服务
+- services.config_service - 配置服务
+- services.knowledge_service - 知识库服务
 """
 
 import json
 import os
 import shutil
+import httpx
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 from services.db_service import db_service
 from services.settings_service import settings_service
-from services.config_service import USER_DATA_DIR
+from services.tool_service import tool_service
+from services.knowledge_service import list_user_enabled_knowledge
 from pydantic import BaseModel
 
 # 创建设置相关的路由器，所有端点都以 /api/settings 为前缀
@@ -230,6 +236,7 @@ class CreateWorkflowRequest(BaseModel):
     inputs: list   # or str if you want it as string
     outputs: str = None
 
+
 @router.post("/comfyui/create_workflow")
 async def create_workflow(request: CreateWorkflowRequest):
     if not request.name:
@@ -241,18 +248,74 @@ async def create_workflow(request: CreateWorkflowRequest):
     if not request.inputs:
         raise HTTPException(status_code=400, detail="Inputs are required")
     try:
+        name = request.name.replace(" ", "_")
         api_json = json.dumps(request.api_json)
         inputs = json.dumps(request.inputs)
         outputs = json.dumps(request.outputs)
-        await db_service.create_comfy_workflow(request.name, api_json, request.description, inputs, outputs)
+        await db_service.create_comfy_workflow(name, api_json, request.description, inputs, outputs)
+        await tool_service.initialize()
         return {"success": True}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to create workflow: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Failed to create workflow: {str(e)}")
+
 
 @router.get("/comfyui/list_workflows")
 async def list_workflows():
     return await db_service.list_comfy_workflows()
 
+
 @router.delete("/comfyui/delete_workflow/{id}")
 async def delete_workflow(id: int):
-    return await db_service.delete_comfy_workflow(id)
+    result = await db_service.delete_comfy_workflow(id)
+    await tool_service.initialize()
+    return result
+
+
+@router.post("/comfyui/proxy")
+async def comfyui_proxy(request: Request):
+    try:
+        # 从请求中获取ComfyUI的目标URL和路径
+        data = await request.json()
+        target_url = data.get("url")  # 前端传递的ComfyUI地址（如http://127.0.0.1:8188）
+        path = data.get("path", "")   # 请求的路径（如/system_stats）
+
+        if not target_url or not path:
+            raise HTTPException(
+                status_code=400, detail="Missing 'url' or 'path' in request body")
+
+        # 构造完整的ComfyUI请求URL
+        full_url = f"{target_url}{path}"
+
+        # 使用httpx转发请求（支持GET/POST等方法，这里示例用GET）
+        async with httpx.AsyncClient() as client:
+            response = await client.get(full_url)
+            # 将ComfyUI的响应原样返回给前端
+            return response.json()
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Proxy request failed: {str(e)}")
+
+
+@router.get("/knowledge/enabled")
+async def get_enabled_knowledge():
+    """
+    获取启用的知识库列表
+
+    Returns:
+        dict: 包含启用知识库列表的响应
+    """
+    try:
+        knowledge_list = list_user_enabled_knowledge()
+        return {
+            "success": True,
+            "data": knowledge_list,
+            "count": len(knowledge_list)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "data": []
+        }

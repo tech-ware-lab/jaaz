@@ -3,7 +3,6 @@ import ComfyuiSetting from '@/components/settings/ComfyuiSetting'
 import CommonSetting from '@/components/settings/CommonSetting'
 import JaazSetting from '@/components/settings/JaazSetting'
 import { Button } from '@/components/ui/button'
-import { DEFAULT_PROVIDERS_CONFIG } from '@/constants'
 import useConfigsStore from '@/stores/configs'
 import { LLMConfig } from '@/types/types'
 import { getConfig, updateConfig } from '@/api/config'
@@ -26,36 +25,7 @@ const SettingProviders = () => {
       try {
         const config: { [key: string]: LLMConfig } = await getConfig()
 
-        const res: { [key: string]: LLMConfig } = {}
-
-        // First, add custom providers that are not in DEFAULT_PROVIDERS_CONFIG
-        for (const provider in config) {
-          if (
-            !(provider in DEFAULT_PROVIDERS_CONFIG) &&
-            typeof config[provider] === 'object'
-          ) {
-            console.log('Adding custom provider:', provider, config[provider])
-            res[provider] = config[provider]
-          }
-        }
-
-        // Then, add providers from DEFAULT_PROVIDERS_CONFIG
-        for (const provider in DEFAULT_PROVIDERS_CONFIG) {
-          if (config[provider] && typeof config[provider] === 'object') {
-            res[provider] = {
-              ...DEFAULT_PROVIDERS_CONFIG[provider],
-              ...config[provider],
-              models: {
-                ...DEFAULT_PROVIDERS_CONFIG[provider].models,
-                ...config[provider].models,
-              },
-            }
-          } else {
-            res[provider] = DEFAULT_PROVIDERS_CONFIG[provider]
-          }
-        }
-
-        setProviders(res)
+        setProviders(config)
       } catch (error) {
         console.error('Error loading configuration:', error)
         setErrorMessage(t('settings:messages.failedToLoad'))
@@ -108,26 +78,22 @@ const SettingProviders = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 relative w-full sm:pb-0 pb-10">
+    <div className="flex flex-col items-center justify-center p-4 w-full sm:pb-0 pb-10 relative">
       {isLoading && (
         <div className="flex justify-center items-center h-32">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-zinc-500"></div>
         </div>
       )}
 
-      <div className="w-full">
-        <JaazSetting
-          config={providers['jaaz']}
-          onConfigChange={handleConfigChange}
-        />
-
-        <div className="my-6 border-t bg-border" />
-      </div>
-
       {!isLoading &&
         Object.keys(providers).map((key, index) => (
           <div key={key} className="w-full">
-            {key === 'comfyui' ? (
+            {key === 'jaaz' ? (
+              <JaazSetting
+                config={providers[key]}
+                onConfigChange={handleConfigChange}
+              />
+            ) : key === 'comfyui' ? (
               <ComfyuiSetting
                 config={providers[key]}
                 onConfigChange={handleConfigChange}
@@ -147,16 +113,18 @@ const SettingProviders = () => {
           </div>
         ))}
 
-      <div className="flex justify-center fixed sm:bottom-2 sm:left-[calc(var(--sidebar-width)+0.45rem)] sm:translate-x-0 -translate-x-1/2 bottom-15 left-1/2 gap-1.5">
-        <Button onClick={handleSave}>
-          <Save className="mr-2 h-4 w-4" /> {t('settings:saveSettings')}
+      <div className="flex fixed bottom-0 left-[calc(var(--sidebar-width))] gap-1 right-0 px-1">
+        <Button onClick={handleSave} className="w-1/2" size="lg">
+          <Save className="mr-2 h-6 w-6" /> {t('settings:saveSettings')}
         </Button>
 
         <Button
           variant="outline"
           onClick={() => setIsAddProviderDialogOpen(true)}
+          className="w-1/2"
+          size="lg"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-6 w-6" />
           {t('settings:provider.addProvider')}
         </Button>
       </div>

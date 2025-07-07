@@ -1,7 +1,6 @@
 import sqlite3
 import json
 import os
-from pathlib import Path
 from typing import List, Dict, Any, Optional
 import aiosqlite
 from .config_service import USER_DATA_DIR
@@ -186,12 +185,30 @@ class DatabaseService:
             cursor = await db.execute("SELECT id, name, description, api_json, inputs, outputs FROM comfy_workflows ORDER BY id DESC")
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
-    
+
     async def delete_comfy_workflow(self, id: int):
         """Delete a comfy workflow"""
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("DELETE FROM comfy_workflows WHERE id = ?", (id,))
             await db.commit()
 
+    async def get_comfy_workflow(self, id: int):
+        """Get comfy workflow dict"""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = sqlite3.Row
+            cursor = await db.execute(
+                "SELECT api_json FROM comfy_workflows WHERE id = ?", (id,)
+            )
+            row = await cursor.fetchone()
+        try:
+            workflow_json = (
+                row["api_json"]
+                if isinstance(row["api_json"], dict)
+                else json.loads(row["api_json"])
+            )
+            return workflow_json
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Stored workflow api_json is not valid JSON: {exc}")
+
 # Create a singleton instance
-db_service = DatabaseService() 
+db_service = DatabaseService()
