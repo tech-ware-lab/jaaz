@@ -170,7 +170,7 @@ const ModelSelector: React.FC = () => {
                         e.preventDefault()
                       }}
                     >
-                      {model.display_name || model.id}
+                      {model.type === 'video' ? '🎬 ' : ''}{model.display_name || model.id}
                     </DropdownMenuCheckboxItem>
                   )
                 })}
