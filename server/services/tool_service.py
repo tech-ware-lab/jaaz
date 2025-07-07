@@ -6,12 +6,16 @@ from tools.comfy_dynamic import build_tool
 from tools.write_plan import write_plan_tool
 from tools.generate_image_by_gpt_image_1_jaaz import generate_image_by_gpt_image_1_jaaz
 from tools.generate_image_by_imagen_4_jaaz import generate_image_by_imagen_4_jaaz
+from tools.generate_image_by_imagen_4_replicate import generate_image_by_imagen_4_replicate
 # from tools.generate_image_by_flux_1_1_pro import generate_image_by_flux_1_1_pro
 from tools.generate_image_by_flux_kontext_pro_jaaz import generate_image_by_flux_kontext_pro_jaaz
-from tools.generate_image_by_flux_kontext_max import generate_image_by_flux_kontext_max
+from tools.generate_image_by_flux_kontext_pro_replicate import generate_image_by_flux_kontext_pro_replicate
+from tools.generate_image_by_flux_kontext_max_jaaz import generate_image_by_flux_kontext_max
+from tools.generate_image_by_flux_kontext_max_replicate import generate_image_by_flux_kontext_max_replicate
 from tools.generate_image_by_doubao_seedream_3_jaaz import generate_image_by_doubao_seedream_3_jaaz
 from tools.generate_video_by_seedance_v1_jaaz import generate_video_by_seedance_v1_jaaz
 from tools.generate_image_by_recraft_v3_jaaz import generate_image_by_recraft_v3_jaaz
+from tools.generate_image_by_recraft_v3_replicate import generate_image_by_recraft_v3_replicate
 from services.config_service import config_service
 from services.db_service import db_service
 
@@ -64,7 +68,35 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "provider": "jaaz",
         "tool_function": generate_video_by_seedance_v1_jaaz,
     },
+    # ---------------
+    # Replicate Tools
+    # ---------------
+    "generate_image_by_imagen_4_replicate": {
+        "display_name": "Imagen 4",
+        "type": "image",
+        "provider": "replicate",
+        "tool_function": generate_image_by_imagen_4_replicate,
+    },
+    "generate_image_by_recraft_v3_replicate": {
+        "display_name": "Recraft v3",
+        "type": "image",
+        "provider": "replicate",
+        "tool_function": generate_image_by_recraft_v3_replicate,
+    },
+    "generate_image_by_flux_kontext_pro_replicate": {
+        "display_name": "Flux Kontext Pro",
+        "type": "image",
+        "provider": "replicate",
+        "tool_function": generate_image_by_flux_kontext_pro_replicate,
+    },
+    "generate_image_by_flux_kontext_max_replicate": {
+        "display_name": "Flux Kontext Max",
+        "type": "image",
+        "provider": "replicate",
+        "tool_function": generate_image_by_flux_kontext_max_replicate,
+    },
 }
+
 
 class ToolService:
     def __init__(self):
@@ -109,7 +141,7 @@ class ToolService:
     def get_tool(self, tool_name: str) -> BaseTool | None:
         tool_info = self.tools.get(tool_name)
         return tool_info.get('tool_function') if tool_info else None
-    
+
     def remove_tool(self, tool_id: str):
         self.tools.pop(tool_id)
 
@@ -120,6 +152,7 @@ class ToolService:
         self.tools.clear()
         # 重新注册必须的工具
         self._register_required_tools()
+
 
 tool_service = ToolService()
 
@@ -157,4 +190,3 @@ async def register_comfy_tools() -> Dict[str, BaseTool]:
             print(traceback.print_stack())
 
     return dynamic_comfy_tools
-
