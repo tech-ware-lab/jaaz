@@ -10,7 +10,11 @@ from tools.generate_image_by_imagen_4_jaaz import generate_image_by_imagen_4_jaa
 from tools.generate_image_by_flux_kontext_pro_jaaz import generate_image_by_flux_kontext_pro_jaaz
 from tools.generate_image_by_flux_kontext_max import generate_image_by_flux_kontext_max
 from tools.generate_image_by_doubao_seedream_3_jaaz import generate_image_by_doubao_seedream_3_jaaz
+from tools.generate_image_by_doubao_seedream_3_volces import generate_image_by_doubao_seedream_3_volces
 from tools.generate_video_by_seedance_v1_jaaz import generate_video_by_seedance_v1_jaaz
+from tools.generate_video_by_seedance_v1_pro_volces import generate_video_by_seedance_v1_pro_volces
+from tools.generate_video_by_seedance_v1_lite_volces import generate_video_by_seedance_v1_lite_t2v, generate_video_by_seedance_v1_lite_i2v
+
 from tools.generate_image_by_recraft_v3_jaaz import generate_image_by_recraft_v3_jaaz
 from services.config_service import config_service
 from services.db_service import db_service
@@ -58,11 +62,35 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "provider": "jaaz",
         "tool_function": generate_image_by_doubao_seedream_3_jaaz,
     },
+    "generate_image_by_doubao_seedream_3_volces": {
+        "display_name": "Doubao Seedream 3 by volces",
+        "type": "image",
+        "provider": "volces",
+        "tool_function": generate_image_by_doubao_seedream_3_volces,
+    },
     "generate_video_by_seedance_v1_jaaz": {
         "display_name": "Doubao Seedance v1",
         "type": "video",
         "provider": "jaaz",
         "tool_function": generate_video_by_seedance_v1_jaaz,
+    },
+    "generate_video_by_seedance_v1_pro_volces": {
+        "display_name": "Doubao Seedance v1 by volces",
+        "type": "video",
+        "provider": "volces",
+        "tool_function": generate_video_by_seedance_v1_pro_volces,
+    },
+    "generate_video_by_seedance_v1_lite_volces_t2v": {
+        "display_name": "Doubao Seedance v1 lite(text-to-video)",
+        "type": "video",
+        "provider": "volces",
+        "tool_function": generate_video_by_seedance_v1_lite_t2v,
+    },
+    "generate_video_by_seedance_v1_lite_i2v_volces": {
+        "display_name": "Doubao Seedance v1 lite(images-to-video)",
+        "type": "video",
+        "provider": "volces",
+        "tool_function": generate_video_by_seedance_v1_lite_i2v,
     },
 }
 
