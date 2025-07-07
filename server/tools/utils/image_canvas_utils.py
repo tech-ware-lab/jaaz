@@ -13,6 +13,7 @@ from nanoid import generate
 from services.db_service import db_service
 from services.websocket_service import broadcast_session_update
 from services.websocket_service import send_to_websocket
+from utils.canvas import find_next_best_element_position
 
 def generate_file_id() -> str:
     """Generate unique file ID"""
@@ -44,28 +45,15 @@ async def generate_new_image_element(canvas_id: str, fileid: str, image_data: Di
     if canvas is None:
         canvas = {'data': {}}
     canvas_data: Dict[str, Any] = canvas.get('data', {})
-    elements: List[Dict[str, Any]] = canvas_data.get('elements', [])
 
-    # Find the last image element
-    last_x: Union[int, float] = 0
-    last_y: Union[int, float] = 0
-    last_width: Union[int, float] = 0
-    image_elements: List[Dict[str, Any]] = [
-        element for element in elements if element.get('type') == 'image']
-    last_image_element: Optional[Dict[str, Any]] = image_elements[-1] if len(
-        image_elements) > 0 else None
-    if last_image_element is not None:
-        last_x = last_image_element.get('x', 0)
-        last_y = last_image_element.get('y', 0)
-        last_width = last_image_element.get('width', 0)
 
-    new_x = last_x + last_width + 20
+    new_x, new_y = await find_next_best_element_position(canvas_data)
 
     return {
         "type": "image",
         "id": fileid,
         "x": new_x,
-        "y": last_y,
+        "y": new_y,
         "width": image_data.get("width", 0),
         "height": image_data.get("height", 0),
         "angle": 0,

@@ -5,7 +5,7 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 from routers.websocket_router import *  # DO NOT DELETE THIS LINE, OTHERWISE, WEBSOCKET WILL NOT WORK
-from routers import config_router, root_router, workspace, image_tools, canvas, ssl_test, chat_router, settings
+from routers import config_router, image_router, root_router, workspace, canvas, ssl_test, chat_router, settings
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
@@ -42,7 +42,7 @@ app.include_router(settings.router)
 app.include_router(root_router.router)
 app.include_router(canvas.router)
 app.include_router(workspace.router)
-app.include_router(image_tools.router)
+app.include_router(image_router.router)
 app.include_router(ssl_test.router)
 app.include_router(chat_router.router)
 

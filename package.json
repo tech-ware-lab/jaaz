@@ -1,6 +1,6 @@
 {
   "name": "jaaz",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "AI design agent local desktop app",
   "author": "weixuanfu",
   "main": "electron/main.js",
