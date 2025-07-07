@@ -78,6 +78,8 @@ async def upload_image(file: UploadFile = File(...), max_size_mb: float = 3.0):
             
             # Determine save format based on extension
             save_format = 'JPEG' if extension.lower() in ['jpg', 'jpeg'] else extension.upper()
+            if save_format == 'JPEG':
+                img = img.convert('RGB')
             
             # img.save(file_path, format=save_format)
             await run_in_threadpool(img.save, file_path, format=save_format)
