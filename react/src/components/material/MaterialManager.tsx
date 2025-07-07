@@ -408,7 +408,7 @@ export default function MaterialManager() {
                 <button
                   onClick={() => handlePreviewFile(file)}
                   className="p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:scale-110 transition-transform"
-                  title="预览"
+                  title="Preview"
                 >
                   <Eye className="w-4 h-4" />
                 </button>
