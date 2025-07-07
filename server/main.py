@@ -4,35 +4,42 @@ import io
 # Ensure stdout and stderr use utf-8 encoding to prevent emoji logs from crashing python server
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
-
-from routers import config, agent, workspace, image_tools, canvas, ssl_test, chat_router, settings
-import routers.websocket_router
+from routers.websocket_router import *  # DO NOT DELETE THIS LINE, OTHERWISE, WEBSOCKET WILL NOT WORK
+from routers import config_router, root_router, workspace, image_tools, canvas, ssl_test, chat_router, settings
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
-import asyncio
-import argparse
+import argparse 
 from contextlib import asynccontextmanager
 from starlette.types import Scope
 from starlette.responses import Response
-import socketio
+import socketio # type: ignore
 from services.websocket_state import sio
+from services.websocket_service import broadcast_init_done
+from services.config_service import config_service  
+from services.tool_service import tool_service
+
+async def initialize():
+    await config_service.initialize()
+    await broadcast_init_done()
 
 root_dir = os.path.dirname(__file__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # onstartup
-    await agent.initialize()
+    # TODO: Check if there will be racing conditions when user send chat request but tools and models are not initialized yet.
+    await initialize()
+    await tool_service.initialize()
     yield
     # onshutdown
 
 app = FastAPI(lifespan=lifespan)
 
 # Include routers
-app.include_router(config.router)
+app.include_router(config_router.router)
 app.include_router(settings.router)
-app.include_router(agent.router)
+app.include_router(root_router.router)
 app.include_router(canvas.router)
 app.include_router(workspace.router)
 app.include_router(image_tools.router)
@@ -72,7 +79,7 @@ async def serve_react_app():
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/socket.io')
 
 if __name__ == "__main__":
-    # bypas localhost request for proxy, fix ollama proxy issue
+    # bypass localhost request for proxy, fix ollama proxy issue
     _bypass = {"127.0.0.1", "localhost", "::1"}
     current = set(os.environ.get("no_proxy", "").split(",")) | set(
         os.environ.get("NO_PROXY", "").split(","))

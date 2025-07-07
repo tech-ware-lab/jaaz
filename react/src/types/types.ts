@@ -15,6 +15,7 @@ export type ToolCall = {
     name: ToolCallFunctionName
     arguments: string
   }
+  result?: string // Only for manually merged message list by mergeToolCallResult
 }
 export type MessageContentType = MessageContent[] | string
 export type MessageContent =
@@ -61,15 +62,27 @@ export enum EAgentState {
 }
 
 export type LLMConfig = {
-  models: Record<string, { type?: 'text' | 'image' | 'video' }>
+  models: Record<
+    string,
+    {
+      type?: 'text' | 'image' | 'video'
+      is_custom?: boolean
+      is_disabled?: boolean
+    }
+  >
   url: string
   api_key: string
   max_tokens?: number
+  is_custom?: boolean
+}
+
+export interface AppStateWithVideos extends AppState {
+  videoElements?: any[]
 }
 
 export type CanvasData = {
   elements: Readonly<OrderedExcalidrawElement[]>
-  appState: AppState
+  appState: AppStateWithVideos
   files: BinaryFiles
 }
 

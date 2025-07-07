@@ -16,3 +16,5 @@ build
 
 # User data
 user_data/
+
+.continue

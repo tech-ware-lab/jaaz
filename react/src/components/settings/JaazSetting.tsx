@@ -1,12 +1,12 @@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { LOGO_URL } from '@/constants'
 import { LLMConfig } from '@/types/types'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConfigs } from '@/contexts/configs'
-import AddModelsList from './AddModelsList'
 
 interface JaazSettingProps {
   config: LLMConfig
@@ -21,12 +21,39 @@ export default function JaazSetting({
   const { authStatus } = useAuth()
   const { setShowLoginDialog } = useConfigs()
 
-  const handleModelsChange = (
-    models: Record<string, { type?: 'text' | 'image' | 'video' }>
-  ) => {
+  // Get available models from constants
+  const availableModels = config.models || {}
+
+  const handleModelToggle = (modelName: string, enabled: boolean) => {
+    const currentModels = config.models || {}
+    const updatedModels = { ...currentModels }
+
+    if (enabled) {
+      // Add model with its type from available models
+      updatedModels[modelName] = {
+        ...availableModels[modelName],
+        is_disabled: false,
+      }
+    } else {
+      // Remove model
+      updatedModels[modelName] = {
+        ...updatedModels[modelName],
+        is_disabled: true,
+      }
+    }
+
+    // Filter out any models that don't exist in availableModels
+    const validModels: Record<string, { type?: 'text' | 'image' | 'video' }> =
+      {}
+    Object.keys(updatedModels).forEach((key) => {
+      if (availableModels[key]) {
+        validModels[key] = updatedModels[key]
+      }
+    })
+
     onConfigChange('jaaz', {
       ...config,
-      models,
+      models: validModels,
     })
   }
 
@@ -37,16 +64,40 @@ export default function JaazSetting({
     })
   }
 
+  const ModelsList = () => (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label>{t('settings:models.title')}</Label>
+      </div>
+
+      <div className="space-y-2">
+        {Object.entries(availableModels).map(([modelName, modelConfig]) => {
+          return (
+            <div key={modelName} className="flex items-center justify-between">
+              <p className="w-[50%]">{modelName}</p>
+              <div className="flex items-center gap-6">
+                <p>{modelConfig.type || 'text'}</p>
+                {/* TODO: re-enable this switch */}
+                {/* <Switch
+                  checked={!modelConfig.is_disabled}
+                  onCheckedChange={(checked) =>
+                    handleModelToggle(modelName, checked)
+                  }
+                /> */}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+
   return (
     <div className="space-y-4">
       {/* Provider Header */}
       <div className="flex items-center gap-2 justify-between">
         <div className="flex items-center gap-2">
-          <img
-            src={LOGO_URL}
-            alt="Jaaz"
-            className="w-10 h-10 rounded-full"
-          />
+          <img src={LOGO_URL} alt="Jaaz" className="w-10 h-10 rounded-full" />
           <p className="font-bold text-2xl w-fit">Jaaz</p>
           {/* <span>✨ Custom Provider</span> */}
         </div>
@@ -68,11 +119,7 @@ export default function JaazSetting({
         <>
           {/* Models Configuration */}
           <div className="space-y-2">
-            <AddModelsList
-              models={config.models || {}}
-              onChange={handleModelsChange}
-              label={t('settings:models.title')}
-            />
+            <ModelsList />
           </div>
 
           {/* Max Tokens Input */}

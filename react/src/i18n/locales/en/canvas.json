@@ -4,7 +4,7 @@
   "delete": "Delete Canvas",
   "share": "Share Canvas",
   "export": "Export Canvas",
-  "exportImages": "Export Images",
+  "exportImages": "Export",
   "import": "Import Canvas",
   "untitled": "Untitled",
   "back": "Back",
@@ -19,8 +19,8 @@
     "failedToRename": "Failed to rename canvas",
     "failedToDelete": "Failed to delete canvas",
     "failedToCreateFile": "Failed to create file",
-    "noImagesSelected": "No images selected",
-    "exportingImages": "Exporting images...",
+    "nothingSelected": "No assets selected",
+    "exportingAssets": "Exporting assets...",
     "failedToExportImages": "Failed to export images"
   },
   "deleteDialog": {
@@ -42,6 +42,7 @@
     "zoomFit": "Zoom to fit"
   },
   "popbar": {
-    "addToChat": "Add to chat"
+    "addToChat": "Add to chat",
+    "magicGenerate": "✨ Magic Generate"
   }
 }

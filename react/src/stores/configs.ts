@@ -1,4 +1,4 @@
-import { DEFAULT_PROVIDERS_CONFIG } from '@/constants'
+import { ModelInfo, ToolInfo } from '@/api/model'
 import { LLMConfig, Model } from '@/types/types'
 import { create } from 'zustand'
 
@@ -7,14 +7,13 @@ type ConfigsStore = {
   setInitCanvas: (initCanvas: boolean) => void
 
   textModels: Model[]
-  imageModels: Model[]
   setTextModels: (models: Model[]) => void
-  setImageModels: (models: Model[]) => void
+
+  selectedTools: ToolInfo[]
+  setSelectedTools: (models: ToolInfo[]) => void
 
   textModel?: Model
-  imageModel?: Model
   setTextModel: (model?: Model) => void
-  setImageModel: (model?: Model) => void
 
   showInstallDialog: boolean
   setShowInstallDialog: (show: boolean) => void
@@ -28,6 +27,9 @@ type ConfigsStore = {
   showLoginDialog: boolean
   setShowLoginDialog: (show: boolean) => void
 
+  allTools: ToolInfo[]
+  setAllTools: (tools: ToolInfo[]) => void
+
   providers: {
     [key: string]: LLMConfig
   }
@@ -39,14 +41,10 @@ const useConfigsStore = create<ConfigsStore>((set) => ({
   setInitCanvas: (initCanvas) => set({ initCanvas }),
 
   textModels: [],
-  imageModels: [],
   setTextModels: (models) => set({ textModels: models }),
-  setImageModels: (models) => set({ imageModels: models }),
 
   textModel: undefined,
-  imageModel: undefined,
   setTextModel: (model) => set({ textModel: model }),
-  setImageModel: (model) => set({ imageModel: model }),
 
   showInstallDialog: false,
   setShowInstallDialog: (show) => set({ showInstallDialog: show }),
@@ -60,8 +58,14 @@ const useConfigsStore = create<ConfigsStore>((set) => ({
   showLoginDialog: false,
   setShowLoginDialog: (show) => set({ showLoginDialog: show }),
 
-  providers: DEFAULT_PROVIDERS_CONFIG,
+  providers: {},
   setProviders: (providers) => set({ providers }),
+
+  allTools: [],
+  setAllTools: (tools) => set({ allTools: tools }),
+
+  selectedTools: [],
+  setSelectedTools: (tools) => set({ selectedTools: tools }),
 }))
 
 export default useConfigsStore

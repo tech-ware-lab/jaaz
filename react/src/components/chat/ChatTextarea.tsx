@@ -1,10 +1,12 @@
 import { cancelChat } from '@/api/chat'
+import { cancelMagicGenerate } from '@/api/magic'
 import { uploadImage } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
 import { eventBus, TCanvasAddImagesToChatEvent } from '@/lib/event'
 import { cn, dataURLToFile } from '@/lib/utils'
-import { Message, Model } from '@/types/types'
+import { Message, MessageContent, Model } from '@/types/types'
+import { ModelInfo, ToolInfo } from '@/api/model'
 import { useMutation } from '@tanstack/react-query'
 import { useDrop } from 'ahooks'
 import { produce } from 'immer'
@@ -15,6 +17,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import ModelSelector from './ModelSelector'
+import ModelSelectorV2 from './ModelSelectorV2'
+import { useAuth } from '@/contexts/AuthContext'
 
 type ChatTextareaProps = {
   pending: boolean
@@ -25,7 +29,7 @@ type ChatTextareaProps = {
     data: Message[],
     configs: {
       textModel: Model
-      imageModel: Model
+      toolList: ToolInfo[]
     }
   ) => void
   onCancelChat?: () => void
@@ -40,8 +44,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   onCancelChat,
 }) => {
   const { t } = useTranslation()
-  const { textModel, imageModel, imageModels, setShowInstallDialog } =
-    useConfigs()
+  const { authStatus } = useAuth()
+  const { textModel, selectedTools, setShowLoginDialog } = useConfigs()
   const [prompt, setPrompt] = useState('')
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
@@ -84,25 +88,29 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
   const handleCancelChat = useCallback(async () => {
     if (sessionId) {
-      await cancelChat(sessionId)
+      // 同时取消普通聊天和魔法生成任务
+      await Promise.all([cancelChat(sessionId), cancelMagicGenerate(sessionId)])
     }
     onCancelChat?.()
   }, [sessionId, onCancelChat])
 
   // Send Prompt
-  const handleSendPrompt = useCallback(() => {
+  const handleSendPrompt = useCallback(async () => {
     if (pending) return
     if (!textModel) {
       toast.error(t('chat:textarea.selectModel'))
+      if (!authStatus.is_logged_in) {
+        setShowLoginDialog(true)
+      }
       return
     }
-    // Check if there are image models, if not, prompt to install ComfyUI
-    // if (!imageModel || imageModels.length === 0) {
-    //   setShowInstallDialog(true)
-    //   return
-    // }
-    let value = prompt
-    if (value.length === 0 || value.trim() === '') {
+
+    if (!selectedTools || selectedTools.length === 0) {
+      toast.warning(t('chat:textarea.selectTool'))
+    }
+
+    let value: MessageContent[] | string = prompt
+    if (prompt.length === 0 || prompt.trim() === '') {
       toast.error(t('chat:textarea.enterPrompt'))
       return
     }
@@ -111,6 +119,32 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       images.forEach((image) => {
         value += `\n\n ![Attached image - width: ${image.width} height: ${image.height} filename: ${image.file_id}](/api/file/${image.file_id})`
       })
+
+      // Fetch images as base64
+      const imagePromises = images.map(async (image) => {
+        const response = await fetch(`/api/file/${image.file_id}`)
+        const blob = await response.blob()
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(blob)
+        })
+      })
+
+      const base64Images = await Promise.all(imagePromises)
+
+      value = [
+        {
+          type: 'text',
+          text: value,
+        },
+        ...images.map((image, index) => ({
+          type: 'image_url',
+          image_url: {
+            url: base64Images[index],
+          },
+        })),
+      ] as MessageContent[]
     }
 
     const newMessage = messages.concat([
@@ -119,22 +153,18 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         content: value,
       },
     ])
+
     setImages([])
     setPrompt('')
 
     onSendMessages(newMessage, {
       textModel: textModel,
-      imageModel: imageModel || {
-        provider: '',
-        model: '',
-        url: '',
-      },
+      toolList: selectedTools && selectedTools.length > 0 ? selectedTools : [],
     })
   }, [
     pending,
     textModel,
-    imageModel,
-    imageModels,
+    selectedTools,
     prompt,
     onSendMessages,
     images,
@@ -309,7 +339,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             <PlusIcon className="size-4" />
           </Button>
 
-          <ModelSelector />
+          <ModelSelectorV2 />
         </div>
 
         {pending ? (
@@ -328,7 +358,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             variant="default"
             size="icon"
             onClick={handleSendPrompt}
-            disabled={!textModel || !imageModel || prompt.length === 0}
+            disabled={!textModel || !selectedTools || prompt.length === 0}
           >
             <ArrowUp className="size-4" />
           </Button>

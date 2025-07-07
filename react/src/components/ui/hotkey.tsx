@@ -13,15 +13,11 @@ export const Hotkey: React.FC<HotkeyProps> = ({
   modifier = false,
   isBackgroundDark = false,
 }) => {
-  const [, setModifierText] = useState('⌃')
-  const [displayKeys, setDisplayKeys] = useState(keys)
   const { theme } = useTheme()
 
-  useEffect(() => {
-    const isMac = window.navigator.userAgent.includes('Macintosh')
-    setModifierText(isMac ? '⌘' : '⌃')
-    setDisplayKeys(modifier ? [isMac ? '⌘' : '⌃', ...keys] : keys)
-  }, [modifier, keys])
+  const isMac = window.navigator.userAgent.includes('Macintosh')
+  const modifierText = isMac ? '⌘' : '⌃'
+  const displayKeys = modifier ? [modifierText, ...keys] : keys
 
   const isDarkTheme = theme === 'dark'
 
