@@ -85,21 +85,15 @@ const SettingProviders = () => {
         </div>
       )}
 
-      <div className="w-full">
-        {providers['jaaz'] && (
-          <JaazSetting
-            config={providers['jaaz']}
-            onConfigChange={handleConfigChange}
-          />
-        )}
-
-        <div className="my-6 border-t bg-border" />
-      </div>
-
       {!isLoading &&
         Object.keys(providers).map((key, index) => (
           <div key={key} className="w-full">
-            {key === 'comfyui' ? (
+            {key === 'jaaz' ? (
+              <JaazSetting
+                config={providers[key]}
+                onConfigChange={handleConfigChange}
+              />
+            ) : key === 'comfyui' ? (
               <ComfyuiSetting
                 config={providers[key]}
                 onConfigChange={handleConfigChange}
