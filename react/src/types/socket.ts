@@ -1,6 +1,6 @@
 import { ExcalidrawImageElement } from '@excalidraw/excalidraw/element/types'
 import { BinaryFileData } from '@excalidraw/excalidraw/types'
-import { Message, ToolCallFunctionName } from './types'
+import { Message, ToolCallFunctionName, ToolResultMessage } from './types'
 
 export enum SessionEventType {
   Error = 'error',
@@ -11,6 +11,7 @@ export enum SessionEventType {
   Delta = 'delta',
   ToolCall = 'tool_call',
   ToolCallArguments = 'tool_call_arguments',
+  ToolCallResult = 'tool_call_result',
   AllMessages = 'all_messages',
   ToolCallProgress = 'tool_call_progress',
 }
@@ -59,6 +60,11 @@ export interface SessionToolCallArgumentsEvent extends SessionBaseEvent {
   id: string
   text: string
 }
+export interface SessionToolCallResultEvent extends SessionBaseEvent {
+  type: SessionEventType.ToolCallResult
+  id: string
+  message: ToolResultMessage
+}
 export interface SessionAllMessagesEvent extends SessionBaseEvent {
   type: SessionEventType.AllMessages
   messages: Message[]
@@ -80,3 +86,4 @@ export type SessionUpdateEvent =
   | SessionDoneEvent
   | SessionErrorEvent
   | SessionInfoEvent
+  | SessionToolCallResultEvent
