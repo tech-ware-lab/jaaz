@@ -24,7 +24,7 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
 
     const handleMagicGenerate = async () => {
         if (!hasShownWarning) {
-            toast.warning("您必须开通 gpt-image-1 模型权限才可以使用！")
+            toast.warning(t('canvas:messages.gptImagePermissionRequired'))
             hasShownWarning = true;
         }
 

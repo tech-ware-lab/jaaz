@@ -21,7 +21,8 @@
     "failedToCreateFile": "Failed to create file",
     "nothingSelected": "No assets selected",
     "exportingAssets": "Exporting assets...",
-    "failedToExportImages": "Failed to export images"
+    "failedToExportImages": "Failed to export images",
+    "gptImagePermissionRequired": "You must enable gpt-image-1 model permissions to use this feature!"
   },
   "deleteDialog": {
     "title": "Delete Canvas",
