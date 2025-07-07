@@ -10,6 +10,8 @@ import SingleChoicePrompt from '../SingleChoicePrompt'
 import { useEffect, useState } from 'react'
 import { eventBus, TEvents } from '@/lib/event'
 import WritePlanToolCall from './WritePlanToolcall'
+import ToolCallContent from './ToolCallContent'
+import ToolCallContentV2 from './ToolCallContent'
 
 type ToolCallTagProps = {
   toolCall: ToolCall
@@ -118,6 +120,7 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
                 </div>
               </div>
             )}
+            {toolCall.result && <ToolCallContentV2 content={toolCall.result} />}
           </div>
         </div>
       )}
