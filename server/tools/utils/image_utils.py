@@ -99,22 +99,23 @@ async def process_input_image(input_image: str | None) -> str | None:
             print(f"Warning: Image file not found: {full_path}")
             return None
 
-        async with aiofiles.open(full_path, 'rb') as image_file:
-            image_data = await image_file.read()
-            b64_data = base64.b64encode(image_data).decode('utf-8')
+        image = Image.open(full_path)
+        ext = os.path.splitext(input_image)[1].lower()
+        mime_type_map = {
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.webp': 'image/webp'
+        }
+        mime_type = mime_type_map.get(ext, 'image/jpeg')
 
-            # Determine MIME type based on file extension
-            ext = os.path.splitext(input_image)[1].lower()
-            mime_type_map = {
-                '.png': 'image/png',
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.webp': 'image/webp'
-            }
-            mime_type = mime_type_map.get(ext, 'image/png')
+        with BytesIO() as output:
+            image.save(output, format=str(mime_type.split('/')[1]).upper())
+            compressed_data = output.getvalue()
+            b64_data = base64.b64encode(compressed_data).decode('utf-8')
 
-            data_url = f"data:{mime_type};base64,{b64_data}"
-            return data_url
+        data_url = f"data:{mime_type};base64,{b64_data}"
+        return data_url
 
     except Exception as e:
         print(f"Error processing image {input_image}: {e}")
