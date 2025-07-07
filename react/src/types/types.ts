@@ -15,6 +15,7 @@ export type ToolCall = {
     name: ToolCallFunctionName
     arguments: string
   }
+  result?: string // Only for manually merged message list by mergeToolCallResult
 }
 export type MessageContentType = MessageContent[] | string
 export type MessageContent =

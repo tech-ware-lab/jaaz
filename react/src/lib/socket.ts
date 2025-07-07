@@ -125,6 +125,9 @@ export class SocketIOManager {
       case ISocket.SessionEventType.Info:
         eventBus.emit('Socket::Session::Info', data)
         break
+      case ISocket.SessionEventType.ToolCallResult:
+        eventBus.emit('Socket::Session::ToolCallResult', data)
+        break
       default:
         console.log('⚠️ Unknown session update type:', type)
     }

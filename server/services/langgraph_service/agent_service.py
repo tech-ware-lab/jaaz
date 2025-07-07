@@ -1,6 +1,6 @@
 from models.tool_model import ToolInfoJson
 from services.db_service import db_service
-from .handlers import StreamProcessor
+from .StreamProcessor import StreamProcessor
 from .agent_manager import AgentManager
 import traceback
 from utils.http_client import HttpClient
