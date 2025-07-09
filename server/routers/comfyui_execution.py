@@ -179,7 +179,17 @@ class WorkflowExecution:
             if isinstance(message, str):
                 message = json.loads(message)
                 if not await self.on_message(message):
-                    break
+                    # get task_id and check if task_id is saved to prompt
+                    async with httpx.AsyncClient() as client:
+                        try:
+                            response = await client.get(f"{self.base_url}/history")
+                            response_body = response.json()
+                            if self.prompt_id in response_body:
+                                break
+                            else:
+                                continue
+                        except:
+                            continue
 
     def update_overall_progress(self):
         self.progress.update(
