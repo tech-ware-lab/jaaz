@@ -2,6 +2,11 @@
   display: none !important;
 }
 
+/* Conditionally hide left toolbar panel when embeddable is selected */
+.excalidraw.hide-left-panel .App-menu__left {
+  display: none !important;
+}
+
 /* Video overlay styles */
 .video-overlay {
   position: absolute;
