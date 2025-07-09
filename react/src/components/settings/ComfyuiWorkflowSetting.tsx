@@ -357,23 +357,19 @@ function AddWorkflowDialog({
     >
       <DialogContent
         // open={true}
-        className="max-w-4xl h-[80vh] overflow-y-auto flex flex-col"
+        className="max-w-4xl h-[90vh] flex flex-col p-4"
       >
-        <DialogHeader>
-          <div className="flex items-center gap-2 justify-between">
-            <DialogTitle>
-              {workflow
-                ? t('settings:comfyui.editWorkflow', 'Edit Workflow')
-                : t('settings:comfyui.addWorkflow', 'Add Workflow')}
-            </DialogTitle>
-            <Button onClick={handleSubmit}>
-              {workflow
-                ? t('settings:comfyui.save', 'Save')
-                : t('settings:comfyui.submit', 'Submit')}
-            </Button>
-          </div>
+        <DialogHeader className="flex-shrink-0 pb-2">
+          <DialogTitle>
+            {workflow
+              ? t('settings:comfyui.editWorkflow', 'Edit Workflow')
+              : t('settings:comfyui.addWorkflow', 'Add Workflow')}
+          </DialogTitle>
           {error && <p className="text-red-500">{error}</p>}
         </DialogHeader>
+        
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto space-y-3 pr-2">
         <Input
           type="text"
           style={{ flexShrink: 0 }}
@@ -607,6 +603,16 @@ function AddWorkflowDialog({
               </div>
             )
           })}
+        </div>
+        
+        {/* Fixed Submit Button at the bottom */}
+        <div className="flex-shrink-0 mt-2 pt-3 border-t border-border bg-background">
+          <Button onClick={handleSubmit} className="w-full">
+            {workflow
+              ? t('settings:comfyui.save', 'Save')
+              : t('settings:comfyui.submit', 'Submit')}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )
