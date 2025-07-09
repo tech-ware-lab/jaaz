@@ -96,7 +96,7 @@ async def langgraph_multi_agent(
     try:
         # 0. 修复消息历史
         fixed_messages = _fix_chat_history(messages)
-        
+
         # 2. 文本模型
         text_model_instance = _create_text_model(text_model)
 
@@ -153,18 +153,19 @@ def _create_text_model(text_model: ModelInfo) -> Any:
         )
     else:
         # Create httpx client with SSL configuration for ChatOpenAI
-        http_client = HttpClient.create_sync_client(timeout=15)
-        http_async_client = HttpClient.create_async_client(timeout=15)
+        http_client = HttpClient.create_sync_client()
+        http_async_client = HttpClient.create_async_client()
         return ChatOpenAI(
             model=model,
             api_key=api_key,  # type: ignore
-            timeout=15,
+            timeout=60,
             base_url=url,
             temperature=0,
             # max_tokens=max_tokens, # TODO: 暂时注释掉有问题的参数
             http_client=http_client,
             http_async_client=http_async_client
         )
+
 
 async def _handle_error(error: Exception, session_id: str) -> None:
     """处理错误"""
