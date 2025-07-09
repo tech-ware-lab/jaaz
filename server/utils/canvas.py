@@ -14,11 +14,11 @@ async def find_next_best_element_position(canvas_data, max_num_per_row=4):
     # 同时考虑图片和视频元素，确保不重叠
     media_elements = [
         element for element in elements 
-        if element.get("type") in ["image", "embeddable"]
+        if element.get("type") in ["image", "embeddable", "video"]
     ]
 
-    # Sort elements by y then x to find the visually last element
-    media_elements.sort(key=lambda e: (e.get("y", 0), e.get("x", 0)))
+    # Sort elements by updated timestamp to find the most recently created element
+    media_elements.sort(key=lambda e: e.get("updated", 0))
 
     last_media_element = media_elements[-1] if len(media_elements) > 0 else None
 

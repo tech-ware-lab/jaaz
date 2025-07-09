@@ -47,7 +47,34 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
 
   const { i18n } = useTranslation()
 
-  const handleChange = useDebounce(
+  // Immediate handler for UI updates (no debounce)
+  const handleSelectionChange = (
+    elements: Readonly<OrderedExcalidrawElement[]>,
+    appState: AppState
+  ) => {
+    if (!appState) return
+
+    // Check if any selected element is embeddable type
+    const selectedElements = elements.filter((element) => 
+      appState.selectedElementIds[element.id]
+    )
+    const hasEmbeddableSelected = selectedElements.some(
+      (element) => element.type === 'embeddable'
+    )
+
+    // Toggle CSS class to hide/show left panel immediately
+    const excalidrawContainer = document.querySelector('.excalidraw')
+    if (excalidrawContainer) {
+      if (hasEmbeddableSelected) {
+        excalidrawContainer.classList.add('hide-left-panel')
+      } else {
+        excalidrawContainer.classList.remove('hide-left-panel')
+      }
+    }
+  }
+
+  // Debounced handler for saving (performance optimization)
+  const handleSave = useDebounce(
     (
       elements: Readonly<OrderedExcalidrawElement[]>,
       appState: AppState,
@@ -81,6 +108,18 @@ const CanvasExcali: React.FC<CanvasExcaliProps> = ({
     },
     1000
   )
+
+  // Combined handler that calls both immediate and debounced functions
+  const handleChange = (
+    elements: Readonly<OrderedExcalidrawElement[]>,
+    appState: AppState,
+    files: BinaryFiles
+  ) => {
+    // Immediate UI updates
+    handleSelectionChange(elements, appState)
+    // Debounced save operation
+    handleSave(elements, appState, files)
+  }
 
   const lastImagePosition = useRef<LastImagePosition | null>(
     localStorage.getItem('excalidraw-last-image-position')
