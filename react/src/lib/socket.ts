@@ -168,10 +168,3 @@ export class SocketIOManager {
     return this.reconnectAttempts >= this.maxReconnectAttempts
   }
 }
-
-export const socketManager = new SocketIOManager({
-  serverUrl:
-    process.env.NODE_ENV === 'development'
-      ? 'http://localhost:57988'
-      : window.location.origin,
-})
