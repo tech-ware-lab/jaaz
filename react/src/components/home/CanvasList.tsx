@@ -1,15 +1,20 @@
 import { listCanvases } from '@/api/canvas'
 import CanvasCard from '@/components/home/CanvasCard'
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useLocation } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 
 const CanvasList: React.FC = () => {
   const { t } = useTranslation()
+  const location = useLocation()
+  const isHomePage = location.pathname === '/'
+
   const { data: canvases, refetch } = useQuery({
     queryKey: ['canvases'],
     queryFn: listCanvases,
+    enabled: isHomePage, // 每次进入首页时都重新查询
+    refetchOnMount: 'always',
   })
 
   const navigate = useNavigate()
