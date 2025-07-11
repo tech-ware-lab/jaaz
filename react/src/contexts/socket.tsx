@@ -1,5 +1,5 @@
-import { socketManager } from '@/lib/socket'
-import React, { createContext, useEffect, useState } from 'react'
+import { SocketIOManager } from '@/lib/socket'
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 interface SocketContextType {
@@ -7,11 +7,13 @@ interface SocketContextType {
   socketId?: string
   connecting: boolean
   error?: string
+  socketManager: SocketIOManager | null
 }
 
 const SocketContext = createContext<SocketContextType>({
   connected: false,
   connecting: false,
+  socketManager: null,
 })
 
 interface SocketProviderProps {
@@ -25,6 +27,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [connecting, setConnecting] = useState(true)
   const [error, setError] = useState<string>()
 
+  // Use useRef to maintain socket manager instance across re-renders
+  const socketManagerRef = useRef<SocketIOManager | null>(null)
+
   useEffect(() => {
     let mounted = true
 
@@ -33,6 +38,17 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         setConnecting(true)
         setError(undefined)
 
+        // Create socket manager instance if not exists
+        if (!socketManagerRef.current) {
+          socketManagerRef.current = new SocketIOManager({
+            serverUrl: process.env.NODE_ENV === 'development'
+              ? 'http://localhost:57988'
+              : window.location.origin,
+            autoConnect: false
+          })
+        }
+
+        const socketManager = socketManagerRef.current
         await socketManager.connect()
 
         if (mounted) {
@@ -62,7 +78,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
             const handleConnectError = (error: Error) => {
               if (mounted) {
-                setError(error.message || 'Connection error')
+                setError(error.message || '❌ Socket.IO Connection Error')
                 setConnected(false)
                 setConnecting(false)
               }
@@ -93,6 +109,11 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     return () => {
       mounted = false
+      // Clean up socket connection when component unmounts
+      if (socketManagerRef.current) {
+        socketManagerRef.current.disconnect()
+        socketManagerRef.current = null
+      }
     }
   }, [])
 
@@ -105,6 +126,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     socketId,
     connecting,
     error,
+    socketManager: socketManagerRef.current,
   }
 
   return (
@@ -113,10 +135,10 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
       {error && (
         <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-3 py-2 rounded-md shadow-lg">
-          {socketManager.isMaxReconnectAttemptsReached()
+          {socketManagerRef.current?.isMaxReconnectAttemptsReached()
             ? t('socket.maxRetriesReached')
             : t('socket.connectionError', {
-              current: socketManager.getReconnectAttempts(),
+              current: socketManagerRef.current?.getReconnectAttempts() || 0,
               max: 5,
               error
             })}
