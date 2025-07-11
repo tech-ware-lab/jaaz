@@ -67,35 +67,22 @@ class HttpClient:
                                'HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy'])
         print('🌐 is_proxy_enabled', is_proxy_enabled)
 
-        if is_proxy_enabled:
-            # 代理环境下的特殊配置 - 针对"Server disconnected"问题
-            limits = httpx.Limits(
-                max_keepalive_connections=0,      # 完全禁用 Keep-Alive，强制每次新建连接
-                max_connections=50,               # 大幅减少最大连接数
-                keepalive_expiry=0                # 立即过期Keep-Alive连接
-            )
-            # 代理环境下的保守超时配置
-            default_timeout = httpx.Timeout(
-                connect=60.0,   # 代理连接可能很慢，增加到60秒
-                read=900.0,     # 读取超时增加到15分钟（AI图像生成可能很慢）
-                write=120.0,    # 写入超时增加到2分钟（适应大请求体）
-                pool=30.0       # 连接池超时增加
-            )
-            logger.info("Proxy detected. Using proxy-safe HTTP client configuration with disabled keep-alive.")
-        else:
-            # 非代理环境下的优化配置
-            limits = httpx.Limits(
-                max_keepalive_connections=5,      # 大幅减少 Keep-Alive 连接数
-                max_connections=50,               # 减少最大连接数
-                keepalive_expiry=10.0             # 大幅减少 Keep-Alive 过期时间
-            )
-            # 非代理环境下也使用保守的超时配置
-            default_timeout = httpx.Timeout(
-                connect=45.0,   
-                read=900.0,     # 读取超时增加到15分钟
-                write=120.0,    # 写入超时增加到2分钟
-                pool=15.0       
-            )
+
+        # Fix "Server disconnected" error when system VPN proxy is enabled
+        limits = httpx.Limits(
+            max_keepalive_connections=0,      # 完全禁用 Keep-Alive，强制每次新建连接
+            max_connections=50,               # 大幅减少最大连接数
+            keepalive_expiry=0                # 立即过期Keep-Alive连接
+        )
+        # 代理环境下的保守超时配置
+        default_timeout = httpx.Timeout(
+            connect=60.0,   # 代理连接可能很慢，增加到60秒
+            read=900.0,     # 读取超时增加到15分钟（AI图像生成可能很慢）
+            write=120.0,    # 写入超时增加到2分钟（适应大请求体）
+            pool=30.0       # 连接池超时增加
+        )
+        logger.info("Proxy detected. Using proxy-safe HTTP client configuration with disabled keep-alive.")
+
 
         config = {
             'verify': cls._get_ssl_context(),
