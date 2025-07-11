@@ -22,6 +22,7 @@ HTTP 客户端工厂和管理器
    with HttpClient.create_sync() as client:
        response = client.get("https://api.example.com/data")
 """
+import os
 import ssl
 import certifi
 import httpx
@@ -53,16 +54,55 @@ class HttpClient:
     @classmethod
     def _get_client_config(cls, **kwargs: Any) -> Dict[str, Any]:
         """获取客户端配置"""
+        # 针对AI API调用优化的超时配置
+        default_timeout = httpx.Timeout(
+            connect=30.0,   # 连接超时：建立TCP连接的最大等待时间
+            read=600.0,     # 读取超时：从服务器读取响应数据的最大等待时间
+            write=60.0,     # 写入超时：向服务器发送请求数据的最大等待时间
+            pool=10.0       # 连接池超时：从连接池获取连接的最大等待时间
+        )
+
+        # 检查是否使用了代理
+        is_proxy_enabled = any(os.environ.get(var) for var in [
+                               'HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy'])
+        print('🌐 is_proxy_enabled', is_proxy_enabled)
+
+        if is_proxy_enabled:
+            # 代理环境下的特殊配置 - 针对"Server disconnected"问题
+            limits = httpx.Limits(
+                max_keepalive_connections=0,      # 完全禁用 Keep-Alive，强制每次新建连接
+                max_connections=50,               # 大幅减少最大连接数
+                keepalive_expiry=0                # 立即过期Keep-Alive连接
+            )
+            # 代理环境下的保守超时配置
+            default_timeout = httpx.Timeout(
+                connect=60.0,   # 代理连接可能很慢，增加到60秒
+                read=900.0,     # 读取超时增加到15分钟（AI图像生成可能很慢）
+                write=120.0,    # 写入超时增加到2分钟（适应大请求体）
+                pool=30.0       # 连接池超时增加
+            )
+            logger.info("Proxy detected. Using proxy-safe HTTP client configuration with disabled keep-alive.")
+        else:
+            # 非代理环境下的优化配置
+            limits = httpx.Limits(
+                max_keepalive_connections=5,      # 大幅减少 Keep-Alive 连接数
+                max_connections=50,               # 减少最大连接数
+                keepalive_expiry=10.0             # 大幅减少 Keep-Alive 过期时间
+            )
+            # 非代理环境下也使用保守的超时配置
+            default_timeout = httpx.Timeout(
+                connect=45.0,   
+                read=900.0,     # 读取超时增加到15分钟
+                write=120.0,    # 写入超时增加到2分钟
+                pool=15.0       
+            )
 
         config = {
             'verify': cls._get_ssl_context(),
-            'timeout': 300,
+            'timeout': default_timeout,
             'follow_redirects': True,
-            'limits': httpx.Limits(
-                max_keepalive_connections=50,
-                max_connections=200,
-                keepalive_expiry=300.0
-            ),
+            'limits': limits,
+            'http2': False,  # 强制使用 HTTP/1.1，避免 HTTP/2 兼容性问题
             **kwargs
         }
 
