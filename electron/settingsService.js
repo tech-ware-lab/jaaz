@@ -78,7 +78,7 @@ class SettingsService {
       return 'system'
     }
 
-    const proxyUrl = settings.proxy || 'system'
+    const proxyUrl = settings.proxy || ''
     console.log('Proxy setting from settings.json:', proxyUrl)
 
     return proxyUrl
