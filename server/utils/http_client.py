@@ -54,14 +54,6 @@ class HttpClient:
     @classmethod
     def _get_client_config(cls, **kwargs: Any) -> Dict[str, Any]:
         """获取客户端配置"""
-        # 针对AI API调用优化的超时配置
-        default_timeout = httpx.Timeout(
-            connect=30.0,   # 连接超时：建立TCP连接的最大等待时间
-            read=600.0,     # 读取超时：从服务器读取响应数据的最大等待时间
-            write=60.0,     # 写入超时：向服务器发送请求数据的最大等待时间
-            pool=10.0       # 连接池超时：从连接池获取连接的最大等待时间
-        )
-
         # 检查是否使用了代理
         is_proxy_enabled = any(os.environ.get(var) for var in [
                                'HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy'])
@@ -76,8 +68,8 @@ class HttpClient:
         )
         # 代理环境下的保守超时配置
         default_timeout = httpx.Timeout(
-            connect=60.0,   # 代理连接可能很慢，增加到60秒
-            read=900.0,     # 读取超时增加到15分钟（AI图像生成可能很慢）
+            connect=10.0,   # 代理连接可能很慢，增加到60秒
+            read=300.0,     # 读取超时增加到5分钟（AI图像生成可能很慢）
             write=120.0,    # 写入超时增加到2分钟（适应大请求体）
             pool=30.0       # 连接池超时增加
         )
