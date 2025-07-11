@@ -53,22 +53,15 @@ class HttpClient:
     @classmethod
     def _get_client_config(cls, **kwargs: Any) -> Dict[str, Any]:
         """获取客户端配置"""
-        # 默认超时配置，适合大多数 AI API 调用
-        default_timeout = httpx.Timeout(
-            connect=20.0,   # 连接超时 20 秒
-            read=300.0,     # 读取超时 5 分钟
-            write=30.0,     # 写入超时 30 秒
-            pool=60.0       # 连接池超时 60 秒
-        )
 
         config = {
             'verify': cls._get_ssl_context(),
-            'timeout': default_timeout,
+            'timeout': 300,
             'follow_redirects': True,
             'limits': httpx.Limits(
                 max_keepalive_connections=50,
                 max_connections=200,
-                keepalive_expiry=60.0
+                keepalive_expiry=300.0
             ),
             **kwargs
         }
