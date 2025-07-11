@@ -3,6 +3,7 @@ import CanvasCard from '@/components/home/CanvasCard'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useLocation } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
+import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 const CanvasList: React.FC = () => {
@@ -52,4 +53,4 @@ const CanvasList: React.FC = () => {
   )
 }
 
-export default CanvasList
+export default memo(CanvasList)
