@@ -22,6 +22,7 @@ HTTP 客户端工厂和管理器
    with HttpClient.create_sync() as client:
        response = client.get("https://api.example.com/data")
 """
+import os
 import ssl
 import certifi
 import httpx
@@ -53,23 +54,34 @@ class HttpClient:
     @classmethod
     def _get_client_config(cls, **kwargs: Any) -> Dict[str, Any]:
         """获取客户端配置"""
-        # 默认超时配置，适合大多数 AI API 调用
-        default_timeout = httpx.Timeout(
-            connect=20.0,   # 连接超时 20 秒
-            read=300.0,     # 读取超时 5 分钟
-            write=30.0,     # 写入超时 30 秒
-            pool=60.0       # 连接池超时 60 秒
+        # 检查是否使用了代理
+        is_proxy_enabled = any(os.environ.get(var) for var in [
+                               'HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy'])
+        print('🌐 is_proxy_enabled', is_proxy_enabled)
+
+
+        # Fix "Server disconnected" error when system VPN proxy is enabled
+        limits = httpx.Limits(
+            max_keepalive_connections=0,      # 完全禁用 Keep-Alive，强制每次新建连接
+            max_connections=50,               # 大幅减少最大连接数
+            keepalive_expiry=0                # 立即过期Keep-Alive连接
         )
+        # 代理环境下的保守超时配置
+        default_timeout = httpx.Timeout(
+            connect=10.0,   # 代理连接可能很慢，增加到60秒
+            read=300.0,     # 读取超时增加到5分钟（AI图像生成可能很慢）
+            write=120.0,    # 写入超时增加到2分钟（适应大请求体）
+            pool=30.0       # 连接池超时增加
+        )
+        logger.info("Proxy detected. Using proxy-safe HTTP client configuration with disabled keep-alive.")
+
 
         config = {
             'verify': cls._get_ssl_context(),
             'timeout': default_timeout,
             'follow_redirects': True,
-            'limits': httpx.Limits(
-                max_keepalive_connections=50,
-                max_connections=200,
-                keepalive_expiry=60.0
-            ),
+            'limits': limits,
+            'http2': False,  # 强制使用 HTTP/1.1，避免 HTTP/2 兼容性问题
             **kwargs
         }
 
