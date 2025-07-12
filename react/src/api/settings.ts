@@ -149,6 +149,20 @@ export const getMediaFilesApi = async (path: string) => {
   return response.json()
 }
 
+export const openFolderInExplorer = async (path: string) => {
+  const response = await fetch('/api/open_folder_in_explorer', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ path }),
+  })
+  if (!response.ok) {
+    throw new Error('Failed to open folder in explorer')
+  }
+  return response.json()
+}
+
 export const getFileThumbnailApi = async (filePath: string) => {
   const response = await fetch(
     `/api/get_file_thumbnail?file_path=${encodeURIComponent(filePath)}`

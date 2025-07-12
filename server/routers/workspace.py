@@ -135,6 +135,54 @@ async def reveal_in_explorer(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
+@router.post("/open_folder_in_explorer")
+async def open_folder_in_explorer(request: Request):
+    """
+    在系统文件浏览器中打开指定文件夹
+    
+    Args:
+        request: 包含文件夹路径的请求
+    
+    Returns:
+        操作结果
+    """
+    try:
+        data = await request.json()
+        folder_path = data.get("path")
+        
+        if not folder_path:
+            raise HTTPException(status_code=400, detail="Missing folder path")
+        
+        # 验证路径是否存在且为文件夹
+        if not os.path.exists(folder_path):
+            raise HTTPException(status_code=404, detail="Folder not found")
+        
+        if not os.path.isdir(folder_path):
+            raise HTTPException(status_code=400, detail="Path is not a directory")
+        
+        # 根据不同操作系统打开文件管理器
+        system = platform.system()
+        
+        if system == "Windows":
+            # Windows
+            subprocess.run(["explorer", folder_path], check=True)
+        elif system == "Darwin":
+            # macOS
+            subprocess.run(["open", folder_path], check=True)
+        elif system == "Linux":
+            # Linux
+            subprocess.run(["xdg-open", folder_path], check=True)
+        else:
+            raise HTTPException(status_code=500, detail=f"Unsupported operating system: {system}")
+        
+        return {"success": True, "message": "Folder opened in system explorer"}
+        
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to open folder: {str(e)}")
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error opening folder: {str(e)}")
+
 @router.get("/browse_filesystem")
 async def browse_filesystem(path: str = ""):
     """
