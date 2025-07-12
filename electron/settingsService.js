@@ -78,7 +78,7 @@ class SettingsService {
       return 'system'
     }
 
-    const proxyUrl = settings.proxy || ''
+    const proxyUrl = settings.proxy || 'system'
     console.log('Proxy setting from settings.json:', proxyUrl)
 
     return proxyUrl
@@ -208,7 +208,7 @@ class SettingsService {
   async applyProxySettings() {
     const proxyConfig = this.getProxyConfig()
 
-    if (proxyConfig === '') {
+    if (proxyConfig === 'no_proxy') {
       console.log('Proxy explicitly disabled, clearing proxy settings')
       return await this.clearProxy()
     }
