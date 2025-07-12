@@ -154,15 +154,6 @@ export default function MaterialManager() {
     }
   }, [])
 
-  const navigateBack = useCallback(() => {
-    if (pathHistory.length > 0) {
-      const previousPath = pathHistory[pathHistory.length - 1]
-      setPathHistory((prev) => prev.slice(0, -1))
-      setCurrentPath(previousPath)
-      loadFolder(previousPath)
-    }
-  }, [pathHistory, loadFolder])
-
   const handleFolderClick = useCallback(
     async (folder: FileSystemItem) => {
       if (folder.is_directory) {
@@ -264,6 +255,11 @@ export default function MaterialManager() {
       }
     }
   }, [selectedFolder])
+
+  useEffect(() => {
+    // by default, load my assets folder when open page
+    handleMyAssets()
+  }, [])
 
   const handleMyAssets = useCallback(async () => {
     try {
