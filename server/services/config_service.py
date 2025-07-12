@@ -7,6 +7,7 @@ from typing import Dict, TypedDict, Literal, Optional
 
 # 定义配置文件的类型结构
 
+
 class ModelConfig(TypedDict, total=False):
     type: Literal["text", "image", "video"]
     is_custom: Optional[bool]
@@ -34,7 +35,7 @@ DEFAULT_PROVIDERS_CONFIG: AppConfig = {
             'anthropic/claude-sonnet-4': {'type': 'text'},
             'anthropic/claude-3.7-sonnet': {'type': 'text'},
         },
-        'url': os.getenv('BASE_API_URL', 'https://www.jaaz.app').rstrip('/') + '/api/v1/',
+        'url': os.getenv('BASE_API_URL', 'https://jaaz.app').rstrip('/') + '/api/v1/',
         'api_key': '',
         'max_tokens': 8192,
     },
@@ -97,6 +98,10 @@ class ConfigService:
         )
         self.initialized = False
 
+    def _get_jaaz_url(self) -> str:
+        """Get the correct jaaz URL"""
+        return os.getenv('BASE_API_URL', 'https://jaaz.app').rstrip('/') + '/api/v1/'
+
     async def initialize(self) -> None:
         try:
             # Ensure the user_data directory exists
@@ -129,6 +134,10 @@ class ConfigService:
                         provider_models[model_name] = model_config
                         provider_models[model_name]['is_custom'] = True
                 self.app_config[provider]['models'] = provider_models
+
+            # 确保 jaaz URL 始终正确
+            if 'jaaz' in self.app_config:
+                self.app_config['jaaz']['url'] = self._get_jaaz_url()
         except Exception as e:
             print(f"Error loading config: {e}")
             traceback.print_exc()
@@ -136,11 +145,15 @@ class ConfigService:
             self.initialized = True
 
     def get_config(self) -> AppConfig:
-        # 直接返回内存中的配置
+        if 'jaaz' in self.app_config:
+            self.app_config['jaaz']['url'] = self._get_jaaz_url()
         return self.app_config
 
     async def update_config(self, data: AppConfig) -> Dict[str, str]:
         try:
+            if 'jaaz' in data:
+                data['jaaz']['url'] = self._get_jaaz_url()
+
             os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
             with open(self.config_file, "w") as f:
                 toml.dump(data, f)

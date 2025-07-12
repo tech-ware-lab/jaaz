@@ -4,9 +4,13 @@ import { ExcalidrawImageElement, OrderedExcalidrawElement } from '@excalidraw/ex
 import { AnimatePresence } from 'motion/react'
 import { useRef, useState } from 'react'
 import CanvasPopbarContainer from './CanvasPopbarContainer'
+import { useConfigs } from '@/contexts/configs'
 
 const CanvasPopbarWrapper = () => {
   const { excalidrawAPI } = useCanvas()
+  const { textModels } = useConfigs()
+  const hasOpenaiProvider = textModels.some((model) => model.provider === 'openai')
+
 
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const [showAddToChat, setShowAddToChat] = useState(false)
@@ -32,9 +36,9 @@ const CanvasPopbarWrapper = () => {
     const hasSelectedImages = selectedImages.length > 0
     setShowAddToChat(hasSelectedImages)
 
-    // 判断是否显示魔法生成按钮：选中2个以上元素（包含所有类型）
+    // 判断是否显示魔法生成按钮：选中2个以上元素（包含所有类型），并且设置了 openai key
     const selectedCount = Object.keys(selectedIds).length
-    setShowMagicGenerate(selectedCount >= 2)
+    setShowMagicGenerate(selectedCount >= 2 && hasOpenaiProvider)
 
     // 如果既没有选中图片，也没有满足魔法生成条件，隐藏弹窗
     if (!hasSelectedImages && selectedCount < 2) {
@@ -76,7 +80,7 @@ const CanvasPopbarWrapper = () => {
 
       bottomY = selectedImages.reduce(
         (acc, image) => Math.max(acc, image.y + image.height),
-        0
+        Number.NEGATIVE_INFINITY
       )
     } else {
       // 基于所有选中的元素计算位置
@@ -92,7 +96,7 @@ const CanvasPopbarWrapper = () => {
 
       bottomY = selectedElements.reduce(
         (acc, element) => Math.max(acc, element.y + (element.height || 0)),
-        0
+        Number.NEGATIVE_INFINITY
       )
     }
 
@@ -102,6 +106,7 @@ const CanvasPopbarWrapper = () => {
     const offsetX = (scrollX + centerX) * zoom
     const offsetY = (scrollY + bottomY) * zoom
     setPos({ x: offsetX, y: offsetY })
+    // console.log(offsetX, offsetY)
   })
 
   return (
