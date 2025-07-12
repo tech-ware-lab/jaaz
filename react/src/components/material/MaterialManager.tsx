@@ -403,7 +403,7 @@ export default function MaterialManager() {
             </div>
 
             {/* Hover overlay */}
-            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+            {/* <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
               <div className="flex gap-2">
                 <button
                   onClick={() => handlePreviewFile(file)}
@@ -419,7 +419,7 @@ export default function MaterialManager() {
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
               </div>
-            </div>
+            </div> */}
 
             <div className="p-3">
               <div className="text-sm font-medium truncate" title={file.name}>
@@ -444,13 +444,13 @@ export default function MaterialManager() {
 
   const renderMediaList = useCallback(() => {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 w-full overflow-hidden">
         {filteredMediaFiles.map((file) => (
           <div
             key={file.path}
-            className="flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
+            className="flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow min-w-0"
           >
-            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden">
+            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
               {file.type === 'image' ? (
                 <img
                   src={getFileServiceUrl(file.path)}
@@ -468,14 +468,18 @@ export default function MaterialManager() {
               )}
               <div className="hidden">{getFileIcon(file.type)}</div>
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 overflow-hidden">
               <div className="font-medium truncate">{file.name}</div>
-              <div className="text-sm text-gray-500 flex items-center gap-4">
-                <span>{formatFileSize(file.size || 0)}</span>
-                <span>{formatDate(file.mtime)}</span>
+              <div className="text-sm text-gray-500 flex items-center gap-4 overflow-hidden">
+                <span className="whitespace-nowrap">
+                  {formatFileSize(file.size || 0)}
+                </span>
+                <span className="whitespace-nowrap">
+                  {formatDate(file.mtime)}
+                </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={() => handlePreviewFile(file)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -503,9 +507,9 @@ export default function MaterialManager() {
   ])
 
   return (
-    <div className="flex h-full bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-full bg-gray-50 dark:bg-gray-900 w-full overflow-hidden">
       {/* Left Sidebar */}
-      <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+      <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0">
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 mb-3">
@@ -536,7 +540,7 @@ export default function MaterialManager() {
           </div>
 
           {/* Search */}
-          <div className="relative">
+          {/* <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
@@ -545,7 +549,7 @@ export default function MaterialManager() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
+          </div> */}
         </div>
 
         {/* File Tree */}
@@ -569,7 +573,7 @@ export default function MaterialManager() {
       </div>
 
       {/* Right Panel */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <div className="p-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
@@ -612,9 +616,9 @@ export default function MaterialManager() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 w-full min-w-0">
           {selectedFolder ? (
-            <div>
+            <div className="w-full overflow-hidden">
               {filteredMediaFiles.length > 0 ? (
                 viewMode === 'grid' ? (
                   renderMediaGrid()
