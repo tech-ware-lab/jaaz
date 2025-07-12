@@ -28,3 +28,4 @@ langchain-openai==0.3.21
 python-socketio==5.13.0
 pymediainfo
 openai-agents
+socksio

@@ -21,12 +21,14 @@ import {
   Star,
   Heart,
   MoreHorizontal,
+  ExternalLink,
 } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import {
   browseFolderApi,
   getMediaFilesApi,
   getFileServiceUrl,
+  openFolderInExplorer,
 } from '@/api/settings'
 import FilePreviewModal from './FilePreviewModal'
 
@@ -220,6 +222,16 @@ export default function MaterialManager() {
       fileType: '',
     })
   }, [])
+
+  const handleOpenInExplorer = useCallback(async () => {
+    if (selectedFolder) {
+      try {
+        await openFolderInExplorer(selectedFolder.path)
+      } catch (error) {
+        console.error('Failed to open folder in explorer:', error)
+      }
+    }
+  }, [selectedFolder])
 
   const getFileIcon = useCallback(
     (type: string, className: string = 'w-4 h-4') => {
@@ -589,9 +601,20 @@ export default function MaterialManager() {
         <div className="p-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {selectedFolder ? selectedFolder.name : '选择文件夹'}
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {selectedFolder ? selectedFolder.name : '选择文件夹'}
+                </h2>
+                {selectedFolder && (
+                  <button
+                    onClick={handleOpenInExplorer}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    title="在系统文件浏览器中打开"
+                  >
+                    <ExternalLink className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  </button>
+                )}
+              </div>
               {selectedFolder && (
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {filteredMediaFiles.length} 个媒体文件
