@@ -54,25 +54,22 @@ class JaazImageProvider(ImageProviderBase):
         Returns:
             JaazImagesResponse: Jaaz compatible image response object
         """
-        async with HttpClient.create() as client:
+        async with HttpClient.create_aiohttp() as session:
             print(
                 f'🦄 Jaaz API request: {url}, model: {data["model"]}, prompt: {data["prompt"]}')
-            response = await client.post(url, headers=headers, json=data)
 
-            if response.status_code != 200:
-                error_msg = f"HTTP {response.status_code}: {response.text}"
-                print(f'🦄 Jaaz API error: {error_msg}')
-                raise Exception(f'Image generation failed: {error_msg}')
+            async with session.post(url, headers=headers, json=data) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    error_msg = f"HTTP {response.status}: {error_text}"
+                    print(f'🦄 Jaaz API error: {error_msg}')
+                    raise Exception(f'Image generation failed: {error_msg}')
 
-            if not response.content:
-                raise Exception(
-                    'Image generation failed: Empty response from server')
+                # Parse JSON data
+                json_data = await response.json()
+                print('🦄 Jaaz API response', json_data)
 
-            # Parse JSON data
-            json_data = response.json()
-            print('🦄 Jaaz API response', json_data)
-
-            return JaazImagesResponse(**json_data)
+                return JaazImagesResponse(**json_data)
 
     async def _process_response(self, res: JaazImagesResponse, error_prefix: str = "Jaaz") -> tuple[str, int, int, str]:
         """
