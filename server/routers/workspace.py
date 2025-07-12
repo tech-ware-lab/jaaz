@@ -110,31 +110,6 @@ async def list_files_in_dir(rel_path: str):
     except Exception as e:
         return []
 
-@router.post("/reveal_in_explorer")
-async def reveal_in_explorer(request: Request):
-    try:
-        data = await request.json()
-        path = data["path"]
-        full_path = os.path.join(WORKSPACE_ROOT, path)
-        
-        if not os.path.exists(full_path):
-            return {"error": "File not found"}
-            
-        system = platform.system()
-        
-        if system == "Darwin":  # macOS
-            subprocess.run(["open", "-R", full_path])
-        elif system == "Windows":
-            subprocess.run(["explorer", "/select,", full_path])
-        elif system == "Linux":
-            subprocess.run(["xdg-open", os.path.dirname(full_path)])
-        else:
-            return {"error": "Unsupported operating system"}
-            
-        return {"success": True}
-    except Exception as e:
-        return {"error": str(e)}
-
 @router.post("/open_folder_in_explorer")
 async def open_folder_in_explorer(request: Request):
     """
