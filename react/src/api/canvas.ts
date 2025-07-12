@@ -1,5 +1,5 @@
 import { CanvasData, Message, Session } from '@/types/types'
-import { ModelInfo } from '@/api/model'
+import { ToolInfo } from '@/api/model'
 
 export type ListCanvasesResponse = {
   id: string
@@ -24,7 +24,7 @@ export async function createCanvas(data: {
     model: string
     url: string
   }
-  tool_list: ModelInfo[]
+  tool_list: ToolInfo[]
 
   system_prompt: string
 }): Promise<{ id: string }> {

@@ -3,7 +3,6 @@ from typing import Optional, Dict, Any, List
 from .video_base_provider import VideoProviderBase
 from utils.http_client import HttpClient
 from services.config_service import config_service
-import httpx
 
 
 class JaazVideoProvider(VideoProviderBase, provider_name="jaaz"):
@@ -106,34 +105,29 @@ class JaazVideoProvider(VideoProviderBase, provider_name="jaaz"):
                 f'🎥 Jaaz API request: {url}, model: {data["model"]}, prompt: {data["prompt"]}')
 
             # Make API request with extended timeout for video generation
-            video_timeout = httpx.Timeout(
-                connect=20.0,
-                read=10 * 60,  # 10 minutes for video generation
-                write=30.0,
-                pool=60.0
-            )
+            async with HttpClient.create_aiohttp() as session:
+                async with session.post(url, headers=headers, json=data) as response:
+                    response_content = await response.read()
+                    print('👇response', url, response_content)
+                    if response.status != 200:
+                        try:
+                            error_data = await response.json() if response_content else {}
+                            error_message = error_data.get(
+                                "error", f"HTTP {response.status}")
+                        except Exception as e:
+                            # If response is not JSON, use the raw text or status code
+                            error_text = await response.text() if response_content else ''
+                            error_message = f"HTTP {response.status} {error_text}"
+                        raise Exception(
+                            f'Video generation failed: {error_message}')
 
-            async with HttpClient.create(timeout=video_timeout) as client:
-                response = await client.post(url, headers=headers, json=data)
-                print('👇response', url, response.content)
-                if response.status_code != 200:
-                    try:
-                        error_data = response.json() if response.content else {}
-                        error_message = error_data.get(
-                            "error", f"HTTP {response.status_code}")
-                    except Exception as e:
-                        # If response is not JSON, use the raw text or status code
-                        error_message = f"HTTP {response.status_code} {response.text if response.content else ''}"
-                    raise Exception(
-                        f'Video generation failed: {error_message}')
+                    if not response_content:
+                        raise Exception(
+                            'Video generation failed: Empty response from server')
 
-                if not response.content:
-                    raise Exception(
-                        'Video generation failed: Empty response from server')
-
-                # Parse JSON data
-                result = response.json()
-                print('🎥 Jaaz API response', result)
+                    # Parse JSON data
+                    result = await response.json()
+                    print('🎥 Jaaz API response', result)
 
                 # Extract and return video URL
                 video_url = self._extract_video_url(result)

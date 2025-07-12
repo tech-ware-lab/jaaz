@@ -7,6 +7,7 @@ from tools.write_plan import write_plan_tool
 from tools.generate_image_by_gpt_image_1_jaaz import generate_image_by_gpt_image_1_jaaz
 from tools.generate_image_by_imagen_4_jaaz import generate_image_by_imagen_4_jaaz
 from tools.generate_image_by_imagen_4_replicate import generate_image_by_imagen_4_replicate
+from tools.generate_image_by_ideogram3_bal_jaaz import generate_image_by_ideogram3_bal_jaaz
 # from tools.generate_image_by_flux_1_1_pro import generate_image_by_flux_1_1_pro
 from tools.generate_image_by_flux_kontext_pro_jaaz import generate_image_by_flux_kontext_pro_jaaz
 from tools.generate_image_by_flux_kontext_pro_replicate import generate_image_by_flux_kontext_pro_replicate
@@ -41,6 +42,12 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "type": "image",
         "provider": "jaaz",
         "tool_function": generate_image_by_recraft_v3_jaaz,
+    },
+    "generate_image_by_ideogram3_bal_jaaz": {
+        "display_name": "Ideogram 3 Balanced",
+        "type": "image",
+        "provider": "jaaz",
+        "tool_function": generate_image_by_ideogram3_bal_jaaz,
     },
     # "generate_image_by_flux_1_1_pro_jaaz": {
     #     "display_name": "Flux 1.1 Pro",
