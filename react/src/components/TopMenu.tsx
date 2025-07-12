@@ -46,10 +46,10 @@ export default function TopMenu({
           </motion.div>
         </motion.div>
         <Button
-          variant={window.location.pathname === '/app' ? 'default' : 'ghost'}
+          variant={window.location.pathname === '/assets' ? 'default' : 'ghost'}
           size="sm"
           className={cn('flex items-center font-bold rounded-none')}
-          onClick={() => navigate({ to: '/app' })}
+          onClick={() => navigate({ to: '/assets' })}
         >
           <ImageIcon className="size-4" />
           {t('canvas:assets', 'Library')}

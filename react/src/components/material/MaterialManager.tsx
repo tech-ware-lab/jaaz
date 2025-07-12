@@ -34,6 +34,7 @@ import FilePreviewModal from './FilePreviewModal'
 import { Button } from '../ui/button'
 import { eventBus } from '@/lib/event'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 
 interface FileSystemItem {
   name: string
@@ -88,6 +89,7 @@ export default function MaterialManager() {
     fileType: '',
   })
   const myAssetsPath = useRef<string>('')
+  const { t } = useTranslation()
 
   // 初始化时加载用户目录
   useEffect(() => {
@@ -267,7 +269,7 @@ export default function MaterialManager() {
       if (result.success) {
         myAssetsPath.current = result.path
         const myAssetsFolder: FileSystemItem = {
-          name: 'My Assets',
+          name: t('canvas:myAssets', 'My Assets'),
           path: result.path,
           type: 'folder',
           mtime: Date.now() / 1000,
@@ -617,7 +619,7 @@ export default function MaterialManager() {
             </div>
 
             <div className="flex gap-2">
-              <Button
+              {/* <Button
                 onClick={(e) => handleAddToChat(selectedFile, e)}
                 variant="default"
                 size="sm"
@@ -625,18 +627,20 @@ export default function MaterialManager() {
               >
                 <MessageCirclePlus className="w-4 h-4 mr-2" />
                 添加到聊天
-              </Button>
+              </Button> */}
             </div>
           </div>
 
           {/* 文件信息 */}
           <div className="space-y-4">
             <div>
-              <h4 className="font-medium mb-2">基本信息</h4>
+              <h4 className="font-medium mb-2">
+                {t('canvas:basicInfo', 'Basic info')}
+              </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">
-                    文件名：
+                    {t('canvas:fileName', 'File name')}
                   </span>
                   <span className="font-medium break-all">
                     {selectedFile.name}
@@ -644,15 +648,7 @@ export default function MaterialManager() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">
-                    文件类型：
-                  </span>
-                  <span className="font-medium uppercase">
-                    {selectedFile.type}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    文件大小：
+                    {t('canvas:fileSize', 'File size')}
                   </span>
                   <span className="font-medium">
                     {formatFileSize(selectedFile.size || 0)}
@@ -660,7 +656,7 @@ export default function MaterialManager() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">
-                    修改时间：
+                    {t('canvas:modifiedTime', 'Modified time')}
                   </span>
                   <span className="font-medium">
                     {formatDate(selectedFile.mtime)}
@@ -669,7 +665,7 @@ export default function MaterialManager() {
                 {selectedFile.dimensions && (
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">
-                      尺寸：
+                      {t('canvas:dimensions', 'Dimensions')}
                     </span>
                     <span className="font-medium">
                       {selectedFile.dimensions.width} ×{' '}
@@ -681,7 +677,9 @@ export default function MaterialManager() {
             </div>
 
             <div>
-              <h4 className="font-medium mb-2">文件路径</h4>
+              <h4 className="font-medium mb-2">
+                {t('canvas:filePath', 'File path')}
+              </h4>
               <div className="text-sm text-gray-600 dark:text-gray-400 break-all bg-gray-50 dark:bg-gray-700 p-2 rounded">
                 {selectedFile.path}
               </div>
@@ -705,9 +703,6 @@ export default function MaterialManager() {
       <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0">
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2">
-            <p className="text-lg font-bold">Library</p>
-          </div>
           {/* My Assets Button */}
           <Button
             variant={
@@ -720,7 +715,7 @@ export default function MaterialManager() {
             style={{ padding: '4px', margin: '0px' }}
           >
             <Star className="w-4 h-4" />
-            <span>My Assets</span>
+            <span>{t('canvas:myAssets', 'My Assets')}</span>
           </Button>
           {/* Navigation */}
           <div className="flex items-center gap-2 mb-3 px-[4px]">
@@ -784,13 +779,18 @@ export default function MaterialManager() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {selectedFolder ? selectedFolder.name : '选择文件夹'}
+                  {selectedFolder
+                    ? selectedFolder.name
+                    : t('canvas:selectAFolder', 'Select a folder')}
                 </h2>
                 {selectedFolder && (
                   <button
                     onClick={handleOpenInExplorer}
                     className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    title="在系统文件浏览器中打开"
+                    title={t(
+                      'canvas:openInExplorer',
+                      'Open in system file browser'
+                    )}
                   >
                     <ExternalLink className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                   </button>
@@ -798,7 +798,8 @@ export default function MaterialManager() {
               </div>
               {selectedFolder && (
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {filteredMediaFiles.length} 个媒体文件
+                  {filteredMediaFiles.length}{' '}
+                  {t('canvas:mediaFiles', 'media files')}
                 </p>
               )}
             </div>
@@ -844,8 +845,15 @@ export default function MaterialManager() {
                 <div className="flex items-center justify-center h-64 text-gray-500">
                   <div className="text-center">
                     <Image className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                    <p className="text-lg font-medium">没有找到媒体文件</p>
-                    <p className="text-sm mt-2">该文件夹中没有图片或视频文件</p>
+                    <p className="text-lg font-medium">
+                      {t('canvas:noMediaFiles', 'No media files')}
+                    </p>
+                    <p className="text-sm mt-2">
+                      {t(
+                        'canvas:noMediaFilesDescription',
+                        'No images or videos in this folder'
+                      )}
+                    </p>
                   </div>
                 </div>
               )}
@@ -854,9 +862,14 @@ export default function MaterialManager() {
             <div className="flex items-center justify-center h-full text-gray-500">
               <div className="text-center">
                 <Folder className="w-20 h-20 mx-auto mb-6 opacity-30" />
-                <p className="text-xl font-medium">选择一个文件夹</p>
+                <p className="text-xl font-medium">
+                  {t('canvas:selectAFolder', 'Select a folder')}
+                </p>
                 <p className="text-sm mt-2">
-                  在左侧选择文件夹以查看其中的图片和视频
+                  {t(
+                    'canvas:selectAFolderDescription',
+                    'Select a folder to view its images and videos'
+                  )}
                 </p>
               </div>
             </div>
