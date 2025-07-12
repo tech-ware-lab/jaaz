@@ -10,6 +10,7 @@ import ThemeButton from '@/components/theme/ThemeButton'
 import { LOGO_URL } from '@/constants'
 import LanguageSwitcher from './common/LanguageSwitcher'
 import { cn } from '@/lib/utils'
+import { UserMenu } from './auth/UserMenu'
 
 export default function TopMenu({
   middle,
@@ -70,6 +71,7 @@ export default function TopMenu({
         </Button>
         <LanguageSwitcher />
         <ThemeButton />
+        <UserMenu />
       </div>
     </motion.div>
   )
