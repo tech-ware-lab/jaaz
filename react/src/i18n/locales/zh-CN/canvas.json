@@ -47,5 +47,18 @@
     "addToChat": "添加到对话",
     "magicGenerate": "✨ 魔法生成"
   },
-  "assets": "素材库"
+  "assets": "素材库",
+  "myAssets": "我的生成",
+  "mediaFiles": "个媒体文件",
+  "selectAFolder": "选择一个文件夹",
+  "selectAFolderDescription": "选择一个文件夹来查看其图片和视频",
+  "noMediaFiles": "没有找到媒体文件",
+  "noMediaFilesDescription": "未在这个文件夹中找到图片或视频文件",
+  "openInExplorer": "在系统文件夹浏览器中打开",
+  "filePath": "文件路径",
+  "modifiedTime": "修改时间",
+  "dimensions": "尺寸",
+  "fileSize": "文件大小",
+  "fileName": "文件名",
+  "basicInfo": "基本信息"
 }
