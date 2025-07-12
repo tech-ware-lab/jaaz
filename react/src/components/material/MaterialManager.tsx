@@ -6,9 +6,6 @@ import {
   Image,
   Play,
   File,
-  Home,
-  ArrowLeft,
-  Search,
   Grid,
   List,
   RefreshCw,
@@ -17,13 +14,12 @@ import {
   Archive,
   Code,
   Eye,
-  Download,
   Star,
   Heart,
   MoreHorizontal,
   ExternalLink,
 } from 'lucide-react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   browseFolderApi,
   getMediaFilesApi,
@@ -32,6 +28,7 @@ import {
   getMyAssetsDirPath,
 } from '@/api/settings'
 import FilePreviewModal from './FilePreviewModal'
+import { Button } from '../ui/button'
 
 interface FileSystemItem {
   name: string
@@ -77,6 +74,7 @@ export default function MaterialManager() {
     fileName: '',
     fileType: '',
   })
+  const myAssetsPath = useRef<string>('')
 
   // 初始化时加载用户目录
   useEffect(() => {
@@ -204,6 +202,7 @@ export default function MaterialManager() {
     try {
       const result = await getMyAssetsDirPath()
       if (result.success) {
+        myAssetsPath.current = result.path
         const myAssetsFolder: FileSystemItem = {
           name: 'My Assets',
           path: result.path,
@@ -522,14 +521,26 @@ export default function MaterialManager() {
       <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0">
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2 mb-3">
-            <Home className="w-5 h-5 text-blue-600" />
-            <h3 className="text-lg font-bold">素材库</h3>
+          <div className="flex items-center gap-2">
+            <p className="text-lg font-bold">Library</p>
           </div>
-
+          {/* My Assets Button */}
+          <Button
+            variant={
+              selectedFolder?.path === myAssetsPath.current
+                ? 'default'
+                : 'ghost'
+            }
+            onClick={handleMyAssets}
+            className="w-full justify-start text-left mb-3"
+            style={{ padding: '4px', margin: '0px' }}
+          >
+            <Star className="w-4 h-4" />
+            <span>My Assets</span>
+          </Button>
           {/* Navigation */}
-          <div className="flex items-center gap-2 mb-3">
-            <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <div className="flex items-center gap-2 mb-3 px-[4px]">
+            <button className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
               <FolderOpen className="w-4 h-4" />
             </button>
             <div className="flex-1 text-sm text-gray-600 dark:text-gray-400 truncate">
@@ -556,15 +567,6 @@ export default function MaterialManager() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div> */}
-
-          {/* My Assets Button */}
-          <button
-            onClick={handleMyAssets}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors text-blue-600 dark:text-blue-400 font-medium"
-          >
-            <Star className="w-4 h-4" />
-            <span>My Assets</span>
-          </button>
         </div>
 
         {/* File Tree */}
