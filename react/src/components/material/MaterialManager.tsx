@@ -18,6 +18,9 @@ import {
   Heart,
   MoreHorizontal,
   ExternalLink,
+  Info,
+  X,
+  MessageCirclePlus,
 } from 'lucide-react'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
@@ -29,6 +32,8 @@ import {
 } from '@/api/settings'
 import FilePreviewModal from './FilePreviewModal'
 import { Button } from '../ui/button'
+import { eventBus } from '@/lib/event'
+import { toast } from 'sonner'
 
 interface FileSystemItem {
   name: string
@@ -47,6 +52,13 @@ interface BrowseResult {
   items: FileSystemItem[]
 }
 
+interface FileDetails extends FileSystemItem {
+  dimensions?: {
+    width: number
+    height: number
+  }
+}
+
 export default function MaterialManager() {
   const [currentPath, setCurrentPath] = useState<string>('')
   const [pathHistory, setPathHistory] = useState<string[]>([])
@@ -55,6 +67,7 @@ export default function MaterialManager() {
   const [selectedFolder, setSelectedFolder] = useState<FileSystemItem | null>(
     null
   )
+  const [selectedFile, setSelectedFile] = useState<FileDetails | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -80,6 +93,21 @@ export default function MaterialManager() {
   useEffect(() => {
     loadFolder('')
   }, [])
+
+  // 获取图片尺寸的函数
+  const getImageDimensions = useCallback(
+    (imagePath: string): Promise<{ width: number; height: number }> => {
+      return new Promise((resolve, reject) => {
+        const img = new window.Image()
+        img.onload = () => {
+          resolve({ width: img.naturalWidth, height: img.naturalHeight })
+        }
+        img.onerror = reject
+        img.src = getFileServiceUrl(imagePath)
+      })
+    },
+    []
+  )
 
   const loadFolder = useCallback(
     async (path: string = '') => {
@@ -187,6 +215,45 @@ export default function MaterialManager() {
       fileType: '',
     })
   }, [])
+
+  const handleFileClick = useCallback(
+    async (file: FileSystemItem) => {
+      // if (!file.is_media) return
+
+      const fileDetails: FileDetails = { ...file }
+
+      // 如果是图片，获取尺寸信息
+      if (file.type === 'image') {
+        try {
+          const dimensions = await getImageDimensions(file.path)
+          fileDetails.dimensions = dimensions
+        } catch (error) {
+          console.error('Failed to get image dimensions:', error)
+        }
+      }
+
+      setSelectedFile(fileDetails)
+    },
+    [getImageDimensions]
+  )
+
+  const handleAddToChat = useCallback(
+    (file: FileSystemItem, event?: React.MouseEvent) => {
+      if (event) {
+        event.stopPropagation()
+      }
+      eventBus.emit('Material::AddImagesToChat', [
+        {
+          filePath: file.path,
+          fileName: file.name,
+          fileType: file.type,
+          width: undefined,
+          height: undefined,
+        },
+      ])
+    },
+    []
+  )
 
   const handleOpenInExplorer = useCallback(async () => {
     if (selectedFolder) {
@@ -382,7 +449,12 @@ export default function MaterialManager() {
         {filteredMediaFiles.map((file) => (
           <div
             key={file.path}
-            className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700"
+            className={`group relative bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border cursor-pointer ${
+              selectedFile?.path === file.path
+                ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800'
+                : 'border-gray-200 dark:border-gray-700'
+            }`}
+            onClick={() => handleFileClick(file)}
           >
             <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden">
               {file.type === 'image' ? (
@@ -411,25 +483,6 @@ export default function MaterialManager() {
               </div>
             </div>
 
-            {/* Hover overlay */}
-            {/* <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handlePreviewFile(file)}
-                  className="p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:scale-110 transition-transform"
-                  title="Preview"
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-                <button className="p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:scale-110 transition-transform">
-                  <Heart className="w-4 h-4" />
-                </button>
-                <button className="p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:scale-110 transition-transform">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-              </div>
-            </div> */}
-
             <div className="p-3">
               <div className="text-sm font-medium truncate" title={file.name}>
                 {file.name}
@@ -445,10 +498,13 @@ export default function MaterialManager() {
     )
   }, [
     filteredMediaFiles,
+    selectedFile,
     getFileIcon,
     formatFileSize,
     formatDate,
     handlePreviewFile,
+    handleFileClick,
+    handleAddToChat,
   ])
 
   const renderMediaList = useCallback(() => {
@@ -457,7 +513,12 @@ export default function MaterialManager() {
         {filteredMediaFiles.map((file) => (
           <div
             key={file.path}
-            className="flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow min-w-0"
+            className={`flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-lg border hover:shadow-md transition-shadow min-w-0 cursor-pointer ${
+              selectedFile?.path === file.path
+                ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800'
+                : 'border-gray-200 dark:border-gray-700'
+            }`}
+            onClick={() => handleFileClick(file)}
           >
             <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
               {file.type === 'image' ? (
@@ -490,13 +551,20 @@ export default function MaterialManager() {
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
-                onClick={() => handlePreviewFile(file)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handlePreviewFile(file)
+                }}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 title="预览"
               >
                 <Eye className="w-4 h-4" />
               </button>
-              <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <button
+                onClick={(e) => handleAddToChat(file, e)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                title="添加到聊天"
+              >
                 <Heart className="w-4 h-4" />
               </button>
               <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
@@ -509,9 +577,129 @@ export default function MaterialManager() {
     )
   }, [
     filteredMediaFiles,
+    selectedFile,
     getFileIcon,
     formatFileSize,
     formatDate,
+    handlePreviewFile,
+    handleFileClick,
+    handleAddToChat,
+  ])
+
+  const renderFileDetailsPanel = useCallback(() => {
+    if (!selectedFile) return null
+
+    return (
+      <div className="absolute bottom-0 left-0 right-0 mt-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="absolute top-0 right-0 flex items-center justify-between mb-4">
+          <button
+            onClick={() => setSelectedFile(null)}
+            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 文件预览 */}
+          <div className="space-y-4">
+            <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center">
+              {selectedFile.type === 'image' ? (
+                <img
+                  src={getFileServiceUrl(selectedFile.path)}
+                  alt={selectedFile.name}
+                  className="max-w-full max-h-full object-contain"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-gray-400">
+                  {getFileIcon(selectedFile.type, 'w-12 h-12')}
+                  <span className="text-sm mt-2">
+                    {selectedFile.type.toUpperCase()}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={(e) => handleAddToChat(selectedFile, e)}
+                variant="default"
+                size="sm"
+                className="flex-1"
+              >
+                <MessageCirclePlus className="w-4 h-4 mr-2" />
+                添加到聊天
+              </Button>
+            </div>
+          </div>
+
+          {/* 文件信息 */}
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-medium mb-2">基本信息</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    文件名：
+                  </span>
+                  <span className="font-medium break-all">
+                    {selectedFile.name}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    文件类型：
+                  </span>
+                  <span className="font-medium uppercase">
+                    {selectedFile.type}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    文件大小：
+                  </span>
+                  <span className="font-medium">
+                    {formatFileSize(selectedFile.size || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    修改时间：
+                  </span>
+                  <span className="font-medium">
+                    {formatDate(selectedFile.mtime)}
+                  </span>
+                </div>
+                {selectedFile.dimensions && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      尺寸：
+                    </span>
+                    <span className="font-medium">
+                      {selectedFile.dimensions.width} ×{' '}
+                      {selectedFile.dimensions.height}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-medium mb-2">文件路径</h4>
+              <div className="text-sm text-gray-600 dark:text-gray-400 break-all bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                {selectedFile.path}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }, [
+    selectedFile,
+    getFileIcon,
+    formatFileSize,
+    formatDate,
+    handleAddToChat,
     handlePreviewFile,
   ])
 
@@ -590,7 +778,10 @@ export default function MaterialManager() {
       </div>
 
       {/* Right Panel */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div
+        className="flex-1 flex flex-col min-w-0 overflow-hidden relative"
+        onClick={() => setSelectedFile(null)}
+      >
         {/* Header */}
         <div className="p-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
@@ -648,11 +839,11 @@ export default function MaterialManager() {
           {selectedFolder ? (
             <div className="w-full overflow-hidden">
               {filteredMediaFiles.length > 0 ? (
-                viewMode === 'grid' ? (
-                  renderMediaGrid()
-                ) : (
-                  renderMediaList()
-                )
+                <div>
+                  {viewMode === 'grid' ? renderMediaGrid() : renderMediaList()}
+                  {/* File Details Panel */}
+                  {renderFileDetailsPanel()}
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-64 text-gray-500">
                   <div className="text-center">
