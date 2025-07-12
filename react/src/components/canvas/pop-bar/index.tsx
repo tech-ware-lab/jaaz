@@ -80,7 +80,7 @@ const CanvasPopbarWrapper = () => {
 
       bottomY = selectedImages.reduce(
         (acc, image) => Math.max(acc, image.y + image.height),
-        0
+        Number.NEGATIVE_INFINITY
       )
     } else {
       // 基于所有选中的元素计算位置
@@ -96,7 +96,7 @@ const CanvasPopbarWrapper = () => {
 
       bottomY = selectedElements.reduce(
         (acc, element) => Math.max(acc, element.y + (element.height || 0)),
-        0
+        Number.NEGATIVE_INFINITY
       )
     }
 
@@ -106,6 +106,7 @@ const CanvasPopbarWrapper = () => {
     const offsetX = (scrollX + centerX) * zoom
     const offsetY = (scrollY + bottomY) * zoom
     setPos({ x: offsetX, y: offsetY })
+    // console.log(offsetX, offsetY)
   })
 
   return (
