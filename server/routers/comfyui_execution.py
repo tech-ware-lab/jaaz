@@ -214,8 +214,10 @@ class WorkflowExecution:
         data = message["data"] if "data" in message else {}
         if "prompt_id" not in data or data["prompt_id"] != self.prompt_id:
             return True
-
-        if message["type"] == "executing":
+        
+        if message["type"] == "status":
+            return await self.on_status(data)
+        elif message["type"] == "executing":
             return await self.on_executing(data)
         elif message["type"] == "execution_cached":
             await self.on_cached(data)
@@ -227,6 +229,18 @@ class WorkflowExecution:
             await self.on_error(data)
 
         return True
+
+    async def on_status(self, data):
+        queue = data['data']['status']['exec_info']['queue_remaining']
+        await send_to_websocket(
+            self.ctx.get("session_id"),
+            {
+                "type": "tool_call_progress",
+                "tool_call_id": self.ctx.get("tool_call_id"),
+                "session_id": self.ctx.get("session_id"),
+                "update": f"In queue, there's {queue} works ahead...",
+            },
+        )
 
     async def on_executing(self, data):
         if self.progress_task:
@@ -269,7 +283,7 @@ class WorkflowExecution:
                     "type": "tool_call_progress",
                     "tool_call_id": self.ctx.get("tool_call_id"),
                     "session_id": self.ctx.get("session_id"),
-                    "update": f"Executing {self.get_node_title(node)} {data['value'] / data['max'] * 100}%",
+                    "update": f"Executing {self.get_node_title(node)} {round(data['value'] / data['max'] * 100)}%",
                 },
             )
         if self.progress_node != node:

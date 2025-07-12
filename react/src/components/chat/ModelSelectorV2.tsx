@@ -21,6 +21,9 @@ import { useConfigs } from '@/contexts/configs'
 import { ChevronDown } from 'lucide-react'
 import { PROVIDER_NAME_MAPPING } from '@/constants'
 import { ModelInfo, ToolInfo } from '@/api/model'
+import { useState } from 'react'
+import { Switch } from '../ui/switch'
+import { useTranslation } from 'react-i18next'
 
 const ModelSelector: React.FC = () => {
   const {
@@ -34,11 +37,24 @@ const ModelSelector: React.FC = () => {
   const selectedToolKeys = selectedTools.map(
     (tool) => tool.provider + ':' + tool.id
   )
+  // single select mode
+  const [singleMode, setSingleMode] = useState(false)
+  // Add state to control dropdown open state
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const { t } = useTranslation()
 
-  // 处理图像模型多选
+  // handle model selection click
   const handleImageModelToggle = (modelKey: string, checked: boolean) => {
     let newSelected: ToolInfo[] = []
     const tool = allTools.find((m) => m.provider + ':' + m.id === modelKey)
+    // single select mode
+    if (singleMode) {
+      tool && setSelectedTools([tool])
+      // Close dropdown after selection in single mode
+      setDropdownOpen(false)
+      return
+    }
+    // multi select mode
     if (checked) {
       if (tool) {
         newSelected = [...selectedTools, tool]
@@ -123,7 +139,7 @@ const ModelSelector: React.FC = () => {
       </Select>
 
       {/* 多选图像模型下拉菜单 */}
-      <DropdownMenu>
+      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
@@ -137,6 +153,14 @@ const ModelSelector: React.FC = () => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-100">
+          <div className="flex items-center gap-1 px-2 mt-1 justify-end text-sm text-muted-foreground">
+            <span>{t('chat:single_select_mode', 'Single Mode')}</span>
+            <Switch
+              checked={singleMode}
+              size="sm"
+              onCheckedChange={setSingleMode}
+            />
+          </div>
           {Object.entries(groupedTools).map(([provider, models]) => {
             const getProviderDisplayName = (provider: string) => {
               const providerInfo = PROVIDER_NAME_MAPPING[provider]
@@ -167,9 +191,13 @@ const ModelSelector: React.FC = () => {
                         handleImageModelToggle(modelKey, checked)
                       }
                       onSelect={(e) => {
-                        e.preventDefault()
+                        // Only prevent default in multi-select mode
+                        if (!singleMode) {
+                          e.preventDefault()
+                        }
                       }}
                     >
+                      {model.type === 'video' ? '🎬 ' : ''}
                       {model.display_name || model.id}
                     </DropdownMenuCheckboxItem>
                   )
