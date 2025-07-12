@@ -87,7 +87,7 @@ async def update_settings(request: Request):
     Example:
         POST /api/settings
         {
-            "proxy": "http://proxy.com:8080"  // 或 "" 或 "system"
+            "proxy": "http://proxy.com:8080"  // 或 "no_proxy" 或 "system"
         }
     """
     data = await request.json()
@@ -117,9 +117,9 @@ async def get_proxy_status():
     """
     # 获取设置中的代理配置
     settings = settings_service.get_raw_settings()
-    proxy_setting = settings.get('proxy', '')
+    proxy_setting = settings.get('proxy', 'system')
 
-    if proxy_setting == '':
+    if proxy_setting == 'no_proxy':
         # 不使用代理
         return {
             "enable": False,
@@ -163,7 +163,7 @@ async def get_proxy_settings():
 
     Response Format:
         {
-            "proxy": ""  // '' | 'system' | 'http://proxy.example.com:8080'
+            "proxy": "no_proxy" | "system" | "http://proxy.example.com:8080"
         }
     """
     proxy_config = settings_service.get_proxy_config()
@@ -191,7 +191,7 @@ async def update_proxy_settings(request: Request):
     Example:
         POST /api/settings/proxy
         {
-            "proxy": ""  // 不使用代理
+            "proxy": "no_proxy"  // 不使用代理
         }
         或
         {
@@ -219,10 +219,10 @@ async def update_proxy_settings(request: Request):
             detail="Proxy value must be a string")
 
     # 验证代理值的有效性
-    if proxy_value not in ['', 'system'] and not proxy_value.startswith(('http://', 'https://', 'socks4://', 'socks5://')):
+    if proxy_value not in ['no_proxy', 'system'] and not proxy_value.startswith(('http://', 'https://', 'socks4://', 'socks5://')):
         raise HTTPException(
             status_code=400,
-            detail="Invalid proxy value. Must be '', 'system', or a valid proxy URL")
+            detail="Invalid proxy value. Must be 'no_proxy', 'system', or a valid proxy URL")
 
     # 更新代理设置
     result = await settings_service.update_settings({"proxy": proxy_value})
