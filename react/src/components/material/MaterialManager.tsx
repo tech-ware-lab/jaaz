@@ -146,18 +146,38 @@ export default function MaterialManager() {
     }
   }, [pathHistory, loadFolder])
 
-  const handleFolderClick = useCallback(async (folder: FileSystemItem) => {
-    if (folder.is_directory) {
-      setSelectedFolder(folder)
-      try {
-        const mediaResult = await getMediaFilesApi(folder.path)
-        setMediaFiles(mediaResult)
-      } catch (err) {
-        console.error('Failed to load media files:', err)
-        setMediaFiles([])
+  const handleFolderClick = useCallback(
+    async (folder: FileSystemItem) => {
+      if (folder.is_directory) {
+        setSelectedFolder(folder)
+
+        // Toggle expansion state
+        setExpandedFolders((prev) => {
+          const newSet = new Set(prev)
+          if (newSet.has(folder.path)) {
+            newSet.delete(folder.path)
+          } else {
+            newSet.add(folder.path)
+          }
+          return newSet
+        })
+
+        // Load folder contents if not already loaded
+        if (!folderContents.has(folder.path)) {
+          await loadFolderContents(folder.path)
+        }
+
+        try {
+          const mediaResult = await getMediaFilesApi(folder.path)
+          setMediaFiles(mediaResult)
+        } catch (err) {
+          console.error('Failed to load media files:', err)
+          setMediaFiles([])
+        }
       }
-    }
-  }, [])
+    },
+    [folderContents, loadFolderContents]
+  )
 
   const toggleFolder = useCallback(
     async (folderId: string) => {
@@ -294,18 +314,9 @@ export default function MaterialManager() {
                 ? handleFolderClick(item)
                 : handlePreviewFile(item)
             }
-            onDoubleClick={() =>
-              item.is_directory ? navigateToFolder(item) : undefined
-            }
           >
             {item.is_directory && (
-              <button
-                className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleFolder(item.path)
-                }}
-              >
+              <button className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors">
                 {expandedFolders.has(item.path) ? (
                   <ChevronDown className="w-3 h-3" />
                 ) : (
