@@ -319,3 +319,30 @@ async def get_enabled_knowledge():
             "error": str(e),
             "data": []
         }
+
+
+@router.get("/my_assets_dir_path")
+async def get_my_assets_dir_path():
+    """
+    获取用户的My Assets目录路径
+    
+    Returns:
+        dict: 包含目录路径的响应
+    """
+    from services.config_service import FILES_DIR
+    
+    try:
+        # 确保目录存在
+        os.makedirs(FILES_DIR, exist_ok=True)
+        
+        return {
+            "success": True,
+            "path": FILES_DIR,
+            "message": "My Assets directory path retrieved successfully"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "path": ""
+        }

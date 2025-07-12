@@ -188,3 +188,12 @@ export const getFileInfoApi = async (filePath: string) => {
   }
   return response.json()
 }
+
+// 获取用户的My Assets目录路径
+export const getMyAssetsDirPath = async () => {
+  const response = await fetch('/api/settings/my_assets_dir_path')
+  if (!response.ok) {
+    throw new Error('Failed to get My Assets directory path')
+  }
+  return response.json()
+}
