@@ -29,6 +29,7 @@ import {
   getMediaFilesApi,
   getFileServiceUrl,
   openFolderInExplorer,
+  getMyAssetsDirPath,
 } from '@/api/settings'
 import FilePreviewModal from './FilePreviewModal'
 
@@ -127,18 +128,6 @@ export default function MaterialManager() {
     }
   }, [])
 
-  const navigateToFolder = useCallback(
-    (folder: FileSystemItem) => {
-      if (folder.is_directory) {
-        setPathHistory((prev) => [...prev, currentPath])
-        setCurrentPath(folder.path)
-        setSelectedFolder(folder)
-        loadFolder(folder.path)
-      }
-    },
-    [currentPath, loadFolder]
-  )
-
   const navigateBack = useCallback(() => {
     if (pathHistory.length > 0) {
       const previousPath = pathHistory[pathHistory.length - 1]
@@ -181,28 +170,6 @@ export default function MaterialManager() {
     [folderContents, loadFolderContents]
   )
 
-  const toggleFolder = useCallback(
-    async (folderId: string) => {
-      const isExpanded = expandedFolders.has(folderId)
-
-      setExpandedFolders((prev) => {
-        const newSet = new Set(prev)
-        if (isExpanded) {
-          newSet.delete(folderId)
-        } else {
-          newSet.add(folderId)
-        }
-        return newSet
-      })
-
-      // 如果是展开操作且还没有加载内容，则加载
-      if (!isExpanded && !folderContents.has(folderId)) {
-        await loadFolderContents(folderId)
-      }
-    },
-    [expandedFolders, folderContents, loadFolderContents]
-  )
-
   const handlePreviewFile = useCallback((file: FileSystemItem) => {
     if (file.is_media) {
       setPreviewModal({
@@ -232,6 +199,28 @@ export default function MaterialManager() {
       }
     }
   }, [selectedFolder])
+
+  const handleMyAssets = useCallback(async () => {
+    try {
+      const result = await getMyAssetsDirPath()
+      if (result.success) {
+        const myAssetsFolder: FileSystemItem = {
+          name: 'My Assets',
+          path: result.path,
+          type: 'folder',
+          mtime: Date.now() / 1000,
+          is_directory: true,
+          is_media: false,
+          has_thumbnail: false,
+        }
+        await handleFolderClick(myAssetsFolder)
+      } else {
+        console.error('Failed to get My Assets directory path:', result.error)
+      }
+    } catch (error) {
+      console.error('Failed to load My Assets folder:', error)
+    }
+  }, [handleFolderClick])
 
   const getFileIcon = useCallback(
     (type: string, className: string = 'w-4 h-4') => {
@@ -382,8 +371,6 @@ export default function MaterialManager() {
       folderContents,
       handleFolderClick,
       handlePreviewFile,
-      navigateToFolder,
-      toggleFolder,
       getFileIcon,
       formatFileSize,
       getFilteredFolderContents,
@@ -542,12 +529,8 @@ export default function MaterialManager() {
 
           {/* Navigation */}
           <div className="flex items-center gap-2 mb-3">
-            <button
-              onClick={navigateBack}
-              disabled={pathHistory.length === 0}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
+            <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              <FolderOpen className="w-4 h-4" />
             </button>
             <div className="flex-1 text-sm text-gray-600 dark:text-gray-400 truncate">
               {currentPath || '~'}
@@ -573,6 +556,15 @@ export default function MaterialManager() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div> */}
+
+          {/* My Assets Button */}
+          <button
+            onClick={handleMyAssets}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors text-blue-600 dark:text-blue-400 font-medium"
+          >
+            <Star className="w-4 h-4" />
+            <span>My Assets</span>
+          </button>
         </div>
 
         {/* File Tree */}
