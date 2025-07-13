@@ -67,6 +67,140 @@ interface FileDetails extends FileSystemItem {
   }
 }
 
+// ImageModelBadge组件：异步显示PNG图片的模型信息
+function ImageModelBadge({
+  filePath,
+  fileName,
+  variant = 'grid',
+}: {
+  filePath: string
+  fileName: string
+  variant?: 'grid' | 'list'
+}) {
+  const [modelInfo, setModelInfo] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    // 只处理PNG文件
+    if (!fileName.toLowerCase().endsWith('.png')) {
+      return
+    }
+
+    const loadModelInfo = async () => {
+      setIsLoading(true)
+      try {
+        const result = await readPNGMetadata(getFileServiceUrl(filePath))
+        if (result.success && result.has_metadata) {
+          // 尝试提取模型信息，优先级顺序
+          const metadata = result.metadata
+          const modelKeys = [
+            'model',
+            'Model',
+            'checkpoint',
+            'Checkpoint',
+            'model_name',
+            'Model Name',
+            'sd_model_name',
+            'Model used',
+            'model_used',
+          ]
+
+          let extractedModel = null
+          for (const key of modelKeys) {
+            if (metadata[key]) {
+              extractedModel = metadata[key]
+              break
+            }
+          }
+
+          // 如果没有找到标准的模型字段，尝试从其他字段推断
+          if (!extractedModel) {
+            // 检查是否有参数字段包含模型信息
+            const paramKeys = [
+              'parameters',
+              'Parameters',
+              'params',
+              'generation_params',
+            ]
+            for (const key of paramKeys) {
+              if (metadata[key] && typeof metadata[key] === 'string') {
+                const paramStr = metadata[key]
+                // 尝试从参数字符串中提取模型名
+                const modelMatch = paramStr.match(
+                  /(?:model|Model):\s*([^,\n]+)/i
+                )
+                if (modelMatch) {
+                  extractedModel = modelMatch[1].trim()
+                  break
+                }
+              }
+            }
+          }
+
+          if (extractedModel) {
+            // 清理模型名称，去掉路径和扩展名
+            let cleanModel = String(extractedModel)
+            if (cleanModel.includes('/')) {
+              cleanModel = cleanModel.split('/').pop() || cleanModel
+            }
+            if (cleanModel.includes('\\')) {
+              cleanModel = cleanModel.split('\\').pop() || cleanModel
+            }
+            // 移除常见的文件扩展名
+            cleanModel = cleanModel.replace(/\.(ckpt|safetensors|pt|pth)$/i, '')
+
+            setModelInfo(cleanModel)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading model info for', fileName, error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadModelInfo()
+  }, [filePath, fileName])
+
+  if (!fileName.toLowerCase().endsWith('.png')) {
+    return null
+  }
+
+  const gridStyles =
+    'absolute top-2 left-2 bg-blue-600/90 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full max-w-[calc(100%-1rem)] truncate shadow-lg'
+  const listStyles =
+    'bg-blue-600/90 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded-full max-w-16 truncate shadow-lg'
+
+  if (isLoading) {
+    return (
+      <div
+        className={
+          variant === 'grid'
+            ? 'absolute top-2 left-2 bg-gray-500/80 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full'
+            : 'bg-gray-500/80 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded-full'
+        }
+      >
+        <div className="flex items-center gap-1">
+          <div
+            className={`border border-white border-t-transparent rounded-full animate-spin ${variant === 'grid' ? 'w-3 h-3' : 'w-2 h-2'}`}
+          ></div>
+          {variant === 'grid' && <span>Loading...</span>}
+        </div>
+      </div>
+    )
+  }
+
+  if (!modelInfo) {
+    return null
+  }
+
+  return (
+    <div className={variant === 'grid' ? gridStyles : listStyles}>
+      <span title={modelInfo}>{modelInfo}</span>
+    </div>
+  )
+}
+
 export default function MaterialManager() {
   const [currentPath, setCurrentPath] = useState<string>('')
   const [pathHistory, setPathHistory] = useState<string[]>([])
@@ -473,7 +607,10 @@ export default function MaterialManager() {
             }`}
             onClick={() => handleFileClick(file)}
           >
-            <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden">
+            <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden relative">
+              {/* Model Badge for PNG images */}
+              <ImageModelBadge filePath={file.path} fileName={file.name} />
+
               {file.type === 'image' ? (
                 <img
                   src={getFileServiceUrl(file.path)}
@@ -537,7 +674,19 @@ export default function MaterialManager() {
             }`}
             onClick={() => handleFileClick(file)}
           >
-            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+              {/* Model Badge for PNG images in list view */}
+              {file.type === 'image' &&
+                file.name.toLowerCase().endsWith('.png') && (
+                  <div className="absolute -top-1 -right-1 z-10">
+                    <ImageModelBadge
+                      filePath={file.path}
+                      fileName={file.name}
+                      variant="list"
+                    />
+                  </div>
+                )}
+
               {file.type === 'image' ? (
                 <img
                   src={getFileServiceUrl(file.path)}
