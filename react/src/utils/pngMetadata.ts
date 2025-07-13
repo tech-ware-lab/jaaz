@@ -5,6 +5,7 @@
  * - PNG signature: 8字节
  * - Chunks: 每个chunk包含长度(4字节) + 类型(4字节) + 数据 + CRC(4字节)
  * - 文本信息存储在tEXt、zTXt、iTXt chunks中
+ * - 优化：只读取metadata chunks，不读取图像数据
  */
 
 interface PngChunk {
@@ -58,17 +59,26 @@ function isPNG(buffer: Uint8Array): boolean {
 }
 
 /**
- * 解析PNG chunks
+ * 解析PNG chunks，只解析metadata相关的chunks
  */
-function parsePNGChunks(buffer: Uint8Array): PngChunk[] {
+function parsePNGMetadataChunks(buffer: Uint8Array): PngChunk[] {
   const chunks: PngChunk[] = []
   let offset = 8 // 跳过PNG signature
 
   while (offset < buffer.length - 8) {
+    if (offset + 8 > buffer.length) break
+
     const length = readUint32BE(buffer, offset)
     const type = readString(buffer, offset + 4, 4)
 
+    // 如果没有足够的数据来读取完整的chunk，退出循环
     if (offset + 12 + length > buffer.length) break
+
+    // 如果遇到图像数据chunk，说明metadata部分已经结束，可以停止解析
+    if (type === 'IDAT') {
+      console.log('Reached IDAT chunk, stopping metadata parsing')
+      break
+    }
 
     const data = buffer.slice(offset + 8, offset + 8 + length)
     const crc = readUint32BE(buffer, offset + 8 + length)
@@ -164,32 +174,117 @@ function parseITextChunk(data: Uint8Array): [string, string] | null {
 }
 
 /**
- * 从PNG文件中提取metadata
+ * 渐进式读取PNG文件，只读取metadata部分
  */
-export async function readPNGMetadata(filePath: string): Promise<PngMetadata> {
+async function readPNGHeaderAndMetadata(filePath: string): Promise<Uint8Array> {
+  let totalBuffer = new Uint8Array(0)
+  let offset = 0
+  const chunkSize = 8192 // 每次读取8KB
+  let maxReadSize = 512 * 1024 // 最大读取512KB，避免无限读取
+
   try {
-    // 获取文件
-    const response = await fetch(filePath)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch file: ${response.status}`)
-    }
+    while (offset < maxReadSize) {
+      // 使用Range请求读取特定字节范围
+      const endByte = Math.min(offset + chunkSize - 1, maxReadSize - 1)
+      const response = await fetch(filePath, {
+        headers: { Range: `bytes=${offset}-${endByte}` },
+      })
 
-    const arrayBuffer = await response.arrayBuffer()
-    const buffer = new Uint8Array(arrayBuffer)
+      if (!response.ok) {
+        if (response.status === 416 || response.status === 206) {
+          // 已经读取到文件末尾或完成部分内容读取
+          break
+        }
+        throw new Error(`Failed to fetch file: ${response.status}`)
+      }
 
-    // 检查是否为PNG文件
-    if (!isPNG(buffer)) {
-      return {
-        success: false,
-        metadata: {},
-        has_metadata: false,
-        error: 'Not a valid PNG file',
+      const chunk = await response.arrayBuffer()
+      if (chunk.byteLength === 0) break
+
+      // 合并缓冲区
+      const newBuffer = new Uint8Array(totalBuffer.length + chunk.byteLength)
+      newBuffer.set(totalBuffer)
+      newBuffer.set(new Uint8Array(chunk), totalBuffer.length)
+      totalBuffer = newBuffer
+
+      // 检查是否为PNG文件（第一次读取时）
+      if (offset === 0 && !isPNG(totalBuffer)) {
+        throw new Error('Not a valid PNG file')
+      }
+
+      // 尝试解析当前数据，看是否已经包含足够的metadata
+      if (totalBuffer.length >= 8) {
+        let parseOffset = 8 // 跳过PNG signature
+        let foundIDAT = false
+        let hasValidChunks = false
+
+        while (parseOffset < totalBuffer.length - 8) {
+          if (parseOffset + 8 > totalBuffer.length) break
+
+          const length = readUint32BE(totalBuffer, parseOffset)
+          if (parseOffset + 12 + length > totalBuffer.length) {
+            // 当前chunk还没有完全下载，继续读取
+            break
+          }
+
+          const type = readString(totalBuffer, parseOffset + 4, 4)
+          hasValidChunks = true
+
+          if (type === 'IDAT') {
+            foundIDAT = true
+            console.log(
+              `Found IDAT at offset ${parseOffset}, stopping progressive read`
+            )
+            break
+          }
+
+          parseOffset += 12 + length
+        }
+
+        // 如果找到了IDAT或者已经有有效的chunks，可以停止读取
+        if (
+          foundIDAT ||
+          (hasValidChunks && parseOffset >= totalBuffer.length - 8)
+        ) {
+          console.log(
+            `Progressive read complete. Total read: ${totalBuffer.length} bytes`
+          )
+          break
+        }
+      }
+
+      offset += chunk.byteLength
+
+      // 如果读取的数据少于请求的数据，说明已经到文件末尾
+      if (chunk.byteLength < chunkSize) {
+        break
       }
     }
 
-    // 解析PNG chunks
-    const chunks = parsePNGChunks(buffer)
+    return totalBuffer
+  } catch (error) {
+    console.error('Error during progressive read:', error)
+    throw error
+  }
+}
+
+/**
+ * 从PNG文件中提取metadata (优化版本)
+ */
+export async function readPNGMetadata(filePath: string): Promise<PngMetadata> {
+  try {
+    console.log('Starting PNG metadata extraction for:', filePath)
+
+    // 渐进式读取PNG文件的头部和metadata部分
+    const buffer = await readPNGHeaderAndMetadata(filePath)
+
+    console.log(`Read ${buffer.length} bytes for metadata extraction`)
+
+    // 解析PNG chunks (只解析metadata相关的)
+    const chunks = parsePNGMetadataChunks(buffer)
     const metadata: Record<string, any> = {}
+
+    console.log(`Found ${chunks.length} chunks before image data`)
 
     // 处理文本chunks
     for (const chunk of chunks) {
@@ -222,6 +317,8 @@ export async function readPNGMetadata(filePath: string): Promise<PngMetadata> {
       }
     }
 
+    console.log(`Extracted ${Object.keys(metadata).length} metadata entries`)
+
     return {
       success: true,
       metadata,
@@ -239,7 +336,7 @@ export async function readPNGMetadata(filePath: string): Promise<PngMetadata> {
 }
 
 /**
- * 检查文件是否为PNG格式
+ * 检查文件是否为PNG格式 (优化版本)
  */
 export async function isPNGFile(filePath: string): Promise<boolean> {
   try {
