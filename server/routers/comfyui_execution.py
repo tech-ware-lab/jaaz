@@ -178,6 +178,8 @@ class WorkflowExecution:
         async for message in self.ws:
             if isinstance(message, str):
                 message = json.loads(message)
+                if message.get("data", {}).get("prompt_id") != self.prompt_id:
+                    continue
                 if not await self.on_message(message):
                     break
 
