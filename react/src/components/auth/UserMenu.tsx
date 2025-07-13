@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConfigs, useRefreshModels } from '@/contexts/configs'
 import { useBalance } from '@/hooks/use-balance'
-import { BASE_API_URL } from '@/constants'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -15,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { logout } from '@/api/auth'
+import { configs } from '@/constants'
 
 export function UserMenu() {
   const { authStatus, refreshAuth } = useAuth()
@@ -65,7 +65,7 @@ export function UserMenu() {
               variant="outline"
               className="ml-2 h-6 px-2 text-xs"
               onClick={() => {
-                const billingUrl = `${BASE_API_URL}/billing`
+                const billingUrl = `${configs.jaaz_base_api_url}/billing`
                 if (window.electronAPI?.openBrowserUrl) {
                   window.electronAPI.openBrowserUrl(billingUrl)
                 } else {

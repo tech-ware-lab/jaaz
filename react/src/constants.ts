@@ -5,6 +5,10 @@ export const BASE_API_URL = import.meta.env.DEV
   ? 'https://jaaz.app'
   : 'https://jaaz.app'
 
+export const configs = {
+  jaaz_base_api_url: 'https://jaaz.app',
+}
+
 export const PROVIDER_NAME_MAPPING: {
   [key: string]: { name: string; icon: string }
 } = {
