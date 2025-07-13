@@ -66,7 +66,7 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
           </div>
 
           <div className="font-bold text-green-900 dark:text-green-100 leading-relaxed break-all">
-                {TOOL_CALL_NAME_MAPPING[name] ?? name}
+            {TOOL_CALL_NAME_MAPPING[name] ?? name}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
