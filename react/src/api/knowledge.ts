@@ -1,5 +1,8 @@
-import { BASE_API_URL } from '../constants'
+import { configs } from '@/constants'
 import { authenticatedFetch } from './auth'
+
+// TODO: remove this, and use directly configs.jaaz_base_api_url, otherwise you may always get stale data
+let BASE_API_URL = configs.jaaz_base_api_url
 
 // 知识库基本信息接口
 export interface KnowledgeBase {

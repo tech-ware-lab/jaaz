@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useCanvas } from '@/contexts/canvas'
 import { ExcalidrawImageElement } from '@excalidraw/excalidraw/element/types'
-import { BASE_API_URL } from '@/constants'
+import { configs } from '@/constants'
 import { toast } from 'sonner'
 import { Share2 } from 'lucide-react'
 
@@ -124,14 +124,17 @@ export default function ShareTemplateDialog({
       }
 
       // Call jaaz-cloud API to create template
-      const response = await fetch(`${BASE_API_URL}/api/template/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('jaaz_access_token')}`,
-        },
-        body: JSON.stringify(templateData),
-      })
+      const response = await fetch(
+        `${configs.jaaz_base_api_url}/api/template/create`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('jaaz_access_token')}`,
+          },
+          body: JSON.stringify(templateData),
+        }
+      )
 
       if (!response.ok) {
         throw new Error('Failed to create template')
