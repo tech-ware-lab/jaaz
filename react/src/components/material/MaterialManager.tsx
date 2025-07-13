@@ -30,6 +30,7 @@ import {
   openFolderInExplorer,
   getMyAssetsDirPath,
 } from '@/api/settings'
+import { readPNGMetadata } from '@/utils/pngMetadata'
 import FilePreviewModal from './FilePreviewModal'
 import { Button } from '../ui/button'
 import { eventBus } from '@/lib/event'
@@ -57,6 +58,12 @@ interface FileDetails extends FileSystemItem {
   dimensions?: {
     width: number
     height: number
+  }
+  pngMetadata?: {
+    success: boolean
+    metadata: Record<string, any>
+    has_metadata: boolean
+    error?: string
   }
 }
 
@@ -222,6 +229,18 @@ export default function MaterialManager() {
           fileDetails.dimensions = dimensions
         } catch (error) {
           console.error('Failed to get image dimensions:', error)
+        }
+
+        // 如果是PNG文件，获取metadata信息
+        if (file.path.toLowerCase().endsWith('.png')) {
+          try {
+            const pngMetadata = await readPNGMetadata(
+              getFileServiceUrl(file.path)
+            )
+            fileDetails.pngMetadata = pngMetadata
+          } catch (error) {
+            console.error('Failed to get PNG metadata:', error)
+          }
         }
       }
 
@@ -684,6 +703,46 @@ export default function MaterialManager() {
                 {selectedFile.path}
               </div>
             </div>
+
+            {/* PNG Metadata Section */}
+            {selectedFile.pngMetadata &&
+              selectedFile.pngMetadata.success &&
+              selectedFile.pngMetadata.has_metadata && (
+                <div>
+                  <h4 className="font-medium mb-2">
+                    {t('canvas:pngMetadata', 'PNG Metadata')}
+                  </h4>
+                  <div className="space-y-2 text-sm max-h-64 overflow-y-auto bg-gray-50 dark:bg-gray-700 p-3 rounded">
+                    {Object.entries(selectedFile.pngMetadata.metadata)
+                      .filter(
+                        ([key]) => !['width', 'height', 'mode'].includes(key)
+                      ) // 过滤掉基本信息
+                      .map(([key, value]) => (
+                        <div
+                          key={key}
+                          className="border-b border-gray-200 dark:border-gray-600 pb-2"
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="text-gray-600 dark:text-gray-400 font-medium min-w-0 flex-shrink-0">
+                              {key}:
+                            </span>
+                            <div className="text-right min-w-0 flex-1">
+                              {typeof value === 'object' ? (
+                                <pre className="text-xs bg-white dark:bg-gray-800 p-2 rounded border overflow-x-auto">
+                                  {JSON.stringify(value, null, 2)}
+                                </pre>
+                              ) : (
+                                <span className="break-all">
+                                  {String(value)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
           </div>
         </div>
       </div>

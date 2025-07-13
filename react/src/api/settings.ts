@@ -192,8 +192,9 @@ export const getFileInfoApi = async (filePath: string) => {
 // 获取用户的My Assets目录路径
 export const getMyAssetsDirPath = async () => {
   const response = await fetch('/api/settings/my_assets_dir_path')
-  if (!response.ok) {
-    throw new Error('Failed to get My Assets directory path')
-  }
-  return response.json()
+  const result = await response.json()
+  return result
 }
+
+// PNG metadata 现在通过前端直接读取 (readPNGMetadata in @/utils/pngMetadata)
+// 这样更快，避免了后端处理的开销
