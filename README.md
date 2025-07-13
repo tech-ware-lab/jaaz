@@ -1,5 +1,9 @@
-# 🦄 Jaaz –⭐The World's First Open source AI Design Agent⭐
-https://jaaz.app/
+
+<h1 align="center">
+  <a href="https://jaaz.app" target="_blank"> Jaaz.app</a>
+  <p align="center">The World's First Open source AI Design Agent</p>
+</h1>
+
 
 [中文入门指南](https://mxnpt25l6k.feishu.cn/docx/LvcTdlVbFoRAZWxnhBYcqVydnpc)
 
@@ -13,6 +17,9 @@ The world's first open-source multimodal creative agent, a creative tool that pr
 
 <img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/b8508efd-def8-40ed-8ab5-62ed3c26de67" />
 
+## ✨ Getting started & staying tuned with us.
+Star us, and you will receive all release notifications from GitHub without any delay!
+<img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/1c9a3661-80a4-4fba-a30f-f469898b0aec" />
 
 ## ✨ Key Features
 
@@ -77,11 +84,6 @@ To use deepseek as a provider, setup as below
 
 <img width="900" alt="Screenshot 2025-06-10 at 12 05 35" src="https://github.com/user-attachments/assets/61cb1b87-065f-4376-b853-b0032d4d3be8" />
 
-## Stay Updated
-
-Star Jaaz on GitHub to receive instant noifications about new version releases.
-
-<img width="426" alt="Screenshot 2025-06-10 at 12 05 35" src="https://github.com/user-attachments/assets/e8779c10-dffd-46c3-bce6-88051cdc6c5e" />
 
 ## Manual Install (For Linux or local builds)
 
