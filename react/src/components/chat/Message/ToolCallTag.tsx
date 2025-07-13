@@ -1,14 +1,8 @@
-import { Button } from '@/components/ui/button'
 import { TOOL_CALL_NAME_MAPPING } from '@/constants'
-import { cn } from '@/lib/utils'
 import { ToolCall } from '@/types/types'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
-import Markdown from 'react-markdown'
 import MultiChoicePrompt from '../MultiChoicePrompt'
 import SingleChoicePrompt from '../SingleChoicePrompt'
-import { useEffect, useState } from 'react'
-import { eventBus, TEvents } from '@/lib/event'
 import WritePlanToolCall from './WritePlanToolcall'
 import ToolCallContent from './ToolCallContent'
 import ToolCallContentV2 from './ToolCallContent'
@@ -71,11 +65,11 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
             </svg>
           </div>
 
-          <p className="font-bold text-green-900 dark:text-green-100">
-            {TOOL_CALL_NAME_MAPPING[name] ?? name}
-          </p>
+          <div className="font-bold text-green-900 dark:text-green-100 leading-relaxed break-all">
+                {TOOL_CALL_NAME_MAPPING[name] ?? name}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {parsedArgs && Object.keys(parsedArgs).length > 0 && (
             <div className="bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs px-2 py-0.5 rounded-full">
               {Object.keys(parsedArgs).length}

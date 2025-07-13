@@ -5,8 +5,7 @@
   "author": "weixuanfu",
   "main": "electron/main.js",
   "workspaces": [
-    "react",
-    "jaaz-cloud"
+    "react"
   ],
   "scripts": {
     "start": "cd react && npx vite build && cd .. && npm run start:electron",
