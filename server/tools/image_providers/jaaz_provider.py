@@ -71,7 +71,12 @@ class JaazImageProvider(ImageProviderBase):
 
                 return JaazImagesResponse(**json_data)
 
-    async def _process_response(self, res: JaazImagesResponse, error_prefix: str = "Jaaz") -> tuple[str, int, int, str]:
+    async def _process_response(
+        self, 
+        res: JaazImagesResponse, 
+        error_prefix: str = "Jaaz", 
+        metadata: Optional[dict[str, Any]] = None
+    ) -> tuple[str, int, int, str]:
         """
         Process ImagesResponse and save image
 
@@ -89,7 +94,8 @@ class JaazImageProvider(ImageProviderBase):
                 image_id = generate_image_id()
                 mime_type, width, height, extension = await get_image_info_and_save(
                     image_url,
-                    os.path.join(FILES_DIR, f'{image_id}')
+                    os.path.join(FILES_DIR, f'{image_id}'),
+                    metadata=metadata
                 )
 
                 filename = f'{image_id}.{extension}'
@@ -105,6 +111,7 @@ class JaazImageProvider(ImageProviderBase):
         model: str,
         aspect_ratio: str = "1:1",
         input_images: Optional[list[str]] = None,
+        metadata: Optional[dict[str, Any]] = None,
         **kwargs: Any
     ) -> tuple[str, int, int, str]:
         """
@@ -121,6 +128,7 @@ class JaazImageProvider(ImageProviderBase):
                 model=model,
                 input_images=input_images,
                 aspect_ratio=aspect_ratio,
+                metadata=metadata,
                 **kwargs
             )
 
@@ -130,6 +138,7 @@ class JaazImageProvider(ImageProviderBase):
             model=model,
             aspect_ratio=aspect_ratio,
             input_images=input_images,
+            metadata=metadata,
             **kwargs
         )
 
@@ -139,6 +148,7 @@ class JaazImageProvider(ImageProviderBase):
         model: str,
         aspect_ratio: str = "1:1",
         input_images: Optional[list[str]] = None,
+        metadata: Optional[dict[str, Any]] = None,
         **kwargs: Any
     ) -> tuple[str, int, int, str]:
         """Generate Replicate format image"""
@@ -162,7 +172,7 @@ class JaazImageProvider(ImageProviderBase):
                         "Warning: Replicate format only supports single image input. Using first image.")
 
             res = await self._make_request(url, headers, data)
-            return await self._process_response(res, "Jaaz")
+            return await self._process_response(res, "Jaaz", metadata)
 
         except Exception as e:
             print('Error generating image with Jaaz:', e)
@@ -175,6 +185,7 @@ class JaazImageProvider(ImageProviderBase):
         model: str,
         input_images: Optional[list[str]] = None,
         aspect_ratio: str = "1:1",
+        metadata: Optional[dict[str, Any]] = None,
         **kwargs: Any
     ) -> tuple[str, int, int, str]:
         """
@@ -205,7 +216,7 @@ class JaazImageProvider(ImageProviderBase):
                 print(f"Using {len(input_images)} input images for generation")
 
             res = await self._make_request(url, headers, data)
-            return await self._process_response(res, "Jaaz OpenAI")
+            return await self._process_response(res, "Jaaz OpenAI", metadata)
 
         except Exception as e:
             print('Error generating image with Jaaz OpenAI:', e)

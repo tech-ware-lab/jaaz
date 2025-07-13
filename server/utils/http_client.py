@@ -5,6 +5,7 @@ HTTP 客户端工厂和管理器
 - 自动 SSL 证书验证
 - 连接池管理和超时控制
 - 同步和异步客户端支持
+- 支持代理环境变量 (trust_env=True)
 
 使用指南：
 1. httpx 客户端：
@@ -51,7 +52,7 @@ class HttpClient:
 
     @classmethod
     def _get_client_config(cls, **kwargs: Any) -> Dict[str, Any]:
-        """获取客户端配置"""
+        """获取 httpx 客户端配置"""
 
         config = {
             'verify': cls._get_ssl_context(),
@@ -62,6 +63,23 @@ class HttpClient:
                 max_connections=200,
                 keepalive_expiry=300.0
             ),
+            **kwargs
+        }
+
+        return config
+
+    @classmethod
+    def _get_aiohttp_config(cls, trust_env: bool = True, **kwargs: Any) -> Dict[str, Any]:
+        """获取 aiohttp 客户端配置"""
+        config = {
+            'connector': aiohttp.TCPConnector(
+                ssl=cls._get_ssl_context(),
+                limit=200,
+                limit_per_host=50,
+                keepalive_timeout=300,
+            ),
+            'timeout': aiohttp.ClientTimeout(total=300),
+            'trust_env': trust_env,  # 启用环境变量代理支持
             **kwargs
         }
 
@@ -106,25 +124,27 @@ class HttpClient:
     # ========== aiohttp 工厂方法 ==========
     @classmethod
     @asynccontextmanager
-    async def create_aiohttp(cls, **kwargs: Any) -> AsyncGenerator['aiohttp.ClientSession', None]:
-        """创建 aiohttp 客户端上下文管理器"""
-        session = aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(
-                ssl=cls._get_ssl_context(),
-            ),
-            **kwargs
-        )
+    async def create_aiohttp(cls, trust_env: bool = True, **kwargs: Any) -> AsyncGenerator['aiohttp.ClientSession', None]:
+        """创建 aiohttp 客户端上下文管理器
+        
+        Args:
+            trust_env: 是否信任环境变量代理设置 (HTTP_PROXY, HTTPS_PROXY, etc.)
+            **kwargs: 其他 aiohttp.ClientSession 参数
+        """
+        config = cls._get_aiohttp_config(trust_env=trust_env, **kwargs)
+        session = aiohttp.ClientSession(**config)
         try:
             yield session
         finally:
             await session.close()
 
     @classmethod
-    def create_aiohttp_client(cls, **kwargs: Any) -> 'aiohttp.ClientSession':
-        """直接创建 aiohttp 客户端（需要手动关闭）"""
-        return aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(
-                ssl=cls._get_ssl_context(),
-            ),
-            **kwargs
-        )
+    def create_aiohttp_client(cls, trust_env: bool = True, **kwargs: Any) -> 'aiohttp.ClientSession':
+        """直接创建 aiohttp 客户端（需要手动关闭）
+        
+        Args:
+            trust_env: 是否信任环境变量代理设置 (HTTP_PROXY, HTTPS_PROXY, etc.)
+            **kwargs: 其他 aiohttp.ClientSession 参数
+        """
+        config = cls._get_aiohttp_config(trust_env=trust_env, **kwargs)
+        return aiohttp.ClientSession(**config)
