@@ -22,5 +22,18 @@
       "plural": "步骤"
     }
   },
-  "single_select_mode": "单选模式"
+  "single_select_mode": "单选模式",
+  "shareTemplate": {
+    "title": "分享为模板",
+    "templateName": "模板名称",
+    "templateNamePlaceholder": "输入模板名称...",
+    "coverPhoto": "封面图片",
+    "noImagesFound": "画布中没有找到图片",
+    "nameRequired": "模板名称是必填项",
+    "coverImageRequired": "封面图片是必填项",
+    "create": "创建模板",
+    "creating": "创建中...",
+    "success": "模板创建成功！",
+    "error": "创建模板失败"
+  }
 }
