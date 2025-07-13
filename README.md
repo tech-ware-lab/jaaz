@@ -1,9 +1,9 @@
-# 🦄 Jaaz –⭐Open source AI Design Agent⭐
+# 🦄 Jaaz –⭐The World's First Open source AI Design Agent⭐
 https://jaaz.app/
 
 [中文入门指南](https://mxnpt25l6k.feishu.cn/docx/LvcTdlVbFoRAZWxnhBYcqVydnpc)
 
-The world's first open-source, locally deployed creative AI design tool, supporting image generation and editing, unlimited canvas rapid iteration, can call local models and cloud apis, and intelligently batch generate images in one sentence!
+The world's first open-source multimodal creative agent, a creative tool that prioritizes privacy, local usage, and ease of use, as an alternative to Lovart, Manus and Figma.
 
 <div align="center"> <a href="https://jaaz.app/api/downloads/mac-latest"> <img src="https://user-images.githubusercontent.com/37590873/219133640-8b7a0179-20a7-4e02-8887-fbbd2eaad64b.png" alt="Download for macOS" width="300"/> </a> &nbsp;&nbsp; <a href="https://jaaz.app/api/downloads/windows-latest"> <img width="300" src="https://cdn.intheloop.io/wp-content/uploads/2020/08/windows-button.png" alt="Download for Windows" /> </a> </div>
 
