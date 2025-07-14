@@ -39,12 +39,18 @@ class CanvasLockManager:
 canvas_lock_manager = CanvasLockManager()
 
 
-async def generate_new_image_element(canvas_id: str, fileid: str, image_data: Dict[str, Any]) -> Dict[str, Any]:
+async def generate_new_image_element(
+    canvas_id: str,
+    fileid: str,
+    image_data: Dict[str, Any],
+    canvas_data: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """Generate new image element for canvas"""
-    canvas: Optional[Dict[str, Any]] = await db_service.get_canvas_data(canvas_id)
-    if canvas is None:
-        canvas = {'data': {}}
-    canvas_data: Dict[str, Any] = canvas.get('data', {})
+    if canvas_data is None:
+        canvas = await db_service.get_canvas_data(canvas_id)
+        if canvas is None:
+            canvas = {"data": {}}
+        canvas_data = canvas.get("data", {})
 
 
     new_x, new_y = await find_next_best_element_position(canvas_data)
