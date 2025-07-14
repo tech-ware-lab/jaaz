@@ -18,7 +18,7 @@ from tools.generate_image_by_doubao_seedream_3_volces import generate_image_by_d
 from tools.generate_video_by_seedance_v1_jaaz import generate_video_by_seedance_v1_jaaz
 from tools.generate_video_by_seedance_v1_pro_volces import generate_video_by_seedance_v1_pro_volces
 from tools.generate_video_by_seedance_v1_lite_volces import generate_video_by_seedance_v1_lite_t2v, generate_video_by_seedance_v1_lite_i2v
-
+from tools.generate_video_by_kling_v2_jaaz import generate_video_by_kling_v2_jaaz
 from tools.generate_image_by_recraft_v3_jaaz import generate_image_by_recraft_v3_jaaz
 from tools.generate_image_by_recraft_v3_replicate import generate_image_by_recraft_v3_replicate
 from services.config_service import config_service
@@ -84,6 +84,12 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "type": "video",
         "provider": "jaaz",
         "tool_function": generate_video_by_seedance_v1_jaaz,
+    },
+    "generate_video_by_kling_v2_jaaz": {
+        "display_name": "Doubao Kling v2",
+        "type": "video",
+        "provider": "jaaz",
+        "tool_function": generate_video_by_kling_v2_jaaz,
     },
     "generate_video_by_seedance_v1_pro_volces": {
         "display_name": "Doubao Seedance v1 by volces",
