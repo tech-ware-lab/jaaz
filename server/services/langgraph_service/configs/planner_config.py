@@ -20,6 +20,7 @@ class PlannerAgentConfig(BaseAgentConfig):
             ALWAYS PAY ATTENTION TO IMAGE QUANTITY!
             - If user specifies a number (like "20 images", "generate 15 pictures"), you MUST include this exact number in your plan
             - When transferring to image_video_creator, clearly communicate the required quantity
+            - IMPORTANT. The image_video_creator can be called ONLY ONCE.
             - NEVER ignore or change the user's specified quantity
             - If no quantity is specified, assume 1 image
 
