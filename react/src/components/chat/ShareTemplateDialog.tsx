@@ -14,12 +14,14 @@ import { ExcalidrawImageElement } from '@excalidraw/excalidraw/element/types'
 import { configs } from '@/constants'
 import { toast } from 'sonner'
 import { Share2 } from 'lucide-react'
+import { Message } from '@/types/types'
 
 interface ShareTemplateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   canvasId: string
   sessionId: string
+  messages: Message[]
 }
 
 interface CanvasImage {
@@ -35,6 +37,7 @@ export default function ShareTemplateDialog({
   onOpenChange,
   canvasId,
   sessionId,
+  messages,
 }: ShareTemplateDialogProps) {
   const { t } = useTranslation()
   const { excalidrawAPI } = useCanvas()
@@ -113,6 +116,7 @@ export default function ShareTemplateDialog({
         canvas_id: canvasId,
         session_id: sessionId,
         cover_image: coverImage.dataURL,
+        message: messages,
         canvas_data: {
           elements,
           appState: {
