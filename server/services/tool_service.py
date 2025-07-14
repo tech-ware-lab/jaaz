@@ -21,6 +21,7 @@ from tools.generate_video_by_seedance_v1_lite_volces import generate_video_by_se
 from tools.generate_video_by_kling_v2_jaaz import generate_video_by_kling_v2_jaaz
 from tools.generate_image_by_recraft_v3_jaaz import generate_image_by_recraft_v3_jaaz
 from tools.generate_image_by_recraft_v3_replicate import generate_image_by_recraft_v3_replicate
+from tools.generate_video_by_hailuo_02_jaaz import generate_video_by_hailuo_02_jaaz
 from services.config_service import config_service
 from services.db_service import db_service
 
@@ -84,6 +85,12 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "type": "video",
         "provider": "jaaz",
         "tool_function": generate_video_by_seedance_v1_jaaz,
+    },
+    "generate_video_by_hailuo_02_jaaz": {
+        "display_name": "Hailuo 02",
+        "type": "video",
+        "provider": "jaaz",
+        "tool_function": generate_video_by_hailuo_02_jaaz,
     },
     "generate_video_by_kling_v2_jaaz": {
         "display_name": "Doubao Kling v2",
