@@ -14,7 +14,7 @@ import websockets
 import typer
 from rich import print as pprint
 from rich.progress import BarColumn, Column, Progress, Table, TimeElapsedColumn
-from server.utils.http_client import HttpClient
+from utils.http_client import HttpClient
 
 from services.websocket_service import send_to_websocket
 
@@ -231,7 +231,7 @@ class WorkflowExecution:
         data = message["data"] if "data" in message else {}
         if "prompt_id" not in data or data["prompt_id"] != self.prompt_id:
             return True
-        
+
         if message["type"] == "status":
             return await self.on_status(data)
         elif message["type"] == "executing":
