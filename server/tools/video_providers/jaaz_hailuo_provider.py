@@ -31,6 +31,7 @@ class JaazHailuoProvider:
         prompt_enhancer: bool = False,
         resolution: str = "1080p",
         duration: int = 6,
+        input_image: str | None = None,
     ) -> str:
         """
         Generate video using Jaaz Cloud Hailuo API
@@ -54,6 +55,7 @@ class JaazHailuoProvider:
                 "prompt_enhancer": prompt_enhancer,
                 "resolution": resolution,
                 "duration": duration,
+                "start_image": input_image,
             }
 
             print(
