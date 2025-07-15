@@ -93,7 +93,7 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "tool_function": generate_video_by_hailuo_02_jaaz,
     },
     "generate_video_by_kling_v2_jaaz": {
-        "display_name": "Doubao Kling v2",
+        "display_name": "Kling v2.1 Standard",
         "type": "video",
         "provider": "jaaz",
         "tool_function": generate_video_by_kling_v2_jaaz,

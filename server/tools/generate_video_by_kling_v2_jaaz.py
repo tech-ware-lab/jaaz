@@ -27,9 +27,8 @@ class GenerateVideoByKlingV2InputSchema(BaseModel):
         default=5,
         description="Optional. The duration of the video in seconds. Use 5 by default. Allowed values: 5, 10."
     )
-    input_images: list[str] | None = Field(
-        default=None,
-        description="Optional. Images to use as reference or starting frame. Pass a list of image_id here, e.g. ['im_jurheut7.png']. Only the first image will be used as start_image."
+    input_images: list[str] = Field(
+        description="Required. Images to use as reference or starting frame. Pass a list of image_id here, e.g. ['im_jurheut7.png']. Only the first image will be used as start_image."
     )
     tool_call_id: Annotated[str, InjectedToolCallId]
 
@@ -39,13 +38,13 @@ class GenerateVideoByKlingV2InputSchema(BaseModel):
       args_schema=GenerateVideoByKlingV2InputSchema)
 async def generate_video_by_kling_v2_jaaz(
     prompt: str,
+    input_images: list[str],
     config: RunnableConfig,
     tool_call_id: Annotated[str, InjectedToolCallId],
     negative_prompt: str = "",
     guidance_scale: float = 0.5,
     aspect_ratio: str = "16:9",
     duration: int = 5,
-    input_images: list[str] | None = None,
 ) -> str:
     """
     Generate a video using Kling V2.1 model via Jaaz Kling provider
@@ -60,24 +59,27 @@ async def generate_video_by_kling_v2_jaaz(
     ctx['tool_call_id'] = tool_call_id
 
     try:
+        # Validate input_images is provided and not empty
+        if not input_images or len(input_images) == 0:
+            raise ValueError(
+                "input_images is required and cannot be empty. Please provide at least one image.")
+
         # Send start notification
         await send_video_start_notification(
             session_id,
             f"Starting Kling video generation..."
         )
 
-        # Process input images if provided (use first image as start_image)
-        processed_start_image = ''
-        if input_images and len(input_images) > 0:
-            first_image = input_images[0]
-            processed_image = await process_input_image(first_image)
-            if processed_image:
-                processed_start_image = processed_image
-                print(
-                    f"Using first input image as start image for Kling video generation: {first_image}")
-            else:
-                raise ValueError(
-                    f"Failed to process input image: {first_image}. Please check if the image exists and is valid.")
+        # Process input images (use first image as start_image)
+        first_image = input_images[0]
+        processed_image = await process_input_image(first_image)
+        if not processed_image:
+            raise ValueError(
+                f"Failed to process input image: {first_image}. Please check if the image exists and is valid.")
+
+        processed_start_image = processed_image
+        print(
+            f"Using first input image as start image for Kling video generation: {first_image}")
 
         # Create Kling provider and generate video
         provider = JaazKlingProvider()
