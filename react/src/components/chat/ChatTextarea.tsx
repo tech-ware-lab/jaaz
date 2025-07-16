@@ -204,6 +204,10 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     images,
     messages,
     t,
+    selectedAspectRatio,
+    quantity,
+    authStatus.is_logged_in,
+    setShowLoginDialog,
   ])
 
   // Drop Area
