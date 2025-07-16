@@ -245,11 +245,18 @@ async def get_video_info_and_save(
         raise e
 
 
-async def generate_new_video_element(canvas_id: str, fileid: str, video_data: Dict[str, Any]) -> Dict[str, Any]:
-    canvas: Optional[Dict[str, Any]] = await db_service.get_canvas_data(canvas_id)
-    if canvas is None:
-        canvas = {'data': {}}
-    canvas_data: Dict[str, Any] = canvas.get("data", {})
+async def generate_new_video_element(
+    canvas_id: str,
+    fileid: str,
+    video_data: Dict[str, Any],
+    canvas_data: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Generate new video element for canvas"""
+    if canvas_data is None:
+        canvas = await db_service.get_canvas_data(canvas_id)
+        if canvas is None:
+            canvas = {"data": {}}
+        canvas_data = canvas.get("data", {})
 
     new_x, new_y = await find_next_best_element_position(canvas_data)
 
