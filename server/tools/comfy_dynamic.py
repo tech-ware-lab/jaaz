@@ -194,37 +194,12 @@ def build_tool(wf: Dict[str, Any]) -> BaseTool:
             extra_kwargs = {}
             extra_kwargs["ctx"] = ctx
 
-            mime_type, width, height, filename = await generator.generate(
-                **extra_kwargs
-            )
-            file_id = generate_file_id()
-
-            url = f"/api/file/{filename}"
-
-            file_data = {
-                "mimeType": mime_type,
-                "id": file_id,
-                "dataURL": url,
-                "created": int(time.time() * 1000),
-            }
-            if mime_type.startswith("image"):
-                new_element = await generate_new_image_element(
-                    canvas_id,
-                    file_id,
-                    {
-                        "width": width,
-                        "height": height,
-                    },
-                )
-            else:
-                new_element = await generate_new_video_element(
-                    canvas_id,
-                    file_id,
-                    {
-                        "width": width,
-                        "height": height,
-                    },
-                )
+            outputs = await generator.generate(**extra_kwargs)
+            # if outputs is not a list of list, make it a list of list
+            if not isinstance(outputs, list) or (
+                outputs and not isinstance(outputs[0], (list, tuple))
+            ):
+                outputs = [outputs]
 
             # update the canvas data, add the new image element
             canvas_data = await db_service.get_canvas_data(canvas_id)
@@ -235,40 +210,94 @@ def build_tool(wf: Dict[str, Any]) -> BaseTool:
             if "files" not in canvas_data["data"]:
                 canvas_data["data"]["files"] = {}
 
-            canvas_data["data"]["elements"].append(new_element)
-            canvas_data["data"]["files"][file_id] = file_data
+            generated_files_info = []
 
-            image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
+            for output in outputs:
+                mime_type, width, height, filename = output
+                file_id = generate_file_id()
 
-            # print('🛠️canvas_data', canvas_data)
+                url = f"/api/file/{filename}"
+
+                file_data = {
+                    "mimeType": mime_type,
+                    "id": file_id,
+                    "dataURL": url,
+                    "created": int(time.time() * 1000),
+                }
+
+                # Pass the current canvas_data to the element generation function
+                if mime_type.startswith("image"):
+                    new_element = await generate_new_image_element(
+                        canvas_id,
+                        file_id,
+                        {
+                            "width": width,
+                            "height": height,
+                        },
+                        canvas_data=canvas_data.get("data", {}),
+                    )
+                else:
+                    new_element = await generate_new_video_element(
+                        canvas_id,
+                        file_id,
+                        {
+                            "width": width,
+                            "height": height,
+                        },
+                        canvas_data=canvas_data.get("data", {}),
+                    )
+
+                canvas_data["data"]["elements"].append(new_element)
+                canvas_data["data"]["files"][file_id] = file_data
+
+                image_url = f"http://localhost:{DEFAULT_PORT}/api/file/{filename}"
+
+                generated_files_info.append(
+                    {
+                        "element": new_element,
+                        "file": file_data,
+                        "url": image_url,
+                        "mime_type": mime_type,
+                        "filename": filename,
+                    }
+                )
 
             await db_service.save_canvas_data(
                 canvas_id, json.dumps(canvas_data["data"])
             )
-            if mime_type.startswith("image"):
-                await broadcast_session_update(
-                    session_id,
-                    canvas_id,
-                    {
-                        "type": "image_generated",
-                        "element": new_element,
-                        "file": file_data,
-                        "image_url": image_url,
-                    },
-                )
-            else:
-                await broadcast_session_update(
-                    session_id,
-                    canvas_id,
-                    {
-                        "type": "video_generated",
-                        "element": new_element,
-                        "file": file_data,
-                        "video_url": image_url,
-                    },
+
+            for file_info in generated_files_info:
+                if file_info["mime_type"].startswith("image"):
+                    await broadcast_session_update(
+                        session_id,
+                        canvas_id,
+                        {
+                            "type": "image_generated",
+                            "element": file_info["element"],
+                            "file": file_info["file"],
+                            "image_url": file_info["url"],
+                        },
+                    )
+                else:
+                    await broadcast_session_update(
+                        session_id,
+                        canvas_id,
+                        {
+                            "type": "video_generated",
+                            "element": file_info["element"],
+                            "file": file_info["file"],
+                            "video_url": file_info["url"],
+                        },
+                    )
+
+            # Create a markdown string for all the generated files
+            markdown_images = []
+            for file_info in generated_files_info:
+                markdown_images.append(
+                    f"![id: {file_info['filename']}]({file_info['url']})"
                 )
 
-            return f"workflow executed successfully ![id: {filename}]({image_url})"
+            return f"workflow executed successfully {', '.join(markdown_images)}"
 
         except Exception as e:
             print(f"Error generating image: {str(e)}")
