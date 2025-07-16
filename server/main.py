@@ -9,14 +9,14 @@ from routers import config_router, image_router, root_router, workspace, canvas,
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
-import argparse 
+import argparse
 from contextlib import asynccontextmanager
 from starlette.types import Scope
 from starlette.responses import Response
 import socketio # type: ignore
 from services.websocket_state import sio
 from services.websocket_service import broadcast_init_done
-from services.config_service import config_service  
+from services.config_service import config_service
 from services.tool_service import tool_service
 
 async def initialize():
