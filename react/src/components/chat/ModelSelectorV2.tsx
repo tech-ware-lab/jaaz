@@ -116,7 +116,7 @@ const ModelSelector: React.FC = () => {
           )
         }}
       >
-        <SelectTrigger className="w-fit max-w-[40%] bg-background">
+        <SelectTrigger className="w-fit max-w-[100px] bg-background">
           <SelectValue placeholder="Theme" />
         </SelectTrigger>
         <SelectContent>
