@@ -118,12 +118,14 @@ async def save_image_to_canvas(session_id: str, canvas_id: str, filename: str, m
         }
 
         new_image_element: Dict[str, Any] = await generate_new_image_element(
-            canvas_data,
+            canvas_id,
             file_id,
             {
                 'width': width,
                 'height': height,
-            })
+            },
+            canvas_data
+        )
 
         # Update the canvas data with the new element and file info
         elements_list = cast(List[Dict[str, Any]], canvas_data['elements'])
