@@ -166,20 +166,24 @@ class ComfyUIWorkflowRunner():
         )
         print("🦄workflow execution outputs", execution.outputs)
 
-        url = execution.outputs[0]
+        results = []
+        for url in execution.outputs:
+            # get image id
+            image_id = generate_image_id()
 
-        # get image id
-        image_id = generate_image_id()
+            # check is video or image.
+            file_type = await detect_file_type_comprehensive(url)
+            get_info_func = (
+                get_video_info_and_save
+                if file_type == "video"
+                else get_image_info_and_save
+            )
 
-        # check is video or image.
-        file_type = await detect_file_type_comprehensive(url)
-        get_info_func = (
-            get_video_info_and_save if file_type == "video" else get_image_info_and_save
-        )
+            mime_type, width, height, extension = await get_info_func(
+                url, os.path.join(FILES_DIR, f"{image_id}")
+            )
 
-        mime_type, width, height, extension = await get_info_func(
-            url, os.path.join(FILES_DIR, f"{image_id}")
-        )
+            filename = f"{image_id}.{extension}"
+            results.append((mime_type, width, height, filename))
 
-        filename = f"{image_id}.{extension}"
-        return mime_type, width, height, filename
+        return results

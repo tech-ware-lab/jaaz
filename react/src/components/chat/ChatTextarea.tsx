@@ -14,7 +14,16 @@ import { ModelInfo, ToolInfo } from '@/api/model'
 import { useMutation } from '@tanstack/react-query'
 import { useDrop } from 'ahooks'
 import { produce } from 'immer'
-import { ArrowUp, Loader2, PlusIcon, Square, XIcon } from 'lucide-react'
+import {
+  ArrowUp,
+  Loader2,
+  PlusIcon,
+  Square,
+  XIcon,
+  RectangleVertical,
+  ChevronDown,
+  Hash,
+} from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Textarea, { TextAreaRef } from 'rc-textarea'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -23,6 +32,12 @@ import { toast } from 'sonner'
 import ModelSelector from './ModelSelector'
 import ModelSelectorV2 from './ModelSelectorV2'
 import { useAuth } from '@/contexts/AuthContext'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 type ChatTextareaProps = {
   pending: boolean
@@ -60,6 +75,11 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     }[]
   >([])
   const [isFocused, setIsFocused] = useState(false)
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<string>('auto')
+  const [quantity, setQuantity] = useState<number>(1)
+  const [showQuantitySlider, setShowQuantitySlider] = useState(false)
+  const quantitySliderRef = useRef<HTMLDivElement>(null)
+  const MAX_QUANTITY = 30
 
   const imageInputRef = useRef<HTMLInputElement>(null)
 
@@ -125,6 +145,19 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       return
     }
 
+    // Add aspect ratio and quantity information if not default values
+    let additionalInfo = ''
+    if (selectedAspectRatio !== 'auto') {
+      additionalInfo += `<aspect_ratio>${selectedAspectRatio}</aspect_ratio>\n`
+    }
+    if (quantity !== 1) {
+      additionalInfo += `<quantity>${quantity}</quantity>\n`
+    }
+
+    if (additionalInfo) {
+      value = value + '\n\n' + additionalInfo
+    }
+
     if (images.length > 0) {
       images.forEach((image) => {
         value += `\n\n ![Attached image - width: ${image.width} height: ${image.height} filename: ${image.file_id}](/api/file/${image.file_id})`
@@ -146,7 +179,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       value = [
         {
           type: 'text',
-          text: value,
+          text: value as string,
         },
         ...images.map((image, index) => ({
           type: 'image_url',
@@ -180,6 +213,10 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     images,
     messages,
     t,
+    selectedAspectRatio,
+    quantity,
+    authStatus.is_logged_in,
+    setShowLoginDialog,
   ])
 
   // Drop Area
@@ -262,6 +299,26 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     }
   }, [uploadImageMutation])
 
+  // Close quantity slider when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        quantitySliderRef.current &&
+        !quantitySliderRef.current.contains(event.target as Node)
+      ) {
+        setShowQuantitySlider(false)
+      }
+    }
+
+    if (showQuantitySlider) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showQuantitySlider])
+
   return (
     <motion.div
       ref={dropAreaRef}
@@ -343,7 +400,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
       <Textarea
         ref={textareaRef}
-        className="w-full h-full border-none outline-none resize-none max-h-[calc(100vh-700px)]"
+        className="w-full h-full border-none outline-none resize-none"
         placeholder={t('chat:textarea.placeholder')}
         value={prompt}
         autoSize
@@ -359,7 +416,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       />
 
       <div className="flex items-center justify-between gap-2 w-full">
-        <div className="flex items-center gap-2 max-w-[calc(100%-50px)]">
+        <div className="flex items-center gap-2 max-w-[calc(100%-50px)] flex-wrap">
           <input
             ref={imageInputRef}
             type="file"
@@ -370,13 +427,102 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           />
           <Button
             variant="outline"
-            size="icon"
+            size="sm"
             onClick={() => imageInputRef.current?.click()}
           >
             <PlusIcon className="size-4" />
           </Button>
 
           <ModelSelectorV2 />
+
+          {/* Aspect Ratio Selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="flex items-center gap-1"
+                size={'sm'}
+              >
+                <RectangleVertical className="size-4" />
+                <span className="text-sm">{selectedAspectRatio}</span>
+                <ChevronDown className="size-3 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-32">
+              {['auto', '1:1', '4:3', '3:4', '16:9', '9:16'].map((ratio) => (
+                <DropdownMenuItem
+                  key={ratio}
+                  onClick={() => setSelectedAspectRatio(ratio)}
+                  className="flex items-center justify-between"
+                >
+                  <span>{ratio}</span>
+                  {selectedAspectRatio === ratio && (
+                    <div className="size-2 rounded-full bg-primary" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Quantity Selector */}
+          <div className="relative" ref={quantitySliderRef}>
+            <Button
+              variant="outline"
+              className="flex items-center gap-1"
+              onClick={() => setShowQuantitySlider(!showQuantitySlider)}
+              size={'sm'}
+            >
+              <Hash className="size-4" />
+              <span className="text-sm">{quantity}</span>
+              <ChevronDown className="size-3 opacity-50" />
+            </Button>
+
+            {/* Quantity Slider */}
+            <AnimatePresence>
+              {showQuantitySlider && (
+                <motion.div
+                  className="absolute bottom-full mb-2 left-0  bg-background border border-border rounded-lg p-4 shadow-lg min-w-48"
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                >
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">
+                        {t('chat:textarea.quantity', 'Image Quantity')}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {quantity}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">1</span>
+                      <input
+                        type="range"
+                        min="1"
+                        max={MAX_QUANTITY}
+                        value={quantity}
+                        onChange={(e) => setQuantity(Number(e.target.value))}
+                        className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer
+                                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+                                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary
+                                  [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-sm
+                                  [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full
+                                  [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0"
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {MAX_QUANTITY}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Arrow pointing down */}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-border"></div>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-background translate-y-[-1px]"></div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {pending ? (

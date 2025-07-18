@@ -1,6 +1,12 @@
 import { TOOL_CALL_NAME_MAPPING } from '@/constants'
 import { ToolCall } from '@/types/types'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  AlertTriangle,
+  Check,
+  X,
+} from 'lucide-react'
 import MultiChoicePrompt from '../MultiChoicePrompt'
 import SingleChoicePrompt from '../SingleChoicePrompt'
 import WritePlanToolCall from './WritePlanToolcall'
@@ -11,12 +17,18 @@ type ToolCallTagProps = {
   toolCall: ToolCall
   isExpanded: boolean
   onToggleExpand: () => void
+  requiresConfirmation?: boolean
+  onConfirm?: () => void
+  onCancel?: () => void
 }
 
 const ToolCallTag: React.FC<ToolCallTagProps> = ({
   toolCall,
   isExpanded,
   onToggleExpand,
+  requiresConfirmation = false,
+  onConfirm,
+  onCancel,
 }) => {
   const { name, arguments: inputs } = toolCall.function
 
@@ -32,15 +44,29 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
   if (name.startsWith('transfer_to')) {
     return null
   }
+
+  const needsConfirmation = requiresConfirmation
+
   let parsedArgs = null
-  if (inputs.endsWith('}')) {
+  try {
+    parsedArgs = JSON.parse(inputs)
+  } catch (error) {
+    console.error('Error parsing args:', error, 'Raw input:', inputs)
+    // 尝试清理输入字符串，移除可能的额外内容
     try {
-      parsedArgs = JSON.parse(inputs)
-    } catch (error) {
-      console.error('Error parsing args:', error)
+      const cleanedInput = inputs.trim()
+      const jsonEndIndex = cleanedInput.lastIndexOf('}')
+      if (jsonEndIndex > 0) {
+        const jsonPart = cleanedInput.substring(0, jsonEndIndex + 1)
+        parsedArgs = JSON.parse(jsonPart)
+        console.log('Successfully parsed cleaned JSON:', jsonPart)
+      }
+    } catch (cleanError) {
+      console.error('Failed to parse even after cleaning:', cleanError)
     }
   }
 
+  // 普通模式的样式
   return (
     <div className="bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded-md shadow-sm overflow-hidden">
       {/* Header */}
@@ -69,7 +95,19 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
             {TOOL_CALL_NAME_MAPPING[name] ?? name}
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          {needsConfirmation && (
+            <div className="bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              需确认
+            </div>
+          )}
+          {!needsConfirmation && toolCall.result === '工具调用已取消' && (
+            <div className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+              <X className="h-3 w-3" />
+              已取消
+            </div>
+          )}
           {parsedArgs && Object.keys(parsedArgs).length > 0 && (
             <div className="bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs px-2 py-0.5 rounded-full">
               {Object.keys(parsedArgs).length}
@@ -115,6 +153,39 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
               </div>
             )}
             {toolCall.result && <ToolCallContentV2 content={toolCall.result} />}
+
+            {/* 确认按钮 - 仅在需要确认时显示 */}
+            {needsConfirmation && (
+              <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
+                <div className="flex gap-2">
+                  <Button
+                    onClick={onConfirm}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    确认执行
+                  </Button>
+                  <Button
+                    onClick={onCancel}
+                    variant="outline"
+                    className="flex-1 border-green-300 text-green-700 hover:bg-green-100"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    取消
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* 取消状态显示 */}
+            {!needsConfirmation && toolCall.result === '工具调用已取消' && (
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                  <X className="h-4 w-4" />
+                  <span className="text-sm">工具调用已取消</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
