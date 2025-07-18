@@ -117,7 +117,8 @@ class StreamProcessor:
         TOOLS_REQUIRING_CONFIRMATION = {
             'generate_video_by_kling_v2_jaaz',
             'generate_video_by_seedance_v1_pro_volces',
-            'generate_video_by_seedance_v1_lite_volces',
+            'generate_video_by_seedance_v1_lite_i2v',
+            'generate_video_by_seedance_v1_lite_t2v',
             'generate_video_by_seedance_v1_jaaz',
             'generate_video_by_hailuo_02_jaaz',
         }
