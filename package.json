@@ -4,9 +4,6 @@
   "description": "AI design agent local desktop app",
   "author": "weixuanfu",
   "main": "electron/main.js",
-  "workspaces": [
-    "react"
-  ],
   "scripts": {
     "start": "cd react && npx vite build && cd .. && npm run start:electron",
     "dev:react": "cd react && npm run dev",
