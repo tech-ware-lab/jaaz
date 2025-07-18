@@ -80,6 +80,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
+  const [pendingToolConfirmations, setPendingToolConfirmations] = useState<string[]>([])
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const isAtBottomRef = useRef(false)
@@ -141,7 +142,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               last.content.at(-1) &&
               last.content.at(-1)!.type === 'text'
             ) {
-              ;(last.content.at(-1) as { text: string }).text += data.text
+              ; (last.content.at(-1) as { text: string }).text += data.text
             }
           } else {
             prev.push({
@@ -203,6 +204,118 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     [sessionId]
   )
 
+  const handleToolCallPendingConfirmation = useCallback(
+    (data: TEvents['Socket::Session::ToolCallPendingConfirmation']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      const existToolCall = messages.find(
+        (m) =>
+          m.role === 'assistant' &&
+          m.tool_calls &&
+          m.tool_calls.find((t) => t.id == data.id)
+      )
+
+      if (existToolCall) {
+        return
+      }
+
+      setMessages(
+        produce((prev) => {
+          console.log('👇tool_call_pending_confirmation event get', data)
+          setPending('tool')
+          prev.push({
+            role: 'assistant',
+            content: '',
+            tool_calls: [
+              {
+                type: 'function',
+                function: {
+                  name: data.name,
+                  arguments: data.arguments,
+                },
+                id: data.id,
+              },
+            ],
+          })
+        })
+      )
+
+      setPendingToolConfirmations(
+        produce((prev) => {
+          prev.push(data.id)
+        })
+      )
+
+      // 自动展开需要确认的工具调用
+      setExpandingToolCalls(
+        produce((prev) => {
+          if (!prev.includes(data.id)) {
+            prev.push(data.id)
+          }
+        })
+      )
+    },
+    [sessionId]
+  )
+
+  const handleToolCallConfirmed = useCallback(
+    (data: TEvents['Socket::Session::ToolCallConfirmed']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      setPendingToolConfirmations(
+        produce((prev) => {
+          return prev.filter((id) => id !== data.id)
+        })
+      )
+
+      setExpandingToolCalls(
+        produce((prev) => {
+          if (!prev.includes(data.id)) {
+            prev.push(data.id)
+          }
+        })
+      )
+    },
+    [sessionId]
+  )
+
+  const handleToolCallCancelled = useCallback(
+    (data: TEvents['Socket::Session::ToolCallCancelled']) => {
+      if (data.session_id && data.session_id !== sessionId) {
+        return
+      }
+
+      setPendingToolConfirmations(
+        produce((prev) => {
+          return prev.filter((id) => id !== data.id)
+        })
+      )
+
+      // 更新工具调用的状态
+      setMessages(
+        produce((prev) => {
+          prev.forEach((msg) => {
+            if (msg.role === 'assistant' && msg.tool_calls) {
+              msg.tool_calls.forEach((tc) => {
+                if (tc.id === data.id) {
+                  // 添加取消状态标记
+                  tc.result = "工具调用已取消"
+                }
+              })
+            }
+          })
+        })
+      )
+    },
+    [sessionId]
+  )
+
+
+
   const handleToolCallArguments = useCallback(
     (data: TEvents['Socket::Session::ToolCallArguments']) => {
       if (data.session_id && data.session_id !== sessionId) {
@@ -224,6 +337,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               (t) => t.id == data.id
             )
             if (toolCall) {
+              // 检查是否是待确认的工具调用，如果是则跳过参数追加
+              if (pendingToolConfirmations.includes(data.id)) {
+                return
+              }
               toolCall.function.arguments += data.text
             }
           }
@@ -231,7 +348,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       )
       scrollToBottom()
     },
-    [sessionId, scrollToBottom]
+    [sessionId, scrollToBottom, pendingToolConfirmations]
   )
 
   const handleToolCallResult = useCallback(
@@ -333,6 +450,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     eventBus.on('Socket::Session::Delta', handleDelta)
     eventBus.on('Socket::Session::ToolCall', handleToolCall)
+    eventBus.on('Socket::Session::ToolCallPendingConfirmation', handleToolCallPendingConfirmation)
+    eventBus.on('Socket::Session::ToolCallConfirmed', handleToolCallConfirmed)
+    eventBus.on('Socket::Session::ToolCallCancelled', handleToolCallCancelled)
     eventBus.on('Socket::Session::ToolCallArguments', handleToolCallArguments)
     eventBus.on('Socket::Session::ToolCallResult', handleToolCallResult)
     eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
@@ -345,6 +465,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       eventBus.off('Socket::Session::Delta', handleDelta)
       eventBus.off('Socket::Session::ToolCall', handleToolCall)
+      eventBus.off('Socket::Session::ToolCallPendingConfirmation', handleToolCallPendingConfirmation)
+      eventBus.off('Socket::Session::ToolCallConfirmed', handleToolCallConfirmed)
+      eventBus.off('Socket::Session::ToolCallCancelled', handleToolCallCancelled)
       eventBus.off(
         'Socket::Session::ToolCallArguments',
         handleToolCallArguments
@@ -505,6 +628,35 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                 toolCall.id,
                               ])
                             }
+                          }}
+                          requiresConfirmation={pendingToolConfirmations.includes(toolCall.id)}
+                          onConfirm={() => {
+                            // 发送确认事件到后端
+                            fetch('/api/tool_confirmation', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({
+                                session_id: sessionId,
+                                tool_call_id: toolCall.id,
+                                confirmed: true,
+                              }),
+                            })
+                          }}
+                          onCancel={() => {
+                            // 发送取消事件到后端
+                            fetch('/api/tool_confirmation', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({
+                                session_id: sessionId,
+                                tool_call_id: toolCall.id,
+                                confirmed: false,
+                              }),
+                            })
                           }}
                         />
                       )

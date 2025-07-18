@@ -4,6 +4,9 @@ from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
 from tools.video_generation.video_generation_core import generate_video_with_provider
 from .utils.image_utils import process_input_image
+from services.tool_confirmation_manager import tool_confirmation_manager
+from services.websocket_service import send_to_websocket
+import json
 
 
 class GenerateVideoBySeedanceV1InputSchema(BaseModel):
@@ -49,6 +52,37 @@ async def generate_video_by_seedance_v1_jaaz(
     """
     Generate a video using Seedance V1 model via configured provider
     """
+    # 检查是否需要确认
+    ctx = config.get('configurable', {})
+    session_id = ctx.get('session_id', '')
+
+    # 构建参数
+    arguments = {
+        'prompt': prompt,
+        'resolution': resolution,
+        'duration': duration,
+        'aspect_ratio': aspect_ratio,
+        'input_images': input_images,
+        'camera_fixed': camera_fixed,
+    }
+
+    # 发送确认请求
+    await send_to_websocket(session_id, {
+        'type': 'tool_call_pending_confirmation',
+        'id': tool_call_id,
+        'name': 'generate_video_by_seedance_v1_jaaz',
+        'arguments': json.dumps(arguments)
+    })
+
+    # 等待确认
+    confirmed = await tool_confirmation_manager.request_confirmation(
+        tool_call_id, session_id, 'generate_video_by_seedance_v1_jaaz', arguments
+    )
+
+    if not confirmed:
+        return "Video generation cancelled by user."
+
+    # 用户确认后，执行实际的视频生成逻辑
     # Process input images if provided (only use the first one)
     processed_input_images = None
     if input_images and len(input_images) > 0:
