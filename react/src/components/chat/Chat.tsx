@@ -579,11 +579,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <PhotoProvider>
-      <div className="flex flex-col h-screen relative">
+      <div className='flex flex-col h-screen relative'>
         {/* Chat messages */}
 
-        <header className="flex items-center px-2 py-2 absolute top-0 z-1 w-full">
-          <div className="flex-1 min-w-0">
+        <header className='flex items-center px-2 py-2 absolute top-0 z-1 w-full'>
+          <div className='flex-1 min-w-0'>
             <SessionSelector
               session={session}
               sessionList={sessionList}
@@ -593,7 +593,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
 
           {/* Share Template Button */}
-          {authStatus.is_logged_in && (
+          {/* {authStatus.is_logged_in && (
             <Button
               variant="outline"
               size="sm"
@@ -602,17 +602,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             >
               <Share2 className="h-4 w-4 mr-1" />
             </Button>
-          )}
+          )} */}
 
-          <Blur className="absolute top-0 left-0 right-0 h-full -z-1" />
+          <Blur className='absolute top-0 left-0 right-0 h-full -z-1' />
         </header>
 
-        <ScrollArea className="h-[calc(100vh-45px)]" viewportRef={scrollRef}>
+        <ScrollArea className='h-[calc(100vh-45px)]' viewportRef={scrollRef}>
           {messages.length > 0 ? (
-            <div className="flex flex-col flex-1 px-4 pb-50 pt-15">
+            <div className='flex flex-col flex-1 px-4 pb-50 pt-15'>
               {/* Messages */}
               {messages.map((message, idx) => (
-                <div key={`${idx}`} className="flex flex-col gap-4 mb-2">
+                <div key={`${idx}`} className='flex flex-col gap-4 mb-2'>
                   {/* Regular message content */}
                   {typeof message.content == 'string' &&
                     (message.role !== 'tool' ? (
@@ -704,28 +704,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               )}
             </div>
           ) : (
-            <motion.div className="flex flex-col h-full p-4 items-start justify-start pt-16 select-none">
+            <motion.div className='flex flex-col h-full p-4 items-start justify-start pt-16 select-none'>
               <motion.span
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="text-muted-foreground text-3xl"
+                className='text-muted-foreground text-3xl'
               >
-                <ShinyText text="Hello, Jaaz!" />
+                <ShinyText text='Hello, Jaaz!' />
               </motion.span>
               <motion.span
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="text-muted-foreground text-2xl"
+                className='text-muted-foreground text-2xl'
               >
-                <ShinyText text="How can I help you today?" />
+                <ShinyText text='How can I help you today?' />
               </motion.span>
             </motion.div>
           )}
         </ScrollArea>
 
-        <div className="p-2 gap-2 sticky bottom-0">
+        <div className='p-2 gap-2 sticky bottom-0'>
           <ChatTextarea
             sessionId={sessionId!}
             pending={!!pending}
