@@ -22,5 +22,18 @@
       "singular": "step",
       "plural": "steps"
     }
+  },
+  "shareTemplate": {
+    "title": "Share as Template",
+    "templateName": "Template Name",
+    "templateNamePlaceholder": "Enter template name...",
+    "coverPhoto": "Cover Photo",
+    "noImagesFound": "No images found in canvas",
+    "nameRequired": "Template name is required",
+    "coverImageRequired": "Cover image is required",
+    "create": "Create Template",
+    "creating": "Creating...",
+    "success": "Template created successfully!",
+    "error": "Failed to create template"
   }
 }

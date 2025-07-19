@@ -1,17 +1,18 @@
 import { Button } from '@/components/ui/button'
 import { TOOL_CALL_NAME_MAPPING } from '@/constants'
-import { cn } from '@/lib/utils'
 import { ToolCall } from '@/types/types'
-import { ChevronDown, ChevronRight, AlertTriangle, Check, X } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
-import Markdown from 'react-markdown'
+import {
+  ChevronDown,
+  ChevronRight,
+  AlertTriangle,
+  Check,
+  X,
+} from 'lucide-react'
 import MultiChoicePrompt from '../MultiChoicePrompt'
 import SingleChoicePrompt from '../SingleChoicePrompt'
-import { useEffect, useState } from 'react'
-import { eventBus, TEvents } from '@/lib/event'
 import WritePlanToolCall from './WritePlanToolcall'
-import ToolCallContent from './ToolCallContent'
 import ToolCallContentV2 from './ToolCallContent'
+import { useTranslation } from 'react-i18next'
 
 type ToolCallTagProps = {
   toolCall: ToolCall
@@ -31,6 +32,7 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
   onCancel,
 }) => {
   const { name, arguments: inputs } = toolCall.function
+  const { t } = useTranslation()
 
   if (name == 'prompt_user_multi_choice') {
     return <MultiChoicePrompt />
@@ -66,8 +68,6 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
     }
   }
 
-
-
   // 普通模式的样式
   return (
     <div className="bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded-md shadow-sm overflow-hidden">
@@ -93,21 +93,21 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
             </svg>
           </div>
 
-          <p className="font-bold text-green-900 dark:text-green-100">
+          <div className="font-bold text-green-900 dark:text-green-100 leading-relaxed break-all">
             {TOOL_CALL_NAME_MAPPING[name] ?? name}
-          </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {needsConfirmation && (
             <div className="bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
               <AlertTriangle className="h-3 w-3" />
-              需确认
+              {t('chat.toolCall.requiresConfirmation', 'Needs Confirmation')}
             </div>
           )}
-          {!needsConfirmation && toolCall.result === "工具调用已取消" && (
+          {!needsConfirmation && toolCall.result === '工具调用已取消' && (
             <div className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
               <X className="h-3 w-3" />
-              已取消
+              {t('chat.toolCall.cancelled', 'Cancelled')}
             </div>
           )}
           {parsedArgs && Object.keys(parsedArgs).length > 0 && (
@@ -165,7 +165,7 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                   >
                     <Check className="h-4 w-4 mr-2" />
-                    确认执行
+                    {t('chat.toolCall.confirm', 'Confirm')}
                   </Button>
                   <Button
                     onClick={onCancel}
@@ -173,14 +173,14 @@ const ToolCallTag: React.FC<ToolCallTagProps> = ({
                     className="flex-1 border-green-300 text-green-700 hover:bg-green-100"
                   >
                     <X className="h-4 w-4 mr-2" />
-                    取消
+                    {t('chat.toolCall.cancel', 'Cancel')}
                   </Button>
                 </div>
               </div>
             )}
 
             {/* 取消状态显示 */}
-            {!needsConfirmation && toolCall.result === "工具调用已取消" && (
+            {!needsConfirmation && toolCall.result === '工具调用已取消' && (
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
                 <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                   <X className="h-4 w-4" />
