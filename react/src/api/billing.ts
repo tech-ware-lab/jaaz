@@ -1,4 +1,4 @@
-import { configs } from '@/constants'
+import { BASE_API_URL } from '../constants'
 import { authenticatedFetch } from './auth'
 
 export interface BalanceResponse {
@@ -7,7 +7,7 @@ export interface BalanceResponse {
 
 export async function getBalance(): Promise<BalanceResponse> {
   const response = await authenticatedFetch(
-    `${configs.jaaz_base_api_url}/api/billing/getBalance`
+    `${BASE_API_URL}/api/billing/getBalance`
   )
 
   if (!response.ok) {
