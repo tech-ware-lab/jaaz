@@ -141,7 +141,8 @@ export default function ShareTemplateDialog({
       )
 
       if (!response.ok) {
-        throw new Error('Failed to create template')
+        console.error('Failed to create template', response)
+        throw new Error(`Failed to create template ${response}`)
       }
 
       const result = await response.json()
