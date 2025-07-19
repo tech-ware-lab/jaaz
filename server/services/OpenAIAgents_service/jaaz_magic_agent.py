@@ -9,9 +9,6 @@ from tools.utils.image_utils import get_image_info_and_save
 from services.config_service import FILES_DIR
 from common import DEFAULT_PORT
 from ..jaaz_service import JaazService
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str = "", canvas_id: str = "") -> Dict[str, Any]:
@@ -46,7 +43,7 @@ async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str =
         try:
             jaaz_service = JaazService()
         except ValueError as e:
-            logger.error(f"Jaaz service configuration error: {e}")
+            print(f"❌ Jaaz service configuration error: {e}")
             return {
                 'role': 'assistant',
                 'content': [
@@ -73,7 +70,7 @@ async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str =
         # 检查是否有错误
         if result.get('error'):
             error_msg = result['error']
-            logger.error(f"❌ Magic generation error: {error_msg}")
+            print(f"❌ Magic generation error: {error_msg}")
             return {
                 'role': 'assistant',
                 'content': [
@@ -120,9 +117,9 @@ async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str =
 
                 # 保存图片到画布
                 image_url = await save_image_to_canvas(session_id, canvas_id, filename, mime_type, width, height)
-                logger.info(f"✨ 图片已保存到画布: {filename}")
+                print(f"✨ 图片已保存到画布: {filename}")
             except Exception as e:
-                logger.error(f"❌ 保存图片到画布失败: {e}")
+                print(f"❌ 保存图片到画布失败: {e}")
 
         return {
             'role': 'assistant',
@@ -148,7 +145,7 @@ async def create_jaaz_response(messages: List[Dict[str, Any]], session_id: str =
                 ]
             }
         else:
-            logger.error(f"创建魔法回复时出错: {e}")
+            print(f"❌ 创建魔法回复时出错: {e}")
             return {
                 'role': 'assistant',
                 'content': [

@@ -1,12 +1,9 @@
 # services/OpenAIAgents_service/jaaz_service.py
 
 import asyncio
-import logging
 from typing import Dict, Any, Optional
 from utils.http_client import HttpClient
 from services.config_service import config_service
-
-logger = logging.getLogger(__name__)
 
 
 class JaazService:
@@ -28,7 +25,7 @@ class JaazService:
         if not self.api_url.endswith('/api/v1'):
             self.api_url = f"{self.api_url}/api/v1"
 
-        logger.info(f"✅ Jaaz service initialized with API URL: {self.api_url}")
+        print(f"✅ Jaaz service initialized with API URL: {self.api_url}")
 
     def _is_configured(self) -> bool:
         """检查 Jaaz API 是否已配置"""
@@ -53,7 +50,7 @@ class JaazService:
         """
         try:
             if not image_content or not image_content.startswith('data:image/'):
-                logger.error("Invalid image content format")
+                print("❌ Invalid image content format")
                 return ""
 
             async with HttpClient.create() as client:
@@ -70,20 +67,20 @@ class JaazService:
                     data = response.json()
                     task_id = data.get('task_id', '')
                     if task_id:
-                        logger.info(f"✅ Magic task created: {task_id}")
+                        print(f"✅ Magic task created: {task_id}")
                         return task_id
                     else:
-                        logger.error("❌ No task_id in response")
+                        print("❌ No task_id in response")
                         return ""
                 else:
                     error_text = response.text if hasattr(
                         response, 'text') else 'Unknown error'
-                    logger.error(
+                    print(
                         f"❌ Failed to create magic task: {response.status_code} - {error_text}")
                     return ""
 
         except Exception as e:
-            logger.error(f"❌ Error creating magic task: {e}")
+            print(f"❌ Error creating magic task: {e}")
             return ""
 
     async def poll_for_task_completion(
@@ -121,43 +118,43 @@ class JaazService:
                             task = data['data']['task']
                             status = task.get('status')
 
-                            logger.info(
-                                f"🔄 Task {task_id} status: {status} (attempt {attempt + 1}/{max_attempts})")
+                            # print(
+                            #     f"🔄 Task {task_id} status: {status} (attempt {attempt + 1}/{max_attempts})")
 
                             if status == 'succeeded':
-                                logger.info(
+                                print(
                                     f"✅ Task {task_id} completed successfully")
                                 return task
                             elif status == 'failed':
                                 error_msg = task.get('error', 'Unknown error')
-                                logger.error(
+                                print(
                                     f"❌ Task {task_id} failed: {error_msg}")
                                 return {"error": f"Task failed: {error_msg}"}
                             elif status == 'cancelled':
-                                logger.error(f"❌ Task {task_id} was cancelled")
+                                print(f"❌ Task {task_id} was cancelled")
                                 return {"error": "Task was cancelled"}
                             elif status == 'processing':
                                 # 继续轮询
                                 await asyncio.sleep(interval)
                                 continue
                             else:
-                                logger.error(
+                                print(
                                     f"❌ Unknown task status: {status}")
                                 return {"error": f"Unknown task status: {status}"}
                         else:
-                            logger.error(f"❌ Task {task_id} not found")
+                            print(f"❌ Task {task_id} not found")
                             return {"error": "Task not found"}
                     else:
-                        logger.error(
+                        print(
                             f"❌ Failed to get task status: {response.status_code}")
                         return {"error": f"Failed to get task status: HTTP {response.status_code}"}
 
-                logger.error(
+                print(
                     f"❌ Task {task_id} polling timeout after {max_attempts} attempts")
                 return {"error": f"Task polling timeout after {max_attempts} attempts"}
 
         except Exception as e:
-            logger.error(f"❌ Error polling task status: {e}")
+            print(f"❌ Error polling task status: {e}")
             return {"error": f"Error polling task status: {str(e)}"}
 
     async def generate_magic_image(self, image_content: str) -> Optional[Dict[str, Any]]:
@@ -174,27 +171,27 @@ class JaazService:
             # 1. 创建任务
             task_id = await self.create_magic_task(image_content)
             if not task_id:
-                logger.error("❌ Failed to create magic task")
+                print("❌ Failed to create magic task")
                 return {"error": "Failed to create magic task"}
 
             # 2. 等待任务完成
             result = await self.poll_for_task_completion(task_id)
             if not result:
-                logger.error("❌ Magic generation failed")
+                print("❌ Magic generation failed")
                 return {"error": "Magic generation failed"}
 
             if not result.get('result_url'):
                 error_msg = result.get('error', 'No result URL found')
-                logger.error(f"❌ Magic generation failed: {error_msg}")
+                print(f"❌ Magic generation failed: {error_msg}")
                 return {"error": f"Magic generation failed: {error_msg}"}
 
-            logger.info(
+            print(
                 f"✅ Magic image generated successfully: {result.get('result_url')}")
             return result
 
         except Exception as e:
             error_msg = f"Error in magic image generation: {str(e)}"
-            logger.error(f"❌ {error_msg}")
+            print(f"❌ {error_msg}")
             return {"error": error_msg}
 
     def is_configured(self) -> bool:

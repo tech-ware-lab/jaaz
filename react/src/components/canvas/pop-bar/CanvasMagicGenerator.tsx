@@ -41,8 +41,8 @@ const CanvasMagicGenerator = ({ selectedImages, selectedElements }: CanvasMagicG
             },
             files,
             mimeType: 'image/png',
-            maxWidthOrHeight: 1024,
-            quality: 0.8,
+            maxWidthOrHeight: 2048,
+            quality: 1,
         });
 
         // 转base64
