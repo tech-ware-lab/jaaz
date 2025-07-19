@@ -1,8 +1,5 @@
-import { getConfig } from '@/api/config'
 import { listModels, ModelInfo, ToolInfo } from '@/api/model'
-import { configs } from '@/constants'
 import useConfigsStore from '@/stores/configs'
-import { LLMConfig } from '@/types/types'
 import { useQuery } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useRef } from 'react'
 
@@ -18,8 +15,6 @@ export const ConfigsProvider = ({
 }) => {
   const configsStore = useConfigsStore()
   const {
-    providers,
-    setProviders,
     setTextModels,
     setTextModel,
     setSelectedTools,
@@ -27,22 +22,8 @@ export const ConfigsProvider = ({
     setShowLoginDialog,
   } = configsStore
 
-  // load global jaaz base api url from server
-  configs.jaaz_base_api_url =
-    providers['jaaz']?.url?.replace('/api/v1', '')?.replace(/\/$/, '') ||
-    'https://jaaz.app'
-
-  console.log('configs.jaaz_base_api_url', configs.jaaz_base_api_url)
-
-  useEffect(() => {
-    const loadConfig = async () => {
-      try {
-        const config: { [key: string]: LLMConfig } = await getConfig()
-        setProviders(config)
-      } catch (error) {}
-    }
-    loadConfig()
-  }, [])
+  // 存储上一次的 allTools 值，用于检测新添加的工具，并自动选中
+  const previousAllToolsRef = useRef<ModelInfo[]>([])
 
   const { data: modelList, refetch: refreshModels } = useQuery({
     queryKey: ['list_models_2'],

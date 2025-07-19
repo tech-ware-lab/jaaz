@@ -1,6 +1,6 @@
+import { BASE_API_URL } from '../constants'
 import i18n from '../i18n'
 import { clearJaazApiKey } from './config'
-import { configs } from '@/constants'
 
 export interface AuthStatus {
   status: 'logged_out' | 'pending' | 'logged_in'
@@ -39,7 +39,7 @@ export interface ApiResponse {
 }
 
 export async function startDeviceAuth(): Promise<DeviceAuthResponse> {
-  const response = await fetch(`${configs.jaaz_base_api_url}/api/device/auth`, {
+  const response = await fetch(`${BASE_API_URL}/api/device/auth`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   })
@@ -51,7 +51,7 @@ export async function startDeviceAuth(): Promise<DeviceAuthResponse> {
   const data = await response.json()
 
   // Open browser for user authentication using Electron API
-  const authUrl = `${configs.jaaz_base_api_url}/auth/device?code=${data.code}`
+  const authUrl = `${BASE_API_URL}/auth/device?code=${data.code}`
 
   // Check if we're in Electron environment
   if (window.electronAPI?.openBrowserUrl) {
@@ -79,7 +79,7 @@ export async function pollDeviceAuth(
   deviceCode: string
 ): Promise<DeviceAuthPollResponse> {
   const response = await fetch(
-    `${configs.jaaz_base_api_url}/api/device/poll?code=${deviceCode}`
+    `${BASE_API_URL}/api/device/poll?code=${deviceCode}`
   )
 
   if (!response.ok) {
@@ -219,15 +219,12 @@ export async function authenticatedFetch(
 
 // 刷新token
 export async function refreshToken(currentToken: string) {
-  const response = await fetch(
-    `${configs.jaaz_base_api_url}/api/device/refresh-token`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${currentToken}`,
-      },
-    }
-  )
+  const response = await fetch(`${BASE_API_URL}/api/device/refresh-token`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${currentToken}`,
+    },
+  })
 
   if (response.status === 200) {
     const data = await response.json()
