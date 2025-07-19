@@ -86,7 +86,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
-  const [pendingToolConfirmations, setPendingToolConfirmations] = useState<string[]>([])
+  const [pendingToolConfirmations, setPendingToolConfirmations] = useState<
+    string[]
+  >([])
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const isAtBottomRef = useRef(false)
@@ -148,7 +150,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               last.content.at(-1) &&
               last.content.at(-1)!.type === 'text'
             ) {
-              ; (last.content.at(-1) as { text: string }).text += data.text
+              ;(last.content.at(-1) as { text: string }).text += data.text
             }
           } else {
             prev.push({
@@ -309,7 +311,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               msg.tool_calls.forEach((tc) => {
                 if (tc.id === data.id) {
                   // 添加取消状态标记
-                  tc.result = "工具调用已取消"
+                  tc.result = '工具调用已取消'
                 }
               })
             }
@@ -319,8 +321,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     },
     [sessionId]
   )
-
-
 
   const handleToolCallArguments = useCallback(
     (data: TEvents['Socket::Session::ToolCallArguments']) => {
@@ -456,7 +456,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     eventBus.on('Socket::Session::Delta', handleDelta)
     eventBus.on('Socket::Session::ToolCall', handleToolCall)
-    eventBus.on('Socket::Session::ToolCallPendingConfirmation', handleToolCallPendingConfirmation)
+    eventBus.on(
+      'Socket::Session::ToolCallPendingConfirmation',
+      handleToolCallPendingConfirmation
+    )
     eventBus.on('Socket::Session::ToolCallConfirmed', handleToolCallConfirmed)
     eventBus.on('Socket::Session::ToolCallCancelled', handleToolCallCancelled)
     eventBus.on('Socket::Session::ToolCallArguments', handleToolCallArguments)
@@ -471,9 +474,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       eventBus.off('Socket::Session::Delta', handleDelta)
       eventBus.off('Socket::Session::ToolCall', handleToolCall)
-      eventBus.off('Socket::Session::ToolCallPendingConfirmation', handleToolCallPendingConfirmation)
-      eventBus.off('Socket::Session::ToolCallConfirmed', handleToolCallConfirmed)
-      eventBus.off('Socket::Session::ToolCallCancelled', handleToolCallCancelled)
+      eventBus.off(
+        'Socket::Session::ToolCallPendingConfirmation',
+        handleToolCallPendingConfirmation
+      )
+      eventBus.off(
+        'Socket::Session::ToolCallConfirmed',
+        handleToolCallConfirmed
+      )
+      eventBus.off(
+        'Socket::Session::ToolCallCancelled',
+        handleToolCallCancelled
+      )
       eventBus.off(
         'Socket::Session::ToolCallArguments',
         handleToolCallArguments
@@ -650,7 +662,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                               ])
                             }
                           }}
-                          requiresConfirmation={pendingToolConfirmations.includes(toolCall.id)}
+                          requiresConfirmation={pendingToolConfirmations.includes(
+                            toolCall.id
+                          )}
                           onConfirm={() => {
                             // 发送确认事件到后端
                             fetch('/api/tool_confirmation', {
@@ -738,6 +752,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         onOpenChange={setShowShareDialog}
         canvasId={canvasId}
         sessionId={sessionId || ''}
+        messages={messages}
       />
     </PhotoProvider>
   )

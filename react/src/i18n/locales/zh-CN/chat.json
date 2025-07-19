@@ -36,5 +36,11 @@
     "creating": "创建中...",
     "success": "模板创建成功！",
     "error": "创建模板失败"
+  },
+  "toolCall": {
+    "requiresConfirmation": "需确认",
+    "cancelled": "已取消",
+    "confirm": "确认执行",
+    "cancel": "取消"
   }
 }
