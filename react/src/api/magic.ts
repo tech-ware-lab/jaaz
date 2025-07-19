@@ -5,8 +5,6 @@ export const sendMagicGenerate = async (payload: {
   sessionId: string
   canvasId: string
   newMessages: Message[]
-  textModel: Model
-  toolList: ToolInfo[]
   systemPrompt: string | null
 }) => {
   const response = await fetch(`/api/magic`, {
@@ -18,8 +16,6 @@ export const sendMagicGenerate = async (payload: {
       messages: payload.newMessages,
       canvas_id: payload.canvasId,
       session_id: payload.sessionId,
-      text_model: payload.textModel,
-      tool_list: payload.toolList,
       system_prompt: payload.systemPrompt,
     }),
   })

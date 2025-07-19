@@ -1,16 +1,10 @@
 import { sendMagicGenerate } from '@/api/magic'
 import { useConfigs } from '@/contexts/configs'
 import { eventBus, TCanvasMagicGenerateEvent } from '@/lib/event'
-import { Message, Model, PendingType } from '@/types/types'
-import { ModelInfo } from '@/api/model'
+import { Message, PendingType } from '@/types/types'
 import { useCallback, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
 import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
-import { toast } from 'sonner'
-import { useLanguage } from '@/hooks/use-language'
-
-// Track if warning has been shown
-let hasShownWarning = false;
+import { useAuth } from '@/contexts/AuthContext'
 
 type ChatMagicGeneratorProps = {
     sessionId: string
@@ -29,28 +23,14 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
     setPending,
     scrollToBottom
 }) => {
-    const { t } = useTranslation()
-    const { textModels, selectedTools } = useConfigs()
-    const hasOpenaiProvider = textModels.some((model) => model.provider === 'openai')
-    const hasJaazProvider = textModels.some((model) => model.provider === 'jaaz')
-
-    // 使用 gpt4o
-    let textModel: Model | undefined = undefined
-    if (hasJaazProvider) {
-        // 在 textModels 中找到 provider 为 jaaz 和 model 为 gpt-4o-mini 的模型
-        textModel = textModels.find((model) => model.provider === 'jaaz' && model.model === 'gpt-4o-mini')
-    } else if (hasOpenaiProvider) {
-        // 在 textModels 中找到 provider 为 openai 和 model 为 gpt-4o-mini 的模型
-        textModel = textModels.find((model) => model.provider === 'openai' && model.model === 'gpt-4o-mini')
-    }
+    const { setShowLoginDialog } = useConfigs()
+    const { authStatus } = useAuth()
 
     const handleMagicGenerate = useCallback(
         async (data: TCanvasMagicGenerateEvent) => {
-            if (!textModel) return
-
-            if (!hasShownWarning && textModel.provider === 'openai') {
-                toast.warning(t('canvas:messages.gptImagePermissionRequired'))
-                hasShownWarning = true;
+            if (!authStatus.is_logged_in) {
+                setShowLoginDialog(true)
+                return
             }
 
             // 设置pending状态为text，表示正在处理
@@ -84,8 +64,6 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
                     sessionId: sessionId,
                     canvasId: canvasId,
                     newMessages: newMessages,
-                    textModel: textModel,
-                    toolList: selectedTools && selectedTools.length > 0 ? selectedTools : [],
                     systemPrompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
                 })
 
@@ -97,7 +75,7 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
                 setPending(false)
             }
         },
-        [sessionId, canvasId, messages, setMessages, setPending, selectedTools, scrollToBottom, textModel, t]
+        [sessionId, canvasId, messages, setMessages, setPending, scrollToBottom, authStatus.is_logged_in, setShowLoginDialog]
     )
 
     useEffect(() => {

@@ -7,13 +7,9 @@ import {
 import { AnimatePresence } from 'motion/react'
 import { useRef, useState } from 'react'
 import CanvasPopbarContainer from './CanvasPopbarContainer'
-import { useConfigs } from '@/contexts/configs'
 
 const CanvasPopbarWrapper = () => {
   const { excalidrawAPI } = useCanvas()
-  const { textModels } = useConfigs()
-  const hasOpenaiProvider = textModels.some((model) => model.provider === 'openai')
-  const hasJaazProvider = textModels.some((model) => model.provider === 'jaaz')
 
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const [showAddToChat, setShowAddToChat] = useState(false)
@@ -39,9 +35,9 @@ const CanvasPopbarWrapper = () => {
     const hasSelectedImages = selectedImages.length > 0
     setShowAddToChat(hasSelectedImages)
 
-    // 判断是否显示魔法生成按钮：选中2个以上元素（包含所有类型），并且设置了 jaaz key
+    // 判断是否显示魔法生成按钮：选中2个以上元素（包含所有类型）
     const selectedCount = Object.keys(selectedIds).length
-    setShowMagicGenerate(selectedCount >= 2 && hasJaazProvider)
+    setShowMagicGenerate(selectedCount >= 2)
 
     // 如果既没有选中图片，也没有满足魔法生成条件，隐藏弹窗
     if (!hasSelectedImages && selectedCount < 2) {

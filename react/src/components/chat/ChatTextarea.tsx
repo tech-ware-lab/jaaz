@@ -29,7 +29,6 @@ import Textarea, { TextAreaRef } from 'rc-textarea'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import ModelSelector from './ModelSelector'
 import ModelSelectorV2 from './ModelSelectorV2'
 import { useAuth } from '@/contexts/AuthContext'
 import {
