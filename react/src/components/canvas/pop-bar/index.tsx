@@ -1,6 +1,9 @@
 import { useCanvas } from '@/contexts/canvas'
 import { TCanvasAddImagesToChatEvent } from '@/lib/event'
-import { ExcalidrawImageElement, OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types'
+import {
+  ExcalidrawImageElement,
+  OrderedExcalidrawElement,
+} from '@excalidraw/excalidraw/element/types'
 import { AnimatePresence } from 'motion/react'
 import { useRef, useState } from 'react'
 import CanvasPopbarContainer from './CanvasPopbarContainer'
@@ -11,7 +14,6 @@ const CanvasPopbarWrapper = () => {
   const { textModels } = useConfigs()
   const hasOpenaiProvider = textModels.some((model) => model.provider === 'openai')
   const hasJaazProvider = textModels.some((model) => model.provider === 'jaaz')
-
 
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const [showAddToChat, setShowAddToChat] = useState(false)
@@ -37,9 +39,9 @@ const CanvasPopbarWrapper = () => {
     const hasSelectedImages = selectedImages.length > 0
     setShowAddToChat(hasSelectedImages)
 
-    // 判断是否显示魔法生成按钮：选中2个以上元素（包含所有类型），并且设置了 openai key 或 jaaz key
+    // 判断是否显示魔法生成按钮：选中2个以上元素（包含所有类型），并且设置了 jaaz key
     const selectedCount = Object.keys(selectedIds).length
-    setShowMagicGenerate(selectedCount >= 2 && (hasOpenaiProvider || hasJaazProvider))
+    setShowMagicGenerate(selectedCount >= 2 && hasJaazProvider)
 
     // 如果既没有选中图片，也没有满足魔法生成条件，隐藏弹窗
     if (!hasSelectedImages && selectedCount < 2) {
@@ -74,10 +76,8 @@ const CanvasPopbarWrapper = () => {
     if (hasSelectedImages) {
       // 基于选中的图片计算位置
       centerX =
-        selectedImages.reduce(
-          (acc, image) => acc + image.x + image.width / 2,
-          0
-        ) / selectedImages.length
+        selectedImages.reduce((acc, image) => acc + image.x + image.width / 2, 0) /
+        selectedImages.length
 
       bottomY = selectedImages.reduce(
         (acc, image) => Math.max(acc, image.y + image.height),
@@ -85,9 +85,7 @@ const CanvasPopbarWrapper = () => {
       )
     } else {
       // 基于所有选中的元素计算位置
-      const selectedElements = elements.filter(
-        (element) => selectedIds[element.id]
-      )
+      const selectedElements = elements.filter((element) => selectedIds[element.id])
 
       centerX =
         selectedElements.reduce(
@@ -111,7 +109,7 @@ const CanvasPopbarWrapper = () => {
   })
 
   return (
-    <div className="absolute left-0 bottom-0 w-full h-full z-20 pointer-events-none">
+    <div className='absolute left-0 bottom-0 w-full h-full z-20 pointer-events-none'>
       <AnimatePresence>
         {pos && (showAddToChat || showMagicGenerate) && (
           <CanvasPopbarContainer
