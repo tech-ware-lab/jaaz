@@ -399,7 +399,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
       <Textarea
         ref={textareaRef}
-        className="w-full h-full border-none outline-none resize-none"
+        className="w-full h-full border-none outline-none resize-none bg-transparent text-foreground placeholder:text-muted-foreground"
         placeholder={t('chat:textarea.placeholder')}
         value={prompt}
         autoSize
