@@ -35,13 +35,12 @@ import ChatSpinner from './Spinner'
 import ToolcallProgressUpdate from './ToolcallProgressUpdate'
 import ShareTemplateDialog from './ShareTemplateDialog'
 
-import { useConfigs } from '@/contexts/configs'
+import { useConfigs, useRefreshModels } from '@/contexts/configs'
 import 'react-photo-view/dist/react-photo-view.css'
 import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
-import { ModelInfo, ToolInfo } from '@/api/model'
-import { Button } from '@/components/ui/button'
-import { Share2 } from 'lucide-react'
+import { ToolInfo } from '@/api/model'
 import { useAuth } from '@/contexts/AuthContext'
+import { logout } from '@/api/auth'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -58,9 +57,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const { t } = useTranslation()
   const [session, setSession] = useState<Session | null>(null)
-  const { initCanvas, setInitCanvas } = useConfigs()
-  const { authStatus } = useAuth()
+  const { initCanvas, setInitCanvas, setShowLoginDialog } = useConfigs()
+  const { authStatus, refreshAuth } = useAuth()
   const [showShareDialog, setShowShareDialog] = useState(false)
+  const refreshModels = useRefreshModels()
 
   useEffect(() => {
     if (sessionList.length > 0) {
@@ -427,7 +427,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     [sessionId, scrollToBottom]
   )
 
+  // 移除登录状态，弹出登录框
+  const handleReLogin = async () => {
+    await logout()
+    await refreshAuth()
+    refreshModels()
+    setShowLoginDialog(true)
+  }
+
   const handleError = useCallback((data: TEvents['Socket::Session::Error']) => {
+    const errorStr = data.error
+    // 该错误由 socket 传递，是否有更准确的方法判断登录状态过期?
+    if (errorStr.includes('Error code: 401')) {
+      // 401 错误，提示用户重新登录
+      toast.error(t('common:auth.authExpiredMessage'), {
+        duration: 3000,
+      })
+
+      handleReLogin()
+      return
+    }
+
     setPending(false)
     toast.error('Error: ' + data.error, {
       closeButton: true,
