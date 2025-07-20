@@ -31,6 +31,8 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import ModelSelectorV2 from './ModelSelectorV2'
 import { useAuth } from '@/contexts/AuthContext'
+import { useBalance } from '@/hooks/use-balance'
+import { BASE_API_URL } from '@/constants'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,6 +66,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const { t } = useTranslation()
   const { authStatus } = useAuth()
   const { textModel, selectedTools, setShowLoginDialog } = useConfigs()
+  const { balance } = useBalance()
   const [prompt, setPrompt] = useState('')
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
@@ -81,6 +84,30 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const MAX_QUANTITY = 30
 
   const imageInputRef = useRef<HTMLInputElement>(null)
+
+  // 充值按钮组件
+  const RechargeContent = useCallback(() => (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm text-muted-foreground flex-1">
+        {t('chat:insufficientBalanceDescription')}
+      </span>
+      <Button
+        size="sm"
+        variant="outline"
+        className="shrink-0"
+        onClick={() => {
+          const billingUrl = `${BASE_API_URL}/billing`
+          if (window.electronAPI?.openBrowserUrl) {
+            window.electronAPI.openBrowserUrl(billingUrl)
+          } else {
+            window.open(billingUrl, '_blank')
+          }
+        }}
+      >
+        {t('common:auth.recharge')}
+      </Button>
+    </div>
+  ), [t])
 
   const { mutate: uploadImageMutation } = useMutation({
     mutationFn: (file: File) => uploadImage(file),
@@ -126,6 +153,16 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   // Send Prompt
   const handleSendPrompt = useCallback(async () => {
     if (pending) return
+
+    // 检查余额，如果为 0 则提醒充值
+    if (authStatus.is_logged_in && parseFloat(balance) <= 0) {
+      toast.error(t('chat:insufficientBalance'), {
+        description: <RechargeContent />,
+        duration: 10000, // 10s，给用户更多时间操作
+      })
+      return
+    }
+
     if (!textModel) {
       toast.error(t('chat:textarea.selectModel'))
       if (!authStatus.is_logged_in) {
@@ -216,6 +253,8 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     quantity,
     authStatus.is_logged_in,
     setShowLoginDialog,
+    balance,
+    RechargeContent,
   ])
 
   // Drop Area
