@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { AuthStatus, getAuthStatus } from '../api/auth'
+import { AuthStatus, getAuthStatus, refreshTokenIfNeeded } from '../api/auth'
 
 interface AuthContextType {
   authStatus: AuthStatus
@@ -21,14 +21,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true)
       const status = await getAuthStatus()
-
-      // Check if token expired based on the status returned by getAuthStatus
-      if (status.tokenExpired) {
-        toast.error('登录状态已过期，请重新登录', {
-          duration: 5000,
-        })
-      }
-
       setAuthStatus(status)
     } catch (error) {
       console.error('获取认证状态失败:', error)
@@ -38,7 +30,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    refreshAuth()
+    // 每次打开应用刷新 token
+    const initializeAuth = async () => {
+      try {
+        await refreshTokenIfNeeded()
+        // Then get current auth status
+        const status = await getAuthStatus()
+        setAuthStatus(status)
+      } catch (error) {
+        console.error('刷新认证状态失败:', error)
+      }
+    }
+
+    initializeAuth()
+    refreshAuth() // 直接显示登录状态，避免 UI 等待
   }, [])
 
   return (

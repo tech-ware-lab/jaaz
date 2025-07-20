@@ -1,6 +1,6 @@
 import { BASE_API_URL } from '../constants'
 import i18n from '../i18n'
-import { clearJaazApiKey } from './config'
+import { clearJaazApiKey, updateJaazApiKey } from './config'
 
 export interface AuthStatus {
   status: 'logged_out' | 'pending' | 'logged_in'
@@ -75,12 +75,8 @@ export async function startDeviceAuth(): Promise<DeviceAuthResponse> {
   }
 }
 
-export async function pollDeviceAuth(
-  deviceCode: string
-): Promise<DeviceAuthPollResponse> {
-  const response = await fetch(
-    `${BASE_API_URL}/api/device/poll?code=${deviceCode}`
-  )
+export async function pollDeviceAuth(deviceCode: string): Promise<DeviceAuthPollResponse> {
+  const response = await fetch(`${BASE_API_URL}/api/device/poll?code=${deviceCode}`)
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`)
@@ -89,6 +85,12 @@ export async function pollDeviceAuth(
   return await response.json()
 }
 
+/**
+ * 从 local storage 中获取认证状态
+ * 如果 token 和 userInfo 都存在，则返回 logged_in 状态
+ * 如果 token 或 userInfo 不存在，则返回 logged_out 状态
+ * @returns 认证状态
+ */
 export async function getAuthStatus(): Promise<AuthStatus> {
   // Get auth status from local storage
   const token = localStorage.getItem('jaaz_access_token')
@@ -101,56 +103,13 @@ export async function getAuthStatus(): Promise<AuthStatus> {
   })
 
   if (token && userInfo) {
-    try {
-      // Always try to refresh token when we have one
-      const newToken = await refreshToken(token)
-
-      // Save the new token
-      localStorage.setItem('jaaz_access_token', newToken)
-      console.log('Token refreshed successfully')
-
-      const authStatus = {
-        status: 'logged_in' as const,
-        is_logged_in: true,
-        user_info: JSON.parse(userInfo),
-      }
-      return authStatus
-    } catch (error) {
-      console.log('Token refresh failed:', error)
-
-      // Only clear auth data if token is truly expired (401), not for network errors
-      if (error instanceof Error && error.message === 'TOKEN_EXPIRED') {
-        console.log('Token expired, clearing auth data')
-        localStorage.removeItem('jaaz_access_token')
-        localStorage.removeItem('jaaz_user_info')
-
-        // Clear jaaz provider api_key
-        try {
-          await clearJaazApiKey()
-        } catch (clearError) {
-          console.error('Failed to clear jaaz api key:', clearError)
-        }
-
-        const loggedOutStatus = {
-          status: 'logged_out' as const,
-          is_logged_in: false,
-          tokenExpired: true,
-        }
-
-        return loggedOutStatus
-      } else {
-        // Network error or other issues, keep user logged in with old token
-        console.log(
-          'Network error during token refresh, keeping user logged in with existing token'
-        )
-        const authStatus = {
-          status: 'logged_in' as const,
-          is_logged_in: true,
-          user_info: JSON.parse(userInfo),
-        }
-        return authStatus
-      }
+    const authStatus = {
+      status: 'logged_in' as const,
+      is_logged_in: true,
+      user_info: JSON.parse(userInfo),
     }
+    console.log('Returning logged in status:', authStatus)
+    return authStatus
   }
 
   const loggedOutStatus = {
@@ -159,6 +118,41 @@ export async function getAuthStatus(): Promise<AuthStatus> {
   }
   console.log('Returning logged out status:', loggedOutStatus)
   return loggedOutStatus
+}
+
+/**
+ * 刷新 token，如果 token 不存在，则不刷新
+ * @returns 刷新后的 token
+ */
+export async function refreshTokenIfNeeded(): Promise<void> {
+  const token = localStorage.getItem('jaaz_access_token')
+
+  if (!token) {
+    return // No token to refresh
+  }
+
+  try {
+    console.log('Refreshing token on app startup...')
+    const newToken = await refreshToken(token)
+
+    // Update local storage with new token
+    localStorage.setItem('jaaz_access_token', newToken)
+
+    // Update jaaz provider api_key
+    await updateJaazApiKey(newToken)
+
+    console.log('Token refreshed successfully')
+  } catch (error) {
+    console.error('Token refresh failed:', error)
+
+    if (error instanceof Error && error.message === 'TOKEN_EXPIRED') {
+      // Clear expired token
+      localStorage.removeItem('jaaz_access_token')
+      localStorage.removeItem('jaaz_user_info')
+      await clearJaazApiKey()
+    }
+    // For network errors, keep the current token
+  }
 }
 
 export async function logout(): Promise<{ status: string; message: string }> {
@@ -185,9 +179,12 @@ export async function getUserProfile(): Promise<UserInfo> {
 }
 
 // Helper function to save auth data to local storage
-export function saveAuthData(token: string, userInfo: UserInfo) {
+export async function saveAuthData(token: string, userInfo: UserInfo) {
   localStorage.setItem('jaaz_access_token', token)
   localStorage.setItem('jaaz_user_info', JSON.stringify(userInfo))
+
+  // Update jaaz provider api_key with the access token
+  await updateJaazApiKey(token)
 }
 
 // Helper function to get access token

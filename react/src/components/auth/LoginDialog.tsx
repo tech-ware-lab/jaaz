@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { startDeviceAuth, pollDeviceAuth, saveAuthData } from '../../api/auth'
-import { updateJaazApiKey } from '../../api/config'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConfigs, useRefreshModels } from '../../contexts/configs'
 
@@ -45,12 +44,9 @@ export function LoginDialog() {
         console.log('Poll result:', result)
 
         if (result.status === 'authorized') {
-          // Login successful - save auth data to local storage
+          // Login successful - save auth data to local storage & update jaaz provider api_key
           if (result.token && result.user_info) {
-            saveAuthData(result.token, result.user_info)
-
-            // Update jaaz provider api_key with the access token
-            await updateJaazApiKey(result.token)
+            await saveAuthData(result.token, result.user_info)
           }
 
           setAuthMessage(t('common:auth.loginSuccessMessage'))
