@@ -74,6 +74,13 @@ Intelligently invoke custom comfyui workflows
 <img width="900" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/b8508efd-def8-40ed-8ab5-62ed3c26de67" />
 <img width="1000" alt="Screenshot 2025-06-02 at 3 03 49 PM" src="https://github.com/user-attachments/assets/6001af3a-2e2d-4bce-8112-7ee81cc75670" />
 
+## Team and Enterprise Support:
+Support for multi-user private deployment of enterprise teams, ensuring privacy and security.
+
+Please contact via email: aifoxdw@gmail.com
+
+WeChat: aifox1
+
 ## API Providers
 
 ### Deepseek
