@@ -84,7 +84,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
   const mergedToolCallIds = useRef<string[]>([])
 
-  const sessionId = session?.id
+  const sessionId = session?.id ?? searchSessionId
 
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
@@ -152,7 +152,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               last.content.at(-1) &&
               last.content.at(-1)!.type === 'text'
             ) {
-              ; (last.content.at(-1) as { text: string }).text += data.text
+              ;(last.content.at(-1) as { text: string }).text += data.text
             }
           } else {
             prev.push({

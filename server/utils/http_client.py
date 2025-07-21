@@ -21,6 +21,7 @@ HTTP 客户端工厂和管理器
    with HttpClient.create_sync() as client:
        response = client.get("https://api.example.com/data")
 """
+
 import ssl
 import certifi
 import httpx
@@ -39,8 +40,7 @@ class HttpClient:
         """获取缓存的 SSL 上下文"""
         if cls._ssl_context is None:
             try:
-                cls._ssl_context = ssl.create_default_context(
-                    cafile=certifi.where())
+                cls._ssl_context = ssl.create_default_context(cafile=certifi.where())
             except Exception as e:
                 print(f"⚠️ Failed to create SSL context with certifi: {e}")
                 cls._ssl_context = ssl.create_default_context()
@@ -55,28 +55,28 @@ class HttpClient:
             'timeout': 300,
             'follow_redirects': True,
             'limits': httpx.Limits(
-                max_keepalive_connections=50,
-                max_connections=200,
-                keepalive_expiry=300.0
+                max_keepalive_connections=0, max_connections=200, keepalive_expiry=30
             ),
-            **kwargs
+            **kwargs,
         }
 
         return config
 
     @classmethod
-    def _get_aiohttp_config(cls, trust_env: bool = True, **kwargs: Any) -> Dict[str, Any]:
+    def _get_aiohttp_config(
+        cls, trust_env: bool = True, **kwargs: Any
+    ) -> Dict[str, Any]:
         """获取 aiohttp 客户端配置"""
         config = {
             'connector': aiohttp.TCPConnector(
                 ssl=cls._get_ssl_context(),
                 limit=200,
                 limit_per_host=50,
-                keepalive_timeout=300,
+                keepalive_timeout=0,
             ),
             'timeout': aiohttp.ClientTimeout(total=300),
             'trust_env': trust_env,  # 启用环境变量代理支持
-            **kwargs
+            **kwargs,
         }
 
         return config
@@ -85,7 +85,9 @@ class HttpClient:
 
     @classmethod
     @asynccontextmanager
-    async def create(cls, url: Optional[str] = None, **kwargs: Any) -> AsyncGenerator[httpx.AsyncClient, None]:
+    async def create(
+        cls, url: Optional[str] = None, **kwargs: Any
+    ) -> AsyncGenerator[httpx.AsyncClient, None]:
         """创建异步客户端上下文管理器"""
         config = cls._get_client_config(**kwargs)
         client = httpx.AsyncClient(**config)
@@ -96,7 +98,9 @@ class HttpClient:
 
     @classmethod
     @contextmanager
-    def create_sync(cls, url: Optional[str] = None, **kwargs: Any) -> Generator[httpx.Client, None, None]:
+    def create_sync(
+        cls, url: Optional[str] = None, **kwargs: Any
+    ) -> Generator[httpx.Client, None, None]:
         """创建同步客户端上下文管理器"""
         config = cls._get_client_config(**kwargs)
         client = httpx.Client(**config)
@@ -120,7 +124,9 @@ class HttpClient:
     # ========== aiohttp 工厂方法 ==========
     @classmethod
     @asynccontextmanager
-    async def create_aiohttp(cls, trust_env: bool = True, **kwargs: Any) -> AsyncGenerator['aiohttp.ClientSession', None]:
+    async def create_aiohttp(
+        cls, trust_env: bool = True, **kwargs: Any
+    ) -> AsyncGenerator['aiohttp.ClientSession', None]:
         """创建 aiohttp 客户端上下文管理器
 
         Args:
@@ -135,7 +141,9 @@ class HttpClient:
             await session.close()
 
     @classmethod
-    def create_aiohttp_client(cls, trust_env: bool = True, **kwargs: Any) -> 'aiohttp.ClientSession':
+    def create_aiohttp_client(
+        cls, trust_env: bool = True, **kwargs: Any
+    ) -> 'aiohttp.ClientSession':
         """直接创建 aiohttp 客户端（需要手动关闭）
 
         Args:
