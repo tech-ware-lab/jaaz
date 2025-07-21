@@ -52,20 +52,8 @@
       "category": "public.app-category.utilities",
       "icon": "assets/icons/jaaz.icns",
       "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "zip",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
+        "dmg",
+        "zip"
       ],
       "gatekeeperAssess": false,
       "hardenedRuntime": true,
