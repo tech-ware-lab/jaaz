@@ -353,9 +353,10 @@ class WorkflowExecution:
         raise Exception(json.dumps(data, indent=2))
 
 
-async def upload_image(image, base_url):
-    files = {"image": image}
-    data = {"type": "input", "overwrite": "false"}
+async def upload_image(image, base_url, filename=None, subfolder='jaaz'):
+    # Create a tuple with (filename, file_content) for proper multipart upload
+    files = {"image": (filename, image)}
+    data = {"type": "input", "subfolder": subfolder, "overwrite": "false"}
     async with HttpClient.create() as client:
         try:
             response = await client.post(
@@ -363,7 +364,7 @@ async def upload_image(image, base_url):
             )
             body = response.json()
             image_name = body["name"]
-            return image_name
+            return f"{subfolder}/{image_name}"
         except httpx.HTTPStatusError as e:
             message = "An unknown error occurred"
             if e.response.status_code == 500:

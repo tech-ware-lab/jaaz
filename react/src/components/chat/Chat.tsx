@@ -42,6 +42,7 @@ import { ModelInfo, ToolInfo } from '@/api/model'
 import { Button } from '@/components/ui/button'
 import { Share2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useQueryClient } from '@tanstack/react-query'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -61,6 +62,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const { initCanvas, setInitCanvas } = useConfigs()
   const { authStatus } = useAuth()
   const [showShareDialog, setShowShareDialog] = useState(false)
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (sessionList.length > 0) {
@@ -82,7 +84,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
   const mergedToolCallIds = useRef<string[]>([])
 
-  const sessionId = session?.id
+  const sessionId = session?.id ?? searchSessionId
 
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
@@ -423,8 +425,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       setPending(false)
       scrollToBottom()
+
+      // 聊天输出完毕后更新余额
+      if (authStatus.is_logged_in) {
+        queryClient.invalidateQueries({ queryKey: ['balance'] })
+      }
     },
-    [sessionId, scrollToBottom]
+    [sessionId, scrollToBottom, authStatus.is_logged_in, queryClient]
   )
 
   const handleError = useCallback((data: TEvents['Socket::Session::Error']) => {

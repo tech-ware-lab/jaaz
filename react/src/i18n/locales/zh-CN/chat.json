@@ -1,6 +1,8 @@
 {
   "newChat": "新建聊天",
   "placeholder": "在这里输入你的消息...",
+  "insufficientBalance": "余额不足",
+  "insufficientBalanceDescription": "您的积分已用完，请充值后继续使用",
   "textarea": {
     "placeholder": "输入您的设计需求",
     "selectModel": "请选择一个文本模型！如果您还没有设置 API 密钥，请前往设置页面进行配置。",
