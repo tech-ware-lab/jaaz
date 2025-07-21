@@ -43,7 +43,7 @@ const persister = createAsyncStoragePersister({
       const db = await getDB()
       return (await db.get('cache', key)) || null
     },
-    setItem: async (key: string, value: any) => {
+    setItem: async (key: string, value: unknown) => {
       const db = await getDB()
       await db.put('cache', value, key)
     },

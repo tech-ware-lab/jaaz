@@ -1,11 +1,10 @@
 import { sendMagicGenerate } from '@/api/magic'
 import { useConfigs } from '@/contexts/configs'
 import { eventBus, TCanvasMagicGenerateEvent } from '@/lib/event'
-import { Message, Model, PendingType } from '@/types/types'
-import { ModelInfo } from '@/api/model'
+import { Message, PendingType } from '@/types/types'
 import { useCallback, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
 import { DEFAULT_SYSTEM_PROMPT } from '@/constants'
+import { useAuth } from '@/contexts/AuthContext'
 
 type ChatMagicGeneratorProps = {
     sessionId: string
@@ -24,16 +23,15 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
     setPending,
     scrollToBottom
 }) => {
-    const { t } = useTranslation()
-    const { textModel, selectedTools, providers } = useConfigs()
+    const { setShowLoginDialog } = useConfigs()
+    const { authStatus } = useAuth()
 
     const handleMagicGenerate = useCallback(
         async (data: TCanvasMagicGenerateEvent) => {
-            if (!textModel) {
+            if (!authStatus.is_logged_in) {
+                setShowLoginDialog(true)
                 return
             }
-
-            // TODO: 检查 OpenAI API Key 是否已配置,或者登录云端账号, 如果未配置,则提示用户
 
             // 设置pending状态为text，表示正在处理
             setPending('text')
@@ -66,8 +64,6 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
                     sessionId: sessionId,
                     canvasId: canvasId,
                     newMessages: newMessages,
-                    textModel: textModel,
-                    toolList: selectedTools && selectedTools.length > 0 ? selectedTools : [],
                     systemPrompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
                 })
 
@@ -79,7 +75,7 @@ const ChatMagicGenerator: React.FC<ChatMagicGeneratorProps> = ({
                 setPending(false)
             }
         },
-        [sessionId, canvasId, messages, setMessages, setPending, textModel, selectedTools, providers, scrollToBottom]
+        [sessionId, canvasId, messages, setMessages, setPending, scrollToBottom, authStatus.is_logged_in, setShowLoginDialog]
     )
 
     useEffect(() => {
