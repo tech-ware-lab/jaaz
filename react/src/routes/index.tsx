@@ -24,11 +24,14 @@ function Home() {
 
   const { mutate: createCanvasMutation, isPending } = useMutation({
     mutationFn: createCanvas,
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       setInitCanvas(true)
       navigate({
         to: '/canvas/$id',
         params: { id: data.id },
+        search: {
+          sessionId: variables.session_id,
+        },
       })
     },
     onError: (error) => {
@@ -39,32 +42,28 @@ function Home() {
   })
 
   return (
-    <div className="flex flex-col h-screen">
-      <ScrollArea className="h-full">
+    <div className='flex flex-col h-screen'>
+      <ScrollArea className='h-full'>
         <TopMenu />
 
-        <div className="relative flex flex-col items-center justify-center h-fit min-h-[calc(100vh-460px)] pt-[60px] select-none">
+        <div className='relative flex flex-col items-center justify-center h-fit min-h-[calc(100vh-460px)] pt-[60px] select-none'>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-5xl font-bold mb-2 mt-8 text-center">
-              {t('home:title')}
-            </h1>
+            <h1 className='text-5xl font-bold mb-2 mt-8 text-center'>{t('home:title')}</h1>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <p className="text-xl text-gray-500 mb-8 text-center">
-              {t('home:subtitle')}
-            </p>
+            <p className='text-xl text-gray-500 mb-8 text-center'>{t('home:subtitle')}</p>
           </motion.div>
 
           <ChatTextarea
-            className="w-full max-w-xl"
+            className='w-full max-w-xl'
             messages={[]}
             onSendMessages={(messages, configs) => {
               createCanvasMutation({
@@ -74,9 +73,7 @@ function Home() {
                 session_id: nanoid(),
                 text_model: configs.textModel,
                 tool_list: configs.toolList,
-                system_prompt:
-                  localStorage.getItem('system_prompt') ||
-                  DEFAULT_SYSTEM_PROMPT,
+                system_prompt: localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
               })
             }}
             pending={isPending}
