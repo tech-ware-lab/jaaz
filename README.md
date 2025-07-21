@@ -6,6 +6,8 @@
 </h2>
 [中文入门指南](https://mxnpt25l6k.feishu.cn/docx/LvcTdlVbFoRAZWxnhBYcqVydnpc)
 
+[中文版本 (Chinese Version)](./README_zh.md)
+
 The world's first open-source multimodal creative agent, a creative tool that prioritizes privacy, local usage, and ease of use, as an alternative to Lovart, Manus and Figma.
 
 [Join our Discord](https://discord.gg/dS7kuT66wc) to get latest updates!
