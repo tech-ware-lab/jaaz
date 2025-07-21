@@ -146,7 +146,7 @@ def build_tool(wf: Dict[str, Any]) -> BaseTool:
                 with open(image_path, "rb") as image_file:
                     image_bytes = image_file.read()
                 image_stream = BytesIO(image_bytes)
-                image_name = await upload_image(image_stream, api_url)
+                image_name = await upload_image(image_stream, api_url, filename)
                 required_data[key] = image_name
 
         workflow_dict = await db_service.get_comfy_workflow(wf["id"])
