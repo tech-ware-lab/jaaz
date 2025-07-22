@@ -1,7 +1,8 @@
 # services/OpenAIAgents_service/jaaz_service.py
 
 import asyncio
-from typing import Dict, Any, Optional
+import aiohttp
+from typing import Dict, Any, Optional, List
 from utils.http_client import HttpClient
 from services.config_service import config_service
 
@@ -53,42 +54,99 @@ class JaazService:
                 print("❌ Invalid image content format")
                 return ""
 
-            async with HttpClient.create() as client:
-                response = await client.post(
+            async with HttpClient.create_aiohttp() as session:
+                async with session.post(
                     f"{self.api_url}/image/magic",
                     headers=self._build_headers(),
                     json={
                         "image": image_content
                     },
-                    timeout=30.0
-                )
-
-                if response.status_code == 200:
-                    data = response.json()
-                    task_id = data.get('task_id', '')
-                    if task_id:
-                        print(f"✅ Magic task created: {task_id}")
-                        return task_id
+                    timeout=aiohttp.ClientTimeout(total=60.0)
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        task_id = data.get('task_id', '')
+                        if task_id:
+                            print(f"✅ Magic task created: {task_id}")
+                            return task_id
+                        else:
+                            print("❌ No task_id in response")
+                            return ""
                     else:
-                        print("❌ No task_id in response")
+                        error_text = await response.text()
+                        print(
+                            f"❌ Failed to create magic task: {response.status} - {error_text}")
                         return ""
-                else:
-                    error_text = response.text if hasattr(
-                        response, 'text') else 'Unknown error'
-                    print(
-                        f"❌ Failed to create magic task: {response.status_code} - {error_text}")
-                    return ""
 
         except Exception as e:
             print(f"❌ Error creating magic task: {e}")
             return ""
+
+    async def create_video_task(
+        self,
+        prompt: str,
+        model: str,
+        resolution: str = "1080p",
+        duration: int = 5,
+        aspect_ratio: str = "16:9",
+        input_images: Optional[List[str]] = None,
+        **kwargs: Any
+    ) -> str:
+        """
+        创建云端视频生成任务
+
+        Args:
+            prompt: 视频生成提示词
+            model: 视频生成模型
+            resolution: 视频分辨率
+            duration: 视频时长（秒）
+            aspect_ratio: 宽高比
+            input_images: 输入图片列表（可选）
+            **kwargs: 其他参数
+
+        Returns:
+            str: 任务 ID
+
+        Raises:
+            Exception: 当任务创建失败时抛出异常
+        """
+        async with HttpClient.create_aiohttp() as session:
+            payload = {
+                "prompt": prompt,
+                "model": model,
+                "resolution": resolution,
+                "duration": duration,
+                "aspect_ratio": aspect_ratio,
+                **kwargs
+            }
+
+            if input_images:
+                payload["input_images"] = input_images
+
+            async with session.post(
+                f"{self.api_url}/video/sunra/generations",
+                headers=self._build_headers(),
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=120.0)
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    task_id = data.get('task_id', '')
+                    if task_id:
+                        print(f"✅ Video task created: {task_id}")
+                        return task_id
+                    else:
+                        raise Exception("No task_id in response")
+                else:
+                    error_text = await response.text()
+                    raise Exception(f"Failed to create video task: HTTP {response.status} - {error_text}")
 
     async def poll_for_task_completion(
         self,
         task_id: str,
         max_attempts: Optional[int] = None,
         interval: Optional[float] = None
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
         等待任务完成并返回结果
 
@@ -98,28 +156,26 @@ class JaazService:
             interval: 轮询间隔（秒）
 
         Returns:
-            Dict[str, Any]: 任务结果，失败时返回包含 error 信息的字典
+            Dict[str, Any]: 任务结果
+
+        Raises:
+            Exception: 当任务失败或超时时抛出异常
         """
         max_attempts = max_attempts or 150  # 默认最多轮询 150 次
         interval = interval or 2.0  # 默认轮询间隔 2 秒
 
-        try:
-            async with HttpClient.create() as client:
-                for attempt in range(max_attempts):
-                    response = await client.get(
-                        f"{self.api_url}/task/{task_id}",
-                        headers=self._build_headers(),
-                        timeout=10.0
-                    )
-
-                    if response.status_code == 200:
-                        data = response.json()
+        async with HttpClient.create_aiohttp() as session:
+            for _ in range(max_attempts):
+                async with session.get(
+                    f"{self.api_url}/task/{task_id}",
+                    headers=self._build_headers(),
+                    timeout=aiohttp.ClientTimeout(total=20.0)
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
                         if data.get('success') and data.get('data', {}).get('found'):
                             task = data['data']['task']
                             status = task.get('status')
-
-                            # print(
-                            #     f"🔄 Task {task_id} status: {status} (attempt {attempt + 1}/{max_attempts})")
 
                             if status == 'succeeded':
                                 print(
@@ -127,35 +183,21 @@ class JaazService:
                                 return task
                             elif status == 'failed':
                                 error_msg = task.get('error', 'Unknown error')
-                                print(
-                                    f"❌ Task {task_id} failed: {error_msg}")
-                                return {"error": f"Task failed: {error_msg}"}
+                                raise Exception(f"Task failed: {error_msg}")
                             elif status == 'cancelled':
-                                print(f"❌ Task {task_id} was cancelled")
-                                return {"error": "Task was cancelled"}
+                                raise Exception("Task was cancelled")
                             elif status == 'processing':
                                 # 继续轮询
                                 await asyncio.sleep(interval)
                                 continue
                             else:
-                                print(
-                                    f"❌ Unknown task status: {status}")
-                                return {"error": f"Unknown task status: {status}"}
+                                raise Exception(f"Unknown task status: {status}")
                         else:
-                            print(f"❌ Task {task_id} not found")
-                            return {"error": "Task not found"}
+                            raise Exception("Task not found")
                     else:
-                        print(
-                            f"❌ Failed to get task status: {response.status_code}")
-                        return {"error": f"Failed to get task status: HTTP {response.status_code}"}
+                        raise Exception(f"Failed to get task status: HTTP {response.status}")
 
-                print(
-                    f"❌ Task {task_id} polling timeout after {max_attempts} attempts")
-                return {"error": f"Task polling timeout after {max_attempts} attempts"}
-
-        except Exception as e:
-            print(f"❌ Error polling task status: {e}")
-            return {"error": f"Error polling task status: {str(e)}"}
+            raise Exception(f"Task polling timeout after {max_attempts} attempts")
 
     async def generate_magic_image(self, image_content: str) -> Optional[Dict[str, Any]]:
         """
@@ -175,7 +217,7 @@ class JaazService:
                 return {"error": "Failed to create magic task"}
 
             # 2. 等待任务完成
-            result = await self.poll_for_task_completion(task_id)
+            result = await self.poll_for_task_completion(task_id, max_attempts=120, interval=5.0) # 10 分钟
             if not result:
                 print("❌ Magic generation failed")
                 return {"error": "Magic generation failed"}
@@ -193,6 +235,63 @@ class JaazService:
             error_msg = f"Error in magic image generation: {str(e)}"
             print(f"❌ {error_msg}")
             return {"error": error_msg}
+
+    async def generate_video(
+        self,
+        prompt: str,
+        model: str,
+        resolution: str = "1080p",
+        duration: int = 5,
+        aspect_ratio: str = "16:9",
+        input_images: Optional[List[str]] = None,
+        **kwargs: Any
+    ) -> Dict[str, Any]:
+        """
+        生成视频的完整流程
+
+        Args:
+            prompt: 视频生成提示词
+            model: 视频生成模型
+            resolution: 视频分辨率
+            duration: 视频时长（秒）
+            aspect_ratio: 宽高比
+            input_images: 输入图片列表（可选）
+            **kwargs: 其他参数
+
+        Returns:
+            Dict[str, Any]: 包含 result_url 的任务结果
+
+        Raises:
+            Exception: 当视频生成失败时抛出异常
+        """
+        # 1. 创建视频生成任务
+        task_id = await self.create_video_task(
+            prompt=prompt,
+            model=model,
+            resolution=resolution,
+            duration=duration,
+            aspect_ratio=aspect_ratio,
+            input_images=input_images,
+            **kwargs
+        )
+
+        if not task_id:
+            raise Exception("Failed to create video task")
+
+        # 2. 等待任务完成
+        result = await self.poll_for_task_completion(task_id)
+        if not result:
+            raise Exception("Video generation failed")
+
+        if result.get('error'):
+            raise Exception(f"Video generation failed: {result['error']}")
+
+        if not result.get('result_url'):
+            raise Exception("No result URL found in video generation response")
+
+        print(
+            f"✅ Video generated successfully: {result.get('result_url')}")
+        return result
 
     def is_configured(self) -> bool:
         """

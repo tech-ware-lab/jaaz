@@ -2,7 +2,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from tools.video_providers.jaaz_provider import JaazVideoProvider
+from services.jaaz_service import JaazService
 from tools.video_generation.video_canvas_utils import send_video_start_notification, process_video_result
 from .utils.image_utils import process_input_image
 
@@ -48,7 +48,7 @@ async def generate_video_by_seedance_v1_jaaz(
     camera_fixed: bool = True,
 ) -> str:
     """
-    Generate a video using Seedance V1 model via Jaaz provider
+    Generate a video using Seedance V1 model via Jaaz service
     """
     print(f'🛠️ Seedance Video Generation tool_call_id: {tool_call_id}')
     ctx = config.get('configurable', {})
@@ -79,17 +79,21 @@ async def generate_video_by_seedance_v1_jaaz(
                 raise ValueError(
                     f"Failed to process input image: {first_image}. Please check if the image exists and is valid.")
 
-        # Create Jaaz provider and generate video
-        provider = JaazVideoProvider()
-        video_url = await provider.generate(
+        # Create Jaaz service and generate video
+        jaaz_service = JaazService()
+        result = await jaaz_service.generate_video(
             prompt=prompt,
-            model="doubao-seedance-1-0-pro-250528",
+            model="seedance-1.0-pro",
             resolution=resolution,
             duration=duration,
             aspect_ratio=aspect_ratio,
             input_images=processed_input_images,
             camera_fixed=camera_fixed,
         )
+
+        video_url = result.get('result_url')
+        if not video_url:
+            raise Exception("No video URL returned from generation")
 
         # Process video result (save, update canvas, notify)
         return await process_video_result(
