@@ -73,7 +73,7 @@ jobs:
 
       - name: Build and Package Electron app
         run: |
-          npx electron-builder --${{ matrix.os == 'macos-latest' && 'mac' || 'win' }} --${{ matrix.arch }} --publish always
+          npx electron-builder --${{ matrix.os == 'macos-latest' && 'mac' || 'win' }} --publish always
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
