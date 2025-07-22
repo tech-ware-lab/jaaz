@@ -293,6 +293,80 @@ class JaazService:
             f"✅ Video generated successfully: {result.get('result_url')}")
         return result
 
+    async def generate_video_by_seedance(
+        self,
+        prompt: str,
+        model: str,
+        resolution: str = "1080p",
+        duration: int = 5,
+        aspect_ratio: str = "16:9",
+        input_images: Optional[List[str]] = None,
+        **kwargs: Any
+    ) -> Dict[str, Any]:
+        """
+        使用 Seedance 模型生成视频的完整流程
+
+        Args:
+            prompt: 视频生成提示词
+            model: 视频生成模型
+            resolution: 视频分辨率
+            duration: 视频时长（秒）
+            aspect_ratio: 宽高比
+            input_images: 输入图片列表（可选）
+            **kwargs: 其他参数
+
+        Returns:
+            Dict[str, Any]: 包含 result_url 的任务结果
+
+        Raises:
+            Exception: 当视频生成失败时抛出异常
+        """
+        # 1. 创建 Seedance 视频生成任务
+        async with HttpClient.create_aiohttp() as session:
+            payload = {
+                "prompt": prompt,
+                "model": model,
+                "resolution": resolution,
+                "duration": duration,
+                "aspect_ratio": aspect_ratio,
+                **kwargs
+            }
+
+            if input_images:
+                payload["input_images"] = input_images
+
+            async with session.post(
+                f"{self.api_url}/video/seedance/generation",
+                headers=self._build_headers(),
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=120.0)
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    task_id = data.get('task_id', '')
+                    if not task_id:
+                        raise Exception("No task_id in response")
+                else:
+                    error_text = await response.text()
+                    raise Exception(f"Failed to create Seedance video task: HTTP {response.status} - {error_text}")
+
+        print(f"✅ Seedance video task created: {task_id}")
+
+        # 2. 等待任务完成
+        result = await self.poll_for_task_completion(task_id)
+        if not result:
+            raise Exception("Seedance video generation failed")
+
+        if result.get('error'):
+            raise Exception(f"Seedance video generation failed: {result['error']}")
+
+        if not result.get('result_url'):
+            raise Exception("No result URL found in Seedance video generation response")
+
+        print(
+            f"✅ Seedance video generated successfully: {result.get('result_url')}")
+        return result
+
     def is_configured(self) -> bool:
         """
         检查服务是否已正确配置

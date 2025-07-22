@@ -81,7 +81,7 @@ async def generate_video_by_seedance_v1_jaaz(
 
         # Create Jaaz service and generate video
         jaaz_service = JaazService()
-        result = await jaaz_service.generate_video(
+        result = await jaaz_service.generate_video_by_seedance(
             prompt=prompt,
             model="seedance-1.0-pro",
             resolution=resolution,
