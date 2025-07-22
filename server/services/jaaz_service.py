@@ -86,9 +86,9 @@ class JaazService:
         self,
         prompt: str,
         model: str,
-        resolution: str = "1080p",
-        duration: int = 5,
-        aspect_ratio: str = "16:9",
+        resolution: Optional[str] = None,
+        duration: Optional[int] = None,
+        aspect_ratio: Optional[str] = None,
         input_images: Optional[List[str]] = None,
         **kwargs: Any
     ) -> str:
@@ -240,9 +240,9 @@ class JaazService:
         self,
         prompt: str,
         model: str,
-        resolution: str = "1080p",
-        duration: int = 5,
-        aspect_ratio: str = "16:9",
+        resolution: Optional[str] = None,
+        duration: Optional[int] = None,
+        aspect_ratio: Optional[str] = None,
         input_images: Optional[List[str]] = None,
         **kwargs: Any
     ) -> Dict[str, Any]:
@@ -297,7 +297,7 @@ class JaazService:
         self,
         prompt: str,
         model: str,
-        resolution: str = "1080p",
+        resolution: str = "480p",
         duration: int = 5,
         aspect_ratio: str = "16:9",
         input_images: Optional[List[str]] = None,
