@@ -4,9 +4,6 @@ from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
 from .video_generation import generate_video_with_provider
 from .utils.image_utils import process_input_image
-from services.tool_confirmation_manager import tool_confirmation_manager
-from services.websocket_service import send_to_websocket
-import json
 
 
 class GenerateVideoBySeedanceV1LiteInputI2VSchema(BaseModel):
@@ -79,35 +76,6 @@ async def generate_video_by_seedance_v1_lite_i2v(
         raise ValueError(
             "Input images must be provided for image-to-video generation.")
 
-    # 检查是否需要确认
-    ctx = config.get('configurable', {})
-    session_id = ctx.get('session_id', '')
-
-    arguments = {
-        'prompt': prompt,
-        'resolution': resolution,
-        'duration': duration,
-        'aspect_ratio': aspect_ratio,
-        'input_images': input_images,
-        'camera_fixed': camera_fixed,
-    }
-
-    # 发送确认请求
-    await send_to_websocket(session_id, {
-        'type': 'tool_call_pending_confirmation',
-        'id': tool_call_id,
-        'name': 'generate_video_by_seedance_v1_lite_i2v',
-        'arguments': json.dumps(arguments)
-    })
-
-    # 等待确认
-    confirmed = await tool_confirmation_manager.request_confirmation(
-        tool_call_id, session_id, 'generate_video_by_seedance_v1_lite_i2v', arguments
-    )
-
-    if not confirmed:
-        return "Video generation cancelled by user."
-
     # Process input images if provided (only use the first one)
     processed_input_images = None
     if len(input_images) > 1:
@@ -162,33 +130,6 @@ async def generate_video_by_seedance_v1_lite_t2v(
     """
     Generate a video using Seedance V1 model via configured provider
     """
-    # 检查是否需要确认
-    ctx = config.get('configurable', {})
-    session_id = ctx.get('session_id', '')
-
-    arguments = {
-        'prompt': prompt,
-        'resolution': resolution,
-        'duration': duration,
-        'aspect_ratio': aspect_ratio,
-        'camera_fixed': camera_fixed,
-    }
-
-    # 发送确认请求
-    await send_to_websocket(session_id, {
-        'type': 'tool_call_pending_confirmation',
-        'id': tool_call_id,
-        'name': 'generate_video_by_seedance_v1_lite_t2v',
-        'arguments': json.dumps(arguments)
-    })
-
-    # 等待确认
-    confirmed = await tool_confirmation_manager.request_confirmation(
-        tool_call_id, session_id, 'generate_video_by_seedance_v1_lite_t2v', arguments
-    )
-
-    if not confirmed:
-        return "Video generation cancelled by user."
 
     return await generate_video_with_provider(
         prompt=prompt,
