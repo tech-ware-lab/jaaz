@@ -121,6 +121,7 @@ class StreamProcessor:
             # 'generate_video_by_seedance_v1_lite_t2v',
             # 'generate_video_by_seedance_v1_jaaz',
             # 'generate_video_by_hailuo_02_jaaz',
+            'generate_video_by_veo3_fast_jaaz',
         }
 
         for tool_call in self.tool_calls:
