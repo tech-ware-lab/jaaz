@@ -154,8 +154,14 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const handleSendPrompt = useCallback(async () => {
     if (pending) return
 
-    // 检查余额，如果为 0 则提醒充值
-    if (authStatus.is_logged_in && parseFloat(balance) <= 0) {
+    // 检查是否使用 Jaaz 服务
+    const isUsingJaaz =
+      textModel?.provider === 'jaaz' ||
+      selectedTools?.some((tool) => tool.provider === 'jaaz')
+    // console.log('👀isUsingJaaz', textModel, selectedTools, isUsingJaaz)
+
+    // 只有当使用 Jaaz 服务且余额为 0 时才提醒充值
+    if (authStatus.is_logged_in && isUsingJaaz && parseFloat(balance) <= 0) {
       toast.error(t('chat:insufficientBalance'), {
         description: <RechargeContent />,
         duration: 10000, // 10s，给用户更多时间操作
