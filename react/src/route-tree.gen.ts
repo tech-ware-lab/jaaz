@@ -8,116 +8,61 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-// Import Routes
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as KnowledgeRouteImport } from './routes/knowledge'
+import { Route as AssetsRouteImport } from './routes/assets'
+import { Route as Agent_studioRouteImport } from './routes/agent_studio'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as CanvasIdRouteImport } from './routes/canvas.$id'
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as KnowledgeImport } from './routes/knowledge'
-import { Route as AssetsImport } from './routes/assets'
-import { Route as AgentstudioImport } from './routes/agent_studio'
-import { Route as IndexImport } from './routes/index'
-import { Route as CanvasIdImport } from './routes/canvas.$id'
-
-// Create/Update Routes
-
-const KnowledgeRoute = KnowledgeImport.update({
+const KnowledgeRoute = KnowledgeRouteImport.update({
   id: '/knowledge',
   path: '/knowledge',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AssetsRoute = AssetsImport.update({
+const AssetsRoute = AssetsRouteImport.update({
   id: '/assets',
   path: '/assets',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AgentstudioRoute = AgentstudioImport.update({
+const Agent_studioRoute = Agent_studioRouteImport.update({
   id: '/agent_studio',
   path: '/agent_studio',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const IndexRoute = IndexImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const CanvasIdRoute = CanvasIdImport.update({
+const CanvasIdRoute = CanvasIdRouteImport.update({
   id: '/canvas/$id',
   path: '/canvas/$id',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-// Populate the FileRoutesByPath interface
-
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/agent_studio': {
-      id: '/agent_studio'
-      path: '/agent_studio'
-      fullPath: '/agent_studio'
-      preLoaderRoute: typeof AgentstudioImport
-      parentRoute: typeof rootRoute
-    }
-    '/assets': {
-      id: '/assets'
-      path: '/assets'
-      fullPath: '/assets'
-      preLoaderRoute: typeof AssetsImport
-      parentRoute: typeof rootRoute
-    }
-    '/knowledge': {
-      id: '/knowledge'
-      path: '/knowledge'
-      fullPath: '/knowledge'
-      preLoaderRoute: typeof KnowledgeImport
-      parentRoute: typeof rootRoute
-    }
-    '/canvas/$id': {
-      id: '/canvas/$id'
-      path: '/canvas/$id'
-      fullPath: '/canvas/$id'
-      preLoaderRoute: typeof CanvasIdImport
-      parentRoute: typeof rootRoute
-    }
-  }
-}
-
-// Create and export the route tree
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/agent_studio': typeof AgentstudioRoute
+  '/agent_studio': typeof Agent_studioRoute
   '/assets': typeof AssetsRoute
   '/knowledge': typeof KnowledgeRoute
   '/canvas/$id': typeof CanvasIdRoute
 }
-
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/agent_studio': typeof AgentstudioRoute
+  '/agent_studio': typeof Agent_studioRoute
   '/assets': typeof AssetsRoute
   '/knowledge': typeof KnowledgeRoute
   '/canvas/$id': typeof CanvasIdRoute
 }
-
 export interface FileRoutesById {
-  __root__: typeof rootRoute
+  __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/agent_studio': typeof AgentstudioRoute
+  '/agent_studio': typeof Agent_studioRoute
   '/assets': typeof AssetsRoute
   '/knowledge': typeof KnowledgeRoute
   '/canvas/$id': typeof CanvasIdRoute
 }
-
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths: '/' | '/agent_studio' | '/assets' | '/knowledge' | '/canvas/$id'
@@ -132,55 +77,61 @@ export interface FileRouteTypes {
     | '/canvas/$id'
   fileRoutesById: FileRoutesById
 }
-
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AgentstudioRoute: typeof AgentstudioRoute
+  Agent_studioRoute: typeof Agent_studioRoute
   AssetsRoute: typeof AssetsRoute
   KnowledgeRoute: typeof KnowledgeRoute
   CanvasIdRoute: typeof CanvasIdRoute
 }
 
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/knowledge': {
+      id: '/knowledge'
+      path: '/knowledge'
+      fullPath: '/knowledge'
+      preLoaderRoute: typeof KnowledgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assets': {
+      id: '/assets'
+      path: '/assets'
+      fullPath: '/assets'
+      preLoaderRoute: typeof AssetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent_studio': {
+      id: '/agent_studio'
+      path: '/agent_studio'
+      fullPath: '/agent_studio'
+      preLoaderRoute: typeof Agent_studioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/canvas/$id': {
+      id: '/canvas/$id'
+      path: '/canvas/$id'
+      fullPath: '/canvas/$id'
+      preLoaderRoute: typeof CanvasIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+  }
+}
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AgentstudioRoute: AgentstudioRoute,
+  Agent_studioRoute: Agent_studioRoute,
   AssetsRoute: AssetsRoute,
   KnowledgeRoute: KnowledgeRoute,
   CanvasIdRoute: CanvasIdRoute,
 }
-
-export const routeTree = rootRoute
+export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-/* ROUTE_MANIFEST_START
-{
-  "routes": {
-    "__root__": {
-      "filePath": "__root.tsx",
-      "children": [
-        "/",
-        "/agent_studio",
-        "/assets",
-        "/knowledge",
-        "/canvas/$id"
-      ]
-    },
-    "/": {
-      "filePath": "index.tsx"
-    },
-    "/agent_studio": {
-      "filePath": "agent_studio.tsx"
-    },
-    "/assets": {
-      "filePath": "assets.tsx"
-    },
-    "/knowledge": {
-      "filePath": "knowledge.tsx"
-    },
-    "/canvas/$id": {
-      "filePath": "canvas.$id.tsx"
-    }
-  }
-}
-ROUTE_MANIFEST_END */

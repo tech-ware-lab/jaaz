@@ -2,12 +2,9 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from tools.video_providers.jaaz_provider import JaazVideoProvider
+from services.jaaz_service import JaazService
 from tools.video_generation.video_canvas_utils import send_video_start_notification, process_video_result
 from .utils.image_utils import process_input_image
-from services.tool_confirmation_manager import tool_confirmation_manager
-from services.websocket_service import send_to_websocket
-import json
 
 
 class GenerateVideoBySeedanceV1InputSchema(BaseModel):
@@ -51,7 +48,7 @@ async def generate_video_by_seedance_v1_jaaz(
     camera_fixed: bool = True,
 ) -> str:
     """
-    Generate a video using Seedance V1 model via Jaaz provider
+    Generate a video using Seedance V1 model via Jaaz service
     """
     print(f'🛠️ Seedance Video Generation tool_call_id: {tool_call_id}')
     ctx = config.get('configurable', {})
@@ -61,32 +58,6 @@ async def generate_video_by_seedance_v1_jaaz(
 
     # Inject the tool call id into the context
     ctx['tool_call_id'] = tool_call_id
-
-    # 检查是否需要确认
-    arguments = {
-        'prompt': prompt,
-        'resolution': resolution,
-        'duration': duration,
-        'aspect_ratio': aspect_ratio,
-        'input_images': input_images,
-        'camera_fixed': camera_fixed,
-    }
-
-    # 发送确认请求
-    await send_to_websocket(session_id, {
-        'type': 'tool_call_pending_confirmation',
-        'id': tool_call_id,
-        'name': 'generate_video_by_seedance_v1_jaaz',
-        'arguments': json.dumps(arguments)
-    })
-
-    # 等待确认
-    confirmed = await tool_confirmation_manager.request_confirmation(
-        tool_call_id, session_id, 'generate_video_by_seedance_v1_jaaz', arguments
-    )
-
-    if not confirmed:
-        return "Video generation cancelled by user."
 
     try:
         # Send start notification
@@ -108,17 +79,21 @@ async def generate_video_by_seedance_v1_jaaz(
                 raise ValueError(
                     f"Failed to process input image: {first_image}. Please check if the image exists and is valid.")
 
-        # Create Jaaz provider and generate video
-        provider = JaazVideoProvider()
-        video_url = await provider.generate(
+        # Create Jaaz service and generate video
+        jaaz_service = JaazService()
+        result = await jaaz_service.generate_video_by_seedance(
             prompt=prompt,
-            model="doubao-seedance-1-0-pro-250528",
+            model="seedance-1.0-pro",
             resolution=resolution,
             duration=duration,
             aspect_ratio=aspect_ratio,
             input_images=processed_input_images,
             camera_fixed=camera_fixed,
         )
+
+        video_url = result.get('result_url')
+        if not video_url:
+            raise Exception("No video URL returned from generation")
 
         # Process video result (save, update canvas, notify)
         return await process_video_result(
