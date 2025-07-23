@@ -30,6 +30,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import ModelSelectorV2 from './ModelSelectorV2'
+import ModelSelectorV3 from './ModelSelectorV3'
 import { useAuth } from '@/contexts/AuthContext'
 import { useBalance } from '@/hooks/use-balance'
 import { BASE_API_URL } from '@/constants'
@@ -477,6 +478,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             <PlusIcon className="size-4" />
           </Button>
 
+          <ModelSelectorV3 />
           <ModelSelectorV2 />
 
           {/* Aspect Ratio Selector */}
