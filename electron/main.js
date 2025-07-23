@@ -81,6 +81,7 @@ function findAvailablePort(startPort, maxAttempts = 100) {
 let mainWindow
 let pyProc = null
 let pyPort = null
+let childWindows = [] // Track all child windows
 
 // check for updates after the app is ready
 // Auto-updater event handlers
@@ -138,6 +139,13 @@ const createWindow = (pyPort) => {
 
   // Handle window closed event
   mainWindow.on('closed', () => {
+    // Close all child windows
+    childWindows.forEach((window) => {
+      if (!window.isDestroyed()) {
+        window.close()
+      }
+    })
+    childWindows = []
     mainWindow = null
   })
 
@@ -163,9 +171,16 @@ const createWindow = (pyPort) => {
     })
     newWindow.loadURL(navigationUrl)
 
+    // Add to child windows array
+    childWindows.push(newWindow)
+
     // Handle new window closed event
     newWindow.on('closed', () => {
-      // Clean up reference if needed
+      // Remove from child windows array
+      const index = childWindows.indexOf(newWindow)
+      if (index > -1) {
+        childWindows.splice(index, 1)
+      }
     })
   })
 
