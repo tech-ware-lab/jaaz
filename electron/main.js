@@ -49,11 +49,7 @@ function findAvailablePort(startPort, maxAttempts = 100) {
     const tryPort = (port) => {
       attempts++
       if (attempts > maxAttempts) {
-        reject(
-          new Error(
-            `Could not find available port after ${maxAttempts} attempts`
-          )
-        )
+        reject(new Error(`Could not find available port after ${maxAttempts} attempts`))
         return
       }
 
@@ -111,8 +107,7 @@ autoUpdater.on('error', (err) => {
 autoUpdater.on('download-progress', (progressObj) => {
   let log_message = 'Download speed: ' + progressObj.bytesPerSecond
   log_message = log_message + ' - Downloaded ' + progressObj.percent + '%'
-  log_message =
-    log_message + ' (' + progressObj.transferred + '/' + progressObj.total + ')'
+  log_message = log_message + ' (' + progressObj.transferred + '/' + progressObj.total + ')'
   console.log(log_message)
 })
 
@@ -144,6 +139,34 @@ const createWindow = (pyPort) => {
   // Handle window closed event
   mainWindow.on('closed', () => {
     mainWindow = null
+  })
+
+  // Handle all navigation requests (intercept all link clicks)
+  // 主要用于处理视频链接导致的页面跳转
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    console.log('Navigation requested:', navigationUrl)
+    event.preventDefault()
+
+    // Create new window for external links
+    const newWindow = new BrowserWindow({
+      width: 800,
+      height: 600,
+      title: 'Jaaz Preview',
+      icon: path.join(__dirname, '../assets/icons/jaaz.png'),
+      autoHideMenuBar: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        webSecurity: false,
+        allowRunningInsecureContent: true,
+      },
+    })
+    newWindow.loadURL(navigationUrl)
+
+    // Handle new window closed event
+    newWindow.on('closed', () => {
+      // Clean up reference if needed
+    })
   })
 
   // In development, use Vite dev server
@@ -197,9 +220,7 @@ const startPythonApi = async () => {
 
   // Set BASE_API_URL based on environment
   env.BASE_API_URL =
-    process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000'
-      : 'https://jaaz.app'
+    process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://jaaz.app'
   console.log('BASE_API_URL:', env.BASE_API_URL)
 
   // Apply proxy settings and get environment variables
@@ -215,13 +236,7 @@ const startPythonApi = async () => {
   // Determine the Python executable path (considering packaged app)
   const isWindows = process.platform === 'win32'
   const pythonExecutable = app.isPackaged
-    ? path.join(
-        process.resourcesPath,
-        'server',
-        'dist',
-        'main',
-        isWindows ? 'main.exe' : 'main'
-      )
+    ? path.join(process.resourcesPath, 'server', 'dist', 'main', isWindows ? 'main.exe' : 'main')
     : 'python'
   console.log('Resolved Python executable:', pythonExecutable)
 
@@ -276,9 +291,7 @@ const startPythonApi = async () => {
 ipcMain.handle('pick-image', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openFile', 'multiSelections'],
-    filters: [
-      { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] },
-    ],
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }],
   })
 
   if (!result.canceled && result.filePaths.length > 0) {
@@ -342,10 +355,7 @@ if (!gotTheLock) {
       await settingsService.applyProxySettings()
       console.log('Proxy settings applied for Electron sessions')
     } catch (error) {
-      console.error(
-        'Failed to apply proxy settings for Electron sessions:',
-        error
-      )
+      console.error('Failed to apply proxy settings for Electron sessions:', error)
     }
 
     // Check for updates in production every time app starts
