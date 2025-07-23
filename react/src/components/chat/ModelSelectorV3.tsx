@@ -230,9 +230,9 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
   }
 
   const tabs = [
-    { id: 'image', label: 'Image' },
-    { id: 'video', label: 'Video' },
-    { id: 'text', label: 'Text' }
+    { id: 'image', label: t('chat:modelSelector.tabs.image') },
+    { id: 'video', label: t('chat:modelSelector.tabs.video') },
+    { id: 'text', label: t('chat:modelSelector.tabs.text') }
   ] as const
 
   return (
@@ -249,9 +249,9 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
       <DropdownMenuContent className="w-96 select-none">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 border-b">
-          <div>Model</div>
+          <div>{t('chat:modelSelector.title')}</div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Auto</span>
+            <span className="text-sm text-muted-foreground">{t('chat:modelSelector.auto')}</span>
             <Switch
               checked={autoMode}
               onCheckedChange={handleAutoToggle}
@@ -278,7 +278,7 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
 
         {/* Models List */}
         <ScrollArea>
-          <div className="max-h-80 px-4 pb-4 select-none">
+          <div className="max-h-80 h-80 px-4 pb-4 select-none">
             {Object.entries(getCurrentModels()).map(([provider, providerModels], index, array) => {
               const providerInfo = getProviderDisplayInfo(provider)
               const isLastGroup = index === array.length - 1
