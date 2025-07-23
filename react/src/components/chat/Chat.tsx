@@ -43,7 +43,8 @@ import { Button } from '@/components/ui/button'
 import { Share2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useQueryClient } from '@tanstack/react-query'
-import MixedContent from './Message/MixedContent'
+import MixedContent, { MixedContentImages, MixedContentText } from './Message/MixedContent'
+
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -640,9 +641,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       />
                     ))}
 
-                  {/* 混合内容消息 - 使用新的MixedContent组件 */}
+                  {/* 混合内容消息的文本部分 - 显示在聊天框内 */}
                   {Array.isArray(message.content) && (
-                    <MixedContent
+                    <MixedContentText
                       message={message}
                       contents={message.content}
                     />

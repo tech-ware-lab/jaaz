@@ -7,9 +7,44 @@ type MixedContentProps = {
   contents: MessageContent[]
 }
 
-const MixedContent: React.FC<MixedContentProps> = ({ message, contents }) => {
-  // 分离图片和文本内容
+type MixedContentImagesProps = {
+  contents: MessageContent[]
+}
+
+type MixedContentTextProps = {
+  message: Message
+  contents: MessageContent[]
+}
+
+// 图片组件 - 独立显示在聊天框外
+export const MixedContentImages: React.FC<MixedContentImagesProps> = ({ contents }) => {
   const images = contents.filter((content) => content.type === 'image_url')
+  
+  if (images.length === 0) return null
+
+  return (
+    <div className="mb-4 px-4">
+      {images.length === 1 ? (
+        // 单张图片：保持长宽比，最大宽度限制
+        <div className="max-h-[512px] flex justify-end">
+          <MessageImage content={images[0]} />
+        </div>
+      ) : (
+        // 多张图片：横向排布，第一张图靠右
+        <div className="flex gap-2 max-h-[512px] justify-end flex-row-reverse">
+          {images.map((image, index) => (
+            <div key={index} className="max-h-[512px]">
+              <MessageImage content={image} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// 文本组件 - 显示在聊天框内
+export const MixedContentText: React.FC<MixedContentTextProps> = ({ message, contents }) => {
   const textContents = contents.filter((content) => content.type === 'text')
 
   // 过滤掉文本中的图片引用，只保留纯文本
@@ -21,50 +56,36 @@ const MixedContent: React.FC<MixedContentProps> = ({ message, contents }) => {
     .replace(/^\s*$/gm, '') // 移除空行
     .trim()
 
+  if (!combinedText) return null
+
   return (
-    <div
-      className={`${
-        message.role === 'user'
-          ? 'bg-primary text-primary-foreground rounded-xl rounded-br-md px-4 py-3 text-left ml-auto mb-4'
-          : 'text-gray-800 dark:text-gray-200 text-left items-start mb-4'
-      }`}
-    >
-      {/* 纵向布局：图片在上，文本在下 */}
-      <div className="flex flex-col gap-3">
-        {/* 图片区域 */}
-        {images.length > 0 && (
-          <div className="h-full">
-            {images.length === 1 ? (
-              // 单张图片：保持长宽比，最大宽度限制
-              <div className="max-h-[512px]">
-                <MessageImage content={images[0]} />
-              </div>
-            ) : (
-              // 多张图片：网格布局，保持长宽比
-              <div className="flex gap-2 max-h-[512px]">
-                {images.map((image, index) => (
-                  <div key={index} className="max-h-[512px]">
-                    <MessageImage content={image} />
-                  </div>
-                ))}
-              </div>
-            )}
+    <>
+      {message.role === 'user' ? (
+        <div className="flex justify-end mb-4">
+          <div className="bg-primary text-primary-foreground rounded-xl rounded-br-md px-4 py-3 text-left max-w-[300px] w-fit">
+            <div className="w-full">
+              <Markdown>{combinedText}</Markdown>
+            </div>
           </div>
-        )}
-
-        {/* 分隔线 */}
-        {images.length > 0 && combinedText.trim() && (
-          <div className="w-full h-px bg-border opacity-10" />
-        )}
-
-        {/* 文本区域 */}
-        {combinedText && (
+        </div>
+      ) : (
+        <div className="text-gray-800 dark:text-gray-200 text-left items-start mb-4">
           <div className="w-full">
             <Markdown>{combinedText}</Markdown>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// 保持原有的MixedContent组件作为向后兼容（如果需要的话）
+const MixedContent: React.FC<MixedContentProps> = ({ message, contents }) => {
+  return (
+    <>
+      <MixedContentImages contents={contents} />
+      <MixedContentText message={message} contents={contents} />
+    </>
   )
 }
 
