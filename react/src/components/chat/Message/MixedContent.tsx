@@ -23,7 +23,7 @@ export const MixedContentImages: React.FC<MixedContentImagesProps> = ({ contents
   if (images.length === 0) return null
 
   return (
-    <div className="mb-4 px-4">
+    <div className="px-4">
       {images.length === 1 ? (
         // 单张图片：保持长宽比，最大宽度限制
         <div className="max-h-[512px] flex justify-end">

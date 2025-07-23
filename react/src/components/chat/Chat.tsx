@@ -643,10 +643,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                   {/* 混合内容消息的文本部分 - 显示在聊天框内 */}
                   {Array.isArray(message.content) && (
-                    <MixedContentText
-                      message={message}
-                      contents={message.content}
-                    />
+                    <>
+                      <MixedContentImages
+                        contents={message.content}
+                      />
+                      <MixedContentText
+                        message={message}
+                        contents={message.content}
+                      />
+                    </>
                   )}
 
                   {message.role === 'assistant' &&
