@@ -64,9 +64,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [showShareDialog, setShowShareDialog] = useState(false)
   const queryClient = useQueryClient()
 
-  // 直接使用WebSocket原生连接
-  const websocketRef = useRef<WebSocket | null>(null)
-  const [wsConnected, setWsConnected] = useState(false)
+  // SSE连接相关状态
+  const eventSourceRef = useRef<EventSource | null>(null)
+  const [sseConnected, setSseConnected] = useState(false)
+  const [isStreaming, setIsStreaming] = useState(false)
 
   useEffect(() => {
     if (sessionList.length > 0) {
@@ -428,6 +429,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
 
       setPending(false)
+      setIsStreaming(false)
       scrollToBottom()
 
       // 聊天输出完毕后更新余额
@@ -440,6 +442,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleError = useCallback((data: ISocket.SessionErrorEvent) => {
     setPending(false)
+    setIsStreaming(false)
     toast.error('Error: ' + data.error, {
       closeButton: true,
       duration: 3600 * 1000,
@@ -454,7 +457,243 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     })
   }, [])
 
-  // WebSocket连接和事件监听
+  // SSE连接和事件监听
+  const connectSSE = useCallback(
+    (sessionId: string, messages: string) => {
+      // 关闭现有连接
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+        eventSourceRef.current = null
+      }
+
+      console.log('🔄 Starting SSE stream for session:', sessionId)
+      setIsStreaming(true)
+      setPending('text')
+
+      // 发送POST请求到SSE端点
+      fetch('/api/chat/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+          'Cache-Control': 'no-cache',
+        },
+        body: JSON.stringify({
+          messages: messages,
+          userId: 'user_123', // TODO: 从auth context获取真实用户ID
+          sessionId: sessionId,
+        }),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+
+          const reader = response.body?.getReader()
+          const decoder = new TextDecoder()
+
+          if (!reader) {
+            throw new Error('No reader available')
+          }
+
+          const readStream = async () => {
+            try {
+              while (true) {
+                const { done, value } = await reader.read()
+
+                if (done) {
+                  console.log('✅ SSE stream completed')
+                  setIsStreaming(false)
+                  setSseConnected(false)
+                  break
+                }
+
+                const chunk = decoder.decode(value, { stream: true })
+                const lines = chunk.split('\n')
+
+                for (const line of lines) {
+                  if (line.startsWith('event:')) {
+                    // 解析事件类型，但我们主要关注data行
+                    continue
+                  } else if (line.startsWith('data:')) {
+                    try {
+                      const jsonStr = line.substring(5).trim()
+                      if (jsonStr) {
+                        const eventData = JSON.parse(jsonStr)
+
+                        // 处理连接事件
+                        if (eventData.status === 'connected') {
+                          console.log('✅ SSE connected')
+                          setSseConnected(true)
+                          continue
+                        }
+
+                        // 处理完成事件
+                        if (eventData.status === 'completed') {
+                          console.log('✅ SSE stream completed')
+                          setPending(false)
+                          setIsStreaming(false)
+                          scrollToBottom()
+                          continue
+                        }
+
+                        // 处理chunk事件
+                        if (eventData.type && eventData.data) {
+                          const chunkData = {
+                            ...eventData.data,
+                            session_id: eventData.sessionId,
+                          }
+
+                          // 根据事件类型分发到对应的处理函数
+                          switch (eventData.type) {
+                            case ISocket.SessionEventType.Delta:
+                              handleDelta({
+                                ...chunkData,
+                                text: chunkData.text,
+                              })
+                              break
+                            case ISocket.SessionEventType.ToolCall:
+                              handleToolCall({
+                                ...chunkData,
+                                id: chunkData.id,
+                                name: chunkData.name,
+                              })
+                              break
+                            case ISocket.SessionEventType
+                              .ToolCallPendingConfirmation:
+                              handleToolCallPendingConfirmation({
+                                ...chunkData,
+                                id: chunkData.id,
+                                name: chunkData.name,
+                                arguments: chunkData.arguments,
+                              })
+                              break
+                            case ISocket.SessionEventType.ToolCallConfirmed:
+                              handleToolCallConfirmed({
+                                ...chunkData,
+                                id: chunkData.id,
+                              })
+                              break
+                            case ISocket.SessionEventType.ToolCallCancelled:
+                              handleToolCallCancelled({
+                                ...chunkData,
+                                id: chunkData.id,
+                              })
+                              break
+                            case ISocket.SessionEventType.ToolCallArguments:
+                              handleToolCallArguments({
+                                ...chunkData,
+                                id: chunkData.id,
+                                text: chunkData.text,
+                              })
+                              break
+                            case ISocket.SessionEventType.ToolCallResult:
+                              handleToolCallResult({
+                                ...chunkData,
+                                id: chunkData.id,
+                                message: chunkData.message,
+                              })
+                              break
+                            case ISocket.SessionEventType.ImageGenerated:
+                              handleImageGenerated({
+                                ...chunkData,
+                                canvas_id: chunkData.canvas_id,
+                                image_url: chunkData.image_url,
+                                element: chunkData.element,
+                                file: chunkData.file,
+                              })
+                              break
+                            case ISocket.SessionEventType.AllMessages:
+                              handleAllMessages({
+                                ...chunkData,
+                                messages: chunkData.messages,
+                              })
+                              break
+                            case ISocket.SessionEventType.Done:
+                              handleDone(chunkData)
+                              break
+                            case ISocket.SessionEventType.Error:
+                              handleError({
+                                ...chunkData,
+                                error: chunkData.error,
+                              })
+                              break
+                            case ISocket.SessionEventType.Info:
+                              handleInfo({
+                                ...chunkData,
+                                info: chunkData.info,
+                              })
+                              break
+                            default:
+                              console.log(
+                                '⚠️ Unknown SSE event type:',
+                                eventData.type
+                              )
+                          }
+                        }
+
+                        // 处理错误事件
+                        if (eventData.error) {
+                          handleError({
+                            type: ISocket.SessionEventType.Error,
+                            error: eventData.error,
+                            session_id: eventData.sessionId,
+                          })
+                        }
+                      }
+                    } catch (parseError) {
+                      console.error(
+                        'Error parsing SSE data:',
+                        parseError,
+                        'Raw line:',
+                        line
+                      )
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('❌ SSE stream error:', error)
+              setIsStreaming(false)
+              setSseConnected(false)
+              handleError({
+                type: ISocket.SessionEventType.Error,
+                error: 'SSE connection failed: ' + (error as Error).message,
+                session_id: sessionId,
+              })
+            }
+          }
+
+          readStream()
+        })
+        .catch((error) => {
+          console.error('❌ SSE fetch error:', error)
+          setIsStreaming(false)
+          setSseConnected(false)
+          handleError({
+            type: ISocket.SessionEventType.Error,
+            error: 'Failed to connect to stream: ' + (error as Error).message,
+            session_id: sessionId,
+          })
+        })
+    },
+    [
+      handleDelta,
+      handleToolCall,
+      handleToolCallPendingConfirmation,
+      handleToolCallConfirmed,
+      handleToolCallCancelled,
+      handleToolCallArguments,
+      handleToolCallResult,
+      handleImageGenerated,
+      handleAllMessages,
+      handleDone,
+      handleError,
+      handleInfo,
+      scrollToBottom,
+    ]
+  )
+
   useEffect(() => {
     const handleScroll = () => {
       if (scrollRef.current) {
@@ -467,122 +706,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const scrollEl = scrollRef.current
     scrollEl?.addEventListener('scroll', handleScroll)
 
-    // 建立原生WebSocket连接
-    const connectWebSocket = () => {
-      // 关闭现有连接
-      if (websocketRef.current) {
-        websocketRef.current.close()
-      }
-
-      // 创建新的WebSocket连接
-      const wsUrl = 'ws://localhost:3999/ws?session_id=' + sessionId
-
-      websocketRef.current = new WebSocket(wsUrl)
-
-      websocketRef.current.onopen = () => {
-        console.log('✅ WebSocket connected')
-        setWsConnected(true)
-      }
-
-      websocketRef.current.onclose = () => {
-        console.log('🔌 WebSocket disconnected')
-        setWsConnected(false)
-
-        // 自动重连
-        setTimeout(() => {
-          if (
-            !websocketRef.current ||
-            websocketRef.current.readyState === WebSocket.CLOSED
-          ) {
-            console.log('🔄 WebSocket reconnecting...')
-            connectWebSocket()
-          }
-        }, 3000)
-      }
-
-      websocketRef.current.onerror = (error) => {
-        console.error('❌ WebSocket error:', error)
-        setWsConnected(false)
-      }
-
-      websocketRef.current.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-
-          // 根据消息类型分发到对应的处理函数
-          switch (data.type) {
-            case ISocket.SessionEventType.Delta:
-              handleDelta(data)
-              break
-            case ISocket.SessionEventType.ToolCall:
-              handleToolCall(data)
-              break
-            case ISocket.SessionEventType.ToolCallPendingConfirmation:
-              handleToolCallPendingConfirmation(data)
-              break
-            case ISocket.SessionEventType.ToolCallConfirmed:
-              handleToolCallConfirmed(data)
-              break
-            case ISocket.SessionEventType.ToolCallCancelled:
-              handleToolCallCancelled(data)
-              break
-            case ISocket.SessionEventType.ToolCallArguments:
-              handleToolCallArguments(data)
-              break
-            case ISocket.SessionEventType.ToolCallResult:
-              handleToolCallResult(data)
-              break
-            case ISocket.SessionEventType.ImageGenerated:
-              handleImageGenerated(data)
-              break
-            case ISocket.SessionEventType.AllMessages:
-              handleAllMessages(data)
-              break
-            case ISocket.SessionEventType.Done:
-              handleDone(data)
-              break
-            case ISocket.SessionEventType.Error:
-              handleError(data)
-              break
-            case ISocket.SessionEventType.Info:
-              handleInfo(data)
-              break
-            default:
-              console.log('⚠️ Unknown message type:', data.type)
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error)
-        }
-      }
-    }
-
-    // 建立连接
-    connectWebSocket()
-
     return () => {
       scrollEl?.removeEventListener('scroll', handleScroll)
 
-      // 清理WebSocket连接
-      if (websocketRef.current) {
-        websocketRef.current.close()
-        websocketRef.current = null
+      // 清理SSE连接
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+        eventSourceRef.current = null
       }
     }
-  }, [
-    sessionId,
-    handleDelta,
-    handleToolCall,
-    handleToolCallPendingConfirmation,
-    handleToolCallConfirmed,
-    handleToolCallCancelled,
-    handleToolCallArguments,
-    handleToolCallResult,
-    handleImageGenerated,
-    handleAllMessages,
-    handleDone,
-    handleError,
-    handleInfo,
-  ])
+  }, [])
 
   const initChat = useCallback(async () => {
     if (!sessionId) {
@@ -632,9 +765,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const onSendMessages = useCallback(
     (data: Message[], configs: { textModel: Model; toolList: ToolInfo[] }) => {
-      setPending('text')
       setMessages(data)
 
+      // 启动SSE流
+      const lastMessage = data[data.length - 1]
+      if (lastMessage && typeof lastMessage.content === 'string') {
+        connectSSE(sessionId!, lastMessage.content)
+      }
+
+      // 保持原有的发送消息逻辑（如果需要保存到数据库等）
       sendMessages({
         sessionId: sessionId!,
         canvasId: canvasId,
@@ -655,11 +794,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       scrollToBottom()
     },
-    [canvasId, sessionId, searchSessionId, scrollToBottom]
+    [canvasId, sessionId, searchSessionId, scrollToBottom, connectSSE]
   )
 
   const handleCancelChat = useCallback(() => {
     setPending(false)
+    setIsStreaming(false)
+
+    // 关闭SSE连接
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+      eventSourceRef.current = null
+    }
   }, [])
 
   return (
@@ -675,6 +821,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onClickNewChat={onClickNewChat}
               onSelectSession={onSelectSession}
             />
+          </div>
+
+          {/* SSE Connection Status */}
+          <div className='flex items-center gap-2 text-xs text-muted-foreground mr-2'>
+            <div
+              className={`w-2 h-2 rounded-full ${sseConnected ? 'bg-green-500' : isStreaming ? 'bg-yellow-500' : 'bg-red-500'}`}
+            />
+            {isStreaming
+              ? 'Streaming...'
+              : sseConnected
+                ? 'Connected'
+                : 'Disconnected'}
           </div>
 
           {/* Share Template Button */}
