@@ -1,3 +1,4 @@
+import os
 from models.tool_model import ToolInfoJson
 from services.db_service import db_service
 from .StreamProcessor import StreamProcessor
@@ -11,7 +12,13 @@ from services.websocket_service import send_to_websocket  # type: ignore
 from services.config_service import config_service
 from typing import Optional, List, Dict, Any, cast, Set, TypedDict
 from models.config_model import ModelInfo
+# Add after existing imports
+from dotenv import load_dotenv
 
+# Load environment variables from .env file
+env_path = '/Users/weixuan/git/jaaz-cloud/.env'
+print('👇env_path', env_path)
+load_dotenv(env_path)
 
 class ContextInfo(TypedDict):
     """Context information passed to tools"""
@@ -140,8 +147,8 @@ def _create_text_model(text_model: ModelInfo) -> Any:
     model = text_model.get('model')
     provider = text_model.get('provider')
     url = text_model.get('url')
-    api_key = config_service.app_config.get(  # type: ignore
-        provider, {}).get("api_key", "")
+    api_key = os.environ.get("OPENAI_API_KEY")
+    print('👇api_key', api_key)
 
     # TODO: Verify if max token is working
     # max_tokens = text_model.get('max_tokens', 8148)
