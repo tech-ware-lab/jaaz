@@ -6,13 +6,17 @@ from services.jaaz_service import JaazService
 from tools.utils.image_canvas_utils import save_image_to_canvas, send_image_start_notification, send_image_error_notification
 from common import DEFAULT_PORT
 import os
-from tools.utils.image_utils import get_image_info_and_save, generate_image_id
+from tools.utils.image_utils import get_image_info_and_save, generate_image_id, process_input_image
 from services.config_service import FILES_DIR
 
 
 class GenerateImageByMidjourneyInputSchema(BaseModel):
     prompt: str = Field(
         description="Required. The prompt for image generation. Describe what you want to see in the image."
+    )
+    input_images: List[str] | None = Field(
+        default=None,
+        description="Optional. A list of image URLs to use as input for the image generation. If provided, the images will be used as input for the image generation."
     )
     tool_call_id: Annotated[str, InjectedToolCallId]
 
@@ -24,6 +28,7 @@ async def generate_image_by_midjourney_jaaz(
     prompt: str,
     config: RunnableConfig,
     tool_call_id: Annotated[str, InjectedToolCallId],
+    input_images: List[str] | None = None,
 ) -> str:
     """
     Generate images using Midjourney model via Jaaz service
@@ -44,11 +49,25 @@ async def generate_image_by_midjourney_jaaz(
             f"Starting Midjourney image generation..."
         )
 
+        # Process input images if provided (only use the first one)
+        processed_input_images = None
+        if input_images and len(input_images) > 0:
+            # Only process the first image
+            first_image = input_images[0]
+            processed_image = await process_input_image(first_image)
+            if processed_image:
+                processed_input_images = [processed_image]
+                print(f"Using input image for video generation: {first_image}")
+            else:
+                raise ValueError(
+                    f"Failed to process input image: {first_image}. Please check if the image exists and is valid.")
+
         # Create Jaaz service and generate image
         jaaz_service = JaazService()
         result = await jaaz_service.generate_image_by_midjourney(
             prompt=prompt,
             model="midjourney",
+            input_images=processed_input_images,
         )
 
         if not result:
