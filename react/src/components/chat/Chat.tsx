@@ -1,7 +1,7 @@
 import { sendMessages } from '@/api/chat'
 import Blur from '@/components/common/Blur'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { eventBus, TEvents } from '@/lib/event'
+import * as ISocket from '@/types/socket'
 import ChatMagicGenerator from './ChatMagicGenerator'
 import {
   AssistantMessage,
@@ -63,6 +63,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const { authStatus } = useAuth()
   const [showShareDialog, setShowShareDialog] = useState(false)
   const queryClient = useQueryClient()
+
+  // 直接使用WebSocket原生连接
+  const websocketRef = useRef<WebSocket | null>(null)
+  const [wsConnected, setWsConnected] = useState(false)
 
   useEffect(() => {
     if (sessionList.length > 0) {
@@ -131,7 +135,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   const handleDelta = useCallback(
-    (data: TEvents['Socket::Session::Delta']) => {
+    (data: ISocket.SessionDeltaEvent) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -168,7 +172,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleToolCall = useCallback(
-    (data: TEvents['Socket::Session::ToolCall']) => {
+    (data: ISocket.SessionToolCallEvent) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -211,11 +215,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         })
       )
     },
-    [sessionId]
+    [sessionId, messages]
   )
 
   const handleToolCallPendingConfirmation = useCallback(
-    (data: TEvents['Socket::Session::ToolCallPendingConfirmation']) => {
+    (data: ISocket.SessionToolCallPendingConfirmationEvent) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -267,11 +271,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         })
       )
     },
-    [sessionId]
+    [sessionId, messages]
   )
 
   const handleToolCallConfirmed = useCallback(
-    (data: TEvents['Socket::Session::ToolCallConfirmed']) => {
+    (data: ISocket.SessionToolCallConfirmedEvent) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -294,7 +298,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleToolCallCancelled = useCallback(
-    (data: TEvents['Socket::Session::ToolCallCancelled']) => {
+    (data: ISocket.SessionToolCallCancelledEvent) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -325,7 +329,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleToolCallArguments = useCallback(
-    (data: TEvents['Socket::Session::ToolCallArguments']) => {
+    (data: ISocket.SessionToolCallArgumentsEvent) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -360,7 +364,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleToolCallResult = useCallback(
-    (data: TEvents['Socket::Session::ToolCallResult']) => {
+    (data: ISocket.SessionToolCallResultEvent) => {
       console.log('😘🖼️tool_call_result event get', data)
       if (data.session_id && data.session_id !== sessionId) {
         return
@@ -386,7 +390,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleImageGenerated = useCallback(
-    (data: TEvents['Socket::Session::ImageGenerated']) => {
+    (data: ISocket.SessionImageGeneratedEvent) => {
       if (
         data.canvas_id &&
         data.canvas_id !== canvasId &&
@@ -402,7 +406,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleAllMessages = useCallback(
-    (data: TEvents['Socket::Session::AllMessages']) => {
+    (data: ISocket.SessionAllMessagesEvent) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -418,7 +422,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   )
 
   const handleDone = useCallback(
-    (data: TEvents['Socket::Session::Done']) => {
+    (data: ISocket.SessionDoneEvent) => {
       if (data.session_id && data.session_id !== sessionId) {
         return
       }
@@ -434,7 +438,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     [sessionId, scrollToBottom, authStatus.is_logged_in, queryClient]
   )
 
-  const handleError = useCallback((data: TEvents['Socket::Session::Error']) => {
+  const handleError = useCallback((data: ISocket.SessionErrorEvent) => {
     setPending(false)
     toast.error('Error: ' + data.error, {
       closeButton: true,
@@ -443,13 +447,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     })
   }, [])
 
-  const handleInfo = useCallback((data: TEvents['Socket::Session::Info']) => {
+  const handleInfo = useCallback((data: ISocket.SessionInfoEvent) => {
     toast.info(data.info, {
       closeButton: true,
       duration: 10 * 1000,
     })
   }, [])
 
+  // WebSocket连接和事件监听
   useEffect(() => {
     const handleScroll = () => {
       if (scrollRef.current) {
@@ -458,53 +463,126 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           scrollRef.current.clientHeight + 1
       }
     }
+
     const scrollEl = scrollRef.current
     scrollEl?.addEventListener('scroll', handleScroll)
 
-    eventBus.on('Socket::Session::Delta', handleDelta)
-    eventBus.on('Socket::Session::ToolCall', handleToolCall)
-    eventBus.on(
-      'Socket::Session::ToolCallPendingConfirmation',
-      handleToolCallPendingConfirmation
-    )
-    eventBus.on('Socket::Session::ToolCallConfirmed', handleToolCallConfirmed)
-    eventBus.on('Socket::Session::ToolCallCancelled', handleToolCallCancelled)
-    eventBus.on('Socket::Session::ToolCallArguments', handleToolCallArguments)
-    eventBus.on('Socket::Session::ToolCallResult', handleToolCallResult)
-    eventBus.on('Socket::Session::ImageGenerated', handleImageGenerated)
-    eventBus.on('Socket::Session::AllMessages', handleAllMessages)
-    eventBus.on('Socket::Session::Done', handleDone)
-    eventBus.on('Socket::Session::Error', handleError)
-    eventBus.on('Socket::Session::Info', handleInfo)
+    // 建立原生WebSocket连接
+    const connectWebSocket = () => {
+      // 关闭现有连接
+      if (websocketRef.current) {
+        websocketRef.current.close()
+      }
+
+      // 创建新的WebSocket连接
+      const wsUrl = 'ws://localhost:3999/ws?session_id=' + sessionId
+
+      websocketRef.current = new WebSocket(wsUrl)
+
+      websocketRef.current.onopen = () => {
+        console.log('✅ WebSocket connected')
+        setWsConnected(true)
+      }
+
+      websocketRef.current.onclose = () => {
+        console.log('🔌 WebSocket disconnected')
+        setWsConnected(false)
+
+        // 自动重连
+        setTimeout(() => {
+          if (
+            !websocketRef.current ||
+            websocketRef.current.readyState === WebSocket.CLOSED
+          ) {
+            console.log('🔄 WebSocket reconnecting...')
+            connectWebSocket()
+          }
+        }, 3000)
+      }
+
+      websocketRef.current.onerror = (error) => {
+        console.error('❌ WebSocket error:', error)
+        setWsConnected(false)
+      }
+
+      websocketRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+
+          // 根据消息类型分发到对应的处理函数
+          switch (data.type) {
+            case ISocket.SessionEventType.Delta:
+              handleDelta(data)
+              break
+            case ISocket.SessionEventType.ToolCall:
+              handleToolCall(data)
+              break
+            case ISocket.SessionEventType.ToolCallPendingConfirmation:
+              handleToolCallPendingConfirmation(data)
+              break
+            case ISocket.SessionEventType.ToolCallConfirmed:
+              handleToolCallConfirmed(data)
+              break
+            case ISocket.SessionEventType.ToolCallCancelled:
+              handleToolCallCancelled(data)
+              break
+            case ISocket.SessionEventType.ToolCallArguments:
+              handleToolCallArguments(data)
+              break
+            case ISocket.SessionEventType.ToolCallResult:
+              handleToolCallResult(data)
+              break
+            case ISocket.SessionEventType.ImageGenerated:
+              handleImageGenerated(data)
+              break
+            case ISocket.SessionEventType.AllMessages:
+              handleAllMessages(data)
+              break
+            case ISocket.SessionEventType.Done:
+              handleDone(data)
+              break
+            case ISocket.SessionEventType.Error:
+              handleError(data)
+              break
+            case ISocket.SessionEventType.Info:
+              handleInfo(data)
+              break
+            default:
+              console.log('⚠️ Unknown message type:', data.type)
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error)
+        }
+      }
+    }
+
+    // 建立连接
+    connectWebSocket()
+
     return () => {
       scrollEl?.removeEventListener('scroll', handleScroll)
 
-      eventBus.off('Socket::Session::Delta', handleDelta)
-      eventBus.off('Socket::Session::ToolCall', handleToolCall)
-      eventBus.off(
-        'Socket::Session::ToolCallPendingConfirmation',
-        handleToolCallPendingConfirmation
-      )
-      eventBus.off(
-        'Socket::Session::ToolCallConfirmed',
-        handleToolCallConfirmed
-      )
-      eventBus.off(
-        'Socket::Session::ToolCallCancelled',
-        handleToolCallCancelled
-      )
-      eventBus.off(
-        'Socket::Session::ToolCallArguments',
-        handleToolCallArguments
-      )
-      eventBus.off('Socket::Session::ToolCallResult', handleToolCallResult)
-      eventBus.off('Socket::Session::ImageGenerated', handleImageGenerated)
-      eventBus.off('Socket::Session::AllMessages', handleAllMessages)
-      eventBus.off('Socket::Session::Done', handleDone)
-      eventBus.off('Socket::Session::Error', handleError)
-      eventBus.off('Socket::Session::Info', handleInfo)
+      // 清理WebSocket连接
+      if (websocketRef.current) {
+        websocketRef.current.close()
+        websocketRef.current = null
+      }
     }
-  })
+  }, [
+    sessionId,
+    handleDelta,
+    handleToolCall,
+    handleToolCallPendingConfirmation,
+    handleToolCallConfirmed,
+    handleToolCallCancelled,
+    handleToolCallArguments,
+    handleToolCallResult,
+    handleImageGenerated,
+    handleAllMessages,
+    handleDone,
+    handleError,
+    handleInfo,
+  ])
 
   const initChat = useCallback(async () => {
     if (!sessionId) {
