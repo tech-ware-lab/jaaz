@@ -50,6 +50,7 @@ from tools.generate_image_by_recraft_v3_replicate import (
 )
 from tools.generate_video_by_hailuo_02_jaaz import generate_video_by_hailuo_02_jaaz
 from tools.generate_video_by_veo3_fast_jaaz import generate_video_by_veo3_fast_jaaz
+from tools.generate_image_by_midjourney_jaaz import generate_image_by_midjourney_jaaz
 from services.config_service import config_service
 from services.db_service import db_service
 
@@ -95,6 +96,12 @@ TOOL_MAPPING: Dict[str, ToolInfo] = {
         "type": "image",
         "provider": "jaaz",
         "tool_function": generate_image_by_flux_kontext_max,
+    },
+    "generate_image_by_midjourney_jaaz": {
+        "display_name": "Midjourney",
+        "type": "image",
+        "provider": "jaaz",
+        "tool_function": generate_image_by_midjourney_jaaz,
     },
     "generate_image_by_doubao_seedream_3_jaaz": {
         "display_name": "Doubao Seedream 3",
