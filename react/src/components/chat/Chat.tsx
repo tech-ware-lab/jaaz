@@ -67,7 +67,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // SSE连接相关状态
   const eventSourceRef = useRef<EventSource | null>(null)
   const [sseConnected, setSseConnected] = useState(false)
-  const [isStreaming, setIsStreaming] = useState(false)
 
   useEffect(() => {
     if (sessionList.length > 0) {
@@ -429,7 +428,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
 
       setPending(false)
-      setIsStreaming(false)
       scrollToBottom()
 
       // 聊天输出完毕后更新余额
@@ -442,7 +440,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleError = useCallback((data: ISocket.SessionErrorEvent) => {
     setPending(false)
-    setIsStreaming(false)
     toast.error('Error: ' + data.error, {
       closeButton: true,
       duration: 3600 * 1000,
@@ -467,7 +464,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
 
       console.log('🔄 Starting SSE stream for session:', sessionId)
-      setIsStreaming(true)
       setPending('text')
 
       // 发送POST请求到SSE端点
@@ -480,13 +476,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         },
         body: JSON.stringify({
           messages: messages,
-          userId: 'user_123', // TODO: 从auth context获取真实用户ID
           sessionId: sessionId,
         }),
       })
         .then((response) => {
           if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
+            console.log('👇response', response)
+            toast.error('Error: ' + response.statusText + response.body, {
+              closeButton: true,
+              duration: 3600 * 1000,
+            })
+            setPending(false)
+            return
           }
 
           const reader = response.body?.getReader()
@@ -503,7 +504,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                 if (done) {
                   console.log('✅ SSE stream completed')
-                  setIsStreaming(false)
+                  setPending(false)
                   setSseConnected(false)
                   break
                 }
@@ -532,7 +533,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         if (eventData.status === 'completed') {
                           console.log('✅ SSE stream completed')
                           setPending(false)
-                          setIsStreaming(false)
                           scrollToBottom()
                           continue
                         }
@@ -654,7 +654,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               }
             } catch (error) {
               console.error('❌ SSE stream error:', error)
-              setIsStreaming(false)
+              setPending(false)
               setSseConnected(false)
               handleError({
                 type: ISocket.SessionEventType.Error,
@@ -668,7 +668,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         })
         .catch((error) => {
           console.error('❌ SSE fetch error:', error)
-          setIsStreaming(false)
+          setPending(false)
           setSseConnected(false)
           handleError({
             type: ISocket.SessionEventType.Error,
@@ -799,7 +799,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleCancelChat = useCallback(() => {
     setPending(false)
-    setIsStreaming(false)
 
     // 关闭SSE连接
     if (eventSourceRef.current) {
@@ -826,13 +825,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {/* SSE Connection Status */}
           <div className='flex items-center gap-2 text-xs text-muted-foreground mr-2'>
             <div
-              className={`w-2 h-2 rounded-full ${sseConnected ? 'bg-green-500' : isStreaming ? 'bg-yellow-500' : 'bg-red-500'}`}
+              className={`w-2 h-2 rounded-full ${sseConnected ? 'bg-green-500' : 'bg-red-500'}`}
             />
-            {isStreaming
-              ? 'Streaming...'
-              : sseConnected
-                ? 'Connected'
-                : 'Disconnected'}
+            {sseConnected ? 'Connected' : 'Disconnected'}
           </div>
 
           {/* Share Template Button */}
