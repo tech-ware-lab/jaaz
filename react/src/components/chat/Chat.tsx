@@ -456,7 +456,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // SSE连接和事件监听
   const connectSSE = useCallback(
-    (sessionId: string, messages: string) => {
+    (sessionId: string, messages: Message[]) => {
       // 关闭现有连接
       if (eventSourceRef.current) {
         eventSourceRef.current.close()
@@ -476,13 +476,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         },
         body: JSON.stringify({
           messages: messages,
-          sessionId: sessionId,
+          session_id: sessionId,
+          is_new_session: true,
+          canvas_id: canvasId,
         }),
       })
-        .then((response) => {
+        .then(async (response) => {
           if (!response.ok) {
             console.log('👇response', response)
-            toast.error('Error: ' + response.statusText + response.body, {
+            const text = await response.text()
+            toast.error(`Error: ${response.statusText} - ${text}`, {
               closeButton: true,
               duration: 3600 * 1000,
             })
@@ -768,29 +771,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setMessages(data)
 
       // 启动SSE流
-      const lastMessage = data[data.length - 1]
-      if (lastMessage && typeof lastMessage.content === 'string') {
-        connectSSE(sessionId!, lastMessage.content)
-      }
-
-      // 保持原有的发送消息逻辑（如果需要保存到数据库等）
-      sendMessages({
-        sessionId: sessionId!,
-        canvasId: canvasId,
-        newMessages: data,
-        textModel: configs.textModel,
-        toolList: configs.toolList,
-        systemPrompt:
-          localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT,
-      })
-
-      if (searchSessionId !== sessionId) {
-        window.history.pushState(
-          {},
-          '',
-          `/canvas/${canvasId}?sessionId=${sessionId}`
-        )
-      }
+      connectSSE(sessionId!, data)
 
       scrollToBottom()
     },
@@ -881,7 +862,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                   {message.role === 'assistant' &&
                     message.tool_calls &&
-                    message.tool_calls.at(-1)?.function.name != 'finish' &&
                     message.tool_calls.map((toolCall, i) => {
                       return (
                         <ToolCallTag
