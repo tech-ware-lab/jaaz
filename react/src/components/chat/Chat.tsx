@@ -60,7 +60,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const { t } = useTranslation()
   const [session, setSession] = useState<Session | null>(null)
   const { authStatus } = useAuth()
-  const [showShareDialog, setShowShareDialog] = useState(false)
   const queryClient = useQueryClient()
 
   // SSE连接相关状态
@@ -959,13 +958,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
 
       {/* Share Template Dialog */}
-      <ShareTemplateDialog
+      {/* <ShareTemplateDialog
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
         canvasId={canvasId}
         sessionId={sessionId || ''}
         messages={messages}
-      />
+      /> */}
     </PhotoProvider>
   )
 }

@@ -33,10 +33,16 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
           onSelectSession(value)
         }}
       >
-        <SelectTrigger className='flex-1 min-w-0 bg-background' size={'sm'}>
-          <SelectValue placeholder='Theme' />
+        <SelectTrigger
+          className='flex-1 min-w-0 bg-background truncate w-full'
+          size={'sm'}
+        >
+          <SelectValue
+            placeholder='Select a session'
+            className='truncate max-w-full block'
+          />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className='max-h-[80vh] overflow-y-auto'>
           {sessionList
             ?.filter((session) => session.id && session.id.trim() !== '') // Fix error of A ‹Select.Item /> must have a value prop that is not an empty string.
             ?.map((session) => (
