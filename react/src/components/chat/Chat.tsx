@@ -405,7 +405,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
         )
         setSession({
           id: sessionId,
-          title: 'New Session',
+          title:
+            typeof messages[0]?.content === 'string'
+              ? messages[0]?.content
+              : 'New Chat',
         })
       }
 

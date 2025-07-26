@@ -1,14 +1,13 @@
 import { Session } from '@/types/types'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, ChevronDownIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { getCanvas } from '@/api/canvas'
 import { useQuery } from '@tanstack/react-query'
 
@@ -30,48 +29,48 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
     useQuery({
       queryKey: ['list_chat_sessions'],
       queryFn: () => getCanvas(canvasId),
-      staleTime: 1000, // 5分钟内数据被认为是新鲜的
+      staleTime: 1000, // 1s 内数据被认为是新鲜的
       placeholderData: (previousData) => previousData, // 关键：显示旧数据同时获取新数据
       refetchOnWindowFocus: true, // 窗口获得焦点时重新获取
       refetchOnReconnect: true, // 网络重连时重新获取
       refetchOnMount: true, // 挂载时重新获取
     })
+
+  const handleDropdownOpen = () => {
+    refreshSessionList()
+  }
+
   return (
-    <div className='flex items-center gap-2 w-full'>
-      <Select
-        value={session?.id}
-        onValueChange={(value) => {
-          const _session = sessionList?.find((s) => s.id === value)
-          if (_session) {
-            onSelectSession(_session)
-          }
-        }}
-      >
-        <SelectTrigger
-          className='flex-1 min-w-0 bg-background truncate w-full'
-          size={'sm'}
-        >
-          <SelectValue
-            placeholder='New Chat'
-            className='truncate max-w-full block'
-          />
-        </SelectTrigger>
-        <SelectContent className='max-h-[80vh] overflow-y-auto'>
+    <div className='flex items-center gap-2 w-full justify-between'>
+      <DropdownMenu onOpenChange={(open) => open && handleDropdownOpen()}>
+        <DropdownMenuTrigger asChild>
+          <div className='flex items-center cursor-pointer border-border border rounded-md px-2 py-1 flex-1 min-w-0'>
+            <span className='truncate block text-left w-full'>
+              {session?.title || 'New Chat'}
+            </span>
+            <ChevronDownIcon className='h-4 w-4 shrink-0' />
+          </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className='w-full min-w-[200px] max-h-[80vh] overflow-y-auto'>
           {sessionList
-            ?.filter((session) => session.id && session.id.trim() !== '') // Fix error of A ‹Select.Item /> must have a value prop that is not an empty string.
-            ?.map((session) => (
-              <SelectItem key={session.id} value={session.id}>
-                {session.title}
-              </SelectItem>
+            ?.filter((session) => session.id && session.id.trim() !== '')
+            ?.map((sessionItem) => (
+              <DropdownMenuItem
+                key={sessionItem.id}
+                onClick={() => onSelectSession(sessionItem)}
+                className='cursor-pointer'
+              >
+                <span className='truncate'>{sessionItem.title}</span>
+              </DropdownMenuItem>
             ))}
-        </SelectContent>
-      </Select>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Button
         variant={'outline'}
         onClick={onClickNewChat}
         size={'sm'}
-        className='shrink-0 gap-1'
+        className='shrink-0 gap-1 w-20'
       >
         <PlusIcon />
         <span className='text-sm'>{t('chat:newChat')}</span>
