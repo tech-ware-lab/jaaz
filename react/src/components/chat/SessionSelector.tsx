@@ -9,28 +9,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
+import { getCanvas } from '@/api/canvas'
+import { useQuery } from '@tanstack/react-query'
 
 type SessionSelectorProps = {
-  session: Session | null
-  sessionList: Session[]
-  onSelectSession: (sessionId: string) => void
+  session: { id: string; title: string } | null
+  canvasId: string
+  onSelectSession: (session: { id: string; title: string }) => void
   onClickNewChat: () => void
 }
 
 const SessionSelector: React.FC<SessionSelectorProps> = ({
   session,
-  sessionList,
+  canvasId,
   onSelectSession,
   onClickNewChat,
 }) => {
   const { t } = useTranslation()
-
+  const { data: { sessions: sessionList } = {}, refetch: refreshSessionList } =
+    useQuery({
+      queryKey: ['list_chat_sessions'],
+      queryFn: () => getCanvas(canvasId),
+      staleTime: 1000, // 5分钟内数据被认为是新鲜的
+      placeholderData: (previousData) => previousData, // 关键：显示旧数据同时获取新数据
+      refetchOnWindowFocus: true, // 窗口获得焦点时重新获取
+      refetchOnReconnect: true, // 网络重连时重新获取
+      refetchOnMount: true, // 挂载时重新获取
+    })
   return (
     <div className='flex items-center gap-2 w-full'>
       <Select
         value={session?.id}
         onValueChange={(value) => {
-          onSelectSession(value)
+          const _session = sessionList?.find((s) => s.id === value)
+          if (_session) {
+            onSelectSession(_session)
+          }
         }}
       >
         <SelectTrigger
@@ -38,7 +52,7 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
           size={'sm'}
         >
           <SelectValue
-            placeholder='Select a session'
+            placeholder='New Chat'
             className='truncate max-w-full block'
           />
         </SelectTrigger>

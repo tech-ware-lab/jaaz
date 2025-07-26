@@ -43,22 +43,20 @@ import { Button } from '@/components/ui/button'
 import { Share2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/router'
 
 type ChatInterfaceProps = {
   canvasId: string
-  sessionList: Session[]
-  setSessionList: Dispatch<SetStateAction<Session[]>>
-  sessionId: string
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({
-  canvasId,
-  sessionList,
-  setSessionList,
-  sessionId: searchSessionId,
-}) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
   const { t } = useTranslation()
-  const [session, setSession] = useState<Session | null>(null)
+  const router = useRouter()
+  const searchSessionId = router.query.session_id as string
+  const [session, setSession] = useState<{
+    id: string
+    title: string
+  } | null>(null)
   const { authStatus } = useAuth()
   const queryClient = useQueryClient()
 
@@ -66,26 +64,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const eventSourceRef = useRef<EventSource | null>(null)
   const [sseConnected, setSseConnected] = useState(false)
 
-  useEffect(() => {
-    if (sessionList.length > 0) {
-      let _session = null
-      if (searchSessionId) {
-        _session = sessionList.find((s) => s.id === searchSessionId) || null
-      } else {
-        _session = sessionList[0]
-      }
-      setSession(_session)
-    } else {
-      setSession(null)
-    }
-  }, [sessionList, searchSessionId])
-
   const [messages, setMessages] = useState<Message[]>([])
   const [pending, setPending] = useState<PendingType>(false)
   const mergedToolCallIds = useRef<string[]>([])
-
-  const sessionId = session?.id ?? searchSessionId
-
   const sessionIdRef = useRef<string>(session?.id || nanoid())
   const [expandingToolCalls, setExpandingToolCalls] = useState<string[]>([])
   const [pendingToolConfirmations, setPendingToolConfirmations] = useState<
@@ -132,10 +113,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleDelta = useCallback(
     (data: ISocket.SessionDeltaEvent) => {
-      if (data.session_id && data.session_id !== sessionId) {
-        return
-      }
-
       setPending('text')
       setMessages(
         produce((prev) => {
@@ -164,15 +141,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       )
       scrollToBottom()
     },
-    [sessionId, scrollToBottom]
+    [scrollToBottom]
   )
 
   const handleToolCall = useCallback(
     (data: ISocket.SessionToolCallEvent) => {
-      if (data.session_id && data.session_id !== sessionId) {
-        return
-      }
-
       const existToolCall = messages.find(
         (m) =>
           m.role === 'assistant' &&
@@ -211,15 +184,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         })
       )
     },
-    [sessionId, messages]
+    [messages]
   )
 
   const handleToolCallPendingConfirmation = useCallback(
     (data: ISocket.SessionToolCallPendingConfirmationEvent) => {
-      if (data.session_id && data.session_id !== sessionId) {
-        return
-      }
-
       const existToolCall = messages.find(
         (m) =>
           m.role === 'assistant' &&
@@ -267,15 +236,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         })
       )
     },
-    [sessionId, messages]
+    [messages]
   )
 
   const handleToolCallConfirmed = useCallback(
     (data: ISocket.SessionToolCallConfirmedEvent) => {
-      if (data.session_id && data.session_id !== sessionId) {
-        return
-      }
-
       setPendingToolConfirmations(
         produce((prev) => {
           return prev.filter((id) => id !== data.id)
@@ -290,15 +255,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         })
       )
     },
-    [sessionId]
+    []
   )
 
   const handleToolCallCancelled = useCallback(
     (data: ISocket.SessionToolCallCancelledEvent) => {
-      if (data.session_id && data.session_id !== sessionId) {
-        return
-      }
-
       setPendingToolConfirmations(
         produce((prev) => {
           return prev.filter((id) => id !== data.id)
@@ -321,15 +282,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         })
       )
     },
-    [sessionId]
+    []
   )
 
   const handleToolCallArguments = useCallback(
     (data: ISocket.SessionToolCallArgumentsEvent) => {
-      if (data.session_id && data.session_id !== sessionId) {
-        return
-      }
-
       setMessages(
         produce((prev) => {
           setPending('tool')
@@ -356,15 +313,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       )
       scrollToBottom()
     },
-    [sessionId, scrollToBottom, pendingToolConfirmations]
+    [scrollToBottom, pendingToolConfirmations]
   )
 
   const handleToolCallResult = useCallback(
     (data: ISocket.SessionToolCallResultEvent) => {
       console.log('😘🖼️tool_call_result event get', data)
-      if (data.session_id && data.session_id !== sessionId) {
-        return
-      }
       // TODO: support other non string types of returning content like image_url
       if (data.message.content) {
         setMessages(
@@ -382,31 +336,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         )
       }
     },
-    [canvasId, sessionId]
+    [canvasId]
   )
 
   const handleImageGenerated = useCallback(
     (data: ISocket.SessionImageGeneratedEvent) => {
-      if (
-        data.canvas_id &&
-        data.canvas_id !== canvasId &&
-        data.session_id !== sessionId
-      ) {
-        return
-      }
-
       console.log('⭐️dispatching image_generated', data)
       setPending('image')
     },
-    [canvasId, sessionId]
+    [canvasId]
   )
 
   const handleAllMessages = useCallback(
     (data: ISocket.SessionAllMessagesEvent) => {
-      if (data.session_id && data.session_id !== sessionId) {
-        return
-      }
-
       setMessages(() => {
         console.log('👇all_messages', data.messages)
         return data.messages
@@ -414,15 +356,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setMessages(mergeToolCallResult(data.messages))
       scrollToBottom()
     },
-    [sessionId, scrollToBottom]
+    [scrollToBottom]
   )
 
   const handleDone = useCallback(
     (data: ISocket.SessionDoneEvent) => {
-      if (data.session_id && data.session_id !== sessionId) {
-        return
-      }
-
       setPending(false)
       scrollToBottom()
 
@@ -431,7 +369,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         queryClient.invalidateQueries({ queryKey: ['balance'] })
       }
     },
-    [sessionId, scrollToBottom, authStatus.is_logged_in, queryClient]
+    [scrollToBottom, authStatus.is_logged_in, queryClient]
   )
 
   const handleError = useCallback((data: ISocket.SessionErrorEvent) => {
@@ -452,11 +390,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // SSE连接和事件监听
   const connectSSE = useCallback(
-    (sessionId: string, messages: Message[]) => {
+    (sessionId: string | undefined, messages: Message[]) => {
       // 关闭现有连接
       if (eventSourceRef.current) {
         eventSourceRef.current.close()
         eventSourceRef.current = null
+      }
+      if (!sessionId) {
+        sessionId = nanoid()
+        window.history.pushState(
+          {},
+          '',
+          `/canvas/${canvasId}?session_id=${sessionId}`
+        )
+        setSession({
+          id: sessionId,
+          title: 'New Session',
+        })
       }
 
       console.log('🔄 Starting SSE stream for session:', sessionId)
@@ -716,46 +666,57 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [])
 
-  const initChat = useCallback(async () => {
-    if (!sessionId) {
-      return
-    }
+  const fetchSession = useCallback(
+    async (sessionId: string) => {
+      const searchSessionId = sessionId
+      const resp = await fetch('/api/chat_session/' + searchSessionId)
+      if (!resp.ok) {
+        console.log('initChat resp not ok', resp)
+        setMessages([])
+        setSession(null)
+        return
+      }
 
-    sessionIdRef.current = sessionId
+      const data = await resp.json()
 
-    const resp = await fetch('/api/chat_session/' + sessionId)
-    const data = await resp.json()
-    const msgs = data?.length ? data : []
+      // Handle new response format with session and messages
+      if (data.session && data.messages) {
+        const msgs = data.messages?.length ? data.messages : []
+        setMessages(mergeToolCallResult(msgs))
+        setSession({
+          id: data.session.id,
+          title: data.session.title,
+        })
+      } else {
+        console.log('initChat resp not ok', data)
+        setMessages([])
+        setSession(null)
+      }
 
-    setMessages(mergeToolCallResult(msgs))
-    scrollToBottom()
-  }, [sessionId, scrollToBottom])
+      scrollToBottom()
+    },
+    [scrollToBottom]
+  )
 
   useEffect(() => {
-    initChat()
-  }, [sessionId, initChat])
+    if (searchSessionId) {
+      fetchSession(searchSessionId)
+    }
+  }, [searchSessionId, fetchSession])
 
-  const onSelectSession = (sessionId: string) => {
-    setSession(sessionList.find((s) => s.id === sessionId) || null)
+  const onSelectSession = (session: { id: string; title: string }) => {
+    session?.id && fetchSession(session?.id)
     window.history.pushState(
       {},
       '',
-      `/canvas/${canvasId}?session_id=${sessionId}`
+      `/canvas/${canvasId}?session_id=${session?.id}`
     )
   }
 
   const onClickNewChat = () => {
-    const newSession: Session = {
-      id: nanoid(),
-      title: t('chat:newChat'),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      model: session?.model || 'gpt-4o',
-      provider: session?.provider || 'openai',
-    }
-
-    setSessionList((prev) => [...prev, newSession])
-    onSelectSession(newSession.id)
+    setSession(null)
+    window.history.pushState({}, '', `/canvas/${canvasId}?session_id=0`)
+    setMessages([])
   }
 
   const onSendMessages = useCallback(
@@ -763,11 +724,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setMessages(data)
 
       // 启动SSE流
-      connectSSE(sessionId!, data)
+      connectSSE(session?.id, data)
 
       scrollToBottom()
     },
-    [canvasId, sessionId, searchSessionId, scrollToBottom, connectSSE]
+    [canvasId, session, scrollToBottom, connectSSE]
   )
 
   const handleCancelChat = useCallback(() => {
@@ -789,7 +750,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <div className='flex-1 min-w-0'>
             <SessionSelector
               session={session}
-              sessionList={sessionList}
+              canvasId={canvasId}
               onClickNewChat={onClickNewChat}
               onSelectSession={onSelectSession}
             />
@@ -878,31 +839,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                           )}
                           onConfirm={() => {
                             // 发送确认事件到后端
-                            fetch('/api/tool_confirmation', {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                              },
-                              body: JSON.stringify({
-                                session_id: sessionId,
-                                tool_call_id: toolCall.id,
-                                confirmed: true,
-                              }),
-                            })
+                            session?.id &&
+                              fetch('/api/tool_confirmation', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  session_id: session?.id,
+                                  tool_call_id: toolCall.id,
+                                  confirmed: true,
+                                }),
+                              })
                           }}
                           onCancel={() => {
                             // 发送取消事件到后端
-                            fetch('/api/tool_confirmation', {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                              },
-                              body: JSON.stringify({
-                                session_id: sessionId,
-                                tool_call_id: toolCall.id,
-                                confirmed: false,
-                              }),
-                            })
+                            session?.id &&
+                              fetch('/api/tool_confirmation', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  session_id: session?.id,
+                                  tool_call_id: toolCall.id,
+                                  confirmed: false,
+                                }),
+                              })
                           }}
                         />
                       )
@@ -910,8 +873,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
               ))}
               {pending && <ChatSpinner pending={pending} />}
-              {pending && sessionId && (
-                <ToolcallProgressUpdate sessionId={sessionId} />
+              {pending && session?.id && (
+                <ToolcallProgressUpdate sessionId={session?.id} />
               )}
             </div>
           ) : (
@@ -938,7 +901,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         <div className='p-2 gap-2 sticky bottom-0'>
           <ChatTextarea
-            sessionId={sessionId!}
+            sessionId={session?.id || ''}
             pending={!!pending}
             messages={messages}
             onSendMessages={onSendMessages}
@@ -947,7 +910,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
           {/* 魔法生成组件 */}
           <ChatMagicGenerator
-            sessionId={sessionId || ''}
+            sessionId={session?.id || ''}
             canvasId={canvasId}
             messages={messages}
             setMessages={setMessages}
