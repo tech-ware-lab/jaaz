@@ -126,73 +126,107 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     })
   }
 
-  // Upload image function without react-query
-  const uploadImageToS3 = async (file: File) => {
-    try {
-      // Process the file using the same logic as workspace
-      const processedImages = await processImageFiles([file])
+  // Upload image function without react-query - using useCallback for stable reference
+  const uploadImageToS3 = useCallback(
+    async (file: File) => {
+      try {
+        console.log('🦄Starting image upload for:', file.name)
 
-      if (processedImages.length === 0) {
-        throw new Error('Failed to process image')
-      }
+        // Process the file using the same logic as workspace
+        const processedImages = await processImageFiles([file])
 
-      const processedImage = processedImages[0]
+        if (processedImages.length === 0) {
+          throw new Error('Failed to process image')
+        }
 
-      // Get image dimensions from base64
-      const dimensions = await getImageDimensions(processedImage.url)
+        const processedImage = processedImages[0]
 
-      // Upload to S3 using the base64 data
-      const [header, base64Data] = processedImage.url.split(',')
-      const mimeMatch = header.match(/data:([^;]+);base64/)
-      const contentType = mimeMatch ? mimeMatch[1] : 'image/png'
+        // Get image dimensions from base64
+        const dimensions = await getImageDimensions(processedImage.url)
 
-      const uploadResponse = await fetch('/api/image/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          base64Data: base64Data,
+        // Upload to S3 using the base64 data
+        const [header, base64Data] = processedImage.url.split(',')
+        const mimeMatch = header.match(/data:([^;]+);base64/)
+        const contentType = mimeMatch ? mimeMatch[1] : 'image/png'
+
+        console.log('🦄Uploading to S3...', {
           fileName: processedImage.filename,
-          contentType: contentType,
-        }),
-      })
+          contentType,
+        })
 
-      const uploadData = await uploadResponse.json()
+        const uploadResponse = await fetch('/api/image/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            base64Data: base64Data,
+            fileName: processedImage.filename,
+            contentType: contentType,
+          }),
+        })
 
-      if (!uploadResponse.ok || !uploadData.success) {
-        throw new Error(uploadData.error || 'Upload failed')
+        const uploadData = await uploadResponse.json()
+
+        if (!uploadResponse.ok || !uploadData.success) {
+          throw new Error(uploadData.error || 'Upload failed')
+        }
+
+        const imageData = {
+          url: uploadData.data.s3Url,
+          width: dimensions.width,
+          height: dimensions.height,
+        }
+
+        // Add to images state on success
+        setImages((prev) => [...prev, imageData])
+
+        console.log('🦄Image uploaded successfully', imageData)
+
+        return imageData
+      } catch (error) {
+        console.error('🦄Image upload failed', error)
+        const errorMessage =
+          error instanceof Error ? error.message : 'Upload failed'
+        toast.error('Failed to upload image', {
+          description: <div>{errorMessage}</div>,
+        })
+        throw error
       }
-
-      const imageData = {
-        url: uploadData.data.s3Url,
-        width: dimensions.width,
-        height: dimensions.height,
-      }
-
-      // Add to images state on success
-      setImages((prev) => [...prev, imageData])
-
-      console.log('🦄Image uploaded successfully', imageData)
-
-      return imageData
-    } catch (error) {
-      console.error('🦄Image upload failed', error)
-      const errorMessage =
-        error instanceof Error ? error.message : 'Upload failed'
-      toast.error('Failed to upload image', {
-        description: <div>{errorMessage}</div>,
-      })
-      throw error
-    }
-  }
+    },
+    [setImages]
+  )
 
   const handleImagesUpload = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files
-      if (files) {
-        for (const file of files) {
-          uploadImageToS3(file)
+      if (!files || files.length === 0) {
+        console.log('🦄No files selected')
+        return
+      }
+
+      console.log('🦄Processing', files.length, 'files')
+
+      try {
+        // Process files sequentially to avoid overwhelming the server
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i]
+          console.log(`🦄Processing file ${i + 1}/${files.length}:`, file.name)
+
+          // Validate file type
+          if (!file.type.startsWith('image/')) {
+            toast.warning(`Skipped non-image file: ${file.name}`)
+            continue
+          }
+
+          await uploadImageToS3(file)
+        }
+      } catch (error) {
+        console.error('🦄Batch upload failed:', error)
+      } finally {
+        // Always reset the file input
+        if (e.target) {
+          e.target.value = ''
         }
       }
     },
@@ -314,9 +348,34 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const [isDragOver, setIsDragOver] = useState(false)
 
   const handleFilesDrop = useCallback(
-    (files: File[]) => {
-      for (const file of files) {
-        uploadImageToS3(file)
+    async (files: File[]) => {
+      if (!files || files.length === 0) {
+        console.log('🦄No files dropped')
+        return
+      }
+
+      console.log('🦄Processing', files.length, 'dropped files')
+
+      try {
+        // Process files sequentially to avoid overwhelming the server
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i]
+          console.log(
+            `🦄Processing dropped file ${i + 1}/${files.length}:`,
+            file.name
+          )
+
+          // Validate file type
+          if (!file.type.startsWith('image/')) {
+            console.warn(`🦄Skipping non-image dropped file: ${file.name}`)
+            toast.error(`Skipped non-image file: ${file.name}`)
+            continue
+          }
+
+          await uploadImageToS3(file)
+        }
+      } catch (error) {
+        console.error('🦄Batch drop upload failed:', error)
       }
     },
     [uploadImageToS3]
@@ -336,57 +395,41 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   })
 
   useEffect(() => {
-    const handleAddImagesToChat = (data: TCanvasAddImagesToChatEvent) => {
-      data.forEach(async (image) => {
-        if (image.base64) {
-          const file = dataURLToFile(image.base64, image.fileId)
-          uploadImageToS3(file)
-        } else {
-          // If no base64, assume it's already a URL (like S3 URL)
-          setImages(
-            produce((prev) => {
-              prev.push({
-                url: image.fileId, // Assuming fileId is actually a URL in this case
-                width: image.width,
-                height: image.height,
+    const handleAddImagesToChat = async (data: TCanvasAddImagesToChatEvent) => {
+      console.log('🦄Adding', data.length, 'images from canvas to chat')
+
+      try {
+        // Process images sequentially
+        for (let i = 0; i < data.length; i++) {
+          const image = data[i]
+          console.log(`🦄Processing canvas image ${i + 1}/${data.length}`)
+
+          if (image.base64) {
+            const file = dataURLToFile(image.base64, image.fileId)
+            await uploadImageToS3(file)
+          } else {
+            // If no base64, assume it's already a URL (like S3 URL)
+            setImages(
+              produce((prev) => {
+                prev.push({
+                  url: image.fileId, // Assuming fileId is actually a URL in this case
+                  width: image.width,
+                  height: image.height,
+                })
               })
-            })
-          )
+            )
+          }
         }
-      })
-
-      textareaRef.current?.focus()
-    }
-
-    const handleMaterialAddImagesToChat = async (
-      data: TMaterialAddImagesToChatEvent
-    ) => {
-      data.forEach(async (image: TMaterialAddImagesToChatEvent[0]) => {
-        // Convert file path to blob and upload
-        try {
-          const fileUrl = `/api/serve_file?file_path=${encodeURIComponent(image.filePath)}`
-          const response = await fetch(fileUrl)
-          const blob = await response.blob()
-          const file = new File([blob], image.fileName, {
-            type: `image/${image.fileType}`,
-          })
-          uploadImageToS3(file)
-        } catch (error) {
-          console.error('Failed to load image from material:', error)
-          toast.error('Failed to load image from material', {
-            description: `${error}`,
-          })
-        }
-      })
+      } catch (error) {
+        console.error('🦄Failed to add canvas images to chat:', error)
+      }
 
       textareaRef.current?.focus()
     }
 
     eventBus.on('Canvas::AddImagesToChat', handleAddImagesToChat)
-    eventBus.on('Material::AddImagesToChat', handleMaterialAddImagesToChat)
     return () => {
       eventBus.off('Canvas::AddImagesToChat', handleAddImagesToChat)
-      eventBus.off('Material::AddImagesToChat', handleMaterialAddImagesToChat)
     }
   }, [uploadImageToS3])
 

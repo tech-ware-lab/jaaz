@@ -25,7 +25,7 @@ interface ModelSelectorV3Props {
 
 const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
   onModelToggle,
-  onAutoToggle
+  onAutoToggle,
 }) => {
   const {
     textModel,
@@ -36,12 +36,15 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
     allTools,
   } = useConfigs()
 
-  const [activeTab, setActiveTab] = useState<'image' | 'video' | 'text'>('image')
+  const [activeTab, setActiveTab] = useState<'image' | 'video' | 'text'>(
+    'image'
+  )
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const { t } = useTranslation()
 
   // 初始化时判断auto模式：如果所有工具都被选中，则为auto模式
-  const initialAutoMode = allTools.length > 0 && selectedTools.length === allTools.length
+  const initialAutoMode =
+    allTools.length > 0 && selectedTools.length === allTools.length
   const [autoMode, setAutoMode] = useState(initialAutoMode)
 
   // Group models by provider
@@ -82,14 +85,16 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
 
   // Filter tools by type
   const getToolsByType = (type: 'image' | 'video') => {
-    const filteredTools = allTools.filter(tool => tool.type === type)
+    const filteredTools = allTools.filter((tool) => tool.type === type)
     return groupModelsByProvider(filteredTools)
   }
 
   const handleModelToggle = (modelKey: string, checked: boolean) => {
     if (activeTab === 'text') {
       // Text models are single select
-      const model = textModels?.find((m) => m.provider + ':' + m.model === modelKey)
+      const model = textModels?.find(
+        (m) => m.provider + ':' + m.model === modelKey
+      )
       if (model) {
         setTextModel(model)
         localStorage.setItem('text_model', modelKey)
@@ -127,7 +132,9 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
   const handleModelClick = (modelKey: string) => {
     if (activeTab === 'text') {
       // Text models: always single select, no auto mode
-      const model = textModels?.find((m) => m.provider + ':' + m.model === modelKey)
+      const model = textModels?.find(
+        (m) => m.provider + ':' + m.model === modelKey
+      )
       if (model) {
         setTextModel(model)
         localStorage.setItem('text_model', modelKey)
@@ -151,7 +158,9 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
         }
       } else {
         // 非auto模式，切换当前模型的选中状态
-        const isSelected = selectedTools.some(t => t.provider + ':' + t.id === modelKey)
+        const isSelected = selectedTools.some(
+          (t) => t.provider + ':' + t.id === modelKey
+        )
         handleModelToggle(modelKey, !isSelected)
       }
     }
@@ -169,8 +178,8 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
       localStorage.setItem('disabled_tool_ids', JSON.stringify([]))
     } else {
       // 关闭auto模式时，默认选中image和video的第一个工具
-      const imageTools = allTools.filter(tool => tool.type === 'image')
-      const videoTools = allTools.filter(tool => tool.type === 'video')
+      const imageTools = allTools.filter((tool) => tool.type === 'image')
+      const videoTools = allTools.filter((tool) => tool.type === 'video')
 
       const firstImageTool = imageTools.length > 0 ? imageTools[0] : null
       const firstVideoTool = videoTools.length > 0 ? videoTools[0] : null
@@ -184,7 +193,9 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
         localStorage.setItem(
           'disabled_tool_ids',
           JSON.stringify(
-            allTools.filter((t) => !selectedToolsList.includes(t)).map((t) => t.id)
+            allTools
+              .filter((t) => !selectedToolsList.includes(t))
+              .map((t) => t.id)
           )
         )
       }
@@ -216,7 +227,7 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
     if (activeTab === 'text') {
       return textModel?.provider + ':' + textModel?.model === modelKey
     } else {
-      return selectedTools.some(t => t.provider + ':' + t.id === modelKey)
+      return selectedTools.some((t) => t.provider + ':' + t.id === modelKey)
     }
   }
 
@@ -232,7 +243,7 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
   const tabs = [
     { id: 'image', label: t('chat:modelSelector.tabs.image') },
     { id: 'video', label: t('chat:modelSelector.tabs.video') },
-    { id: 'text', label: t('chat:modelSelector.tabs.text') }
+    { id: 'text', label: t('chat:modelSelector.tabs.text') },
   ] as const
 
   return (
@@ -240,43 +251,77 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
       <DropdownMenuTrigger asChild>
         <Button
           size={'sm'}
-          variant="outline"
-          className={`w-fit max-w-[40%] justify-between overflow-hidden ${autoMode
-            ? 'bg-background border-border text-muted-foreground'
-            : 'text-primary border-green-200 bg-green-50'
-            }`}
+          variant='outline'
+          className={`w-fit max-w-[40%] justify-between overflow-hidden ${
+            autoMode
+              ? 'bg-background border-border text-muted-foreground'
+              : 'text-white border-purple-200 bg-purple-500'
+          }`}
         >
           {autoMode ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /><path d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /><path d="M14 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /><path d="M14 7l6 0" /><path d="M17 4l0 6" /></svg>
+            <svg
+              xmlns='http://www.w3.org/2000/svg'
+              width='24'
+              height='24'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              stroke-width='2'
+              stroke-linecap='round'
+              stroke-linejoin='round'
+            >
+              <path stroke='none' d='M0 0h24v24H0z' fill='none' />
+              <path d='M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z' />
+              <path d='M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z' />
+              <path d='M14 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z' />
+              <path d='M14 7l6 0' />
+              <path d='M17 4l0 6' />
+            </svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="icon icon-tabler icons-tabler-filled icon-tabler-apps"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 3h-4a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2z" /><path d="M9 13h-4a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2z" /><path d="M19 13h-4a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2z" /><path d="M17 3a1 1 0 0 1 .993 .883l.007 .117v2h2a1 1 0 0 1 .117 1.993l-.117 .007h-2v2a1 1 0 0 1 -1.993 .117l-.007 -.117v-2h-2a1 1 0 0 1 -.117 -1.993l.117 -.007h2v-2a1 1 0 0 1 1 -1z" /></svg>
+            <svg
+              xmlns='http://www.w3.org/2000/svg'
+              width='24'
+              height='24'
+              viewBox='0 0 24 24'
+              fill='currentColor'
+              className='icon icon-tabler icons-tabler-filled icon-tabler-apps'
+            >
+              <path stroke='none' d='M0 0h24v24H0z' fill='none' />
+              <path d='M9 3h-4a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2z' />
+              <path d='M9 13h-4a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2z' />
+              <path d='M19 13h-4a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2z' />
+              <path d='M17 3a1 1 0 0 1 .993 .883l.007 .117v2h2a1 1 0 0 1 .117 1.993l-.117 .007h-2v2a1 1 0 0 1 -1.993 .117l-.007 -.117v-2h-2a1 1 0 0 1 -.117 -1.993l.117 -.007h2v-2a1 1 0 0 1 1 -1z' />
+            </svg>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-96 select-none">
+      <DropdownMenuContent className='w-96 select-none'>
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 border-b">
+        <div className='flex items-center justify-between px-4 py-2 border-b'>
           <div>{t('chat:modelSelector.title')}</div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{t('chat:modelSelector.auto')}</span>
+          <div className='flex items-center gap-2'>
+            <span className='text-sm text-muted-foreground'>
+              {t('chat:modelSelector.auto')}
+            </span>
             <Switch
               checked={autoMode}
               onCheckedChange={handleAutoToggle}
-            // disabled={activeTab === 'text'}
+              // disabled={activeTab === 'text'}
             />
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex p-1 bg-muted rounded-lg mx-4 my-2">
+        <div className='flex p-1 bg-muted rounded-lg mx-4 my-2'>
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 px-3 py-1 rounded-md text-sm font-medium transition-colors cursor-pointer ${activeTab === tab.id
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-                }`}
+              className={`flex-1 px-3 py-1 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                activeTab === tab.id
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
               {tab.label}
             </button>
@@ -285,51 +330,58 @@ const ModelSelectorV3: React.FC<ModelSelectorV3Props> = ({
 
         {/* Models List */}
         <ScrollArea>
-          <div className="max-h-80 h-80 px-4 pb-4 select-none">
-            {Object.entries(getCurrentModels()).map(([provider, providerModels], index, array) => {
-              const providerInfo = getProviderDisplayInfo(provider)
-              const isLastGroup = index === array.length - 1
-              return (
-                <DropdownMenuGroup key={provider}>
-                  <DropdownMenuLabel className="text-xs font-medium text-muted-foreground px-0 py-2">
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={providerInfo.icon}
-                        alt={providerInfo.name}
-                        className="w-4 h-4 rounded-full"
-                      />
-                      {providerInfo.name}
-                    </div>
-                  </DropdownMenuLabel>
-                  {providerModels.map((model: ModelInfo | ToolInfo) => {
-                    const modelKey = activeTab === 'text'
-                      ? model.provider + ':' + (model as ModelInfo).model
-                      : model.provider + ':' + (model as ToolInfo).id
-                    const modelName = activeTab === 'text'
-                      ? (model as ModelInfo).model
-                      : (model as ToolInfo).display_name || (model as ToolInfo).id
-
-                    return (
-                      <div
-                        key={modelKey}
-                        className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors mb-2 cursor-pointer"
-                        onClick={() => handleModelClick(modelKey)}
-                      >
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{modelName}</div>
-                        </div>
-                        <Checkbox
-                          checked={isModelSelected(modelKey)}
-                          className={`ml-4 ${autoMode && activeTab !== 'text' ? 'opacity-50' : ''}`}
-                          disabled={autoMode && activeTab !== 'text'}
+          <div className='max-h-80 h-80 px-4 pb-4 select-none'>
+            {Object.entries(getCurrentModels()).map(
+              ([provider, providerModels], index, array) => {
+                const providerInfo = getProviderDisplayInfo(provider)
+                const isLastGroup = index === array.length - 1
+                return (
+                  <DropdownMenuGroup key={provider}>
+                    <DropdownMenuLabel className='text-xs font-medium text-muted-foreground px-0 py-2'>
+                      <div className='flex items-center gap-2'>
+                        <img
+                          src={providerInfo.icon}
+                          alt={providerInfo.name}
+                          className='w-4 h-4 rounded-full'
                         />
+                        {providerInfo.name}
                       </div>
-                    )
-                  })}
-                  {!isLastGroup && <DropdownMenuSeparator className="my-2" />}
-                </DropdownMenuGroup>
-              )
-            })}
+                    </DropdownMenuLabel>
+                    {providerModels.map((model: ModelInfo | ToolInfo) => {
+                      const modelKey =
+                        activeTab === 'text'
+                          ? model.provider + ':' + (model as ModelInfo).model
+                          : model.provider + ':' + (model as ToolInfo).id
+                      const modelName =
+                        activeTab === 'text'
+                          ? (model as ModelInfo).model
+                          : (model as ToolInfo).display_name ||
+                            (model as ToolInfo).id
+
+                      return (
+                        <div
+                          key={modelKey}
+                          className='flex items-center justify-between p-3 hover:bg-muted/50 transition-colors mb-2 cursor-pointer'
+                          onClick={() => handleModelClick(modelKey)}
+                        >
+                          <div className='flex-1'>
+                            <div className='font-medium text-sm'>
+                              {modelName}
+                            </div>
+                          </div>
+                          <Checkbox
+                            checked={isModelSelected(modelKey)}
+                            className={`ml-4 ${autoMode && activeTab !== 'text' ? 'opacity-50' : ''}`}
+                            disabled={autoMode && activeTab !== 'text'}
+                          />
+                        </div>
+                      )
+                    })}
+                    {!isLastGroup && <DropdownMenuSeparator className='my-2' />}
+                  </DropdownMenuGroup>
+                )
+              }
+            )}
           </div>
         </ScrollArea>
       </DropdownMenuContent>

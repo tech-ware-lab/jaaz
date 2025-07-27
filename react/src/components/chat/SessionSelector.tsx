@@ -51,7 +51,7 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
             <ChevronDownIcon className='h-4 w-4 shrink-0' />
           </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className='w-full min-w-[200px] max-h-[80vh] overflow-y-auto'>
+        <DropdownMenuContent className='w-full min-w-[200px] max-w-[500px] max-h-[80vh] overflow-y-auto'>
           {sessionList
             ?.filter((session) => session.id && session.id.trim() !== '')
             ?.map((sessionItem) => (
