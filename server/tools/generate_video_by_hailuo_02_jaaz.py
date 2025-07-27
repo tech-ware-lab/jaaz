@@ -2,12 +2,9 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from tools.video_providers.jaaz_hailuo_provider import JaazHailuoProvider
+from services.jaaz_service import JaazService
 from tools.video_generation.video_canvas_utils import send_video_start_notification, process_video_result
 from .utils.image_utils import process_input_image
-from services.tool_confirmation_manager import tool_confirmation_manager
-from services.websocket_service import send_to_websocket
-import json
 
 
 class GenerateVideoByHailuoInputSchema(BaseModel):
@@ -46,7 +43,7 @@ async def generate_video_by_hailuo_02_jaaz(
     input_images: list[str] | None = None,
 ) -> str:
     """
-    Generate a video using Hailuo 02 model via Jaaz Hailuo provider
+    Generate a video using Hailuo 02 model via Jaaz service
     """
     print(f'🛠️ Hailuo Video Generation tool_call_id: {tool_call_id}')
     ctx = config.get('configurable', {})
@@ -57,31 +54,6 @@ async def generate_video_by_hailuo_02_jaaz(
     # Inject the tool call id into the context
     ctx['tool_call_id'] = tool_call_id
 
-    # 检查是否需要确认
-    arguments = {
-        'prompt': prompt,
-        'prompt_enhancer': prompt_enhancer,
-        'resolution': resolution,
-        'duration': duration,
-        'input_images': input_images,
-    }
-
-    # 发送确认请求
-    await send_to_websocket(session_id, {
-        'type': 'tool_call_pending_confirmation',
-        'id': tool_call_id,
-        'name': 'generate_video_by_hailuo_02_jaaz',
-        'arguments': json.dumps(arguments)
-    })
-
-    # 等待确认
-    confirmed = await tool_confirmation_manager.request_confirmation(
-        tool_call_id, session_id, 'generate_video_by_hailuo_02_jaaz', arguments
-    )
-
-    if not confirmed:
-        return "Video generation cancelled by user."
-
     try:
         # Send start notification
         await send_video_start_notification(
@@ -90,28 +62,32 @@ async def generate_video_by_hailuo_02_jaaz(
         )
 
         # Process input images if provided (only use the first one)
-        input_image = ''
+        processed_input_images = None
         if input_images and len(input_images) > 0:
             # Only process the first image
             first_image = input_images[0]
             processed_image = await process_input_image(first_image)
             if processed_image:
-                input_image = processed_image
+                processed_input_images = [processed_image]
                 print(f"Using input image for video generation: {first_image}")
             else:
                 raise ValueError(
                     f"Failed to process input image: {first_image}. Please check if the image exists and is valid.")
 
-        # Create Hailuo provider and generate video
-        provider = JaazHailuoProvider()
-        video_url = await provider.generate(
+        # Create Jaaz service and generate video
+        jaaz_service = JaazService()
+        result = await jaaz_service.generate_video(
             prompt=prompt,
             model="hailuo-02",
-            prompt_enhancer=prompt_enhancer,
             resolution=resolution,
             duration=duration,
-            input_image=input_image,
+            input_images=processed_input_images,
+            prompt_enhancer=prompt_enhancer,
         )
+
+        video_url = result.get('result_url')
+        if not video_url:
+            raise Exception("No video URL returned from generation")
 
         # Process video result (save, update canvas, notify)
         return await process_video_result(

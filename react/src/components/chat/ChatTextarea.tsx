@@ -28,6 +28,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import ModelSelectorV2 from './ModelSelectorV2'
+import ModelSelectorV3 from './ModelSelectorV3'
 import { useAuth } from '@/contexts/AuthContext'
 import { useBalance } from '@/hooks/use-balance'
 import { BASE_API_URL } from '@/constants'
@@ -210,8 +211,14 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const handleSendPrompt = useCallback(async () => {
     if (pending) return
 
-    // 检查余额，如果为 0 则提醒充值
-    if (authStatus.is_logged_in && parseFloat(balance) <= 0) {
+    // 检查是否使用 Jaaz 服务
+    const isUsingJaaz =
+      textModel?.provider === 'jaaz' ||
+      selectedTools?.some((tool) => tool.provider === 'jaaz')
+    // console.log('👀isUsingJaaz', textModel, selectedTools, isUsingJaaz)
+
+    // 只有当使用 Jaaz 服务且余额为 0 时才提醒充值
+    if (authStatus.is_logged_in && isUsingJaaz && parseFloat(balance) <= 0) {
       toast.error(t('chat:insufficientBalance'), {
         description: <RechargeContent />,
         duration: 10000, // 10s，给用户更多时间操作
@@ -231,7 +238,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       toast.warning(t('chat:textarea.selectTool'))
     }
 
-    let value: MessageContent[] | string = prompt
+    let text_content: MessageContent[] | string = prompt
     if (prompt.length === 0 || prompt.trim() === '') {
       toast.error(t('chat:textarea.enterPrompt'))
       return
@@ -247,33 +254,34 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
     }
 
     if (additionalInfo) {
-      value = value + '\n\n' + additionalInfo
+      text_content = text_content + '\n\n' + additionalInfo
     }
 
     if (images.length > 0) {
-      images.forEach((image) => {
-        const filename = image.url.split('/').pop() || 'image'
-        value += `\n\n ![Attached image - width: ${image.width} height: ${image.height} filename: ${filename}](${image.url})`
+      text_content += `\n\n<input_images count="${images.length}">`
+      images.forEach((image, index) => {
+        text_content += `\n<image index="${index + 1}" url="${image.url}" width="${image.width}" height="${image.height}" />`
       })
-
-      value = [
-        {
-          type: 'text',
-          text: value as string,
-        },
-        ...images.map((image, index) => ({
-          type: 'image_url',
-          image_url: {
-            url: image.url,
-          },
-        })),
-      ] as MessageContent[]
+      text_content += `\n</input_images>`
     }
+
+    const final_content = [
+      {
+        type: 'text',
+        text: text_content as string,
+      },
+      ...images.map((image, index) => ({
+        type: 'image_url',
+        image_url: {
+          url: image.url,
+        },
+      })),
+    ] as MessageContent[]
 
     const newMessage = messages.concat([
       {
         role: 'user',
-        content: value,
+        content: final_content,
       },
     ])
 
@@ -514,7 +522,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
             <PlusIcon className='size-4' />
           </Button>
 
-          <ModelSelectorV2 />
+          <ModelSelectorV3 />
 
           {/* Aspect Ratio Selector */}
           <DropdownMenu>

@@ -2,12 +2,9 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool, InjectedToolCallId  # type: ignore
 from langchain_core.runnables import RunnableConfig
-from tools.video_providers.jaaz_kling_provider import JaazKlingProvider
+from services.jaaz_service import JaazService
 from tools.video_generation.video_canvas_utils import send_video_start_notification, process_video_result
 from .utils.image_utils import process_input_image
-from services.tool_confirmation_manager import tool_confirmation_manager
-from services.websocket_service import send_to_websocket
-import json
 
 
 class GenerateVideoByKlingV2InputSchema(BaseModel):
@@ -50,7 +47,7 @@ async def generate_video_by_kling_v2_jaaz(
     duration: int = 5,
 ) -> str:
     """
-    Generate a video using Kling V2.1 model via Jaaz Kling provider
+    Generate a video using Kling V2.1 model via Jaaz service
     """
     print(f'🛠️ Kling Video Generation tool_call_id: {tool_call_id}')
     ctx = config.get('configurable', {})
@@ -60,32 +57,6 @@ async def generate_video_by_kling_v2_jaaz(
 
     # Inject the tool call id into the context
     ctx['tool_call_id'] = tool_call_id
-
-    # 检查是否需要确认
-    arguments = {
-        'prompt': prompt,
-        'negative_prompt': negative_prompt,
-        'guidance_scale': guidance_scale,
-        'aspect_ratio': aspect_ratio,
-        'duration': duration,
-        'input_images': input_images,
-    }
-
-    # 发送确认请求
-    await send_to_websocket(session_id, {
-        'type': 'tool_call_pending_confirmation',
-        'id': tool_call_id,
-        'name': 'generate_video_by_kling_v2_jaaz',
-        'arguments': json.dumps(arguments)
-    })
-
-    # 等待确认
-    confirmed = await tool_confirmation_manager.request_confirmation(
-        tool_call_id, session_id, 'generate_video_by_kling_v2_jaaz', arguments
-    )
-
-    if not confirmed:
-        return "Video generation cancelled by user."
 
     try:
         # Validate input_images is provided and not empty
@@ -106,21 +77,24 @@ async def generate_video_by_kling_v2_jaaz(
             raise ValueError(
                 f"Failed to process input image: {first_image}. Please check if the image exists and is valid.")
 
-        processed_start_image = processed_image
         print(
             f"Using first input image as start image for Kling video generation: {first_image}")
 
-        # Create Kling provider and generate video
-        provider = JaazKlingProvider()
-        video_url = await provider.generate(
+        # Create Jaaz service and generate video
+        jaaz_service = JaazService()
+        result = await jaaz_service.generate_video(
             prompt=prompt,
             model="kling-v2.1-standard",
+            duration=duration,
+            aspect_ratio=aspect_ratio,
+            input_images=[processed_image],
             negative_prompt=negative_prompt,
             guidance_scale=guidance_scale,
-            aspect_ratio=aspect_ratio,
-            duration=duration,
-            start_image=processed_start_image,
         )
+
+        video_url = result.get('result_url')
+        if not video_url:
+            raise Exception("No video URL returned from generation")
 
         # Process video result (save, update canvas, notify)
         return await process_video_result(

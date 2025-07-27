@@ -45,6 +45,10 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/router'
 import { eventBus } from '@/lib/event'
+import MixedContent, {
+  MixedContentImages,
+  MixedContentText,
+} from './Message/MixedContent'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -812,14 +816,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
                       />
                     ))}
 
-                  {Array.isArray(message.content) &&
-                    message.content.map((content, i) => (
-                      <MessageRegular
-                        key={i}
+                  {/* 混合内容消息的文本部分 - 显示在聊天框内 */}
+                  {Array.isArray(message.content) && (
+                    <>
+                      <MixedContentImages contents={message.content} />
+                      <MixedContentText
                         message={message}
-                        content={content}
+                        contents={message.content}
                       />
-                    ))}
+                    </>
+                  )}
 
                   {message.role === 'assistant' &&
                     message.tool_calls &&

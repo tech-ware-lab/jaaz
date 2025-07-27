@@ -48,6 +48,8 @@ jobs:
       - name: Build React app
         env:
           VITE_UMAMI_WEBSITE_ID: ${{ secrets.UMAMI_WEBSITE_ID }}
+          VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
+          VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
         run: |
           cd react
           npx vite build
@@ -71,7 +73,7 @@ jobs:
 
       - name: Build and Package Electron app
         run: |
-          npx electron-builder --${{ matrix.os == 'macos-latest' && 'mac' || 'win' }} --${{ matrix.arch }} --publish always
+          npx electron-builder --${{ matrix.os == 'macos-latest' && 'mac' || 'win' }} --publish always
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
