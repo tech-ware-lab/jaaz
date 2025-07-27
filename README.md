@@ -1,7 +1,7 @@
 <h1 align="center">
   <a href="https://jaaz.app" target="_blank"> Jaaz.app</a>
-  <p align="center">The World's First Open source AI Design Agent</p>
-  <p align="center">Canva + Manus Local Version</p>
+  <p align="center">Open source Canva AI alternative</p>
+  <p align="center">The World's First Open source Video Agent</p>
 
 </h2>
 [中文入门指南](https://mxnpt25l6k.feishu.cn/docx/LvcTdlVbFoRAZWxnhBYcqVydnpc)
