@@ -399,6 +399,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
         eventSourceRef.current.close()
         eventSourceRef.current = null
       }
+      const is_new_session = !sessionId
       if (!sessionId) {
         sessionId = nanoid()
         window.history.pushState(
@@ -429,7 +430,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
         body: JSON.stringify({
           messages: messages,
           session_id: sessionId,
-          is_new_session: true,
+          is_new_session: is_new_session,
           canvas_id: canvasId,
         }),
       })
