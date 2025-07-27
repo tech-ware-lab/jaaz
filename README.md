@@ -1,18 +1,23 @@
 <h1 align="center">
   <a href="https://jaaz.app" target="_blank"> Jaaz.app</a>
   <p align="center">Open source Canva AI alternative</p>
-  <p align="center">The World's First Open source Video Agent</p>
+
+ <p align="center">
+  <a href="https://jaaz.app">
+    <img src="https://github.com/user-attachments/assets/e0cffb94-8c6f-4867-800a-c144aceb6d54" alt="Jaaz Logo" />
+  </a>
+</p>
 
 </h2>
+<p align="center">The world's first open-source multimodal creative assistant</p>
+<p align="center">This is a substitute for Canva and Manus that prioritizes privacy and is usable locally.</p>
+
 [中文入门指南](https://mxnpt25l6k.feishu.cn/docx/LvcTdlVbFoRAZWxnhBYcqVydnpc)
 
 [中文版本 (Chinese Version)](./README_zh.md)
-
-The world's first open-source multimodal creative agent, a creative tool that prioritizes privacy, local usage, and ease of use, as an alternative to Lovart, Manus and Figma.
-
 [Join our Discord](https://discord.gg/dS7kuT66wc) to get latest updates!
 
-<div align="center"> <a href="https://jaaz.app/api/downloads/mac-latest"> <img src="https://user-images.githubusercontent.com/37590873/219133640-8b7a0179-20a7-4e02-8887-fbbd2eaad64b.png" alt="Download for macOS" width="300"/> </a> &nbsp;&nbsp; <a href="https://jaaz.app/api/downloads/windows-latest"> <img width="300" src="https://cdn.intheloop.io/wp-content/uploads/2020/08/windows-button.png" alt="Download for Windows" /> </a> </div>
+<div align="center"> <a href="https://jaaz.app/api/downloads/mac-latest"> <img src="https://user-images.githubusercontent.com/37590873/219133640-8b7a0179-20a7-4e02-8887-fbbd2eaad64b.png" alt="Download for macOS" width="200"/> </a> &nbsp;&nbsp; <a href="https://jaaz.app/api/downloads/windows-latest"> <img width="200" src="https://cdn.intheloop.io/wp-content/uploads/2020/08/windows-button.png" alt="Download for Windows" /> </a> </div>
 
 ## ✨ Getting started & staying tuned with us.
 
