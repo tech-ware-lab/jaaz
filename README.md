@@ -7,6 +7,7 @@
     <img src="https://github.com/user-attachments/assets/e0cffb94-8c6f-4867-800a-c144aceb6d54" alt="Jaaz Logo" />
   </a>
 </p>
+<img width="2540" height="959" alt="Frame 120 (2)" src="https://github.com/user-attachments/assets/c1a57c7a-d289-460a-81a9-fd7b5e379c10" />
 
 </h2>
 <p align="center">The world's first open-source multimodal creative assistant</p>
