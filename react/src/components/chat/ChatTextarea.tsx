@@ -1,6 +1,5 @@
 import { cancelChat } from '@/api/chat'
 import { cancelMagicGenerate } from '@/api/magic'
-import { uploadImage } from '@/api/upload'
 import { Button } from '@/components/ui/button'
 import { useConfigs } from '@/contexts/configs'
 import {
@@ -11,7 +10,6 @@ import {
 import { cn, dataURLToFile } from '@/lib/utils'
 import { Message, MessageContent, Model } from '@/types/types'
 import { ModelInfo, ToolInfo } from '@/api/model'
-import { useMutation } from '@tanstack/react-query'
 import { useDrop } from 'ahooks'
 import { produce } from 'immer'
 import {
@@ -39,6 +37,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { processImageFiles } from '@/utils/imageUtils'
 
 type ChatTextareaProps = {
   pending: boolean
@@ -71,7 +70,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const textareaRef = useRef<TextAreaRef>(null)
   const [images, setImages] = useState<
     {
-      file_id: string
+      url: string
       width: number
       height: number
     }[]
@@ -86,60 +85,117 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const imageInputRef = useRef<HTMLInputElement>(null)
 
   // 充值按钮组件
-  const RechargeContent = useCallback(() => (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-sm text-muted-foreground flex-1">
-        {t('chat:insufficientBalanceDescription')}
-      </span>
-      <Button
-        size="sm"
-        variant="outline"
-        className="shrink-0"
-        onClick={() => {
-          const billingUrl = `${BASE_API_URL}/billing`
-          if (window.electronAPI?.openBrowserUrl) {
-            window.electronAPI.openBrowserUrl(billingUrl)
-          } else {
-            window.open(billingUrl, '_blank')
-          }
-        }}
-      >
-        {t('common:auth.recharge')}
-      </Button>
-    </div>
-  ), [t])
+  const RechargeContent = useCallback(
+    () => (
+      <div className='flex items-center justify-between gap-3'>
+        <span className='text-sm text-muted-foreground flex-1'>
+          {t('chat:insufficientBalanceDescription')}
+        </span>
+        <Button
+          size='sm'
+          variant='outline'
+          className='shrink-0'
+          onClick={() => {
+            const billingUrl = `${BASE_API_URL}/billing`
+            if (window.electronAPI?.openBrowserUrl) {
+              window.electronAPI.openBrowserUrl(billingUrl)
+            } else {
+              window.open(billingUrl, '_blank')
+            }
+          }}
+        >
+          {t('common:auth.recharge')}
+        </Button>
+      </div>
+    ),
+    [t]
+  )
 
-  const { mutate: uploadImageMutation } = useMutation({
-    mutationFn: (file: File) => uploadImage(file),
-    onSuccess: (data) => {
-      console.log('🦄uploadImageMutation onSuccess', data)
-      setImages((prev) => [
-        ...prev,
-        {
-          file_id: data.file_id,
-          width: data.width,
-          height: data.height,
+  // Helper function to get image dimensions from base64
+  const getImageDimensions = (
+    base64Url: string
+  ): Promise<{ width: number; height: number }> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => {
+        resolve({ width: img.width, height: img.height })
+      }
+      img.onerror = reject
+      img.src = base64Url
+    })
+  }
+
+  // Upload image function without react-query
+  const uploadImageToS3 = async (file: File) => {
+    try {
+      // Process the file using the same logic as workspace
+      const processedImages = await processImageFiles([file])
+
+      if (processedImages.length === 0) {
+        throw new Error('Failed to process image')
+      }
+
+      const processedImage = processedImages[0]
+
+      // Get image dimensions from base64
+      const dimensions = await getImageDimensions(processedImage.url)
+
+      // Upload to S3 using the base64 data
+      const [header, base64Data] = processedImage.url.split(',')
+      const mimeMatch = header.match(/data:([^;]+);base64/)
+      const contentType = mimeMatch ? mimeMatch[1] : 'image/png'
+
+      const uploadResponse = await fetch('/api/image/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      ])
-    },
-    onError: (error) => {
-      console.error('🦄uploadImageMutation onError', error)
-      toast.error('Failed to upload image', {
-        description: <div>{error.toString()}</div>,
+        body: JSON.stringify({
+          base64Data: base64Data,
+          fileName: processedImage.filename,
+          contentType: contentType,
+        }),
       })
-    },
-  })
+
+      const uploadData = await uploadResponse.json()
+
+      if (!uploadResponse.ok || !uploadData.success) {
+        throw new Error(uploadData.error || 'Upload failed')
+      }
+
+      const imageData = {
+        url: uploadData.data.s3Url,
+        width: dimensions.width,
+        height: dimensions.height,
+      }
+
+      // Add to images state on success
+      setImages((prev) => [...prev, imageData])
+
+      console.log('🦄Image uploaded successfully', imageData)
+
+      return imageData
+    } catch (error) {
+      console.error('🦄Image upload failed', error)
+      const errorMessage =
+        error instanceof Error ? error.message : 'Upload failed'
+      toast.error('Failed to upload image', {
+        description: <div>{errorMessage}</div>,
+      })
+      throw error
+    }
+  }
 
   const handleImagesUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files
       if (files) {
         for (const file of files) {
-          uploadImageMutation(file)
+          uploadImageToS3(file)
         }
       }
     },
-    [uploadImageMutation]
+    [uploadImageToS3]
   )
 
   const handleCancelChat = useCallback(async () => {
@@ -196,21 +252,9 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
     if (images.length > 0) {
       images.forEach((image) => {
-        value += `\n\n ![Attached image - width: ${image.width} height: ${image.height} filename: ${image.file_id}](/api/file/${image.file_id})`
+        const filename = image.url.split('/').pop() || 'image'
+        value += `\n\n ![Attached image - width: ${image.width} height: ${image.height} filename: ${filename}](${image.url})`
       })
-
-      // Fetch images as base64
-      const imagePromises = images.map(async (image) => {
-        const response = await fetch(`/api/file/${image.file_id}`)
-        const blob = await response.blob()
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result as string)
-          reader.readAsDataURL(blob)
-        })
-      })
-
-      const base64Images = await Promise.all(imagePromises)
 
       value = [
         {
@@ -220,7 +264,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         ...images.map((image, index) => ({
           type: 'image_url',
           image_url: {
-            url: base64Images[index],
+            url: image.url,
           },
         })),
       ] as MessageContent[]
@@ -264,10 +308,10 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
   const handleFilesDrop = useCallback(
     (files: File[]) => {
       for (const file of files) {
-        uploadImageMutation(file)
+        uploadImageToS3(file)
       }
     },
-    [uploadImageMutation]
+    [uploadImageToS3]
   )
 
   useDrop(dropAreaRef, {
@@ -288,12 +332,13 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       data.forEach(async (image) => {
         if (image.base64) {
           const file = dataURLToFile(image.base64, image.fileId)
-          uploadImageMutation(file)
+          uploadImageToS3(file)
         } else {
+          // If no base64, assume it's already a URL (like S3 URL)
           setImages(
             produce((prev) => {
               prev.push({
-                file_id: image.fileId,
+                url: image.fileId, // Assuming fileId is actually a URL in this case
                 width: image.width,
                 height: image.height,
               })
@@ -317,7 +362,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           const file = new File([blob], image.fileName, {
             type: `image/${image.fileType}`,
           })
-          uploadImageMutation(file)
+          uploadImageToS3(file)
         } catch (error) {
           console.error('Failed to load image from material:', error)
           toast.error('Failed to load image from material', {
@@ -335,7 +380,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       eventBus.off('Canvas::AddImagesToChat', handleAddImagesToChat)
       eventBus.off('Material::AddImagesToChat', handleMaterialAddImagesToChat)
     }
-  }, [uploadImageMutation])
+  }, [uploadImageToS3])
 
   // Close quantity slider when clicking outside
   useEffect(() => {
@@ -378,14 +423,14 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       <AnimatePresence>
         {isDragOver && (
           <motion.div
-            className="absolute top-0 left-0 right-0 bottom-0 bg-background/50 backdrop-blur-xl rounded-2xl z-10"
+            className='absolute top-0 left-0 right-0 bottom-0 bg-background/50 backdrop-blur-xl rounded-2xl z-10'
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            <div className="flex items-center justify-center h-full">
-              <p className="text-sm text-muted-foreground">
+            <div className='flex items-center justify-center h-full'>
+              <p className='text-sm text-muted-foreground'>
                 Drop images here to upload
               </p>
             </div>
@@ -396,7 +441,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
       <AnimatePresence>
         {images.length > 0 && (
           <motion.div
-            className="flex items-center gap-2 w-full"
+            className='flex items-center gap-2 w-full'
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
@@ -404,31 +449,29 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           >
             {images.map((image) => (
               <motion.div
-                key={image.file_id}
-                className="relative size-10"
+                key={image.url}
+                className='relative size-10'
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
               >
                 <img
-                  key={image.file_id}
-                  src={`/api/file/${image.file_id}`}
-                  alt="Uploaded image"
-                  className="w-full h-full object-cover rounded-md"
+                  key={image.url}
+                  src={image.url}
+                  alt='Uploaded image'
+                  className='w-full h-full object-cover rounded-md'
                   draggable={false}
                 />
                 <Button
-                  variant="secondary"
-                  size="icon"
-                  className="absolute -top-1 -right-1 size-4"
+                  variant='secondary'
+                  size='icon'
+                  className='absolute -top-1 -right-1 size-4'
                   onClick={() =>
-                    setImages((prev) =>
-                      prev.filter((i) => i.file_id !== image.file_id)
-                    )
+                    setImages((prev) => prev.filter((i) => i.url !== image.url))
                   }
                 >
-                  <XIcon className="size-3" />
+                  <XIcon className='size-3' />
                 </Button>
               </motion.div>
             ))}
@@ -438,7 +481,7 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
       <Textarea
         ref={textareaRef}
-        className="w-full h-full border-none outline-none resize-none bg-transparent text-foreground placeholder:text-muted-foreground"
+        className='w-full h-full border-none outline-none resize-none bg-transparent text-foreground placeholder:text-muted-foreground'
         placeholder={t('chat:textarea.placeholder')}
         value={prompt}
         autoSize
@@ -453,22 +496,22 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
         }}
       />
 
-      <div className="flex items-center justify-between gap-2 w-full">
-        <div className="flex items-center gap-2 max-w-[calc(100%-50px)] flex-wrap">
+      <div className='flex items-center justify-between gap-2 w-full'>
+        <div className='flex items-center gap-2 max-w-[calc(100%-50px)] flex-wrap'>
           <input
             ref={imageInputRef}
-            type="file"
-            accept="image/*"
+            type='file'
+            accept='image/*'
             multiple
             onChange={handleImagesUpload}
             hidden
           />
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             onClick={() => imageInputRef.current?.click()}
           >
-            <PlusIcon className="size-4" />
+            <PlusIcon className='size-4' />
           </Button>
 
           <ModelSelectorV2 />
@@ -477,25 +520,25 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="outline"
-                className="flex items-center gap-1"
+                variant='outline'
+                className='flex items-center gap-1'
                 size={'sm'}
               >
-                <RectangleVertical className="size-4" />
-                <span className="text-sm">{selectedAspectRatio}</span>
-                <ChevronDown className="size-3 opacity-50" />
+                <RectangleVertical className='size-4' />
+                <span className='text-sm'>{selectedAspectRatio}</span>
+                <ChevronDown className='size-3 opacity-50' />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-32">
+            <DropdownMenuContent align='start' className='w-32'>
               {['auto', '1:1', '4:3', '3:4', '16:9', '9:16'].map((ratio) => (
                 <DropdownMenuItem
                   key={ratio}
                   onClick={() => setSelectedAspectRatio(ratio)}
-                  className="flex items-center justify-between"
+                  className='flex items-center justify-between'
                 >
                   <span>{ratio}</span>
                   {selectedAspectRatio === ratio && (
-                    <div className="size-2 rounded-full bg-primary" />
+                    <div className='size-2 rounded-full bg-primary' />
                   )}
                 </DropdownMenuItem>
               ))}
@@ -503,60 +546,60 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
           </DropdownMenu>
 
           {/* Quantity Selector */}
-          <div className="relative" ref={quantitySliderRef}>
+          <div className='relative' ref={quantitySliderRef}>
             <Button
-              variant="outline"
-              className="flex items-center gap-1"
+              variant='outline'
+              className='flex items-center gap-1'
               onClick={() => setShowQuantitySlider(!showQuantitySlider)}
               size={'sm'}
             >
-              <Hash className="size-4" />
-              <span className="text-sm">{quantity}</span>
-              <ChevronDown className="size-3 opacity-50" />
+              <Hash className='size-4' />
+              <span className='text-sm'>{quantity}</span>
+              <ChevronDown className='size-3 opacity-50' />
             </Button>
 
             {/* Quantity Slider */}
             <AnimatePresence>
               {showQuantitySlider && (
                 <motion.div
-                  className="absolute bottom-full mb-2 left-0  bg-background border border-border rounded-lg p-4 shadow-lg min-w-48"
+                  className='absolute bottom-full mb-2 left-0  bg-background border border-border rounded-lg p-4 shadow-lg min-w-48'
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15, ease: 'easeOut' }}
                 >
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">
+                  <div className='flex flex-col gap-3'>
+                    <div className='flex items-center justify-between'>
+                      <span className='text-sm font-medium'>
                         {t('chat:textarea.quantity', 'Image Quantity')}
                       </span>
-                      <span className="text-sm text-muted-foreground">
+                      <span className='text-sm text-muted-foreground'>
                         {quantity}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground">1</span>
+                    <div className='flex items-center gap-3'>
+                      <span className='text-xs text-muted-foreground'>1</span>
                       <input
-                        type="range"
-                        min="1"
+                        type='range'
+                        min='1'
                         max={MAX_QUANTITY}
                         value={quantity}
                         onChange={(e) => setQuantity(Number(e.target.value))}
-                        className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer
+                        className='flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer
                                   [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
                                   [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary
                                   [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-sm
                                   [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full
-                                  [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0"
+                                  [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0'
                       />
-                      <span className="text-xs text-muted-foreground">
+                      <span className='text-xs text-muted-foreground'>
                         {MAX_QUANTITY}
                       </span>
                     </div>
                   </div>
                   {/* Arrow pointing down */}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-border"></div>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-background translate-y-[-1px]"></div>
+                  <div className='absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-border'></div>
+                  <div className='absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-background translate-y-[-1px]'></div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -565,23 +608,23 @@ const ChatTextarea: React.FC<ChatTextareaProps> = ({
 
         {pending ? (
           <Button
-            className="shrink-0 relative"
-            variant="default"
-            size="icon"
+            className='shrink-0 relative'
+            variant='default'
+            size='icon'
             onClick={handleCancelChat}
           >
-            <Loader2 className="size-5.5 animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-            <Square className="size-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            <Loader2 className='size-5.5 animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' />
+            <Square className='size-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' />
           </Button>
         ) : (
           <Button
-            className="shrink-0"
-            variant="default"
-            size="icon"
+            className='shrink-0'
+            variant='default'
+            size='icon'
             onClick={handleSendPrompt}
             disabled={!textModel || !selectedTools || prompt.length === 0}
           >
-            <ArrowUp className="size-4" />
+            <ArrowUp className='size-4' />
           </Button>
         )}
       </div>
