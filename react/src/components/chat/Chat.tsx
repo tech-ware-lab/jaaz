@@ -44,6 +44,7 @@ import { Share2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/router'
+import { eventBus } from '@/lib/event'
 
 type ChatInterfaceProps = {
   canvasId: string
@@ -343,6 +344,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ canvasId }) => {
     (data: ISocket.SessionImageGeneratedEvent) => {
       console.log('⭐️dispatching image_generated', data)
       setPending('image')
+      // Emit the event to the mitt event bus so other components can listen
+      eventBus.emit('Socket::Session::ImageGenerated', data)
     },
     [canvasId]
   )
