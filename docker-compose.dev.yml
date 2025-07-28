@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  jaaz-app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+      - "3000:3000"  # React dev server
+    environment:
+      - NODE_ENV=development
+      - PYTHONPATH=/app/server
+      - PYTHONUNBUFFERED=1
+      - RELOAD=true
+    volumes:
+      # Mount source code for hot reload
+      - ./server:/app/server
+      - ./react:/app/react
+      - /app/react/node_modules  # Anonymous volume for node_modules
+      - jaaz_dev_data:/app/data
+    restart: unless-stopped
+    networks:
+      - jaaz-dev-network
+    command: >
+      sh -c "
+        cd /app/react && npm install && npm run dev &
+        cd /app/server && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # Development database
+  postgres-dev:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: jaaz_dev
+      POSTGRES_USER: jaaz_dev
+      POSTGRES_PASSWORD: jaaz_dev_password
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - jaaz-dev-network
+
+  # Development Redis
+  redis-dev:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    volumes:
+      - redis_dev_data:/data
+    restart: unless-stopped
+    networks:
+      - jaaz-dev-network
+
+volumes:
+  jaaz_dev_data:
+  postgres_dev_data:
+  redis_dev_data:
+
+networks:
+  jaaz-dev-network:
+    driver: bridge

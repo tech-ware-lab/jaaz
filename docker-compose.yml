@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  jaaz-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+      - PYTHONPATH=/app/server
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Mount for persistent data (optional)
+      - jaaz_data:/app/data
+      # Mount for logs (optional)
+      - jaaz_logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - jaaz-network
+
+  # Optional: Redis for caching/session storage
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    networks:
+      - jaaz-network
+
+  # Optional: PostgreSQL database if needed
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: jaaz
+      POSTGRES_USER: jaaz_user
+      POSTGRES_PASSWORD: jaaz_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - jaaz-network
+
+volumes:
+  jaaz_data:
+  jaaz_logs:
+  redis_data:
+  postgres_data:
+
+networks:
+  jaaz-network:
+    driver: bridge

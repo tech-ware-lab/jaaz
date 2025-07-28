@@ -1,0 +1,47 @@
+# Development Dockerfile for Jaaz AI Design Agent
+FROM node:20-alpine AS base
+
+# Install system dependencies
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    curl \
+    build-base \
+    python3-dev
+
+# Set working directory
+WORKDIR /app
+
+# Install Python dependencies
+COPY server/requirements.txt ./server/
+RUN pip3 install --no-cache-dir -r server/requirements.txt
+
+# Copy package files for both frontend and root
+COPY react/package*.json ./react/
+COPY package*.json ./
+
+# Install root dependencies (for Electron, even though we won't use it in container)
+RUN npm install
+
+# Install React dependencies
+WORKDIR /app/react
+RUN npm install
+
+# Back to app directory
+WORKDIR /app
+
+# Set environment variables
+ENV PYTHONPATH=/app/server
+ENV PYTHONUNBUFFERED=1
+ENV NODE_ENV=development
+
+# Expose ports
+EXPOSE 8000 3000
+
+# Create non-root user
+RUN addgroup -g 1000 app && adduser -u 1000 -G app -s /bin/sh -D app
+RUN chown -R app:app /app
+USER app
+
+# Default command (can be overridden in docker-compose)
+CMD ["sh", "-c", "cd /app/react && npm run dev & cd /app/server && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload"]
